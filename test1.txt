@@ -1,0 +1,12 @@
+This is a test file
+with multiple lines
+to test the Git-style diff
+functionality we added
+to our DiffMore application.
+
+It should show the additions
+and removals in Git format.
+
+Here's some more content
+that will be the same
+across versions. 
