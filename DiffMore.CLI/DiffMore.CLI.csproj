@@ -1,5 +1,2 @@
 <Project Sdk="ktsu.Sdk.CLI/1.11.0">
-  <ItemGroup>
-    <ProjectReference Include="..\DiffMore.Core\DiffMore.Core.csproj" />
-  </ItemGroup>
 </Project>
