@@ -62,9 +62,13 @@ internal static class TestHelper
 				File.Delete(filePath);
 			}
 		}
-		catch
+		catch (IOException)
 		{
-			// Ignore exceptions during cleanup
+			// Ignore IO exceptions during cleanup
+		}
+		catch (UnauthorizedAccessException)
+		{
+			// Ignore access exceptions during cleanup
 		}
 	}
 
@@ -81,9 +85,13 @@ internal static class TestHelper
 				Directory.Delete(directoryPath, true);
 			}
 		}
-		catch
+		catch (IOException)
 		{
-			// Ignore exceptions during cleanup
+			// Ignore IO exceptions during cleanup
+		}
+		catch (UnauthorizedAccessException)
+		{
+			// Ignore access exceptions during cleanup
 		}
 	}
 
@@ -100,9 +108,13 @@ internal static class TestHelper
 				Directory.CreateDirectory(directoryPath);
 			}
 		}
-		catch
+		catch (IOException)
 		{
-			// Ignore exceptions during creation
+			// Ignore IO exceptions during creation
+		}
+		catch (UnauthorizedAccessException)
+		{
+			// Ignore access exceptions during creation
 		}
 	}
 

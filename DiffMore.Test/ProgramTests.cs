@@ -71,9 +71,13 @@ public sealed class ProgramTests : IDisposable
 			{
 				Directory.Delete(_testDirectory, true);
 			}
-			catch
+			catch (IOException)
 			{
-				// Ignore cleanup errors
+				// Ignore IO exceptions during cleanup
+			}
+			catch (UnauthorizedAccessException)
+			{
+				// Ignore access exceptions during cleanup
 			}
 		}
 	}

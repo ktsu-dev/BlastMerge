@@ -469,6 +469,141 @@ Now I also need to fix the return type issue. I need to change it to ReadOnlyCol
 
 
 
+Now I need to fix the simplified name issue for the Collection type:
+
+---
+
+
+
+---
+
+Now let me try building again to see if we've fixed the major issues:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet build
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.sln                                    Restore (0.0s)
+                                                                                   (0.1s) 
+Restore complete (1.0s)
+  DiffMore.Core succeeded (0.2s) → DiffMore.Core\bin\Debug\net9.0\ktsu.DiffMore.Core.dll
+
+  DiffMore.CLI succeeded (0.1s) → DiffMore.CLI\bin\Debug\net9.0\ktsu.DiffMore.CLI.dll
+
+  DiffMore.Test failed with 18 error(s) and 3 warning(s) (0.3s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(145,16): warning CS8625: Cannot
+ convert null literal to non-nullable reference type.
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(75,19): warning CS8600: Conver
+ting null literal or possible null value to non-nullable type.
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(138,31): warning CS8
+625: Cannot convert null literal to non-nullable reference type.
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(149,22): error CA1002: C
+hange 'List<string>' in 'IFileFinder.FindFiles(string, string)' to use 'Collection<T>', 'R
+eadOnlyCollection<T>' or 'KeyedCollection<K,V>' (https://learn.microsoft.com/dotnet/fundam
+entals/code-analysis/quality-rules/ca1002)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(159,22): error CA1002: C
+hange 'List<string>' in 'IFileDiffer.FindDifferences(string, string)' to use 'Collection<T
+>', 'ReadOnlyCollection<T>' or 'KeyedCollection<K,V>' (https://learn.microsoft.com/dotnet/
+fundamentals/code-analysis/quality-rules/ca1002)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(81,4): error CA1031: Mod
+ify 'Cleanup' to catch a more specific allowed exception type, or rethrow the exception (h
+ttps://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1031)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(57,4): error CA1031:
+ Modify 'Cleanup' to catch a more specific allowed exception type, or rethrow the exceptio
+n (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1031)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(13,14): error CA1063: Provide a
+n overridable implementation of Dispose(bool) on 'ProgramTests' or mark the type as sealed
+. A call to Dispose(false) should only clean up native resources. A call to Dispose(true)
+should clean up both managed and native resources. (https://learn.microsoft.com/dotnet/fun
+damentals/code-analysis/quality-rules/ca1063)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(74,4): error CA1031: Modify 'Cl
+eanup' to catch a more specific allowed exception type, or rethrow the exception (https://
+learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1031)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\TestHelper.cs(65,3): error CA1031: Modify 'Safe
+DeleteFile' to catch a more specific allowed exception type, or rethrow the exception (htt
+ps://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1031)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\TestHelper.cs(84,3): error CA1031: Modify 'Safe
+DeleteDirectory' to catch a more specific allowed exception type, or rethrow the exception
+ (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1031)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\TestHelper.cs(103,3): error CA1031: Modify 'Saf
+eCreateDirectory' to catch a more specific allowed exception type, or rethrow the exceptio
+n (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1031)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(187,14): error CA1063: Modify '
+ProgramTests.Dispose' so that it calls Dispose(true), then calls GC.SuppressFinalize on th
+e current object instance ('this' or 'Me' in Visual Basic), and then returns (https://lear
+n.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1063)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(53,13): error IDE0028: C
+ollection initialization can be simplified (https://learn.microsoft.com/dotnet/fundamental
+s/code-analysis/style-rules/ide0028)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(109,42): error CA1866: U
+se 'string.StartsWith(char)' instead of 'string.StartsWith(string)' when you have a string
+ with a single char (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality
+-rules/ca1866)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(110,42): error CA1866: U
+se 'string.StartsWith(char)' instead of 'string.StartsWith(string)' when you have a string
+ with a single char (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality
+-rules/ca1866)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileHasherTests.cs(8,1): error IDE0005: Using d
+irective is unnecessary. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/st
+yle-rules/ide0005)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTestBase.cs(9,1): error IDE0005: 
+Using directive is unnecessary. (https://learn.microsoft.com/dotnet/fundamentals/code-anal
+ysis/style-rules/ide0005)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(102,13): error IDE0028: 
+Collection initialization can be simplified (https://learn.microsoft.com/dotnet/fundamenta
+ls/code-analysis/style-rules/ide0028)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(173,3): error CA1031: Mod
+ify 'FindDifferences_WithSymbolicLinks_HandlesCorrectly' to catch a more specific allowed
+exception type, or rethrow the exception (https://learn.microsoft.com/dotnet/fundamentals/
+code-analysis/quality-rules/ca1031)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(220,4): error CA1031: Mod
+ify 'FindDifferences_WithSymbolicLinks_HandlesCorrectly' to catch a more specific allowed
+exception type, or rethrow the exception (https://learn.microsoft.com/dotnet/fundamentals/
+code-analysis/quality-rules/ca1031)
+
+Build failed with 18 error(s) and 3 warning(s) in 2.1s
+  15:12:46   DiffMore  2.508s   1 - ERROR 
+  01:12:46 main  +3 ~10 |  ?1 
+
+```
+
+---
+
+Great! We've made significant progress. The major compilation errors are fixed, and now we're down to mostly analyzer warnings and code style issues. Let me fix the remaining issues systematically.
+
+First, let me fix the Dispose pattern issue in ProgramTests:
+
+---
+
+
+
+---
+
+Now let me fix the catch blocks to be more specific. Let me check what files have the CA1031 errors:
+
+---
+
+Read file: DiffMore.Test/TestHelper.cs
+
+---
+
+I can see the catch blocks that need to be more specific. Let me fix them:
+
+---
+
+
+
+---
+
+
+
+---
+
 
 
 ---

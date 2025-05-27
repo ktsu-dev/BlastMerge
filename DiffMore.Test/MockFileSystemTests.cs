@@ -6,6 +6,7 @@ namespace ktsu.DiffMore.Test;
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
@@ -50,12 +51,12 @@ public class MockFileSystemTests
 		// Arrange
 		var mockFileFinder = new Mock<IFileFinder>();
 		mockFileFinder.Setup(f => f.FindFiles(_testDir1, "*.txt"))
-			.Returns(new List<string>
+			.Returns(new ReadOnlyCollection<string>(new List<string>
 			{
 				Path.Combine(_testDir1, "file1.txt"),
 				Path.Combine(_testDir1, "file2.txt"),
 				Path.Combine(_testDir1, "file3.txt")
-			});
+			}));
 
 		// Act
 		var files = mockFileFinder.Object.FindFiles(_testDir1, "*.txt");
@@ -99,15 +100,15 @@ public class MockFileSystemTests
 
 		var mockFileDiffer = new Mock<IFileDiffer>();
 		mockFileDiffer.Setup(d => d.FindDifferences(file1Path, file2Path))
-			.Returns(new List<string> { "- File 1 Content Version 1", "+ File 1 Content Version 2" });
+			.Returns(new ReadOnlyCollection<string>(new List<string> { "- File 1 Content Version 1", "+ File 1 Content Version 2" }));
 
 		// Act
 		var differences = mockFileDiffer.Object.FindDifferences(file1Path, file2Path);
 
 		// Assert
 		Assert.AreEqual(2, differences.Count, "Should find 2 difference lines");
-		Assert.IsTrue(differences[0].StartsWith("-"), "First line should be a removal");
-		Assert.IsTrue(differences[1].StartsWith("+"), "Second line should be an addition");
+		Assert.IsTrue(differences[0].StartsWith('-'), "First line should be a removal");
+		Assert.IsTrue(differences[1].StartsWith('+'), "Second line should be an addition");
 	}
 
 	[TestMethod]
@@ -146,7 +147,7 @@ public class MockFileSystemTests
 // Interface definitions to support mocking
 public interface IFileFinder
 {
-	public List<string> FindFiles(string directoryPath, string searchPattern);
+	public ReadOnlyCollection<string> FindFiles(string directoryPath, string searchPattern);
 }
 
 public interface IFileHasher
@@ -156,6 +157,6 @@ public interface IFileHasher
 
 public interface IFileDiffer
 {
-	public List<string> FindDifferences(string file1Path, string file2Path);
+	public ReadOnlyCollection<string> FindDifferences(string file1Path, string file2Path);
 	public string GenerateGitStyleDiff(string file1Path, string file2Path);
 }

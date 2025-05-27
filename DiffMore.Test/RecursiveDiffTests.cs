@@ -170,7 +170,15 @@ public class RecursiveDiffTests
 			canCreateSymlinks = true;
 			TestHelper.SafeDeleteDirectory(testDir);
 		}
-		catch (Exception ex)
+		catch (IOException ex)
+		{
+			Console.WriteLine($"Skipping symbolic link test: {ex.Message}");
+		}
+		catch (UnauthorizedAccessException ex)
+		{
+			Console.WriteLine($"Skipping symbolic link test: {ex.Message}");
+		}
+		catch (PlatformNotSupportedException ex)
 		{
 			Console.WriteLine($"Skipping symbolic link test: {ex.Message}");
 		}
@@ -217,7 +225,8 @@ public class RecursiveDiffTests
 				TestHelper.SafeDeleteDirectory(linkTarget1);
 				TestHelper.SafeDeleteDirectory(linkTarget2);
 			}
-			catch { /* Ignore cleanup errors */ }
+			catch (IOException) { /* Ignore IO exceptions during cleanup */ }
+			catch (UnauthorizedAccessException) { /* Ignore access exceptions during cleanup */ }
 		}
 	}
 
