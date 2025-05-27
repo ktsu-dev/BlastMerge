@@ -540,6 +540,336 @@ I see the issue. There's still a `Path.Combine` call that requires `System.IO`, 
 
 
 
+Now let me check MockFileSystemTestBase.cs:
+
+---
+
+Read file: DiffMore.Test/MockFileSystemTestBase.cs
+
+---
+
+I see the issue. The `Path.Combine` and `Path.GetDirectoryName` calls need `System.IO`. Let me add it back:
+
+---
+
+
+
+---
+
+Now let me try building again:
+
+---
+
+
+
+---
+
+It seems like the IDE analysis is still reporting these as unnecessary. Let me check if there are any global using statements or if the System.IO.Abstractions library provides these types. Let me check the project file to see if there are global usings:
+
+---
+
+Read file: DiffMore.Test/DiffMore.Test.csproj
+
+---
+
+Let me check if there's a Directory.Build.props or global usings file:
+
+---
+
+Read file: Directory.Build.props
+
+---
+
+Let me check if there are any global usings in the ktsu.Sdk.Test package. Since the errors are IDE0005 (unnecessary using), let me try to see if the System.IO namespace is being provided globally. Let me try removing the using directives and see what specific compilation errors we get:
+
+---
+
+
+
+---
+
+Let me try a different approach and check what the exact error is:
+
+---
+
+
+
+---
+
+I'll help you continue working on the DiffMore application. Let me first examine the current state of the project and see what we're working with.
+
+---
+
+<details>
+            <summary>Listed current directory • **31** results</summary>
+        
+| Name |
+|-------|
+| 📁 `.git` |
+| 📄 `Directory.Packages.props` |
+| 📄 `Directory.Build.props` |
+| 📁 `DiffMore.CLI` |
+| 📁 `DiffMore.Core` |
+| 📁 `DiffMore.Test` |
+| 📁 `packages` |
+| 📄 `.runsettings` |
+| 📁 `.specstory` |
+| 📄 `.cursorignore` |
+| 📁 `.cursor` |
+| 📄 `.cursorindexingignore` |
+| 📄 `VERSION.md` |
+| 📄 `PROJECT_URL.url` |
+| 📄 `LICENSE.md` |
+| 📄 `COPYRIGHT.md` |
+| 📄 `CHANGELOG.md` |
+| 📄 `AUTHORS.url` |
+| 📁 `.vs` |
+| 📄 `DiffMore.sln` |
+| 📁 `.github` |
+| 📁 `scripts` |
+| 📄 `.mailmap` |
+| 📄 `.editorconfig` |
+| 📄 `.gitattributes` |
+| 📄 `.gitignore` |
+| 📄 `AUTHORS.md` |
+| 📄 `TAGS.md` |
+| 📄 `DESCRIPTION.md` |
+| 📄 `README.md` |
+| 📄 `icon.png` |
+
+</details>
+
+---
+
+Let me check the solution file to understand the project structure better:
+
+---
+
+Read file: DiffMore.sln
+
+---
+
+Now let me check the README to understand what this project does:
+
+---
+
+Read file: README.md
+
+---
+
+Let me check the project files to understand the structure better:
+
+---
+
+<details>
+            <summary>Listed directory DiffMore.Core • **6** results</summary>
+        
+| Name |
+|-------|
+| 📁 `obj` |
+| 📄 `FileDiffer.cs` |
+| 📄 `DiffMore.Core.csproj` |
+| 📄 `FileHasher.cs` |
+| 📄 `FileFinder.cs` |
+| 📁 `bin` |
+
+</details>
+
+---
+
+<details>
+            <summary>Listed directory DiffMore.CLI • **5** results</summary>
+        
+| Name |
+|-------|
+| 📄 `Program.cs` |
+| 📁 `obj` |
+| 📄 `DiffMore.CLI.csproj` |
+| 📁 `TestFiles` |
+| 📁 `bin` |
+
+</details>
+
+---
+
+Let me check the current build status to see if there are any issues:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet build
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.sln                                    Restore (0.0s)
+                                                                                   (0.1s) 
+Restore complete (0.6s)
+  DiffMore.Core succeeded (0.2s) → DiffMore.Core\bin\Debug\net9.0\ktsu.DiffMore.Core.dll
+
+  DiffMore.CLI succeeded (0.2s) → DiffMore.CLI\bin\Debug\net9.0\ktsu.DiffMore.CLI.dll
+
+  DiffMore.Test failed with 2 error(s) (0.7s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTestBase.cs(9,1): error IDE0005: 
+ysis/style-rules/ide0005)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileHasherTests.cs(7,1): error IDE0005: Using d
+irective is unnecessary. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/st
+yle-rules/ide0005)
+
+Build failed with 2 error(s) in 1.9s
+  15:23:12   DiffMore  2.139s   1 - ERROR 
+  01:23:12 main  ?3 ~7 
+
+```
+
+---
+
+I can see there are 2 IDE0005 errors about unnecessary using directives. Let me examine these files to fix them:
+
+---
+
+Read file: DiffMore.Test/MockFileSystemTestBase.cs
+
+---
+
+Read file: DiffMore.Test/FileHasherTests.cs
+
+---
+
+I can see that both files are using `System.IO` but the IDE is flagging it as unnecessary. Looking at the code, I can see that:
+
+1. In `MockFileSystemTestBase.cs`, `Path.Combine` and `Path.GetDirectoryName` are used, which require `System.IO`
+2. In `FileHasherTests.cs`, `Path.Combine` is used, which also requires `System.IO`
+
+However, the IDE is saying these are unnecessary. Let me check if there's a global using directive or if these methods are available through other means. Let me check the project files:
+
+---
+
+Read file: DiffMore.Test/DiffMore.Test.csproj
+
+---
+
+Read file: Directory.Build.props
+
+---
+
+Let me check if there are any global usings in the ktsu.Sdk packages by looking at the packages directory:
+
+---
+
+<details>
+            <summary>Listed directory packages/ktsu.sdk.test/1.33.0 • **16** results</summary>
+        
+| Name |
+|-------|
+| 📄 `.nupkg.metadata` |
+| 📄 `ktsu.sdk.test.1.33.0.nupkg.sha512` |
+| 📁 `Sdk` |
+| 📁 `lib` |
+| 📄 `ktsu.sdk.test.1.33.0.nupkg` |
+| 📄 `ktsu.sdk.test.nuspec` |
+| 📄 `CHANGELOG.md` |
+| 📄 `AUTHORS.md` |
+| 📄 `AUTHORS.url` |
+| 📄 `LICENSE.md` |
+| 📄 `VERSION.md` |
+| 📄 `DESCRIPTION.md` |
+| 📄 `icon.png` |
+| 📄 `README.md` |
+| 📄 `TAGS.md` |
+| 📄 `.signature.p7s` |
+
+</details>
+
+---
+
+<details>
+            <summary>Listed directory packages/ktsu.sdk.test/1.33.0/Sdk • **2** results</summary>
+        
+| Name |
+|-------|
+| 📄 `Sdk.props` |
+| 📄 `Sdk.targets` |
+
+</details>
+
+---
+
+Read file: packages/ktsu.sdk.test/1.33.0/Sdk/Sdk.props
+
+---
+
+Let me check the main ktsu.Sdk:
+
+---
+
+<details>
+            <summary>Listed directory packages/ktsu.sdk/1.33.0/Sdk • **2** results</summary>
+        
+| Name |
+|-------|
+| 📄 `Sdk.props` |
+| 📄 `Sdk.targets` |
+
+</details>
+
+---
+
+<details>
+            <summary>Grep search for "ImplicitUsings|GlobalUsings|System\.IO" • **2** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///c%3A/dev/ktsu-dev/DiffMore/Directory.Packages.props` | L7 | `<PackageVersion Include="TestableIO.System.IO.Abstractions" Version="20.0.34" />` |
+| `file:///c%3A/dev/ktsu-dev/DiffMore/Directory.Packages.props` | L8 | `<PackageVersion Include="TestableIO.System.IO.Abstractions.Wrappers" Version="20.0.34" />` |
+| `file:///c%3A/dev/ktsu-dev/DiffMore/Directory.Packages.props` | L9 | `<PackageVersion Include="TestableIO.System.IO.Abstractions.TestingHelpers" Version="20.0.34" />` |
+| `file:///c%3A/dev/ktsu-dev/DiffMore/Directory.Packages.props` | L7 | `<PackageVersion Include="TestableIO.System.IO.Abstractions" Version="20.0.34" />` |
+| `file:///c%3A/dev/ktsu-dev/DiffMore/Directory.Packages.props` | L8 | `<PackageVersion Include="TestableIO.System.IO.Abstractions.Wrappers" Version="20.0.34" />` |
+| `file:///c%3A/dev/ktsu-dev/DiffMore/Directory.Packages.props` | L9 | `<PackageVersion Include="TestableIO.System.IO.Abstractions.TestingHelpers" Version="20.0.34" />` |
+
+</details>
+
+---
+
+Read file: packages/ktsu.sdk/1.33.0/Sdk/Sdk.props
+
+---
+
+Let me search for ImplicitUsings in the SDK props:
+
+---
+
+<details>
+            <summary>Grep search for "ImplicitUsings" • **0** files</summary>
+        
+No results found
+</details>
+
+---
+
+Let me continue reading the SDK props file to see if ImplicitUsings is enabled:
+
+---
+
+<details>
+            <summary>Grep search for "ImplicitUsings|Using" • **0** files</summary>
+        
+No results found
+</details>
+
+---
+
+Let me check if .NET 9 has implicit usings enabled by default. Let me try removing the `using System.IO;` statements and see if the build still works:
+
+---
+
+
+
+---
+
+
+
 
 
 ---

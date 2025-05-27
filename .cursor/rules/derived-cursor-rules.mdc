@@ -70,7 +70,7 @@ globs: *
     -   Green for added lines
     -   Red for deleted lines
     -   Cyan for chunk headers
-    -   Blue for file headers
+    -   Blue for file headers.
 -   Show the paths of the compared versions.
 -   Implement a change summary diffing mode that shows only lines added or removed between versions.
 -   In GenerateGitStyleDiff, check if `k-1+max` or `k+1+max` is out of bounds.
