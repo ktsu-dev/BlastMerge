@@ -12,10 +12,10 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 [TestClass]
 public class FileFinderTests : MockFileSystemTestBase
 {
-	private required string _testSubdir1;
-	private required string _testSubdir2;
-	private required string _testNestedSubdir;
-	private required FileFinderAdapter _fileFinderAdapter;
+	private string _testSubdir1 = null!;
+	private string _testSubdir2 = null!;
+	private string _testNestedSubdir = null!;
+	private FileFinderAdapter _fileFinderAdapter = null!;
 
 	protected override void InitializeFileSystem()
 	{

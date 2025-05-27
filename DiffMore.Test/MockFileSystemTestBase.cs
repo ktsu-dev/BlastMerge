@@ -18,12 +18,12 @@ public abstract class MockFileSystemTestBase
 	/// <summary>
 	/// The mock file system instance used for testing
 	/// </summary>
-	protected required MockFileSystem MockFileSystem { get; private set; }
+	protected MockFileSystem MockFileSystem { get; private set; } = null!;
 
 	/// <summary>
 	/// The root directory for the mock file system
 	/// </summary>
-	protected required string TestDirectory { get; private set; }
+	protected string TestDirectory { get; private set; } = null!;
 
 	/// <summary>
 	/// Initializes the mock file system

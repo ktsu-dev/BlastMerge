@@ -18,6 +18,8 @@ globs: *
 -   System.IO.Abstractions.TestingHelpers Version="19.2.87"
 -   MSTest
 -   Moq
+-   TestableIO.System.IO.Abstractions Version="20.0.34"
+-   TestableIO.System.IO.Abstractions.TestingHelpers Version="20.0.34"
 
 ## PROJECT DOCUMENTATION & CONTEXT SYSTEM
 

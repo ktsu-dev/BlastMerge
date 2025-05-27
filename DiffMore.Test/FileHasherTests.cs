@@ -12,10 +12,10 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 [TestClass]
 public class FileHasherTests : MockFileSystemTestBase
 {
-	private required string _testFilePath1;
-	private required string _testFilePath2;
-	private required string _testFilePath3;
-	private required FileHasherAdapter _fileHasherAdapter;
+	private string _testFilePath1 = null!;
+	private string _testFilePath2 = null!;
+	private string _testFilePath3 = null!;
+	private FileHasherAdapter _fileHasherAdapter = null!;
 
 	protected override void InitializeFileSystem()
 	{
