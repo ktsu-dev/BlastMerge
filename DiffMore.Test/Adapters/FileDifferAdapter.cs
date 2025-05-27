@@ -68,10 +68,28 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 			throw new FileNotFoundException("File not found", file2Path);
 		}
 
+		// Since FileDiffer.GenerateGitStyleDiff expects real file paths and reads from the actual filesystem,
+		// we need to create temporary files with the content from our mock filesystem
 		var lines1 = _fileSystem.File.ReadAllLines(file1Path);
 		var lines2 = _fileSystem.File.ReadAllLines(file2Path);
 
-		return FileDiffer.GenerateGitStyleDiff(file1Path, file2Path, lines1, lines2);
+		// Create temporary files
+		var tempFile1 = Path.GetTempFileName();
+		var tempFile2 = Path.GetTempFileName();
+
+		try
+		{
+			File.WriteAllLines(tempFile1, lines1);
+			File.WriteAllLines(tempFile2, lines2);
+
+			return FileDiffer.GenerateGitStyleDiff(tempFile1, tempFile2);
+		}
+		finally
+		{
+			// Clean up temporary files
+			if (File.Exists(tempFile1)) File.Delete(tempFile1);
+			if (File.Exists(tempFile2)) File.Delete(tempFile2);
+		}
 	}
 
 	/// <summary>

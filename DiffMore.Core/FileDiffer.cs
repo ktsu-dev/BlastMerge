@@ -11,117 +11,143 @@ using System.IO;
 using System.Text;
 
 /// <summary>
-/// Compares file contents to find differences
+/// Represents a group of identical files by hash
 /// </summary>
-public static class FileDiffer
+public class FileGroup
+{
+	private readonly Collection<string> filePaths = [];
+
+	/// <summary>
+	/// Gets the hash that identifies this group
+	/// </summary>
+	public required string Hash { get; init; }
+
+	/// <summary>
+	/// Gets the list of file paths in this group
+	/// </summary>
+	public IReadOnlyCollection<string> FilePaths => filePaths.AsReadOnly();
+
+	/// <summary>
+	/// Adds a file path to this group
+	/// </summary>
+	/// <param name="filePath">The file path to add</param>
+	public void AddFilePath(string filePath) => filePaths.Add(filePath);
+}
+
+/// <summary>
+/// Represents a line difference between two files
+/// </summary>
+public class LineDifference
 {
 	/// <summary>
-	/// Represents a group of identical files by hash
+	/// Gets or sets the line number in the first file
 	/// </summary>
-	public class FileGroup
-	{
-		private readonly Collection<string> filePaths = [];
-
-		/// <summary>
-		/// Gets the hash that identifies this group
-		/// </summary>
-		public required string Hash { get; init; }
-
-		/// <summary>
-		/// Gets the list of file paths in this group
-		/// </summary>
-		public IReadOnlyCollection<string> FilePaths => filePaths.AsReadOnly();
-
-		/// <summary>
-		/// Adds a file path to this group
-		/// </summary>
-		/// <param name="filePath">The file path to add</param>
-		public void AddFilePath(string filePath) => filePaths.Add(filePath);
-	}
+	public int LineNumber1 { get; set; }
 
 	/// <summary>
-	/// Represents a line difference between two files
+	/// Gets or sets the line number in the second file
 	/// </summary>
-	public class LineDifference
-	{
-		/// <summary>
-		/// Gets or sets the line number in the first file
-		/// </summary>
-		public int LineNumber1 { get; set; }
-
-		/// <summary>
-		/// Gets or sets the line number in the second file
-		/// </summary>
-		public int LineNumber2 { get; set; }
-
-		/// <summary>
-		/// Gets or sets the content from the first file
-		/// </summary>
-		public string? Content1 { get; set; }
-
-		/// <summary>
-		/// Gets or sets the content from the second file
-		/// </summary>
-		public string? Content2 { get; set; }
-	}
+	public int LineNumber2 { get; set; }
 
 	/// <summary>
-	/// Defines colors to use for different parts of the diff output
+	/// Gets or sets the content from the first file
 	/// </summary>
-	public enum DiffColor
-	{
-		/// <summary>
-		/// Default console color
-		/// </summary>
-		Default,
-
-		/// <summary>
-		/// Color for deleted lines
-		/// </summary>
-		Deletion,
-
-		/// <summary>
-		/// Color for added lines
-		/// </summary>
-		Addition,
-
-		/// <summary>
-		/// Color for chunk headers
-		/// </summary>
-		ChunkHeader,
-
-		/// <summary>
-		/// Color for file headers
-		/// </summary>
-		FileHeader
-	}
+	public string? Content1 { get; set; }
 
 	/// <summary>
-	/// Represents a diffed line with formatting information
+	/// Gets or sets the content from the second file
 	/// </summary>
-	public class ColoredDiffLine
-	{
-		/// <summary>
-		/// Gets or sets the line content
-		/// </summary>
-		public required string Content { get; set; }
+	public string? Content2 { get; set; }
+}
 
-		/// <summary>
-		/// Gets or sets the color for this line
-		/// </summary>
-		public DiffColor Color { get; set; }
-	}
+/// <summary>
+/// Defines colors to use for different parts of the diff output
+/// </summary>
+public enum DiffColor
+{
+	/// <summary>
+	/// Default console color
+	/// </summary>
+	Default,
+
+	/// <summary>
+	/// Color for deleted lines
+	/// </summary>
+	Deletion,
+
+	/// <summary>
+	/// Color for added lines
+	/// </summary>
+	Addition,
+
+	/// <summary>
+	/// Color for chunk headers
+	/// </summary>
+	ChunkHeader,
+
+	/// <summary>
+	/// Color for file headers
+	/// </summary>
+	FileHeader
+}
+
+/// <summary>
+/// Represents a diffed line with formatting information
+/// </summary>
+public class ColoredDiffLine
+{
+	/// <summary>
+	/// Gets or sets the line content
+	/// </summary>
+	public required string Content { get; set; }
+
+	/// <summary>
+	/// Gets or sets the color for this line
+	/// </summary>
+	public DiffColor Color { get; set; }
+}
 
 	/// <summary>
 	/// Represents an edit operation (used in Myers diff algorithm)
 	/// </summary>
-	private enum EditOperation
+	internal enum EditOperation
 	{
 		Delete,
 		Insert,
 		Equal
 	}
 
+/// <summary>
+/// Represents the result of a directory comparison
+/// </summary>
+public class DirectoryComparisonResult
+{
+	/// <summary>
+	/// Gets the collection of files that are identical in both directories
+	/// </summary>
+	public IReadOnlyCollection<string> SameFiles { get; init; } = [];
+
+	/// <summary>
+	/// Gets the collection of files that exist in both directories but have different content
+	/// </summary>
+	public IReadOnlyCollection<string> ModifiedFiles { get; init; } = [];
+
+	/// <summary>
+	/// Gets the collection of files that exist only in the first directory
+	/// </summary>
+	public IReadOnlyCollection<string> OnlyInDir1 { get; init; } = [];
+
+	/// <summary>
+	/// Gets the collection of files that exist only in the second directory
+	/// </summary>
+	public IReadOnlyCollection<string> OnlyInDir2 { get; init; } = [];
+}
+
+/// <summary>
+/// Compares file contents to find differences
+/// </summary>
+public static class FileDiffer
+{
 	/// <summary>
 	/// Groups files by their hash to identify unique versions
 	/// </summary>
@@ -205,6 +231,85 @@ public static class FileDiffer
 		}
 
 		return differences.AsReadOnly();
+	}
+
+	/// <summary>
+	/// Compares two directories and finds differences between files
+	/// </summary>
+	/// <param name="dir1">Path to the first directory</param>
+	/// <param name="dir2">Path to the second directory</param>
+	/// <param name="searchPattern">File search pattern (e.g., "*.txt")</param>
+	/// <param name="recursive">Whether to search subdirectories recursively</param>
+	/// <returns>A DirectoryComparisonResult containing the comparison results</returns>
+	public static DirectoryComparisonResult FindDifferences(string dir1, string dir2, string searchPattern, bool recursive = false)
+	{
+		ArgumentNullException.ThrowIfNull(dir1);
+		ArgumentNullException.ThrowIfNull(dir2);
+		ArgumentNullException.ThrowIfNull(searchPattern);
+
+		var searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+
+		// Get all files from both directories
+		var files1 = Directory.Exists(dir1)
+			? Directory.GetFiles(dir1, searchPattern, searchOption)
+				.Select(f => Path.GetRelativePath(dir1, f))
+				.ToHashSet()
+			: [];
+
+		var files2 = Directory.Exists(dir2)
+			? Directory.GetFiles(dir2, searchPattern, searchOption)
+				.Select(f => Path.GetRelativePath(dir2, f))
+				.ToHashSet()
+			: [];
+
+		var sameFiles = new List<string>();
+		var modifiedFiles = new List<string>();
+		var onlyInDir1 = new List<string>();
+		var onlyInDir2 = new List<string>();
+
+		// Find files that exist in both directories
+		var commonFiles = files1.Intersect(files2).ToList();
+
+		foreach (var relativePath in commonFiles)
+		{
+			var file1Path = Path.Combine(dir1, relativePath);
+			var file2Path = Path.Combine(dir2, relativePath);
+
+			try
+			{
+				// Compare file contents using hash
+				var hash1 = FileHasher.ComputeFileHash(file1Path);
+				var hash2 = FileHasher.ComputeFileHash(file2Path);
+
+				if (hash1 == hash2)
+				{
+					sameFiles.Add(relativePath);
+				}
+				else
+				{
+					modifiedFiles.Add(relativePath);
+				}
+			}
+			catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+			{
+				// If we can't read the files, consider them modified
+				modifiedFiles.Add(relativePath);
+			}
+		}
+
+		// Find files that exist only in dir1
+		onlyInDir1.AddRange(files1.Except(files2));
+
+		// Find files that exist only in dir2
+		onlyInDir2.AddRange(files2.Except(files1));
+
+		return new DirectoryComparisonResult
+		{
+			SameFiles = sameFiles.AsReadOnly(),
+			ModifiedFiles = modifiedFiles.AsReadOnly(),
+			OnlyInDir1 = onlyInDir1.AsReadOnly(),
+			OnlyInDir2 = onlyInDir2.AsReadOnly()
+		};
 	}
 
 	/// <summary>

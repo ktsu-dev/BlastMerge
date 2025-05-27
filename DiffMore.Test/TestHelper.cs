@@ -88,6 +88,25 @@ internal static class TestHelper
 	}
 
 	/// <summary>
+	/// Safely creates a directory if it doesn't exist
+	/// </summary>
+	/// <param name="directoryPath">Path to the directory to create</param>
+	public static void SafeCreateDirectory(string directoryPath)
+	{
+		try
+		{
+			if (!Directory.Exists(directoryPath))
+			{
+				Directory.CreateDirectory(directoryPath);
+			}
+		}
+		catch
+		{
+			// Ignore exceptions during creation
+		}
+	}
+
+	/// <summary>
 	/// Gets the absolute path of a test file in the TestFiles directory
 	/// </summary>
 	/// <param name="relativeFilePath">Relative path to the test file</param>
