@@ -11,16 +11,16 @@ using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
 using System.Text;
-
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 
 [TestClass]
 public class MockFileSystemTests
 {
-	private required MockFileSystem _mockFileSystem;
-	private required string _testDir;
-	private required string _testDir1;
-	private required string _testDir2;
+	private MockFileSystem _mockFileSystem = null!;
+	private string _testDir = null!;
+	private string _testDir1 = null!;
+	private string _testDir2 = null!;
 
 	[TestInitialize]
 	public void Setup()

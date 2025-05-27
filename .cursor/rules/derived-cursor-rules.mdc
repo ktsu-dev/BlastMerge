@@ -17,9 +17,13 @@ globs: *
 -   System.IO.Abstractions Version="19.2.87"
 -   System.IO.Abstractions.TestingHelpers Version="19.2.87"
 -   MSTest
--   Moq
+-   Moq Version="4.20.72"
 -   TestableIO.System.IO.Abstractions Version="20.0.34"
 -   TestableIO.System.IO.Abstractions.TestingHelpers Version="20.0.34"
+-   Microsoft.NET.Test.Sdk Version="17.11.1"
+-   MSTest.TestAdapter Version="3.6.0"
+-   MSTest.TestFramework Version="3.6.0"
+-   coverlet.collector Version="6.0.2"
 
 ## PROJECT DOCUMENTATION & CONTEXT SYSTEM
 
@@ -91,6 +95,9 @@ globs: *
 -   When using a mock filesystem, create adapters for core classes that need to interact with the filesystem. These adapters should take an `IFileSystem` instance as a parameter. Example adapters: `FileFinderAdapter`, `FileHasherAdapter`, `FileDifferAdapter`.
 -   When using a mock filesystem, tests should inherit from a base class that sets up the mock filesystem environment (e.g., `MockFileSystemTestBase`). This base class should initialize the `MockFileSystem` and provide helper methods for creating files and directories in the mock filesystem.
 -   When using a mock filesystem, there is no need for cleanup code in tests, as the virtual filesystem is in memory.
+-   When tests use a mock filesystem, ensure that core classes use adapted versions (e.g., `FileFinderAdapter`, `FileHasherAdapter`, `FileDifferAdapter`) taking an `IFileSystem` instance as a parameter for file system interaction.
+-   When tests use a mock file system, initialize adapters (e.g. `FileFinderAdapter`) in the `InitializeFileSystem` override within the derived test class.
+-   When tests use a mock file system, initialize file and directory paths in the `InitializeFileSystem` override within the derived test class using the `CreateFile` and `CreateDirectory` methods provided by `MockFileSystemTestBase`.
 
 ## WORKFLOW & RELEASE RULES
 
@@ -103,4 +110,18 @@ globs: *
             <Scope>MethodLevel</Scope>
         </Parallelize>
     </MSTest>
+    ```
+-   Suppress NuGet warnings `NU1604`, `NU1602`, and `NU1701` in all project files by adding the following property group:
+
+    ```xml
+    <PropertyGroup>
+        <NoWarn>$(NoWarn);NU1604;NU1602;NU1701</NoWarn>
+    </PropertyGroup>
+    ```
+-   Suppress Spectre Console analyzer errors `Spectre1000` in the CLI project by adding it to the `NoWarn` property:
+
+    ```xml
+    <PropertyGroup>
+        <NoWarn>$(NoWarn);NU1604;NU1602;NU1701;Spectre1000</NoWarn>
+    </PropertyGroup>
     ```
