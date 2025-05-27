@@ -5,7 +5,6 @@
 namespace ktsu.DiffMore.Test;
 
 using System.Collections.Generic;
-using System.IO;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;

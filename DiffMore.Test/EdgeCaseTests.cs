@@ -71,7 +71,7 @@ public class EdgeCaseTests
 		using (var writer = new StreamWriter(largeFile2))
 		{
 			var lineNum = 0;
-			string line;
+			string? line;
 			while ((line = reader.ReadLine()) != null)
 			{
 				if (lineNum == 5000)

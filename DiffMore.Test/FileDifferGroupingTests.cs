@@ -139,7 +139,7 @@ public class FileDifferGroupingTests
 	public void GroupFilesByHash_WithNullInput_ThrowsArgumentNullException()
 	{
 		// Act
-		FileDiffer.GroupFilesByHash(null);
+		FileDiffer.GroupFilesByHash(null!);
 	}
 
 	[TestMethod]

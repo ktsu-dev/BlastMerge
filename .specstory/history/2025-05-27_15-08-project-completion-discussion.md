@@ -608,3 +608,198 @@ I can see the catch blocks that need to be more specific. Let me fix them:
 
 ---
 
+Now let me fix the catch blocks in the test files. Let me check the FileDifferGroupingTests:
+
+---
+
+
+
+---
+
+Now let me fix the ProgramTests cleanup:
+
+---
+
+
+
+---
+
+Now let me fix the RecursiveDiffTests catch blocks:
+
+---
+
+
+
+---
+
+
+
+---
+
+Now let me check if there are any other test files with similar issues. Let me look for FileDifferDiffTests:
+
+---
+
+<details>
+            <summary>Searched codebase "FileDifferDiffTests.cs" • **1** results</summary>
+        
+| File |
+|------|
+| `undefined` |
+
+</details>
+
+---
+
+Read file: DiffMore.Test/FileDifferDiffTests.cs
+
+---
+
+
+
+---
+
+Now let me fix some of the other issues. Let me check the MockFileSystemTests for the collection issues:
+
+---
+
+Read file: DiffMore.Test/MockFileSystemTests.cs
+
+---
+
+I need to fix the interface definitions to use Collection types instead of List:
+
+---
+
+
+
+---
+
+
+
+---
+
+I'll help you continue completing the DiffMore project. Let me first examine the current state of the project to understand what needs to be done.
+
+---
+
+```bash
+cd /c/dev/ktsu-dev/DiffMore && dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >cd /c/dev/ktsu-dev/DiffMore && dotnet build DiffMore.Test/Di
+ffMore.Test.csproj            cd /c/dev/ktsu-dev/DiffMore && dotnet build
+  15:14:55   DiffMore  69ms   1 - ERROR 
+  01:14:55 main  ?2 ~8 
+ PS C:\dev\ktsu-dev\DiffMore >
+```
+
+---
+
+Let me try the build command again:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet build
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.sln                                    Restore (0.0s)
+                                                                                   (0.1s) 
+Restore complete (0.9s)
+  DiffMore.Core succeeded (0.5s) → DiffMore.Core\bin\Debug\net9.0\ktsu.DiffMore.Core.dll
+
+  DiffMore.CLI succeeded (0.3s) → DiffMore.CLI\bin\Debug\net9.0\ktsu.DiffMore.CLI.dll
+  DiffMore.Test failed with 6 error(s) and 3 warning(s) (0.4s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(149,16): warning CS8625: Cannot
+ convert null literal to non-nullable reference type.
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(75,19): warning CS8600: Conver
+ting null literal or possible null value to non-nullable type.
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(142,31): warning CS8
+625: Cannot convert null literal to non-nullable reference type.
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(54,13): error CS1503: Ar
+gument 1: cannot convert from 'System.Collections.Generic.List<string>' to 'System.Collect
+ions.ObjectModel.ReadOnlyCollection<string>'
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(103,13): error CS1503: A
+rgument 1: cannot convert from 'System.Collections.Generic.List<string>' to 'System.Collec
+tions.ObjectModel.ReadOnlyCollection<string>'
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(110,42): error CA1866: U
+se 'string.StartsWith(char)' instead of 'string.StartsWith(string)' when you have a string
+ with a single char (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality
+-rules/ca1866)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(111,42): error CA1866: U
+se 'string.StartsWith(char)' instead of 'string.StartsWith(string)' when you have a string
+ with a single char (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality
+-rules/ca1866)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileHasherTests.cs(8,1): error IDE0005: Using d
+yle-rules/ide0005)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTestBase.cs(9,1): error IDE0005: 
+Using directive is unnecessary. (https://learn.microsoft.com/dotnet/fundamentals/code-anal
+ysis/style-rules/ide0005)
+
+Build failed with 6 error(s) and 3 warning(s) in 2.6s
+  15:15:02   DiffMore  2.905s   1 - ERROR 
+  01:15:02 main  ?2 ~8 
+
+```
+
+---
+
+Great! The build is much better now - we're down to just 6 errors and 3 warnings. Let me fix these remaining issues:
+
+---
+
+Read file: DiffMore.Test/MockFileSystemTests.cs
+
+---
+
+Now let me fix the issues in MockFileSystemTests.cs:
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+Now let me fix the unnecessary using directives:
+
+---
+
+Read file: DiffMore.Test/FileHasherTests.cs
+
+---
+
+I can see that the `using System.IO;` directive might be unnecessary. Let me check what's actually being used:
+
+---
+
+
+
+---
+
+Wait, that will break the code since `Path.Combine` and `FileNotFoundException` are used. Let me revert that and check what's actually unnecessary:
+
+---
+
+
+
+---
+
+
+
+
+
+---
+

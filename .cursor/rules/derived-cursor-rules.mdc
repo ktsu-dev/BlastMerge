@@ -54,7 +54,7 @@ globs: *
 
 -   Always ensure that file paths are valid before attempting to access files.
 -   Create target directories before copying files.
--   When copying files, handle potential `IOExceptions` and `UnauthorizedAccessExceptions`.
+-   When copying files, handle potential `IOExceptions` and `UnauthorizedAccessException`.
 -   Be aware that binary files will be treated as text and should show differences.
 
 ## HASHING

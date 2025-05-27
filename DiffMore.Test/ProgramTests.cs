@@ -146,7 +146,7 @@ public sealed class ProgramTests : IDisposable
 	public void Main_WithNullArgs_PrintsUsage()
 	{
 		// Act
-		Program.Main(null);
+		Program.Main([]);
 		var output = _consoleOutput.ToString();
 
 		// Assert

@@ -51,12 +51,11 @@ public class MockFileSystemTests
 		// Arrange
 		var mockFileFinder = new Mock<IFileFinder>();
 		mockFileFinder.Setup(f => f.FindFiles(_testDir1, "*.txt"))
-			.Returns(new ReadOnlyCollection<string>(new List<string>
-			{
+			.Returns(new ReadOnlyCollection<string>([
 				Path.Combine(_testDir1, "file1.txt"),
 				Path.Combine(_testDir1, "file2.txt"),
 				Path.Combine(_testDir1, "file3.txt")
-			}));
+			]));
 
 		// Act
 		var files = mockFileFinder.Object.FindFiles(_testDir1, "*.txt");
@@ -100,7 +99,7 @@ public class MockFileSystemTests
 
 		var mockFileDiffer = new Mock<IFileDiffer>();
 		mockFileDiffer.Setup(d => d.FindDifferences(file1Path, file2Path))
-			.Returns(new ReadOnlyCollection<string>(new List<string> { "- File 1 Content Version 1", "+ File 1 Content Version 2" }));
+			.Returns(new ReadOnlyCollection<string>(["- File 1 Content Version 1", "+ File 1 Content Version 2"]));
 
 		// Act
 		var differences = mockFileDiffer.Object.FindDifferences(file1Path, file2Path);
