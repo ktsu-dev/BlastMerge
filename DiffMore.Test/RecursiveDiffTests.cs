@@ -255,7 +255,7 @@ public class RecursiveDiffTests
 			// Act with timeout check
 			var timeout = TimeSpan.FromSeconds(10);
 			var watch = System.Diagnostics.Stopwatch.StartNew();
-			var result = differ.FindDifferences(largeDir1, largeDir2, "*.txt", recursive: true);
+			var result = FileDiffer.FindDifferences(largeDir1, largeDir2, "*.txt", recursive: true);
 			watch.Stop();
 
 			// Assert

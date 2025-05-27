@@ -148,9 +148,9 @@ public class EdgeCaseTests
 		Assert.AreEqual(3, differences.Count(d => d.LineNumber1 > 0 && d.LineNumber2 > 0),
 			"Should find all 3 lines modified");
 
-		Assert.IsTrue(coloredDiff.Any(l => l.Color == FileDiffer.DiffColor.Deletion && l.Content.Contains("Line 1")),
+		Assert.IsTrue(coloredDiff.Any(l => l.Color == DiffColor.Deletion && l.Content.Contains("Line 1")),
 			"Should mark old Line 1 as deleted");
-		Assert.IsTrue(coloredDiff.Any(l => l.Color == FileDiffer.DiffColor.Addition && l.Content.Contains("Different Line 1")),
+		Assert.IsTrue(coloredDiff.Any(l => l.Color == DiffColor.Addition && l.Content.Contains("Different Line 1")),
 			"Should mark new Line 1 as added");
 	}
 

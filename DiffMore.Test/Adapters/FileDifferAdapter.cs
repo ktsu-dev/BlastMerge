@@ -6,6 +6,7 @@ namespace ktsu.DiffMore.Test.Adapters;
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.IO.Abstractions;
 using ktsu.DiffMore.Core;
@@ -87,8 +88,15 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 		finally
 		{
 			// Clean up temporary files
-			if (File.Exists(tempFile1)) File.Delete(tempFile1);
-			if (File.Exists(tempFile2)) File.Delete(tempFile2);
+			if (File.Exists(tempFile1))
+			{
+				File.Delete(tempFile1);
+			}
+
+			if (File.Exists(tempFile2))
+			{
+				File.Delete(tempFile2);
+			}
 		}
 	}
 
@@ -98,7 +106,7 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 	/// <param name="file1Path">Path to the first file</param>
 	/// <param name="file2Path">Path to the second file</param>
 	/// <returns>Collection of colored diff lines</returns>
-	public System.Collections.ObjectModel.Collection<ColoredDiffLine> GenerateColoredDiff(string file1Path, string file2Path)
+	public Collection<ColoredDiffLine> GenerateColoredDiff(string file1Path, string file2Path)
 	{
 		if (!_fileSystem.File.Exists(file1Path))
 		{
@@ -138,17 +146,17 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 	/// <param name="lines1">Lines from the first file</param>
 	/// <param name="lines2">Lines from the second file</param>
 	/// <returns>Collection of line differences</returns>
-	private static IReadOnlyCollection<LineDifference> FindDifferencesInternal(string[] lines1, string[] lines2)
+	private static ReadOnlyCollection<LineDifference> FindDifferencesInternal(string[] lines1, string[] lines2)
 	{
 		var differences = new List<LineDifference>();
 
 		// Simple line-by-line comparison for testing purposes
-		int maxLines = Math.Max(lines1.Length, lines2.Length);
+		var maxLines = Math.Max(lines1.Length, lines2.Length);
 
-		for (int i = 0; i < maxLines; i++)
+		for (var i = 0; i < maxLines; i++)
 		{
-			string? line1 = i < lines1.Length ? lines1[i] : null;
-			string? line2 = i < lines2.Length ? lines2[i] : null;
+			var line1 = i < lines1.Length ? lines1[i] : null;
+			var line2 = i < lines2.Length ? lines2[i] : null;
 
 			if (line1 != line2)
 			{

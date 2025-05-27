@@ -26,6 +26,7 @@ globs: *
 -   MSTest.TestAdapter Version="3.6.0"
 -   MSTest.TestFramework Version="3.6.0"
 -   coverlet.collector Version="6.0.2"
+-   Spectre.Console
 
 ## PROJECT DOCUMENTATION & CONTEXT SYSTEM
 
@@ -47,6 +48,7 @@ globs: *
 -   Private member 'FileHasher.FNV_OFFSET_BASIS_32' is unused (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0051)
 -   Parentheses should be added for clarity (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0048)
 -   Add braces to 'if' statement. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0011)
+-   In the CLI project, use `AnsiConsole` instead of `System.Console` for console output, as required by the Spectre.Console analyzer. **NOTE:** This rule is superseded by the rule to suppress `Spectre1000` in the CLI project. See "WORKFLOW & RELEASE RULES".
 
 ## FILE & DIRECTORY HANDLING
 
@@ -115,19 +117,27 @@ globs: *
         </Parallelize>
     </MSTest>
     ```
--   Suppress NuGet warnings `NU1604`, `NU1602`, and `NU1701` in all project files by adding the following property group:
+-   Suppress NuGet warnings `NU1604`, `NU1602`, and `NU1701` in all project files by adding a `Directory.Build.props` file at the solution root with the following property group:
 
     ```xml
-    <PropertyGroup>
-        <NoWarn>$(NoWarn);NU1604;NU1602;NU1701</NoWarn>
-    </PropertyGroup>
+    <Project>
+      <PropertyGroup>
+        <!-- Treat package dependency warnings as warnings instead of errors -->
+        <WarningsAsErrors />
+        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+
+        <!-- Suppress specific NuGet warnings that are coming from the ktsu.Sdk packages -->
+        <NoWarn>$(NoWarn);NU1604;NU1701;NU1602</NoWarn>
+        <!-- NU1604: Project dependency does not contain an inclusive lower bound -->
+        <!-- NU1701: Package was restored using a different target framework -->
+        <!-- NU1602: Does not provide an inclusive lower bound for dependency -->
+      </PropertyGroup>
+    </Project>
     ```
--   Suppress Spectre Console analyzer errors `Spectre1000` in the CLI project by adding it to the `NoWarn` property:
+-   Suppress Spectre Console analyzer errors `Spectre1000` in the CLI project by adding it to the `NoWarn` property in the `Directory.Build.props` file:
 
     ```xml
-    <PropertyGroup>
         <NoWarn>$(NoWarn);NU1604;NU1602;NU1701;Spectre1000</NoWarn>
-    </PropertyGroup>
     ```
 
 ## DIRECTORY COMPARISON

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using ktsu.DiffMore.Core;
 
 [TestClass]
 public class FileDifferGroupingTests
@@ -151,7 +152,7 @@ public class FileDifferGroupingTests
 	public void FileGroup_AddFilePath_AddsCorrectly()
 	{
 		// Arrange
-		var group = new FileDiffer.FileGroup { Hash = "test-hash" };
+		var group = new FileGroup { Hash = "test-hash" };
 		var filePath = "test/path.txt";
 
 		// Act

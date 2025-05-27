@@ -6,6 +6,7 @@ namespace ktsu.DiffMore.Test;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using ktsu.DiffMore.Core;
 
 [TestClass]
 public class FileDifferDiffTests
@@ -170,7 +171,7 @@ public class FileDifferDiffTests
 		var coloredDiff = FileDiffer.GenerateColoredDiff(_testFile1, _identicalFile, lines1, lines2);
 
 		// Assert
-		Assert.IsTrue(coloredDiff.All(l => l.Color is FileDiffer.DiffColor.Default or FileDiffer.DiffColor.FileHeader),
+		Assert.IsTrue(coloredDiff.All(l => l.Color is DiffColor.Default or DiffColor.FileHeader),
 			"All lines should have Default or FileHeader color for identical files");
 	}
 
@@ -185,15 +186,15 @@ public class FileDifferDiffTests
 		var coloredDiff = FileDiffer.GenerateColoredDiff(_testFile1, _testFile2, lines1, lines2);
 
 		// Assert
-		Assert.IsTrue(coloredDiff.Any(l => l.Color == FileDiffer.DiffColor.Addition),
+		Assert.IsTrue(coloredDiff.Any(l => l.Color == DiffColor.Addition),
 			"Should contain lines with Addition color");
-		Assert.IsTrue(coloredDiff.Any(l => l.Color == FileDiffer.DiffColor.Deletion),
+		Assert.IsTrue(coloredDiff.Any(l => l.Color == DiffColor.Deletion),
 			"Should contain lines with Deletion color");
 
 		// Verify specific content
-		Assert.IsTrue(coloredDiff.Any(l => l.Content.Contains("Line 2") && l.Color == FileDiffer.DiffColor.Deletion),
+		Assert.IsTrue(coloredDiff.Any(l => l.Content.Contains("Line 2") && l.Color == DiffColor.Deletion),
 			"Original 'Line 2' should be marked as deleted");
-		Assert.IsTrue(coloredDiff.Any(l => l.Content.Contains("Line 2 modified") && l.Color == FileDiffer.DiffColor.Addition),
+		Assert.IsTrue(coloredDiff.Any(l => l.Content.Contains("Line 2 modified") && l.Color == DiffColor.Addition),
 			"Modified 'Line 2 modified' should be marked as added");
 	}
 

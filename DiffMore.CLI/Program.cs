@@ -138,7 +138,7 @@ public static class Program
 	/// <param name="fileGroups">The file groups to sync</param>
 	private static void SyncFiles(List<FileGroup> fileGroups)
 	{
-		Console.WriteLine("\nSelect a version to sync to (1-{0}):", fileGroups.Count);
+		Console.WriteLine($"\nSelect a version to sync to (1-{fileGroups.Count}):");
 
 		if (!int.TryParse(Console.ReadLine(), out var selectedVersion) ||
 			selectedVersion < 1 ||

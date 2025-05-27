@@ -55,25 +55,19 @@ public class FileDifferPathTests
 	[TestMethod]
 	public void FileDiffer_InvalidPaths_ThrowsDirectoryNotFoundException()
 	{
-		// Arrange
-		var differ = new FileDiffer();
-
 		// Act & Assert
 		Assert.ThrowsException<DirectoryNotFoundException>(() =>
-			differ.FindDifferences(_nonExistentDir, _dir2, "*.txt"));
+			FileDiffer.FindDifferences(_nonExistentDir, _dir2, "*.txt"));
 
 		Assert.ThrowsException<DirectoryNotFoundException>(() =>
-			differ.FindDifferences(_dir1, _nonExistentDir, "*.txt"));
+			FileDiffer.FindDifferences(_dir1, _nonExistentDir, "*.txt"));
 	}
 
 	[TestMethod]
 	public void FileDiffer_EmptyDirectory_ReturnsEmptyResult()
 	{
-		// Arrange
-		var differ = new FileDiffer();
-
 		// Act
-		var result = differ.FindDifferences(_emptyDir, _dir2, "*.txt");
+		var result = FileDiffer.FindDifferences(_emptyDir, _dir2, "*.txt");
 
 		// Assert
 		Assert.IsNotNull(result);
@@ -89,12 +83,11 @@ public class FileDifferPathTests
 		// Arrange
 		var currentDir = Directory.GetCurrentDirectory();
 		Directory.SetCurrentDirectory(_testDirectory);
-		var differ = new FileDiffer();
 
 		try
 		{
 			// Act using relative paths
-			var result = differ.FindDifferences("dir1", "dir2", "*.txt");
+			var result = FileDiffer.FindDifferences("dir1", "dir2", "*.txt");
 
 			// Assert
 			Assert.IsNotNull(result);
@@ -116,10 +109,9 @@ public class FileDifferPathTests
 		// Arrange
 		var dir1WithSlash = _dir1 + Path.DirectorySeparatorChar;
 		var dir2WithSlash = _dir2 + Path.DirectorySeparatorChar;
-		var differ = new FileDiffer();
 
 		// Act
-		var result = differ.FindDifferences(dir1WithSlash, dir2WithSlash, "*.txt");
+		var result = FileDiffer.FindDifferences(dir1WithSlash, dir2WithSlash, "*.txt");
 
 		// Assert
 		Assert.IsNotNull(result);
@@ -133,7 +125,6 @@ public class FileDifferPathTests
 	public void FileDiffer_WithDifferentCasePaths_HandledCorrectly()
 	{
 		// Arrange
-		var differ = new FileDiffer();
 		var upperCaseDir1 = _dir1.ToUpper();
 		var upperCaseDir2 = _dir2.ToUpper();
 
@@ -143,7 +134,7 @@ public class FileDifferPathTests
 		if (isWindows)
 		{
 			// Act - Windows should handle different case paths
-			var result = differ.FindDifferences(upperCaseDir1, upperCaseDir2, "*.txt");
+			var result = FileDiffer.FindDifferences(upperCaseDir1, upperCaseDir2, "*.txt");
 
 			// Assert
 			Assert.IsNotNull(result);
@@ -163,9 +154,6 @@ public class FileDifferPathTests
 	[TestMethod]
 	public void FileDiffer_MultipleSearchPatterns_FindsAllMatchingFiles()
 	{
-		// Arrange
-		var differ = new FileDiffer();
-
 		// Create files with different extensions
 		File.WriteAllText(Path.Combine(_dir1, "code.cs"), "C# code");
 		File.WriteAllText(Path.Combine(_dir1, "doc.md"), "Markdown");
@@ -173,7 +161,7 @@ public class FileDifferPathTests
 		File.WriteAllText(Path.Combine(_dir2, "doc.md"), "Markdown");
 
 		// Act - Test with multiple patterns
-		var result = differ.FindDifferences(_dir1, _dir2, "*.txt;*.cs;*.md");
+		var result = FileDiffer.FindDifferences(_dir1, _dir2, "*.txt;*.cs;*.md");
 
 		// Assert - Should include all matching file types
 		Assert.IsNotNull(result);
