@@ -1,0 +1,92 @@
+---
+description: AI rules derived by SpecStory from the project AI interaction history
+globs: *
+---
+
+## HEADERS
+
+-   All files must have a header specifying the copyright license (MIT).
+-   All top-level classes must have a summary describing their purpose.
+-   Always use meaningful names for variables, functions, and classes.
+-   Code must be well-commented, explaining non-obvious logic.
+
+## TECH STACK
+
+-   .NET 9.0
+-   ktsu.Sdk.CLI/1.33.0
+-   System.IO.Abstractions Version="19.2.87"
+-   System.IO.Abstractions.TestingHelpers Version="19.2.87"
+-   MSTest
+-   Moq
+
+## PROJECT DOCUMENTATION & CONTEXT SYSTEM
+
+-   Use SpecStory to generate markdown files documenting user requests and assistant responses.
+
+## CODING STANDARDS
+
+-   Follow Microsoft's C# coding conventions.
+-   Use `var` keyword for local variable declarations when the type is obvious.
+-   Always handle exceptions gracefully, logging errors and providing informative messages to the user.
+-   Validate all method parameters for null values, throwing `ArgumentNullException` when appropriate.
+-   Fix formatting issues.
+-   Use expression body for methods.
+-   Collection initialization can be simplified.
+-   When logging or handling exceptions, catch specific exception types (e.g., `IOException`, `UnauthorizedAccessException`) rather than a general `Exception` to provide more targeted error handling.
+-   Use `ArgumentNullException.ThrowIfNull` instead of explicitly throwing a new exception instance.
+-   Use pattern matching.
+-   Follow the .editorconfig file.
+-   Private member 'FileHasher.FNV_PRIME_32' is unused (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0051)
+-   Private member 'FileHasher.FNV_OFFSET_BASIS_32' is unused (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0051)
+-   Parentheses should be added for clarity (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0048)
+-   Add braces to 'if' statement. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0011)
+
+## FILE & DIRECTORY HANDLING
+
+-   Always ensure that file paths are valid before attempting to access files.
+-   Create target directories before copying files.
+-   When copying files, handle potential `IOExceptions` and `UnauthorizedAccessExceptions`.
+-   Be aware that binary files will be treated as text and should show differences.
+
+## HASHING
+
+-   Use FNV-1a (64-bit version) as the hashing algorithm for file identification.
+-   Handle files with different encodings.
+
+## DIFFING
+
+-   Use the Myers diff algorithm for detecting differences between files.
+-   Generate diff output in a git-style format.
+-   Color-code the diff output:
+    -   Green for added lines
+    -   Red for deleted lines
+    -   Cyan for chunk headers
+    -   Blue for file headers
+-   Show the paths of the compared versions.
+-   Implement a change summary diffing mode that shows only lines added or removed between versions.
+-   In GenerateGitStyleDiff, check if `k-1+max` or `k+1+max` is out of bounds.
+-   In BacktrackPath, use a simpler approach for very large files to avoid index errors.
+-   In BacktrackPath, implement a try/catch to handle IndexOutOfRangeException and fallback to a simple edit script if the algorithm fails.
+
+## DEBUGGING
+
+-   When an error occurs, log the error message and rethrow the exception for debugging purposes.
+
+## UNIT TESTING
+
+-   Write comprehensive unit tests using MSTest.
+-   Use a mock filesystem to enable parallel test execution and avoid file system conflicts.
+-   Create test cases for different scenarios, including normal usage patterns and edge cases.
+-   Use setup and cleanup methods to maintain a clean testing environment.
+-   Create tests for performance benchmarking, especially for large files and directories.
+-   Implement tests for mock file system operations to verify correct behavior with mocked dependencies.
+-   Test file operations with relative paths.
+-   Test file operations with paths containing trailing slashes.
+-   Test file operations with paths using different casing.
+-   Test file operations with multiple search patterns.
+-   Test with files in deep directory structures.
+-   Test with symbolic links, but skip if the test environment does not support them.
+
+## WORKFLOW & RELEASE RULES
+
+-   Ensure that all tests pass before releasing a new version.
