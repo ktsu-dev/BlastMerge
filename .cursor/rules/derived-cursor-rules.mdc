@@ -100,6 +100,8 @@ globs: *
 -   When tests use a mock file system, initialize adapters (e.g. `FileFinderAdapter`) in the `InitializeFileSystem` override within the derived test class.
 -   When tests use a mock file system, initialize file and directory paths in the `InitializeFileSystem` override within the derived test class using the `CreateFile` and `CreateDirectory` methods provided by `MockFileSystemTestBase`.
 -   Ensure that test files include `using ktsu.DiffMore.Core;`
+-   When writing tests, ensure proper instantiation of static classes. Do not attempt to create instances of static classes directly; instead, access their members directly using the class name.
+-   When tests use classes implementing `IDisposable`, ensure the `Dispose` method is properly implemented.
 
 ## WORKFLOW & RELEASE RULES
 

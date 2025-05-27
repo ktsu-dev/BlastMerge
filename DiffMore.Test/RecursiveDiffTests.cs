@@ -69,11 +69,8 @@ public class RecursiveDiffTests
 	[TestMethod]
 	public void FindDifferences_RecursiveTrue_IncludesSubdirectoryFiles()
 	{
-		// Arrange
-		var differ = new FileDiffer();
-
 		// Act
-		var result = differ.FindDifferences(_dir1, _dir2, "*.txt", recursive: true);
+		var result = FileDiffer.FindDifferences(_dir1, _dir2, "*.txt", recursive: true);
 
 		// Assert
 		Assert.IsNotNull(result);
@@ -99,11 +96,8 @@ public class RecursiveDiffTests
 	[TestMethod]
 	public void FindDifferences_RecursiveFalse_ExcludesSubdirectoryFiles()
 	{
-		// Arrange
-		var differ = new FileDiffer();
-
 		// Act
-		var result = differ.FindDifferences(_dir1, _dir2, "*.txt", recursive: false);
+		var result = FileDiffer.FindDifferences(_dir1, _dir2, "*.txt", recursive: false);
 
 		// Assert
 		Assert.IsNotNull(result);
@@ -132,8 +126,6 @@ public class RecursiveDiffTests
 	public void FindDifferences_DeepDirectoryStructure_HandlesCorrectly()
 	{
 		// Arrange
-		var differ = new FileDiffer();
-
 		// Create a deeper directory structure
 		var deepDir1 = Path.Combine(_dir1SubA, "deep", "deeper", "deepest");
 		var deepDir2 = Path.Combine(_dir2SubA, "deep", "deeper", "deepest");
@@ -144,7 +136,7 @@ public class RecursiveDiffTests
 		File.WriteAllText(Path.Combine(deepDir2, "deepfile.txt"), "Deep Content Modified");
 
 		// Act
-		var result = differ.FindDifferences(_dir1, _dir2, "*.txt", recursive: true);
+		var result = FileDiffer.FindDifferences(_dir1, _dir2, "*.txt", recursive: true);
 
 		// Assert
 		Assert.IsNotNull(result);
@@ -201,11 +193,8 @@ public class RecursiveDiffTests
 			Directory.CreateSymbolicLink(link1, linkTarget1);
 			Directory.CreateSymbolicLink(link2, linkTarget2);
 
-			// Arrange
-			var differ = new FileDiffer();
-
 			// Act - should follow symbolic links
-			var result = differ.FindDifferences(_dir1, _dir2, "*.txt", recursive: true);
+			var result = FileDiffer.FindDifferences(_dir1, _dir2, "*.txt", recursive: true);
 
 			// Assert
 			Assert.IsNotNull(result);
@@ -241,7 +230,6 @@ public class RecursiveDiffTests
 		if (runLargeTest)
 		{
 			// Arrange
-			var differ = new FileDiffer();
 			var largeDir1 = Path.Combine(_testDirectory, "large1");
 			var largeDir2 = Path.Combine(_testDirectory, "large2");
 			TestHelper.SafeCreateDirectory(largeDir1);

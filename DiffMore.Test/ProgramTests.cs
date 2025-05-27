@@ -10,7 +10,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ktsu.DiffMore.CLI;
 
 [TestClass]
-public class ProgramTests : IDisposable
+public class ProgramTests
 {
 	private readonly string _testDirectory;
 	private readonly string _subDir1;
@@ -182,10 +182,5 @@ public class ProgramTests : IDisposable
 			"Should show diff between versions");
 		Assert.IsTrue(output.Contains("Line 2") && output.Contains("Line 2 modified"),
 			"Diff should contain the modified line");
-	}
-
-	public void Dispose()
-	{
-		throw new NotImplementedException();
 	}
 }
