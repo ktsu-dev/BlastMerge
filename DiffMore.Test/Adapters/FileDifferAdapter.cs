@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions;
+using ktsu.DiffMore.Core;
 
 /// <summary>
 /// Adapter for FileDiffer that works with a mock filesystem

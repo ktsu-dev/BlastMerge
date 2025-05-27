@@ -6,6 +6,7 @@ namespace ktsu.DiffMore.Test;
 
 using System.IO;
 using System.Linq;
+using ktsu.DiffMore.Test.Adapters;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 [TestClass]
