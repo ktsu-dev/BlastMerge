@@ -943,3 +943,571 @@ I see the issue. The `EditOperation` enum is marked as `private` but it's being 
 
 ---
 
+
+
+---
+
+Now let me try building the core project again:
+
+---
+
+```bash
+dotnet build DiffMore.Core
+```
+
+```
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.Core\DiffMore.Core.csproj              Restore (0.0s)
+                                                                                   (0.1s) 
+Restore complete (0.5s)
+  DiffMore.Core failed with 8 error(s) (0.5s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(110,1): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(111,1): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(113,1): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(114,1): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(115,2): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(116,2): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(117,2): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(118,1): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+
+Build failed with 8 error(s) in 1.6s
+  13:35:22   DiffMore  1.92s   1 - ERROR 
+  23:35:22 main  +1 ~3 |  ?1 ~3 
+
+```
+
+---
+
+There are formatting issues. Let me fix the indentation around the enum:
+
+---
+
+Read file: DiffMore.Core/FileDiffer.cs
+
+---
+
+I can see this is a continuation of work on the DiffMore project where you've been implementing mock filesystem support for parallel testing. Based on the conversation summary, it looks like you've made significant progress but there are still some formatting issues around enum indentation that need to be resolved.
+
+Let me check the current state of the project and help resolve any remaining compilation errors.
+
+---
+
+<details>
+            <summary>Searched codebase "EditOperation enum formatting errors indentation" • **25** results</summary>
+        
+| File | Lines |
+|------|-------|
+| `DiffMore.Core/FileDiffer.cs` | L87-159 |
+| `DiffMore.Core/FileDiffer.cs` | L354-440 |
+| `DiffMore.Core/FileDiffer.cs` | L520-608 |
+| `DiffMore.Core/FileDiffer.cs` | L608-689 |
+| `DiffMore.Core/FileDiffer.cs` | L440-520 |
+| `DiffMore.Core/FileDiffer.cs` | L689-748 |
+| `DiffMore.Core/FileDiffer.cs` | L748-825 |
+| `.editorconfig` | L205-229 |
+| `.editorconfig` | L1-55 |
+| `DiffMore.Core/FileDiffer.cs` | L825-915 |
+| `.editorconfig` | L140-179 |
+| `.editorconfig` | L179-205 |
+| `DiffMore.Core/FileDiffer.cs` | L159-235 |
+| `DiffMore.Core/FileDiffer.cs` | L297-354 |
+| `.editorconfig` | L93-140 |
+| `.editorconfig` | L55-93 |
+| `.editorconfig` | L465-507 |
+| `.editorconfig` | L344-384 |
+| `DiffMore.Core/FileDiffer.cs` | L1-87 |
+| `.editorconfig` | L229-264 |
+| `.editorconfig` | L384-424 |
+| `.editorconfig` | L424-465 |
+| `.editorconfig` | L264-304 |
+| `.editorconfig` | L304-344 |
+| `.cursor/rules/derived-cursor-rules.mdc` | L45-84 |
+
+</details>
+
+---
+
+I can see the issue! Looking at the `FileDiffer.cs` file, there's a formatting problem with the `EditOperation` enum around line 89. The enum is indented incorrectly - it should be aligned with the other class members, not indented with tabs. Let me check the current state and fix this formatting issue.
+
+---
+
+Read file: DiffMore.Core/FileDiffer.cs
+
+---
+
+Perfect! I can see the issue clearly now. The `EditOperation` enum on lines 107-113 is incorrectly indented with a tab at the beginning. According to the `.editorconfig` file, C# files should use tab indentation, but the enum should be at the same level as other top-level declarations, not indented further.
+
+Let me fix this formatting issue:
+
+---
+
+
+
+---
+
+Let me try a more specific search to find the exact formatting:
+
+---
+
+Read file: DiffMore.Core/FileDiffer.cs
+
+---
+
+I can see that the `EditOperation` enum is actually formatted correctly now! It appears the formatting issue has already been resolved. Let me check if there are any current compilation errors by trying to build the project:
+
+---
+
+```bash
+cd /c/dev/ktsu-dev/DiffMore && dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >cd /c/dev/ktsu-dev/DiffMore && dotnet build
+Set-Location: Cannot find path 'C:\c\dev\ktsu-dev\DiffMore' because it does not exist.
+  13:36:28   DiffMore  38ms   1 - ERROR 
+  23:36:28 main  ?1 ~4 
+ PS C:\dev\ktsu-dev\DiffMore >
+```
+
+---
+
+```bash
+dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet build
+
+                                                                                   (0.1s) 
+Restore complete (1.1s)
+  DiffMore.Core succeeded (0.5s) → DiffMore.Core\bin\Debug\net9.0\ktsu.DiffMore.Core.dll
+
+  DiffMore.CLI failed with 1 error(s) (0.2s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.CLI\Program.cs(139,48): error CS0426: The type name 
+'FileGroup' does not exist in the type 'FileDiffer'
+
+Build failed with 1 error(s) in 2.2s
+  13:36:34   DiffMore  2.508s   1 - ERROR 
+  23:36:34 main  ?1 ~4 
+
+```
+
+---
+
+Great! The core library is building successfully now, but there's an issue in the CLI project. The error indicates that `FileGroup` is not accessible as `FileDiffer.FileGroup`. This is because `FileGroup` is a separate public class, not a nested class within `FileDiffer`. Let me check the CLI code and fix this:
+
+---
+
+Read file: DiffMore.CLI/Program.cs
+
+---
+
+I found the issue! On line 139, the code is trying to use `FileDiffer.FileGroup` but `FileGroup` is a separate public class, not a nested class within `FileDiffer`. Let me fix this:
+
+---
+
+
+
+---
+
+Now let me check if there are any missing using statements needed for the `FileGroup` class:
+
+---
+
+Read file: DiffMore.CLI/Program.cs
+
+---
+
+Perfect! The using statement `using ktsu.DiffMore.Core;` is already there, which should make `FileGroup` accessible. Let me try building again to see if this fixes the issue:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet build
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.sln                                    Restore (0.0s) 
+Restore complete (0.8s)
+  DiffMore.Core succeeded (0.2s) → DiffMore.Core\bin\Debug\net9.0\ktsu.DiffMore.Core.dll
+
+  DiffMore.CLI succeeded (0.3s) → DiffMore.CLI\bin\Debug\net9.0\ktsu.DiffMore.CLI.dll
+
+  DiffMore.Test failed with 3 error(s) (0.3s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\Adapters\FileDifferAdapter.cs(30,40): error CS0
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\Adapters\FileDifferAdapter.cs(101,62): error CS
+0426: The type name 'ColoredDiffLine' does not exist in the type 'FileDiffer'
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\Adapters\FileDifferAdapter.cs(141,48): error CS
+0426: The type name 'LineDifference' does not exist in the type 'FileDiffer'
+
+Build failed with 3 error(s) in 2.1s
+  13:36:59   DiffMore  2.338s   1 - ERROR 
+  23:36:59 main  ?1 ~5 
+
+```
+
+---
+
+Great! The CLI project is now building successfully. However, there are similar issues in the test project where it's trying to access `ColoredDiffLine` and `LineDifference` as nested classes of `FileDiffer`. Let me fix these:
+
+---
+
+Read file: DiffMore.Test/Adapters/FileDifferAdapter.cs
+
+---
+
+I can see the issues. The code is trying to access `FileDiffer.LineDifference`, `FileDiffer.ColoredDiffLine`, etc., but these are separate public classes, not nested classes within `FileDiffer`. Let me fix all these references:
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+Now let me try building again to see if all the issues are resolved:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet build
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.sln                                    Restore (0.0s)
+                                                                                   (0.1s) 
+Restore complete (0.7s)
+  DiffMore.Core succeeded (0.2s) → DiffMore.Core\bin\Debug\net9.0\ktsu.DiffMore.Core.dll
+
+  DiffMore.CLI succeeded (0.1s) → DiffMore.CLI\bin\Debug\net9.0\ktsu.DiffMore.CLI.dll
+  DiffMore.Test failed with 187 error(s) and 2 warning(s) (0.3s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(59,20): error CS0246: Th
+e type or namespace name 'FileDiffer' could not be found (are you missing a using directiv
+e or an assembly reference?)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(145,16): warning CS8625: Cannot
+ convert null literal to non-nullable reference type.
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(88,14): error CS0103: The n
+ame 'FileHasher' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(91,21): error CS0103: Th
+e name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(106,21): error CS0103: The 
+name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(46,21): error CS0103: The name
+ 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(47,17): error CS0103: The name
+ 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(124,21): error CS0103: The 
+name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(142,21): error CS0103: The 
+name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(73,20): error CS0246: Th
+e type or namespace name 'FileDiffer' could not be found (are you missing a using directiv
+e or an assembly reference?)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(92,21): error CS0103: The name
+ 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(75,19): warning CS8600: Conver
+ting null literal or possible null value to non-nullable type.
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(101,21): error CS0103: T
+he name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(172,15): error CS0103: The 
+name 'FileFinder' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(73,16): error CS0712: Can
+not create an instance of the static class 'FileDiffer'
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(73,3): error CS0723: Cann
+ot declare a variable of static type 'FileDiffer'
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(76,16): error CS0176: Mem
+ber 'FileDiffer.FindDifferences(string, string, string, bool)' cannot be accessed with an
+instance reference; qualify it with a type name instead
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(124,21): error CS0103: The nam
+e 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(125,17): error CS0103: The nam
+e 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(191,17): error CS0103: The 
+name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(70,16): error CS0103
+: The name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(123,21): error CS0103: T
+he name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(143,14): error CS0103: T
+he name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(100,16): error CS010
+3: The name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(92,20): error CS0246: Th
+e type or namespace name 'FileDiffer' could not be found (are you missing a using directiv
+e or an assembly reference?)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(142,21): error CS0103: The nam
+e 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(143,21): error CS0103: The nam
+e 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(151,49): error CS0103: The nam
+e 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(153,49): error CS0103: The nam
+e 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(153,14): error CS0103: T
+he name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(168,15): error CS0103: The nam
+e 'FileHasher' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(169,15): error CS0103: The nam
+e 'FileHasher' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(170,21): error CS0103: T
+he name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(173,49): error CS0103: T
+he name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(173,81): error CS0103: T
+he name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(121,16): error CS010
+3: The name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(137,3): error CS0103
+: The name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(187,15): error CS0103: The nam
+e 'FileFinder' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(144,16): error CS010
+3: The name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(211,3): error CS0103: The name
+ 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(119,20): error CS0246: T
+he type or namespace name 'FileDiffer' could not be found (are you missing a using directi
+ve or an assembly reference?)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(154,19): error CS024
+6: The type or namespace name 'FileDiffer' could not be found (are you missing a using dir
+ective or an assembly reference?)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(185,21): error CS0103: T
+he name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(188,49): error CS0103: T
+he name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(190,49): error CS0103: T
+he name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(194,81): error CS0103: T
+he name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(196,90): error CS0103: T
+he name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(205,3): error CS0103: Th
+e name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(212,17): error CS0103: T
+he name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(103,16): error CS0712: Ca
+nnot create an instance of the static class 'FileDiffer'
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(103,3): error CS0723: Can
+not declare a variable of static type 'FileDiffer'
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(106,16): error CS0176: Me
+mber 'FileDiffer.FindDifferences(string, string, string, bool)' cannot be accessed with an
+ instance reference; qualify it with a type name instead
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(228,3): error CS0103: Th
+e name 'FileDiffer' does not exist in the current context
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(135,16): error CS0712: Ca
+nnot create an instance of the static class 'FileDiffer'
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(135,3): error CS0723: Can
+not declare a variable of static type 'FileDiffer'
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(147,16): error CS0176: Me
+mber 'FileDiffer.FindDifferences(string, string, string, bool)' cannot be accessed with an
+ instance reference; qualify it with a type name instead
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(136,20): error CS0246: T
+he type or namespace name 'FileDiffer' could not be found (are you missing a using directi
+ve or an assembly reference?)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(205,17): error CS0712: Ca
+nnot create an instance of the static class 'FileDiffer'
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(205,4): error CS0723: Can
+not declare a variable of static type 'FileDiffer'
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(208,17): error CS0176: Me
+mber 'FileDiffer.FindDifferences(string, string, string, bool)' cannot be accessed with an
+ instance reference; qualify it with a type name instead
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(167,20): error CS0246: T
+he type or namespace name 'FileDiffer' could not be found (are you missing a using directi
+ve or an assembly reference?)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(244,17): error CS0712: Ca
+nnot create an instance of the static class 'FileDiffer'
+pFilesByHash_WithEmptyFiles_GroupsCorrectly() (https://learn.microsoft.com/dotnet/fundamen
+tals/code-analysis/quality-rules/ca1707)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(134,14): error CA170
+7: Remove the underscores from member name ktsu.DiffMore.Test.FileDifferGroupingTests.Grou
+pFilesByHash_WithNullInput_ThrowsArgumentNullException() (https://learn.microsoft.com/dotn
+et/fundamentals/code-analysis/quality-rules/ca1707)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(178,14): error CA1707: Remove 
+the underscores from member name ktsu.DiffMore.Test.EdgeCaseTests.FileFinder_SpecialCharac
+tersInFilename_FindsCorrectly() (https://learn.microsoft.com/dotnet/fundamentals/code-anal
+ysis/quality-rules/ca1707)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(141,14): error CA170
+7: Remove the underscores from member name ktsu.DiffMore.Test.FileDifferGroupingTests.Grou
+pFilesByHash_WithEmptyList_ReturnsEmptyCollection() (https://learn.microsoft.com/dotnet/fu
+ndamentals/code-analysis/quality-rules/ca1707)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(71,14): error CA1707: Re
+move the underscores from member name ktsu.DiffMore.Test.MockFileSystemTests.FileHasher_Wi
+thMockedFileSystem_ComputesHashCorrectly() (https://learn.microsoft.com/dotnet/fundamental
+s/code-analysis/quality-rules/ca1707)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(195,14): error CA1707: Remove 
+the underscores from member name ktsu.DiffMore.Test.EdgeCaseTests.SyncFile_TargetDirectory
+DoesNotExist_CreatesDirectory() (https://learn.microsoft.com/dotnet/fundamentals/code-anal
+ysis/quality-rules/ca1707)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(138,17): error CA1307: 'string.
+Contains(string)' has a method overload that takes a 'StringComparison' parameter. Replace
+ this call in 'ktsu.DiffMore.Test.ProgramTests.Main_WithInsufficientArgs_PrintsUsage()' wi
+th a call to 'string.Contains(string, System.StringComparison)' for clarity of intent. (ht
+tps://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1307)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(114,14): error CA1707: R
+emove the underscores from member name ktsu.DiffMore.Test.FileDifferPathTests.FileDiffer_W
+ithTrailingSlashes_HandledCorrectly() (https://learn.microsoft.com/dotnet/fundamentals/cod
+e-analysis/quality-rules/ca1707)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(151,14): error CA170
+7: Remove the underscores from member name ktsu.DiffMore.Test.FileDifferGroupingTests.File
+Group_AddFilePath_AddsCorrectly() (https://learn.microsoft.com/dotnet/fundamentals/code-an
+alysis/quality-rules/ca1707)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(178,14): error CA1707: R
+emove the underscores from member name ktsu.DiffMore.Test.FileDifferDiffTests.GenerateColo
+redDiff_WithDifferences_ContainsColoredLines() (https://learn.microsoft.com/dotnet/fundame
+ntals/code-analysis/quality-rules/ca1707)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(202,14): error CA1707: R
+emove the underscores from member name ktsu.DiffMore.Test.FileDifferDiffTests.FindDifferen
+ces_NonExistentFile_ThrowsFileNotFoundException() (https://learn.microsoft.com/dotnet/fund
+amentals/code-analysis/quality-rules/ca1707)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(209,14): error CA1707: R
+emove the underscores from member name ktsu.DiffMore.Test.FileDifferDiffTests.GenerateChan
+geSummaryDiff_WithDifferences_ContainsSummaryInfo() (https://learn.microsoft.com/dotnet/fu
+ndamentals/code-analysis/quality-rules/ca1707)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(100,14): error CA1707: Re
+move the underscores from member name ktsu.DiffMore.Test.RecursiveDiffTests.FindDifference
+s_RecursiveFalse_ExcludesSubdirectoryFiles() (https://learn.microsoft.com/dotnet/fundament
+als/code-analysis/quality-rules/ca1707)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(94,14): error CA1707: Re
+move the underscores from member name ktsu.DiffMore.Test.MockFileSystemTests.FileDiffer_Wi
+thMockedFileSystem_FindsDifferencesCorrectly() (https://learn.microsoft.com/dotnet/fundame
+ntals/code-analysis/quality-rules/ca1707)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(221,14): error CA1707: R
+emove the underscores from member name ktsu.DiffMore.Test.FileDifferDiffTests.SyncFile_Cop
+iesContent() (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/
+ca1707)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(114,14): error CA1707: R
+emove the underscores from member name ktsu.DiffMore.Test.MockFileSystemTests.FileDiffer_W
+ithMockFileSystem_HandlesMissingFile() (https://learn.microsoft.com/dotnet/fundamentals/co
+de-analysis/quality-rules/ca1707)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(132,14): error CA1707: Re
+move the underscores from member name ktsu.DiffMore.Test.RecursiveDiffTests.FindDifference
+s_DeepDirectoryStructure_HandlesCorrectly() (https://learn.microsoft.com/dotnet/fundamenta
+ls/code-analysis/quality-rules/ca1707)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(130,14): error CA1707: R
+emove the underscores from member name ktsu.DiffMore.Test.MockFileSystemTests.FileDiffer_W
+ithMockFileSystem_HandlesAccessDenied() (https://learn.microsoft.com/dotnet/fundamentals/c
+ode-analysis/quality-rules/ca1707)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(109,42): error CA1866: U
+se 'string.StartsWith(char)' instead of 'string.StartsWith(string)' when you have a string
+ with a single char (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality
+-rules/ca1866)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(110,42): error CA1866: U
+se 'string.StartsWith(char)' instead of 'string.StartsWith(string)' when you have a string
+ with a single char (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality
+-rules/ca1866)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(133,14): error CA1707: R
+emove the underscores from member name ktsu.DiffMore.Test.FileDifferPathTests.FileDiffer_W
+ithDifferentCasePaths_HandledCorrectly() (https://learn.microsoft.com/dotnet/fundamentals/
+code-analysis/quality-rules/ca1707)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(159,14): error CA1707: Re
+move the underscores from member name ktsu.DiffMore.Test.RecursiveDiffTests.FindDifference
+s_WithSymbolicLinks_HandlesCorrectly() (https://learn.microsoft.com/dotnet/fundamentals/co
+de-analysis/quality-rules/ca1707)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\Adapters\FileDifferAdapter.cs(141,53): error CA
+1859: Change return type of method 'FindDifferencesInternal' from 'System.Collections.Gene
+ric.IReadOnlyCollection<ktsu.DiffMore.Core.LineDifference>' to 'System.Collections.ObjectM
+odel.ReadOnlyCollection<ktsu.DiffMore.Core.LineDifference>' for improved performance (http
+s://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1859)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(109,17): error CA1310: T
+he behavior of 'string.StartsWith(string)' could vary based on the current user's locale s
+ettings. Replace this call in 'ktsu.DiffMore.Test.MockFileSystemTests.FileDiffer_WithMocke
+dFileSystem_FindsDifferencesCorrectly()' with a call to 'string.StartsWith(string, System.
+StringComparison)'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality
+-rules/ca1310)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(110,17): error CA1310: T
+he behavior of 'string.StartsWith(string)' could vary based on the current user's locale s
+ettings. Replace this call in 'ktsu.DiffMore.Test.MockFileSystemTests.FileDiffer_WithMocke
+dFileSystem_FindsDifferencesCorrectly()' with a call to 'string.StartsWith(string, System.
+StringComparison)'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality
+-rules/ca1310)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(183,4): error Spectre1000
+: Use AnsiConsole instead of System.Console (https://spectreconsole.net/analyzer/rules/spe
+ctre1000)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(181,3): error CA1031: Mod
+ify 'FindDifferences_WithSymbolicLinks_HandlesCorrectly' to catch a more specific allowed
+exception type, or rethrow the exception (https://learn.microsoft.com/dotnet/fundamentals/
+code-analysis/quality-rules/ca1031)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(231,4): error CA1031: Mod
+ify 'FindDifferences_WithSymbolicLinks_HandlesCorrectly' to catch a more specific allowed
+exception type, or rethrow the exception (https://learn.microsoft.com/dotnet/fundamentals/
+code-analysis/quality-rules/ca1031)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(164,14): error CA1707: R
+emove the underscores from member name ktsu.DiffMore.Test.FileDifferPathTests.FileDiffer_M
+ultipleSearchPatterns_FindsAllMatchingFiles() (https://learn.microsoft.com/dotnet/fundamen
+tals/code-analysis/quality-rules/ca1707)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(137,29): error CA1311: S
+pecify a culture or use an invariant version to avoid implicit dependency on current cultu
+re (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1311)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(138,29): error CA1311: S
+pecify a culture or use an invariant version to avoid implicit dependency on current cultu
+re (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1311)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(137,23): error CA1304: T
+he behavior of 'string.ToUpper()' could vary based on the current user's locale settings.
+Replace this call in 'FileDifferPathTests.FileDiffer_WithDifferentCasePaths_HandledCorrect
+ly()' with a call to 'string.ToUpper(CultureInfo)'. (https://learn.microsoft.com/dotnet/fu
+ndamentals/code-analysis/quality-rules/ca1304)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(138,23): error CA1304: T
+he behavior of 'string.ToUpper()' could vary based on the current user's locale settings.
+Replace this call in 'FileDifferPathTests.FileDiffer_WithDifferentCasePaths_HandledCorrect
+ly()' with a call to 'string.ToUpper(CultureInfo)'. (https://learn.microsoft.com/dotnet/fu
+ndamentals/code-analysis/quality-rules/ca1304)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(159,4): error Spectre100
+0: Use AnsiConsole instead of System.Console (https://spectreconsole.net/analyzer/rules/sp
+ectre1000)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(236,14): error CA1707: Re
+move the underscores from member name ktsu.DiffMore.Test.RecursiveDiffTests.FindDifference
+s_WithLargeDirectoryStructure_CompletesInReasonableTime() (https://learn.microsoft.com/dot
+net/fundamentals/code-analysis/quality-rules/ca1707)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(285,4): error Spectre1000
+: Use AnsiConsole instead of System.Console (https://spectreconsole.net/analyzer/rules/spe
+ctre1000)
+
+Build failed with 187 error(s) and 2 warning(s) in 1.8s
+  13:37:33   DiffMore  2.054s   1 - ERROR 
+  23:37:33 main  ?1 ~6
+
+```
+
+---
+
+There are many errors in the test files. The main issue is that many test files are missing the `using ktsu.DiffMore.Core;` statement, which is why they can't find `FileDiffer`, `FileHasher`, `FileFinder`, etc. Let me check a few test files and add the missing using statements:
+
+---
+
+Read file: DiffMore.Test/FileDifferPathTests.cs
+
+---
+
+
+
+
+
+---
+

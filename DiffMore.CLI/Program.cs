@@ -136,7 +136,7 @@ public static class Program
 	/// Syncs files based on user selection
 	/// </summary>
 	/// <param name="fileGroups">The file groups to sync</param>
-	private static void SyncFiles(List<FileDiffer.FileGroup> fileGroups)
+	private static void SyncFiles(List<FileGroup> fileGroups)
 	{
 		Console.WriteLine("\nSelect a version to sync to (1-{0}):", fileGroups.Count);
 

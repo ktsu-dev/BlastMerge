@@ -9,6 +9,7 @@ globs: *
 -   All top-level classes must have a summary describing their purpose.
 -   Always use meaningful names for variables, functions, and classes.
 -   Code must be well-commented, explaining non-obvious logic.
+-   Fix formatting issues.
 
 ## TECH STACK
 
@@ -16,6 +17,7 @@ globs: *
 -   ktsu.Sdk.CLI/1.33.0
 -   System.IO.Abstractions Version="19.2.87"
 -   System.IO.Abstractions.TestingHelpers Version="19.2.87"
+-   TestableIO.System.IO.Abstractions.Wrappers Version="17.2.26"
 -   MSTest
 -   Moq Version="4.20.72"
 -   TestableIO.System.IO.Abstractions Version="20.0.34"
@@ -35,7 +37,6 @@ globs: *
 -   Use `var` keyword for local variable declarations when the type is obvious.
 -   Always handle exceptions gracefully, logging errors and providing informative messages to the user.
 -   Validate all method parameters for null values, throwing `ArgumentNullException` when appropriate.
--   Fix formatting issues.
 -   Use expression body for methods.
 -   Collection initialization can be simplified.
 -   When logging or handling exceptions, catch specific exception types (e.g., `IOException`, `UnauthorizedAccessException`) rather than a general `Exception` to provide more targeted error handling.
@@ -98,6 +99,7 @@ globs: *
 -   When tests use a mock file system, ensure that core classes use adapted versions (e.g., `FileFinderAdapter`, `FileHasherAdapter`, `FileDifferAdapter`) taking an `IFileSystem` instance as a parameter for file system interaction.
 -   When tests use a mock file system, initialize adapters (e.g. `FileFinderAdapter`) in the `InitializeFileSystem` override within the derived test class.
 -   When tests use a mock file system, initialize file and directory paths in the `InitializeFileSystem` override within the derived test class using the `CreateFile` and `CreateDirectory` methods provided by `MockFileSystemTestBase`.
+-   Ensure that test files include `using ktsu.DiffMore.Core;`
 
 ## WORKFLOW & RELEASE RULES
 

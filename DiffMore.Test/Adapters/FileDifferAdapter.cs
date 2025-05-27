@@ -27,7 +27,7 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 	/// <param name="file1Path">Path to the first file</param>
 	/// <param name="file2Path">Path to the second file</param>
 	/// <returns>Collection of differences</returns>
-	public IReadOnlyCollection<FileDiffer.LineDifference> FindDifferences(string file1Path, string file2Path)
+	public IReadOnlyCollection<LineDifference> FindDifferences(string file1Path, string file2Path)
 	{
 		if (!_fileSystem.File.Exists(file1Path))
 		{
@@ -98,7 +98,7 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 	/// <param name="file1Path">Path to the first file</param>
 	/// <param name="file2Path">Path to the second file</param>
 	/// <returns>Collection of colored diff lines</returns>
-	public System.Collections.ObjectModel.Collection<FileDiffer.ColoredDiffLine> GenerateColoredDiff(string file1Path, string file2Path)
+	public System.Collections.ObjectModel.Collection<ColoredDiffLine> GenerateColoredDiff(string file1Path, string file2Path)
 	{
 		if (!_fileSystem.File.Exists(file1Path))
 		{
@@ -138,9 +138,9 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 	/// <param name="lines1">Lines from the first file</param>
 	/// <param name="lines2">Lines from the second file</param>
 	/// <returns>Collection of line differences</returns>
-	private static IReadOnlyCollection<FileDiffer.LineDifference> FindDifferencesInternal(string[] lines1, string[] lines2)
+	private static IReadOnlyCollection<LineDifference> FindDifferencesInternal(string[] lines1, string[] lines2)
 	{
-		var differences = new List<FileDiffer.LineDifference>();
+		var differences = new List<LineDifference>();
 
 		// Simple line-by-line comparison for testing purposes
 		int maxLines = Math.Max(lines1.Length, lines2.Length);
@@ -152,7 +152,7 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 
 			if (line1 != line2)
 			{
-				differences.Add(new FileDiffer.LineDifference
+				differences.Add(new LineDifference
 				{
 					LineNumber1 = line1 != null ? i + 1 : 0,
 					LineNumber2 = line2 != null ? i + 1 : 0,

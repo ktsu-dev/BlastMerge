@@ -107,15 +107,15 @@ public class ColoredDiffLine
 	public DiffColor Color { get; set; }
 }
 
-	/// <summary>
-	/// Represents an edit operation (used in Myers diff algorithm)
-	/// </summary>
-	internal enum EditOperation
-	{
-		Delete,
-		Insert,
-		Equal
-	}
+/// <summary>
+/// Represents an edit operation (used in Myers diff algorithm)
+/// </summary>
+internal enum EditOperation
+{
+	Delete,
+	Insert,
+	Equal
+}
 
 /// <summary>
 /// Represents the result of a directory comparison
