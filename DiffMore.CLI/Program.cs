@@ -85,6 +85,7 @@ public static class Program
 						"🔍 Compare Files in Directory",
 						"📁 Compare Two Directories",
 						"📄 Compare Two Specific Files",
+						"🔀 Iterative Merge Multiple Versions",
 						"ℹ️  Show Help",
 						"❌ Exit"
 					]));
@@ -100,6 +101,10 @@ public static class Program
 			else if (choice.Contains("Compare Two Specific Files"))
 			{
 				CompareTwoSpecificFiles();
+			}
+			else if (choice.Contains("Iterative Merge Multiple Versions"))
+			{
+				RunIterativeMerge();
 			}
 			else if (choice.Contains("Show Help"))
 			{
@@ -199,6 +204,7 @@ public static class Program
 		• Compare files with the same name across directories
 		• Compare two directories with file patterns
 		• Compare two specific files
+		• [cyan]Iterative merge multiple file versions[/]
 		• View differences in multiple formats (git-style, change summary)
 		• Sync files to make them identical
 
@@ -207,6 +213,12 @@ public static class Program
 
 		[yellow]Interactive Mode:[/]
 		Run without arguments to use the interactive TUI interface.
+
+		[yellow]Iterative Merge:[/]
+		• Automatically finds the most similar files and merges them step by step
+		• Interactive conflict resolution with visual TUI
+		• Optimal merge order based on similarity calculation
+		• Save final merged result to a new file
 		""")
 		{
 			Header = new PanelHeader("[bold blue]Help[/]"),
@@ -725,6 +737,421 @@ public static class Program
 			catch (UnauthorizedAccessException ex)
 			{
 				AnsiConsole.MarkupLine($"[red]✗[/] Sync failed: {ex.Message}");
+			}
+		}
+	}
+
+	/// <summary>
+	/// Runs the iterative merge process for multiple file versions
+	/// </summary>
+	private static void RunIterativeMerge()
+	{
+		var directory = AnsiConsole.Ask<string>("[cyan]Enter the directory path containing multiple versions:[/]");
+
+		if (!Directory.Exists(directory))
+		{
+			AnsiConsole.MarkupLine("[red]Error: Directory does not exist![/]");
+			return;
+		}
+
+		var fileName = AnsiConsole.Ask<string>("[cyan]Enter the filename to search for (multiple versions):[/]");
+
+		AnsiConsole.Status()
+			.Spinner(Spinner.Known.Star)
+			.Start("[yellow]Finding file versions...[/]", ctx =>
+			{
+				var files = FileFinder.FindFiles(directory, fileName);
+				var filesList = files.ToList();
+
+				if (filesList.Count < 2)
+				{
+					AnsiConsole.MarkupLine($"[red]Need at least 2 versions to merge. Found {filesList.Count} files.[/]");
+					return;
+				}
+
+				// Group files by hash to find unique versions
+				var fileGroups = FileDiffer.GroupFilesByHash(files);
+				var uniqueGroups = fileGroups.Where(g => g.FilePaths.Count >= 1).ToList();
+
+				if (uniqueGroups.Count < 2)
+				{
+					AnsiConsole.MarkupLine("[green]All files are identical. No merge needed.[/]");
+					return;
+				}
+
+				AnsiConsole.MarkupLine($"[green]Found {uniqueGroups.Count} unique versions to merge.[/]");
+
+				StartIterativeMergeProcess(uniqueGroups, fileName);
+			});
+	}
+
+	/// <summary>
+	/// Starts the iterative merge process
+	/// </summary>
+	/// <param name="fileGroups">The unique file groups to merge</param>
+	/// <param name="originalFileName">The original filename being merged</param>
+	private static void StartIterativeMergeProcess(List<FileGroup> fileGroups, string originalFileName)
+	{
+		// Create a list of representative files (one from each group)
+		var filesToMerge = fileGroups.Select(g => g.FilePaths.First()).ToList();
+		var session = new IterativeMergeSession(filesToMerge);
+
+		var mergeCount = 1;
+		string? lastMergedContent = null;
+
+		while (session.RemainingFiles.Count > 1)
+		{
+			// Show current status
+			ShowMergeSessionStatus(session, mergeCount);
+
+			FileSimilarity? similarity;
+
+			if (lastMergedContent != null)
+			{
+				// Find the most similar file to our current merged result
+				similarity = FindMostSimilarToMergedContent(session.RemainingFiles, lastMergedContent);
+			}
+			else
+			{
+				// Find the two most similar files from remaining files
+				var remainingGroups = fileGroups.Where(g => session.RemainingFiles.Contains(g.FilePaths.First())).ToList();
+				similarity = FileDiffer.FindMostSimilarFiles(remainingGroups);
+			}
+
+			if (similarity == null)
+			{
+				AnsiConsole.MarkupLine("[red]Error: Could not find files to merge.[/]");
+				break;
+			}
+
+			// Show similarity information
+			AnsiConsole.MarkupLine($"[yellow]Merging most similar pair (similarity: {similarity.SimilarityScore:P1}):[/]");
+			AnsiConsole.MarkupLine($"[dim]  📄 {Path.GetFileName(similarity.FilePath1)}[/]");
+			AnsiConsole.MarkupLine($"[dim]  📄 {Path.GetFileName(similarity.FilePath2)}[/]");
+
+			// Perform the merge
+			var mergeResult = PerformMergeWithConflictResolution(similarity.FilePath1, similarity.FilePath2, lastMergedContent);
+
+			if (mergeResult == null)
+			{
+				AnsiConsole.MarkupLine("[red]Merge cancelled by user.[/]");
+				break;
+			}
+
+					// Update session
+		lastMergedContent = string.Join(Environment.NewLine, mergeResult.MergedLines);
+			session.AddMergedContent(lastMergedContent);
+
+			// Remove the merged files from remaining files
+			session.RemoveFile(similarity.FilePath1);
+			if (lastMergedContent == null) // Only remove second file if this wasn't a merge with existing content
+			{
+				session.RemoveFile(similarity.FilePath2);
+			}
+			else
+			{
+				session.RemoveFile(similarity.FilePath2);
+			}
+
+			mergeCount++;
+
+			if (session.RemainingFiles.Count > 1)
+			{
+				if (!AnsiConsole.Confirm("[cyan]Continue with next merge iteration?[/]", true))
+				{
+					break;
+				}
+			}
+		}
+
+		if (session.IsComplete || session.RemainingFiles.Count <= 1)
+		{
+			ShowMergeCompletion(lastMergedContent, originalFileName);
+		}
+	}
+
+	/// <summary>
+	/// Shows the current status of the merge session
+	/// </summary>
+	/// <param name="session">The merge session</param>
+	/// <param name="mergeCount">Current merge iteration number</param>
+	private static void ShowMergeSessionStatus(IterativeMergeSession session, int mergeCount)
+	{
+		var rule = new Rule($"[bold]Merge Iteration {mergeCount}[/]")
+		{
+			Style = Style.Parse("blue")
+		};
+		AnsiConsole.Write(rule);
+
+		AnsiConsole.MarkupLine($"[green]Remaining files to merge: {session.RemainingFiles.Count}[/]");
+		AnsiConsole.MarkupLine($"[green]Completed merges: {session.MergedContents.Count}[/]");
+		AnsiConsole.WriteLine();
+	}
+
+	/// <summary>
+	/// Finds the file most similar to the current merged content
+	/// </summary>
+	/// <param name="remainingFiles">List of remaining files to consider</param>
+	/// <param name="mergedContent">The current merged content</param>
+	/// <returns>A FileSimilarity object with the most similar file</returns>
+	private static FileSimilarity? FindMostSimilarToMergedContent(IReadOnlyList<string> remainingFiles, string mergedContent)
+	{
+		var mergedLines = mergedContent.Split(Environment.NewLine);
+		FileSimilarity? mostSimilar = null;
+		var highestSimilarity = -1.0;
+
+		foreach (var file in remainingFiles)
+		{
+			var fileLines = File.ReadAllLines(file);
+			var similarity = FileDiffer.CalculateLineSimilarity(mergedLines, fileLines);
+
+			if (similarity > highestSimilarity)
+			{
+				highestSimilarity = similarity;
+				mostSimilar = new FileSimilarity
+				{
+					FilePath1 = "<merged_content>",
+					FilePath2 = file,
+					SimilarityScore = similarity
+				};
+			}
+		}
+
+		return mostSimilar;
+	}
+
+	/// <summary>
+	/// Performs a merge with interactive conflict resolution
+	/// </summary>
+	/// <param name="file1">First file to merge</param>
+	/// <param name="file2">Second file to merge</param>
+	/// <param name="existingMergedContent">Existing merged content (if any)</param>
+	/// <returns>The resolved merge result, or null if cancelled</returns>
+	private static MergeResult? PerformMergeWithConflictResolution(string file1, string file2, string? existingMergedContent)
+	{
+		MergeResult mergeResult;
+
+		if (existingMergedContent != null)
+		{
+			// Merge with existing content
+			var mergedLines = existingMergedContent.Split(Environment.NewLine);
+			var file2Lines = File.ReadAllLines(file2);
+			mergeResult = FileDiffer.MergeLines(mergedLines, file2Lines);
+		}
+		else
+		{
+			// Merge two files
+			mergeResult = FileDiffer.MergeFiles(file1, file2);
+		}
+
+		if (mergeResult.Conflicts.Count == 0)
+		{
+			AnsiConsole.MarkupLine("[green]✓ Automatic merge successful (no conflicts)![/]");
+			return mergeResult;
+		}
+
+		AnsiConsole.MarkupLine($"[yellow]⚠ Found {mergeResult.Conflicts.Count} conflict(s) that need resolution.[/]");
+
+		return !AnsiConsole.Confirm("[cyan]Would you like to resolve conflicts interactively?[/]", true)
+			? null
+			: ResolveConflictsInteractively(mergeResult);
+	}
+
+	/// <summary>
+	/// Resolves merge conflicts interactively through TUI
+	/// </summary>
+	/// <param name="mergeResult">The merge result with conflicts</param>
+	/// <returns>The resolved merge result</returns>
+	private static MergeResult ResolveConflictsInteractively(MergeResult mergeResult)
+	{
+		var rule = new Rule("[bold]Interactive Conflict Resolution[/]")
+		{
+			Style = Style.Parse("red")
+		};
+		AnsiConsole.Write(rule);
+
+		var resolvedLines = mergeResult.MergedLines.ToList();
+		var conflictIndex = 1;
+
+		foreach (var conflict in mergeResult.Conflicts)
+		{
+			if (conflict.IsResolved)
+			{
+				continue;
+			}
+
+			AnsiConsole.WriteLine();
+			AnsiConsole.MarkupLine($"[yellow]Conflict {conflictIndex}/{mergeResult.Conflicts.Count} at line {conflict.LineNumber}:[/]");
+
+			// Show the conflict
+			var panel = new Panel(
+				$"[red]Version 1:[/]\n{conflict.Content1 ?? "(deleted)"}\n\n" +
+				$"[green]Version 2:[/]\n{conflict.Content2 ?? "(added)"}")
+			{
+				Header = new PanelHeader("Conflict Details"),
+				Border = BoxBorder.Rounded
+			};
+			AnsiConsole.Write(panel);
+
+			// Let user choose resolution
+			var choices = new List<string>
+			{
+				"📄 Use Version 1",
+				"📄 Use Version 2",
+				"✏️  Edit Manually",
+				"❌ Skip This Conflict"
+			};
+
+			if (conflict.Content1 != null && conflict.Content2 != null)
+			{
+				choices.Insert(2, "🔀 Combine Both");
+			}
+
+			var choice = AnsiConsole.Prompt(
+				new SelectionPrompt<string>()
+					.Title("[cyan]How would you like to resolve this conflict?[/]")
+					.AddChoices(choices));
+
+			if (choice.Contains("Use Version 1"))
+			{
+				conflict.ResolvedContent = conflict.Content1 ?? "";
+				conflict.IsResolved = true;
+			}
+			else if (choice.Contains("Use Version 2"))
+			{
+				conflict.ResolvedContent = conflict.Content2 ?? "";
+				conflict.IsResolved = true;
+			}
+			else if (choice.Contains("Combine Both"))
+			{
+				conflict.ResolvedContent = $"{conflict.Content1}\n{conflict.Content2}";
+				conflict.IsResolved = true;
+			}
+			else if (choice.Contains("Edit Manually"))
+			{
+				var manualContent = AnsiConsole.Ask<string>("[cyan]Enter the resolved content:[/]");
+				conflict.ResolvedContent = manualContent;
+				conflict.IsResolved = true;
+			}
+			else
+			{
+				AnsiConsole.MarkupLine("[yellow]Skipping conflict - will keep conflict markers.[/]");
+			}
+
+			conflictIndex++;
+		}
+
+		// Apply resolved conflicts to the merged content
+		ApplyConflictResolutions(resolvedLines, mergeResult.Conflicts);
+
+		return new MergeResult
+		{
+			MergedLines = resolvedLines.AsReadOnly(),
+			Conflicts = mergeResult.Conflicts
+		};
+	}
+
+	/// <summary>
+	/// Applies conflict resolutions to the merged lines
+	/// </summary>
+	/// <param name="mergedLines">The merged lines to update</param>
+	/// <param name="conflicts">The conflicts with resolutions</param>
+	private static void ApplyConflictResolutions(List<string> mergedLines, IReadOnlyCollection<MergeConflict> conflicts)
+	{
+		// Work backwards through conflicts to avoid index shifting
+		foreach (var conflict in conflicts.Where(c => c.IsResolved).OrderByDescending(c => c.LineNumber))
+		{
+			// Find and replace conflict markers with resolved content
+			for (var i = mergedLines.Count - 1; i >= 0; i--)
+			{
+				if (mergedLines[i].Contains("<<<<<<< Version"))
+				{
+					// Find the end of this conflict block
+					var endIndex = i;
+					while (endIndex < mergedLines.Count && !mergedLines[endIndex].Contains(">>>>>>> Version"))
+					{
+						endIndex++;
+					}
+
+					if (endIndex < mergedLines.Count)
+					{
+						// Remove the conflict block and replace with resolved content
+						var linesToRemove = endIndex - i + 1;
+						mergedLines.RemoveRange(i, linesToRemove);
+
+						if (!string.IsNullOrEmpty(conflict.ResolvedContent))
+						{
+							var resolvedLines = conflict.ResolvedContent.Split('\n');
+							mergedLines.InsertRange(i, resolvedLines);
+						}
+
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	/// <summary>
+	/// Shows the completion of the merge process
+	/// </summary>
+	/// <param name="finalMergedContent">The final merged content</param>
+	/// <param name="originalFileName">The original filename</param>
+	private static void ShowMergeCompletion(string? finalMergedContent, string originalFileName)
+	{
+		var rule = new Rule("[bold green]Merge Completed Successfully![/]")
+		{
+			Style = Style.Parse("green")
+		};
+		AnsiConsole.Write(rule);
+
+		if (finalMergedContent == null)
+		{
+			AnsiConsole.MarkupLine("[red]No merged content available.[/]");
+			return;
+		}
+
+		AnsiConsole.MarkupLine("[green]All versions have been successfully merged![/]");
+		AnsiConsole.WriteLine();
+
+		// Show merge statistics
+		var lines = finalMergedContent.Split(Environment.NewLine);
+		AnsiConsole.MarkupLine($"[dim]Final merged content: {lines.Length} lines[/]");
+
+		if (AnsiConsole.Confirm("[cyan]Would you like to preview the merged content?[/]", true))
+		{
+			var panel = new Panel(finalMergedContent.Length > 2000
+				? finalMergedContent[..2000] + "\n[dim]... (truncated)[/]"
+				: finalMergedContent)
+			{
+				Header = new PanelHeader("Merged Content Preview"),
+				Border = BoxBorder.Rounded
+			};
+			AnsiConsole.Write(panel);
+		}
+
+		if (AnsiConsole.Confirm("[cyan]Would you like to save the merged content to a file?[/]", true))
+		{
+			var outputPath = AnsiConsole.Ask<string>("[cyan]Enter output file path:[/]", $"merged_{originalFileName}");
+
+			try
+			{
+				var outputDir = Path.GetDirectoryName(outputPath);
+				if (!string.IsNullOrEmpty(outputDir))
+				{
+					Directory.CreateDirectory(outputDir);
+				}
+
+				File.WriteAllText(outputPath, finalMergedContent);
+				AnsiConsole.MarkupLine($"[green]✓ Merged content saved to: {outputPath}[/]");
+			}
+			catch (IOException ex)
+			{
+				AnsiConsole.MarkupLine($"[red]✗ Failed to save merged content: {ex.Message}[/]");
+			}
+			catch (UnauthorizedAccessException ex)
+			{
+				AnsiConsole.MarkupLine($"[red]✗ Failed to save merged content: {ex.Message}[/]");
 			}
 		}
 	}

@@ -59,6 +59,8 @@ globs: *
 -   Use `string.Contains(char)` instead of `string.Contains(string)` when searching for a single character (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1847)
 -   Use string comparison instead of unicode emoji characters in switch statements.
 -   Ensure switch statements are populated (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0072)
+-   Use primary constructors (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0290)
+-   Change return type of method 'FindDifferences' from 'System.Collections.Generic.IReadOnlyCollection<ktsu.DiffMore.Core.LineDifference>' to 'System.Collections.ObjectModel.ReadOnlyCollection<ktsu.DiffMore.Core.LineDifference>' for improved performance (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1859)
 
 ## FILE & DIRECTORY HANDLING
 
@@ -154,6 +156,7 @@ globs: *
         <NoWarn>$(NoWarn);NU1604;NU1602;NU1701;Spectre1000</NoWarn>
     ```
 -   The application should have a TUI using Spectre.Console.
+-   Implement an iterative merge feature for multiple file versions, where the two most similar versions are found and a visual TUI is offered for resolving the merge. This process is repeated until all versions are merged.
 
 ## DIRECTORY COMPARISON
 

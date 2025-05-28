@@ -1,0 +1,19 @@
+Hello World Application
+=====================
+
+This is the main function.
+It prints a personalized greeting message.
+Added configuration support.
+
+var config = {
+    name: "User",
+    greeting: "Hello"
+};
+
+function main() {
+    var message = config.greeting + ", " + config.name + "!";
+    print(message);
+}
+
+// End of file
+// Version 4 - Added configuration

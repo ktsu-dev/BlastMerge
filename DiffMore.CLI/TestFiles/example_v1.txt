@@ -1,0 +1,11 @@
+Hello World Application
+=====================
+
+This is the main function.
+It prints a greeting message.
+
+function main() {
+    print("Hello, World!");
+}
+
+// End of file

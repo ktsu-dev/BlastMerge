@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
+using System.Linq;
 
 /// <summary>
 /// Represents a group of identical files by hash
@@ -141,6 +142,115 @@ public class DirectoryComparisonResult
 	/// Gets the collection of files that exist only in the second directory
 	/// </summary>
 	public IReadOnlyCollection<string> OnlyInDir2 { get; init; } = [];
+}
+
+/// <summary>
+/// Represents the result of a file similarity calculation
+/// </summary>
+public class FileSimilarity
+{
+	/// <summary>
+	/// Gets the path to the first file
+	/// </summary>
+	public required string FilePath1 { get; init; }
+
+	/// <summary>
+	/// Gets the path to the second file
+	/// </summary>
+	public required string FilePath2 { get; init; }
+
+	/// <summary>
+	/// Gets the similarity score between 0.0 (completely different) and 1.0 (identical)
+	/// </summary>
+	public double SimilarityScore { get; init; }
+}
+
+/// <summary>
+/// Represents a merge conflict that needs resolution
+/// </summary>
+public class MergeConflict
+{
+	/// <summary>
+	/// Gets the line number where the conflict occurs
+	/// </summary>
+	public int LineNumber { get; init; }
+
+	/// <summary>
+	/// Gets the content from the first file
+	/// </summary>
+	public string? Content1 { get; init; }
+
+	/// <summary>
+	/// Gets the content from the second file
+	/// </summary>
+	public string? Content2 { get; init; }
+
+	/// <summary>
+	/// Gets or sets the resolved content chosen by the user
+	/// </summary>
+	public string? ResolvedContent { get; set; }
+
+	/// <summary>
+	/// Gets or sets whether this conflict has been resolved
+	/// </summary>
+	public bool IsResolved { get; set; }
+}
+
+/// <summary>
+/// Represents the result of a merge operation
+/// </summary>
+public class MergeResult
+{
+	/// <summary>
+	/// Gets the merged file content as lines
+	/// </summary>
+	public required IReadOnlyList<string> MergedLines { get; init; }
+
+	/// <summary>
+	/// Gets the conflicts that were encountered during merge
+	/// </summary>
+	public required IReadOnlyCollection<MergeConflict> Conflicts { get; init; }
+
+	/// <summary>
+	/// Gets whether all conflicts were successfully resolved
+	/// </summary>
+	public bool IsFullyResolved => Conflicts.All(c => c.IsResolved);
+}
+
+/// <summary>
+/// Represents an iterative merge session for multiple file versions
+/// </summary>
+public class IterativeMergeSession(IEnumerable<string> filePaths)
+{
+	private readonly List<string> _filePaths = filePaths.ToList();
+	private readonly List<string> _mergedContents = [];
+
+	/// <summary>
+	/// Gets the remaining files to be merged
+	/// </summary>
+	public IReadOnlyList<string> RemainingFiles => _filePaths.AsReadOnly();
+
+	/// <summary>
+	/// Gets the current merged content (if any)
+	/// </summary>
+	public IReadOnlyList<string> MergedContents => _mergedContents.AsReadOnly();
+
+	/// <summary>
+	/// Adds a merged result to the session
+	/// </summary>
+	/// <param name="mergedContent">The merged content to add</param>
+	public void AddMergedContent(string mergedContent) => _mergedContents.Add(mergedContent);
+
+	/// <summary>
+	/// Removes a file from the remaining files list
+	/// </summary>
+	/// <param name="filePath">The file path to remove</param>
+	public void RemoveFile(string filePath) => _filePaths.Remove(filePath);
+
+	/// <summary>
+	/// Gets whether the merge session is complete
+	/// </summary>
+	public bool IsComplete => _filePaths.Count <= 1 && _mergedContents.Count > 0;
 }
 
 /// <summary>
@@ -1101,6 +1211,288 @@ public static class FileDiffer
 		}
 
 		File.Copy(sourceFile, targetFile, overwrite: true);
+	}
+
+	/// <summary>
+	/// Calculates similarity score between two files based on line matching
+	/// </summary>
+	/// <param name="file1">Path to the first file</param>
+	/// <param name="file2">Path to the second file</param>
+	/// <returns>A similarity score between 0.0 (completely different) and 1.0 (identical)</returns>
+	public static double CalculateFileSimilarity(string file1, string file2)
+	{
+		ArgumentNullException.ThrowIfNull(file1);
+		ArgumentNullException.ThrowIfNull(file2);
+
+		var lines1 = File.ReadAllLines(file1);
+		var lines2 = File.ReadAllLines(file2);
+
+		return CalculateLineSimilarity(lines1, lines2);
+	}
+
+	/// <summary>
+	/// Calculates similarity score between two sets of lines
+	/// </summary>
+	/// <param name="lines1">Lines from the first file</param>
+	/// <param name="lines2">Lines from the second file</param>
+	/// <returns>A similarity score between 0.0 (completely different) and 1.0 (identical)</returns>
+	public static double CalculateLineSimilarity(string[] lines1, string[] lines2)
+	{
+		ArgumentNullException.ThrowIfNull(lines1);
+		ArgumentNullException.ThrowIfNull(lines2);
+
+		if (lines1.Length == 0 && lines2.Length == 0)
+		{
+			return 1.0; // Both empty, completely similar
+		}
+
+		if (lines1.Length == 0 || lines2.Length == 0)
+		{
+			return 0.0; // One empty, completely different
+		}
+
+		// Use the diff algorithm to find common lines
+		var editScript = GetMyersDiff(lines1, lines2);
+		var equalOperations = editScript.Count(op => op.Item1 == EditOperation.Equal);
+		var totalOperations = Math.Max(lines1.Length, lines2.Length);
+
+		return (double)equalOperations / totalOperations;
+	}
+
+	/// <summary>
+	/// Finds the two most similar files from a collection of unique file groups
+	/// </summary>
+	/// <param name="fileGroups">Collection of file groups with different content</param>
+	/// <returns>A FileSimilarity object with the most similar pair, or null if less than 2 groups</returns>
+	public static FileSimilarity? FindMostSimilarFiles(IReadOnlyCollection<FileGroup> fileGroups)
+	{
+		ArgumentNullException.ThrowIfNull(fileGroups);
+
+		if (fileGroups.Count < 2)
+		{
+			return null;
+		}
+
+		var groups = fileGroups.ToList();
+		FileSimilarity? mostSimilar = null;
+		var highestSimilarity = -1.0;
+
+		for (var i = 0; i < groups.Count; i++)
+		{
+			for (var j = i + 1; j < groups.Count; j++)
+			{
+				var file1 = groups[i].FilePaths.First();
+				var file2 = groups[j].FilePaths.First();
+				var similarity = CalculateFileSimilarity(file1, file2);
+
+				if (similarity > highestSimilarity)
+				{
+					highestSimilarity = similarity;
+					mostSimilar = new FileSimilarity
+					{
+						FilePath1 = file1,
+						FilePath2 = file2,
+						SimilarityScore = similarity
+					};
+				}
+			}
+		}
+
+		return mostSimilar;
+	}
+
+	/// <summary>
+	/// Performs a three-way merge between two files, detecting conflicts
+	/// </summary>
+	/// <param name="file1">Path to the first file</param>
+	/// <param name="file2">Path to the second file</param>
+	/// <returns>A MergeResult containing the merged content and any conflicts</returns>
+	public static MergeResult MergeFiles(string file1, string file2)
+	{
+		ArgumentNullException.ThrowIfNull(file1);
+		ArgumentNullException.ThrowIfNull(file2);
+
+		var lines1 = File.ReadAllLines(file1);
+		var lines2 = File.ReadAllLines(file2);
+
+		return MergeLines(lines1, lines2);
+	}
+
+	/// <summary>
+	/// Performs a merge between two sets of lines, detecting conflicts
+	/// </summary>
+	/// <param name="lines1">Lines from the first file</param>
+	/// <param name="lines2">Lines from the second file</param>
+	/// <returns>A MergeResult containing the merged content and any conflicts</returns>
+	public static MergeResult MergeLines(string[] lines1, string[] lines2)
+	{
+		ArgumentNullException.ThrowIfNull(lines1);
+		ArgumentNullException.ThrowIfNull(lines2);
+
+		var differences = FindDifferences(lines1, lines2);
+		var mergedLines = new List<string>();
+		var conflicts = new List<MergeConflict>();
+
+		var line1Index = 0;
+		var line2Index = 0;
+
+		foreach (var diff in differences)
+		{
+			// Add unchanged lines before this difference
+			while (line1Index < diff.LineNumber1 - 1 && line2Index < diff.LineNumber2 - 1)
+			{
+				mergedLines.Add(lines1[line1Index]);
+				line1Index++;
+				line2Index++;
+			}
+
+			// Handle the difference
+			if (diff.LineNumber1 > 0 && diff.LineNumber2 > 0)
+			{
+				// Both files have content at this line - this is a conflict
+				conflicts.Add(new MergeConflict
+				{
+					LineNumber = mergedLines.Count + 1,
+					Content1 = diff.Content1,
+					Content2 = diff.Content2,
+					IsResolved = false
+				});
+
+				// For now, add a conflict marker
+				mergedLines.Add($"<<<<<<< Version 1");
+				mergedLines.Add(diff.Content1 ?? "");
+				mergedLines.Add("=======");
+				mergedLines.Add(diff.Content2 ?? "");
+				mergedLines.Add(">>>>>>> Version 2");
+			}
+			else if (diff.LineNumber1 > 0)
+			{
+				// Line only in first file - treat as deletion, add a conflict
+				conflicts.Add(new MergeConflict
+				{
+					LineNumber = mergedLines.Count + 1,
+					Content1 = diff.Content1,
+					Content2 = null,
+					IsResolved = false
+				});
+
+				// Add conflict marker for deletion
+				mergedLines.Add($"<<<<<<< Version 1 (deleted)");
+				mergedLines.Add(diff.Content1 ?? "");
+				mergedLines.Add("=======");
+				mergedLines.Add(">>>>>>> Version 2 (not present)");
+			}
+			else if (diff.LineNumber2 > 0)
+			{
+				// Line only in second file - treat as addition, add a conflict
+				conflicts.Add(new MergeConflict
+				{
+					LineNumber = mergedLines.Count + 1,
+					Content1 = null,
+					Content2 = diff.Content2,
+					IsResolved = false
+				});
+
+				// Add conflict marker for addition
+				mergedLines.Add($"<<<<<<< Version 1 (not present)");
+				mergedLines.Add("=======");
+				mergedLines.Add(diff.Content2 ?? "");
+				mergedLines.Add(">>>>>>> Version 2 (added)");
+			}
+
+			// Update indices based on difference type
+			if (diff.LineNumber1 > 0)
+			{
+				line1Index = diff.LineNumber1;
+			}
+
+			if (diff.LineNumber2 > 0)
+			{
+				line2Index = diff.LineNumber2;
+			}
+		}
+
+		// Add any remaining unchanged lines
+		while (line1Index < lines1.Length && line2Index < lines2.Length)
+		{
+			mergedLines.Add(lines1[line1Index]);
+			line1Index++;
+			line2Index++;
+		}
+
+		// Add remaining lines from either file
+		while (line1Index < lines1.Length)
+		{
+			mergedLines.Add(lines1[line1Index]);
+			line1Index++;
+		}
+
+		while (line2Index < lines2.Length)
+		{
+			mergedLines.Add(lines2[line2Index]);
+			line2Index++;
+		}
+
+		return new MergeResult
+		{
+			MergedLines = mergedLines.AsReadOnly(),
+			Conflicts = conflicts.AsReadOnly()
+		};
+	}
+
+	/// <summary>
+	/// Helper method for finding differences between line arrays
+	/// </summary>
+	/// <param name="lines1">Lines from the first file</param>
+	/// <param name="lines2">Lines from the second file</param>
+	/// <returns>A collection of line differences</returns>
+	private static ReadOnlyCollection<LineDifference> FindDifferences(string[] lines1, string[] lines2)
+	{
+		var rawDifferences = new Collection<LineDifference>();
+
+		// Use Myers algorithm to get edit script
+		var editScript = GetMyersDiff(lines1, lines2);
+
+		int line1 = 0, line2 = 0;
+
+		foreach (var edit in editScript)
+		{
+			switch (edit.Item1)
+			{
+				case EditOperation.Delete:
+					rawDifferences.Add(new LineDifference
+					{
+						LineNumber1 = line1 + 1,
+						LineNumber2 = 0, // No corresponding line in file 2
+						Content1 = lines1[line1],
+						Content2 = null
+					});
+					line1++;
+					break;
+
+				case EditOperation.Insert:
+					rawDifferences.Add(new LineDifference
+					{
+						LineNumber1 = 0, // No corresponding line in file 1
+						LineNumber2 = line2 + 1,
+						Content1 = null,
+						Content2 = lines2[line2]
+					});
+					line2++;
+					break;
+
+				case EditOperation.Equal:
+					// No difference to add for equal lines
+					line1++;
+					line2++;
+					break;
+				default:
+					break;
+			}
+		}
+
+		// Post-process to merge consecutive delete/insert operations into modifications
+		return MergeModifications(rawDifferences);
 	}
 }
 

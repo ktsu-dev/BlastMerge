@@ -1,0 +1,18 @@
+Hello World Application
+=====================
+
+This is the main function.
+It prints a greeting message to the console.
+Added error handling for better reliability.
+
+function main() {
+    try {
+        print("Hello, World!");
+        print("Application started successfully!");
+    } catch (error) {
+        print("Error: " + error.message);
+    }
+}
+
+// End of file
+// Version 2 - Added error handling
