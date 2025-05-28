@@ -142,6 +142,7 @@ globs: *
     ```xml
         <NoWarn>$(NoWarn);NU1604;NU1602;NU1701;Spectre1000</NoWarn>
     ```
+-   Before continuing work, always check the current state of the project and run the tests.
 
 ## DIRECTORY COMPARISON
 

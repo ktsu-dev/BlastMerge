@@ -253,11 +253,10 @@ public static class FileDiffer
 			{
 				var next = rawDifferences[i + 1];
 
-				// Check if the next operation is an insert at the corresponding position
-				if (next.LineNumber1 == 0 && next.Content2 != null && // Next is an insert
-					next.LineNumber2 == current.LineNumber1) // At corresponding line position
+				// Check if the next operation is an insert and they should be merged
+				if (next.LineNumber1 == 0 && next.Content2 != null) // Next is an insert
 				{
-					// Merge into a modification
+					// Merge into a modification - use the line numbers from each operation
 					mergedDifferences.Add(new LineDifference
 					{
 						LineNumber1 = current.LineNumber1,

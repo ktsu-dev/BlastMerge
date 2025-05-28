@@ -1,0 +1,26 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- TestableIO packages - use consistent versions -->
+    <PackageVersion Include="TestableIO.System.IO.Abstractions" Version="20.0.34" />
+    <PackageVersion Include="TestableIO.System.IO.Abstractions.Wrappers" Version="20.0.34" />
+    <PackageVersion Include="TestableIO.System.IO.Abstractions.TestingHelpers" Version="20.0.34" />
+
+    <!-- Other common packages -->
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="1.0.0" />
+    <PackageVersion Include="Microsoft.SourceLink.AzureRepos.Git" Version="1.0.0" />
+    <PackageVersion Include="CommandLineParser" Version="1.8.0.7" />
+    <PackageVersion Include="Moq" Version="4.20.72" />
+
+    <!-- Spectre Console packages -->
+    <PackageVersion Include="Spectre.Console" Version="0.46.0" />
+    <PackageVersion Include="Spectre.Console.Cli" Version="0.45.0" />
+    <PackageVersion Include="Spectre.Console.Testing" Version="0.40.0" />
+    <PackageVersion Include="Spectre.Console.Json" Version="0.46.0" />
+    <PackageVersion Include="Spectre.Console.Analyzer" Version="0.41.0" />
+    <PackageVersion Include="Spectre.Console.ImageSharp" Version="0.31.0" />
+  </ItemGroup>
+</Project>
