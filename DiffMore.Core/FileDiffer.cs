@@ -595,6 +595,36 @@ public static class FileDiffer
 	{
 		var n = a.Length;
 		var m = b.Length;
+
+				// Handle edge cases for empty files
+		if (n == 0 && m == 0)
+		{
+			// Both files are empty, no differences
+			return [];
+		}
+
+		if (n == 0)
+		{
+			// First file is empty, all lines from second file are insertions
+			var insertResult = new Collection<(EditOperation, string)>();
+			for (var i = 0; i < m; i++)
+			{
+				insertResult.Add((EditOperation.Insert, b[i]));
+			}
+			return insertResult;
+		}
+
+		if (m == 0)
+		{
+			// Second file is empty, all lines from first file are deletions
+			var deleteResult = new Collection<(EditOperation, string)>();
+			for (var i = 0; i < n; i++)
+			{
+				deleteResult.Add((EditOperation.Delete, a[i]));
+			}
+			return deleteResult;
+		}
+
 		var max = n + m;
 
 		var v = new int[(2 * max) + 1];

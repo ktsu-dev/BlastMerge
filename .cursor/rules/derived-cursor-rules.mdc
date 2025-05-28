@@ -49,6 +49,7 @@ globs: *
 -   Parentheses should be added for clarity (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0048)
 -   Add braces to 'if' statement. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0011)
 -   In the CLI project, use `AnsiConsole` instead of `System.Console` for console output, as required by the Spectre.Console analyzer. **NOTE:** This rule is superseded by the rule to suppress `Spectre1000` in the CLI project. See "WORKFLOW & RELEASE RULES".
+-   Remove unnecessary using directives to keep the code clean and maintainable.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -76,6 +77,7 @@ globs: *
 -   In GenerateGitStyleDiff, check if `k-1+max` or `k+1+max` is out of bounds.
 -   In BacktrackPath, use a simpler approach for very large files to avoid index errors.
 -   In BacktrackPath, implement a try/catch to handle IndexOutOfRangeException and fallback to a simple edit script if the algorithm fails.
+-   When using the Myers diff algorithm, add a specific check for empty files at the beginning of the `GetMyersDiff` method to avoid `IndexOutOfRangeException`.
 
 ## DEBUGGING
 
