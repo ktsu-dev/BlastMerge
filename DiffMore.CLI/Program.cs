@@ -89,23 +89,23 @@ public static class Program
 						"❌ Exit"
 					]));
 
-			if (choice.StartsWith("🔍"))
+			if (choice.Contains("🔍"))
 			{
 				CompareFilesInDirectory();
 			}
-			else if (choice.StartsWith("📁"))
+			else if (choice.Contains("📁"))
 			{
 				CompareTwoDirectories();
 			}
-			else if (choice.StartsWith("📄"))
+			else if (choice.Contains("📄"))
 			{
 				CompareTwoSpecificFiles();
 			}
-			else if (choice.StartsWith("ℹ"))
+			else if (choice.Contains("ℹ"))
 			{
 				ShowHelp();
 			}
-			else if (choice.StartsWith("❌"))
+			else if (choice.Contains("❌"))
 			{
 				return;
 			}
