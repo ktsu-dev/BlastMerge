@@ -257,27 +257,19 @@ public static class FileDiffer
 				// Only merge if they are truly consecutive (no other operations in between)
 				if (next.LineNumber1 == 0 && next.Content2 != null) // Next is an insert
 				{
-					// Additional check: only merge if the line numbers suggest they are related
-					// For a true modification, the deleted line number should be close to where the insertion happens
-					var lineDistance = Math.Abs(current.LineNumber1 - next.LineNumber2);
-
-					// Only merge if the lines are close to each other (within 1 line difference)
-					// This prevents merging unrelated deletions and insertions
-					if (lineDistance <= 1)
+					// Merge consecutive delete/insert operations into modifications
+					// This handles cases where entire files have changed line-by-line
+					mergedDifferences.Add(new LineDifference
 					{
-						// Merge into a modification - use the line numbers from each operation
-						mergedDifferences.Add(new LineDifference
-						{
-							LineNumber1 = current.LineNumber1,
-							LineNumber2 = next.LineNumber2,
-							Content1 = current.Content1,
-							Content2 = next.Content2
-						});
+						LineNumber1 = current.LineNumber1,
+						LineNumber2 = next.LineNumber2,
+						Content1 = current.Content1,
+						Content2 = next.Content2
+					});
 
-						// Skip the next item since we've merged it
-						i++;
-						continue;
-					}
+					// Skip the next item since we've merged it
+					i++;
+					continue;
 				}
 			}
 

@@ -116,6 +116,7 @@ globs: *
 -   Ensure that test files include `using ktsu.DiffMore.Core;`
 -   When writing tests, ensure proper instantiation of static classes. Do not attempt to create instances of static classes directly; instead, access their members directly using the class name.
 -   When tests use classes implementing `IDisposable`, ensure the `Dispose` method is properly implemented. The `Dispose` method should call `Dispose(true)`, then call `GC.SuppressFinalize` on the current object instance (`this` or `Me` in Visual Basic), and then return.
+-   Use MSTest framework for unit tests.
 
 ## WORKFLOW & RELEASE RULES
 
@@ -129,7 +130,7 @@ globs: *
         </Parallelize>
     </MSTest>
     ```
--   Suppress NuGet warnings `NU1604`, `NU1602`, and `NU1701` in all project files by adding a `Directory.Build.props` file at the solution root with the following property group:
+-   Suppress NuGet warnings `NU1604`, `NU1602`, `NU1701`, and `NU1504` in all project files by adding a `Directory.Build.props` file at the solution root with the following property group:
 
     ```xml
     <Project>
@@ -139,10 +140,11 @@ globs: *
         <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
 
         <!-- Suppress specific NuGet warnings that are coming from the ktsu.Sdk packages -->
-        <NoWarn>$(NoWarn);NU1604;NU1701;NU1602</NoWarn>
+        <NoWarn>$(NoWarn);NU1604;NU1701;NU1602;NU1504</NoWarn>
         <!-- NU1604: Project dependency does not contain an inclusive lower bound -->
         <!-- NU1701: Package was restored using a different target framework -->
         <!-- NU1602: Does not provide an inclusive lower bound for dependency -->
+	    <!-- NU1504: Duplicate PackageReference -->
       </PropertyGroup>
     </Project>
     ```
