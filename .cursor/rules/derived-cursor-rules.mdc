@@ -78,6 +78,7 @@ globs: *
 -   In BacktrackPath, use a simpler approach for very large files to avoid index errors.
 -   In BacktrackPath, implement a try/catch to handle IndexOutOfRangeException and fallback to a simple edit script if the algorithm fails.
 -   When using the Myers diff algorithm, add a specific check for empty files at the beginning of the `GetMyersDiff` method to avoid `IndexOutOfRangeException`.
+-   In GenerateGitStyleDiff, if the files are identical, return an empty string.
 
 ## DEBUGGING
 

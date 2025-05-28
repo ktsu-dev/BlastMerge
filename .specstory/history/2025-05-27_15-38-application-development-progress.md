@@ -590,6 +590,2906 @@ Tool call timed out after 10s (read file)
 
 ---
 
+Let me try a different approach and run the tests to see if the empty file fix resolved some issues:
+
+---
+
+```bash
+dotnet test --filter "FileDiffer_EmptyFiles_ProducesCorrectDiff"
+```
+
+```
+  00:41:04   DiffMore  175ms  
+  10:41:04 main  ?3 ~4 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  00:41:04   DiffMore  
+  10:41:04 main  ?3 ~4 
+ PS C:\dev\ktsu-dev\DiffMore >
+```
+
+---
+
+The command seems to have completed but didn't show output. Let me try again with more explicit output:
+
+---
+
+```bash
+dotnet test --filter "FileDiffer_EmptyFiles_ProducesCorrectDiff" --verbosity normal
+```
+
+```
+Restore complete (1.6s)
+  DiffMore.Core                                                        CoreCompile (0.9s) 
+                                                                                   (0.9s)
+                                                                                   (1.0s)
+
+
+  DiffMore.Core                                                        CoreCompile (1.0s) 
+
+
+  DiffMore.Core failed with 172 error(s) (4.8s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(609,8): error CS0136: A local or 
+parameter named 'result' cannot be declared in this scope because that name is used in an
+enclosing local scope to define a local or parameter
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(620,8): error CS0136: A local or 
+parameter named 'result' cannot be declared in this scope because that name is used in an
+enclosing local scope to define a local or parameter
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(1,26): error IDE0055: Fix formatt
+ing (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(2,24): error IDE0055: Fix formatt
+ing (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(3,35): error IDE0055: Fix formatt
+ing (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(11,19): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(18,53): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(23,44): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(28,73): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(35,2): error IDE0055: Fix formatt
+ing (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(41,2): error IDE0055: Fix formatt
+ing (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(45,38): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(50,38): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(55,39): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(61,2): error IDE0055: Fix formatt
+ing (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(67,2): error IDE0055: Fix formatt
+ing (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(71,10): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(76,11): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(81,11): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(86,14): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(92,2): error IDE0055: Fix formatt
+ing (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(98,2): error IDE0055: Fix formatt
+ing (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(102,46): error IDE0055: Fix forma
+tting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(108,2): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(118,2): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(124,2): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(128,67): error IDE0055: Fix forma
+tting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(133,71): error IDE0055: Fix forma
+tting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(138,68): error IDE0055: Fix forma
+tting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(144,2): error IDE0055: Fix format
+ required between block and subsequent statement (https://learn.microsoft.com/dotnet/funda
+mentals/code-analysis/style-rules/ide2003)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(624,4): error IDE2003: Blank line
+ required between block and subsequent statement (https://learn.microsoft.com/dotnet/funda
+mentals/code-analysis/style-rules/ide2003)
+
+Build failed with 172 error(s) in 7.0s
+  00:41:12   DiffMore  7.497s   1 - ERROR 
+  10:41:12 main  ~1 |  ?3 ~3 
+
+```
+
+---
+
+I see there are compilation errors due to variable name conflicts and formatting issues. The problem is that I declared `result` variables inside the new if blocks, but there's already a `result` variable later in the method. Let me fix this:
+
+---
+
+
+
+---
+
+Now let me also remove the duplicate empty file handling code that was already in the method. Let me check if there's duplicate code:
+
+---
+
+<details>
+            <summary>Grep search for "Handle edge cases for empty files|Both files are empty" • **2** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///c%3A/dev/ktsu-dev/DiffMore/DiffMore.Core/FileDiffer.cs` | L598 | `// Handle edge cases for empty files` |
+| `file:///c%3A/dev/ktsu-dev/DiffMore/DiffMore.Core/FileDiffer.cs` | L601 | `// Both files are empty, no differences` |
+| `file:///c%3A/dev/ktsu-dev/DiffMore/DiffMore.Core/FileDiffer.cs` | L598 | `// Handle edge cases for empty files` |
+| `file:///c%3A/dev/ktsu-dev/DiffMore/DiffMore.Core/FileDiffer.cs` | L601 | `// Both files are empty, no differences` |
+
+</details>
+
+---
+
+It looks like there might be duplicate code. Let me check the full method to see if there's already empty file handling:
+
+---
+
+Read file: DiffMore.Core/FileDiffer.cs
+
+---
+
+I can see there's a formatting issue with the indentation. Let me fix the indentation and also check if there's already empty file handling later in the method. Let me look for the original empty file handling:
+
+---
+
+<details>
+            <summary>Grep search for "Handle edge cases for empty files" • **2** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///c%3A/dev/ktsu-dev/DiffMore/DiffMore.Core/FileDiffer.cs` | L598 | `// Handle edge cases for empty files` |
+| `file:///c%3A/dev/ktsu-dev/DiffMore/DiffMore.Core/FileDiffer.cs` | L598 | `// Handle edge cases for empty files` |
+
+</details>
+
+---
+
+Let me check if there was already empty file handling in the original method by looking at the method structure:
+
+---
+
+<details>
+            <summary>Grep search for "if \\(n == 0 && m == 0\\)|if \\(n == 0\\)|if \\(m == 0\\)" • **0** files</summary>
+        
+No results found
+</details>
+
+---
+
+Let me search for the original empty file handling that was mentioned in the cursor rules:
+
+---
+
+<details>
+            <summary>Grep search for "Both files are empty|First file is empty|Second file is empty" • **2** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///c%3A/dev/ktsu-dev/DiffMore/DiffMore.Core/FileDiffer.cs` | L601 | `// Both files are empty, no differences` |
+| `file:///c%3A/dev/ktsu-dev/DiffMore/DiffMore.Core/FileDiffer.cs` | L607 | `// First file is empty, all lines from second file are insertions` |
+| `file:///c%3A/dev/ktsu-dev/DiffMore/DiffMore.Core/FileDiffer.cs` | L618 | `// Second file is empty, all lines from first file are deletions` |
+| `file:///c%3A/dev/ktsu-dev/DiffMore/DiffMore.Core/FileDiffer.cs` | L601 | `// Both files are empty, no differences` |
+| `file:///c%3A/dev/ktsu-dev/DiffMore/DiffMore.Core/FileDiffer.cs` | L607 | `// First file is empty, all lines from second file are insertions` |
+| `file:///c%3A/dev/ktsu-dev/DiffMore/DiffMore.Core/FileDiffer.cs` | L618 | `// Second file is empty, all lines from first file are deletions` |
+
+</details>
+
+---
+
+It looks like there's only one instance of the empty file handling. Let me fix the indentation issue first:
+
+---
+
+
+
+---
+
+Let me try to build the project to see if the formatting issues are resolved:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet test --filter "FileDiffer_EmptyFiles_ProducesCorrectD
+                              dotnet build
+
+                              dotnet build
+
+Restore complete (1.2s)
+  DiffMore.Core failed with 2 error(s) (1.1s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(613,4): error IDE2003: Blank line
+mentals/code-analysis/style-rules/ide2003)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(624,4): error IDE2003: Blank line
+ required between block and subsequent statement (https://learn.microsoft.com/dotnet/funda
+mentals/code-analysis/style-rules/ide2003)
+
+Build failed with 2 error(s) in 3.1s
+  00:42:00   DiffMore  3.605s   1 - ERROR 
+  10:42:00 main  ?2 ~2 
+
+```
+
+---
+
+Good! Now there are only 2 formatting errors about missing blank lines. Let me fix those:
+
+---
+
+
+
+---
+
+Let me check the exact lines that need blank lines:
+
+---
+
+Read file: DiffMore.Core/FileDiffer.cs
+
+---
+
+I can see the issue. The errors are on lines 613 and 624. Looking at the code, I need to add blank lines after the closing braces. Let me fix this:
+
+---
+
+
+
+---
+
+I see the issue. Let me fix the blank lines correctly:
+
+---
+
+
+
+---
+
+
+
+---
+
+Now let me try to build again:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet build
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.sln                                    Restore (0.0s) 
+Restore complete (0.7s)
+  DiffMore.Core failed with 8 error(s) (0.4s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(613,4): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(615,3): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(616,2): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(618,2): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(625,4): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(627,3): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(628,2): error IDE0055: Fix format
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(630,2): error IDE0055: Fix format
+ting (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+
+Build failed with 8 error(s) in 1.5s
+  00:42:30   DiffMore  1.731s   1 - ERROR 
+  10:42:30 main  ?2 ~2 
+
+```
+
+---
+
+There are still formatting issues. Let me check the exact indentation around those lines:
+
+---
+
+Read file: DiffMore.Core/FileDiffer.cs
+
+---
+
+I can see the indentation is messed up. There are inconsistent tabs and spaces. Let me fix the entire block properly:
+
+---
+
+
+
+---
+
+Let me try a more targeted approach to fix the indentation issues:
+
+---
+
+
+
+---
+
+Let me try to use the edit_file tool to fix this more precisely:
+
+---
+
+
+
+---
+
+Let me try to run the dotnet format command to fix the formatting automatically:
+
+---
+
+```bash
+dotnet format
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet format
+  00:43:10   DiffMore  9.882s  
+  10:43:10 main  ?2 ~7 
+ PS C:\dev\ktsu-dev\DiffMore >
+```
+
+---
+
+Great! Now let me try to build again to see if the formatting issues are resolved:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet build
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.sln                                    Restore (0.0s)
+                                                                                   (0.1s) 
+Restore complete (0.8s)
+  DiffMore.Core succeeded (0.4s) → DiffMore.Core\bin\Debug\net9.0\ktsu.DiffMore.Core.dll
+
+  DiffMore.CLI succeeded (0.4s) → DiffMore.CLI\bin\Debug\net9.0\ktsu.DiffMore.CLI.dll
+
+  DiffMore.Test succeeded (0.8s) → DiffMore.Test\bin\Debug\net9.0\ktsu.DiffMore.Test.dll
+
+
+Build succeeded in 2.8s
+  00:43:17   DiffMore  3.073s  
+  10:43:18 main  ?2 ~7 
+
+```
+
+---
+
+Excellent! The build is now successful. Let me run the tests to see if the empty file fix resolved the IndexOutOfRangeException:
+
+---
+
+```bash
+dotnet test --filter "FileDiffer_EmptyFiles_ProducesCorrectDiff"
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet test --filter "FileDiffer_EmptyFiles_ProducesCorrectD
+iff"
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.sln                                    Restore (0.0s) 
+Restore complete (0.7s)
+  DiffMore.Core succeeded (0.2s) → DiffMore.Core\bin\Debug\net9.0\ktsu.DiffMore.Core.dll
+
+  DiffMore.CLI succeeded (0.1s) → DiffMore.CLI\bin\Debug\net9.0\ktsu.DiffMore.CLI.dll
+
+  DiffMore.Test succeeded (0.1s) → DiffMore.Test\bin\Debug\net9.0\ktsu.DiffMore.Test.dll
+
+  DiffMore.Test test failed with 13 error(s) (1.4s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(51): error test failed:
+
+      FileDiffer_EmptyFiles_ProducesCorrectDiff (22ms): Assert.AreEqual failed. Expected:<
+      >. Actual:<--- a/empty1.txt
+      +++ b/empty2.txt
+      >. Git diff for empty files should be empty string
+      Stack Trace:
+         at ktsu.DiffMore.Test.EdgeCaseTests.FileDiffer_EmptyFiles_ProducesCorrectDiff() i
+      n C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs:line 51
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(95): error test failed:
+
+      FileDiffer_VeryLargeFile_HandlesCorrectly (14ms): Assert.AreEqual failed. Expected:<
+      1>. Actual:<2>. Should find the one modified line
+      Stack Trace:
+         at ktsu.DiffMore.Test.EdgeCaseTests.FileDiffer_VeryLargeFile_HandlesCorrectly() i
+      n C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs:line 95
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(148): error test failed:
+
+      FileDiffer_AllLinesChangedFile_ShowsCompleteChanges (4ms): Assert.AreEqual failed. E
+      xpected:<3>. Actual:<0>. Should find all 3 lines modified
+      Stack Trace:
+         at ktsu.DiffMore.Test.EdgeCaseTests.FileDiffer_AllLinesChangedFile_ShowsCompleteC
+      hanges() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs:line 148
+
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(113): error test failed:
+
+      FindDifferences_ModifiedLine_ReturnsCorrectDifference (5ms): Assert.IsNotNull failed
+      . Should find difference at line 2
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferDiffTests.FindDifferences_ModifiedLine_ReturnsCor
+      rectDifference() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs:li
+      ne 113
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(151): error test failed:
+
+      GenerateGitStyleDiff_IdenticalFiles_ReturnsEmptyString (2ms): Assert.AreEqual failed
+      . Expected:<>. Actual:<--- a/file1.txt
+      +++ b/identical.txt
+      >. Git style diff should be empty for identical files
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferDiffTests.GenerateGitStyleDiff_IdenticalFiles_Ret
+      urnsEmptyString() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs:l
+      ine 151
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(221): error test failed:
+
+      GenerateChangeSummaryDiff_WithDifferences_ContainsSummaryInfo (3ms): Assert.IsTrue f
+      ailed. Summary should mention modified lines
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferDiffTests.GenerateChangeSummaryDiff_WithDifferenc
+      es_ContainsSummaryInfo() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTes
+      ts.cs:line 221
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(59): error test failed: 
+      FileDiffer_InvalidPaths_ThrowsDirectoryNotFoundException (6ms): Assert.ThrowsExcepti
+      on failed. Expected exception type:<System.IO.DirectoryNotFoundException> but no exc
+      eption was thrown.
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferPathTests.FileDiffer_InvalidPaths_ThrowsDirectory
+      NotFoundException() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs
+      :line 59
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(168): error test failed:
+
+      FileDiffer_MultipleSearchPatterns_FindsAllMatchingFiles (5ms): Assert.AreEqual faile
+      d. Expected:<2>. Actual:<0>. Should have 2 same files (*.txt and *.md)
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferPathTests.FileDiffer_MultipleSearchPatterns_Finds
+      AllMatchingFiles() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs:
+      line 168
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(51): error test failed:
+
+      FindFiles_ExistingFileName_ReturnsAllMatches (18ms): Assert.IsTrue failed. Root file
+       should be found
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileFinderTests.FindFiles_ExistingFileName_ReturnsAllMatche
+      s() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs:line 51
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(75): error test failed:
+
+      FindFiles_UniqueFileName_ReturnsSingleFile (0ms): Assert.AreEqual failed. Expected:<
+      /mock-test-dir\Subdir1\different.txt>. Actual:<C:\mock-test-dir\Subdir1\different.tx
+      t>. Should find the correct file
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileFinderTests.FindFiles_UniqueFileName_ReturnsSingleFile(
+      ) in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs:line 75
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(81): error test failed:
+
+      FindDifferences_RecursiveTrue_IncludesSubdirectoryFiles (8ms): Assert.AreEqual faile
+      d. Expected:<9>. Actual:<8>. Should find all 9 files across all directories
+      Stack Trace:
+         at ktsu.DiffMore.Test.RecursiveDiffTests.FindDifferences_RecursiveTrue_IncludesSu
+      bdirectoryFiles() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs:li
+      ne 81
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(108): error test failed: 
+      FindDifferences_RecursiveFalse_ExcludesSubdirectoryFiles (7ms): Assert.AreEqual fail
+      ed. Expected:<4>. Actual:<3>. Should find only 4 files in the root directories
+
+      Stack Trace:
+         at ktsu.DiffMore.Test.RecursiveDiffTests.FindDifferences_RecursiveFalse_ExcludesS
+      ubdirectoryFiles() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs:l
+      ine 108
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\bin\Debug\net9.0\ktsu.DiffMore.Test.dll : error
+ run failed: Tests failed: 'C:\dev\ktsu-dev\DiffMore\DiffMore.Test\bin\Debug\net9.0\TestRe
+sults\ktsu.DiffMore.Test_net9.0_x64.log' [net9.0|x64]
+
+Test summary: total: 61, failed: 12, succeeded: 49, skipped: 0, duration: 1.2s
+Build failed with 13 error(s) in 2.8s
+  00:43:26   DiffMore  3.087s   1 - ERROR 
+  10:43:26 main  ?2 ~7 
+
+```
+
+---
+
+Good news! The IndexOutOfRangeException is fixed - the empty files test is no longer crashing. However, there are still several test failures. The main issues I can see are:
+
+1. **Empty files test**: The test expects an empty string for git diff of identical empty files, but it's getting file headers
+2. **Modified line detection**: Tests expect to find "modified" lines but the algorithm treats changes as deletions + insertions
+3. **File path issues**: Some tests have path format mismatches
+
+Let me focus on the most critical issue first - the git diff generation for identical files should return an empty string. Let me check the GenerateGitStyleDiff method:
+
+---
+
+Read file: DiffMore.Core/FileDiffer.cs
+
+---
+
+I can see the issue. The `GenerateColoredDiff` method always adds file headers, even when there are no differences. For identical files, it should return an empty collection or at least check if there are any actual differences before adding headers.
+
+Let me add a check for identical files in the `GenerateColoredDiff` method:
+
+---
+
+
+
+---
+
+Now let me test the empty files test to see if this fixes the issue:
+
+---
+
+```bash
+dotnet test --filter "FileDiffer_EmptyFiles_ProducesCorrectDiff" --verbosity normal
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet test --filter "FileDiffer_EmptyFiles_ProducesCorrectD
+iff" --verbosity normal
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.sln                                    Restore (0.0s) 
+Restore complete (0.6s)
+  DiffMore.Core succeeded (0.5s) → DiffMore.Core\bin\Debug\net9.0\ktsu.DiffMore.Core.dll
+
+  DiffMore.CLI succeeded (0.2s) → DiffMore.CLI\bin\Debug\net9.0\ktsu.DiffMore.CLI.dll
+
+  DiffMore.Test succeeded (0.3s) → DiffMore.Test\bin\Debug\net9.0\ktsu.DiffMore.Test.dll
+
+  DiffMore.Test test failed with 11 error(s) (1.6s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(95): error test failed:
+
+      FileDiffer_VeryLargeFile_HandlesCorrectly (30ms): Assert.AreEqual failed. Expected:<
+      1>. Actual:<2>. Should find the one modified line
+      Stack Trace:
+         at ktsu.DiffMore.Test.EdgeCaseTests.FileDiffer_VeryLargeFile_HandlesCorrectly() i
+      n C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs:line 95
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(148): error test failed:
+
+      FileDiffer_AllLinesChangedFile_ShowsCompleteChanges (3ms): Assert.AreEqual failed. E
+      xpected:<3>. Actual:<0>. Should find all 3 lines modified
+      Stack Trace:
+         at ktsu.DiffMore.Test.EdgeCaseTests.FileDiffer_AllLinesChangedFile_ShowsCompleteC
+      hanges() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs:line 148
+
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(113): error test failed:
+
+      FindDifferences_ModifiedLine_ReturnsCorrectDifference (4ms): Assert.IsNotNull failed
+      . Should find difference at line 2
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferDiffTests.FindDifferences_ModifiedLine_ReturnsCor
+      rectDifference() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs:li
+      ne 113
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(221): error test failed:
+
+      GenerateChangeSummaryDiff_WithDifferences_ContainsSummaryInfo (3ms): Assert.IsTrue f
+      ailed. Summary should mention modified lines
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferDiffTests.GenerateChangeSummaryDiff_WithDifferenc
+      es_ContainsSummaryInfo() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTes
+      ts.cs:line 221
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(59): error test failed: 
+      FileDiffer_InvalidPaths_ThrowsDirectoryNotFoundException (9ms): Assert.ThrowsExcepti
+      on failed. Expected exception type:<System.IO.DirectoryNotFoundException> but no exc
+      eption was thrown.
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferPathTests.FileDiffer_InvalidPaths_ThrowsDirectory
+      NotFoundException() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs
+      :line 59
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(168): error test failed:
+
+      FileDiffer_MultipleSearchPatterns_FindsAllMatchingFiles (9ms): Assert.AreEqual faile
+      d. Expected:<2>. Actual:<0>. Should have 2 same files (*.txt and *.md)
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferPathTests.FileDiffer_MultipleSearchPatterns_Finds
+      AllMatchingFiles() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs:
+      line 168
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(51): error test failed:
+
+      FindFiles_ExistingFileName_ReturnsAllMatches (24ms): Assert.IsTrue failed. Root file
+       should be found
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileFinderTests.FindFiles_ExistingFileName_ReturnsAllMatche
+      s() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs:line 51
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(75): error test failed:
+
+      FindFiles_UniqueFileName_ReturnsSingleFile (1ms): Assert.AreEqual failed. Expected:<
+      /mock-test-dir\Subdir1\different.txt>. Actual:<C:\mock-test-dir\Subdir1\different.tx
+      t>. Should find the correct file
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileFinderTests.FindFiles_UniqueFileName_ReturnsSingleFile(
+      ) in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs:line 75
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(81): error test failed:
+
+      FindDifferences_RecursiveTrue_IncludesSubdirectoryFiles (13ms): Assert.AreEqual fail
+      ed. Expected:<9>. Actual:<8>. Should find all 9 files across all directories
+
+      Stack Trace:
+         at ktsu.DiffMore.Test.RecursiveDiffTests.FindDifferences_RecursiveTrue_IncludesSu
+      bdirectoryFiles() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs:li
+      ne 81
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(108): error test failed: 
+      FindDifferences_RecursiveFalse_ExcludesSubdirectoryFiles (12ms): Assert.AreEqual fai
+      led. Expected:<4>. Actual:<3>. Should find only 4 files in the root directories
+
+      Stack Trace:
+         at ktsu.DiffMore.Test.RecursiveDiffTests.FindDifferences_RecursiveFalse_ExcludesS
+      ubdirectoryFiles() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs:l
+      ine 108
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\bin\Debug\net9.0\ktsu.DiffMore.Test.dll : error
+ run failed: Tests failed: 'C:\dev\ktsu-dev\DiffMore\DiffMore.Test\bin\Debug\net9.0\TestRe
+sults\ktsu.DiffMore.Test_net9.0_x64.log' [net9.0|x64]
+
+Test summary: total: 61, failed: 10, succeeded: 51, skipped: 0, duration: 1.4s
+Build failed with 11 error(s) in 3.6s
+  00:43:57   DiffMore  3.828s   1 - ERROR 
+  10:43:57 main  ?2 ~7 
+
+```
+
+---
+
+
+
+I'll help you continue working on the DiffMore application. Let me first check the current state of the project and see what needs to be addressed.
+
+---
+
+```bash
+cd /c/dev/ktsu-dev/DiffMore && dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >cd /c/dev/ktsu-dev/DiffMore && dotnet build
+Set-Location: Cannot find path 'C:\c\dev\ktsu-dev\DiffMore' because it does not exist.
+  00:45:43   DiffMore  180ms   1 - ERROR 
+  10:45:43 main  ?2 ~8 
+ PS C:\dev\ktsu-dev\DiffMore >
+```
+
+---
+
+```bash
+dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet build
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.sln                                    Restore (0.0s)
+                                                                                   (0.1s) 
+Restore complete (1.4s)
+  DiffMore.Core succeeded (0.3s) → DiffMore.Core\bin\Debug\net9.0\ktsu.DiffMore.Core.dll
+
+  DiffMore.CLI succeeded (0.1s) → DiffMore.CLI\bin\Debug\net9.0\ktsu.DiffMore.CLI.dll
+
+  DiffMore.Test succeeded (0.2s) → DiffMore.Test\bin\Debug\net9.0\ktsu.DiffMore.Test.dll
+
+
+Build succeeded in 2.7s
+  00:45:51   DiffMore  3.347s  
+  10:45:51 main  ?2 ~8 
+
+```
+
+---
+
+Great! The build is now successful. Let me run the tests to see the current state of the test failures:
+
+---
+
+```bash
+dotnet test
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet test --filter "FileDiffer_EmptyFiles_ProducesCorrectD
+iff" --verbosity normal       dotnet test
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.sln                                    Restore (0.0s)
+                                                                                   (0.1s) 
+Restore complete (1.0s)
+  DiffMore.Core succeeded (0.3s) → DiffMore.Core\bin\Debug\net9.0\ktsu.DiffMore.Core.dll
+
+  DiffMore.CLI succeeded (0.1s) → DiffMore.CLI\bin\Debug\net9.0\ktsu.DiffMore.CLI.dll
+
+  DiffMore.Test succeeded (0.2s) → DiffMore.Test\bin\Debug\net9.0\ktsu.DiffMore.Test.dll
+
+  DiffMore.Test test failed with 11 error(s) (2.3s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(95): error test failed:
+
+      FileDiffer_VeryLargeFile_HandlesCorrectly (37ms): Assert.AreEqual failed. Expected:<
+      1>. Actual:<2>. Should find the one modified line
+      Stack Trace:
+         at ktsu.DiffMore.Test.EdgeCaseTests.FileDiffer_VeryLargeFile_HandlesCorrectly() i
+      n C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs:line 95
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(148): error test failed:
+
+      FileDiffer_AllLinesChangedFile_ShowsCompleteChanges (4ms): Assert.AreEqual failed. E
+      xpected:<3>. Actual:<0>. Should find all 3 lines modified
+      Stack Trace:
+         at ktsu.DiffMore.Test.EdgeCaseTests.FileDiffer_AllLinesChangedFile_ShowsCompleteC
+      hanges() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs:line 148
+
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(113): error test failed:
+
+      FindDifferences_ModifiedLine_ReturnsCorrectDifference (7ms): Assert.IsNotNull failed
+      . Should find difference at line 2
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferDiffTests.FindDifferences_ModifiedLine_ReturnsCor
+      rectDifference() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs:li
+      ne 113
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(221): error test failed:
+
+      GenerateChangeSummaryDiff_WithDifferences_ContainsSummaryInfo (5ms): Assert.IsTrue f
+      ailed. Summary should mention modified lines
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferDiffTests.GenerateChangeSummaryDiff_WithDifferenc
+      es_ContainsSummaryInfo() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTes
+      ts.cs:line 221
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(59): error test failed: 
+      FileDiffer_InvalidPaths_ThrowsDirectoryNotFoundException (14ms): Assert.ThrowsExcept
+      ion failed. Expected exception type:<System.IO.DirectoryNotFoundException> but no ex
+      ception was thrown.
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferPathTests.FileDiffer_InvalidPaths_ThrowsDirectory
+      NotFoundException() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs
+      :line 59
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(168): error test failed:
+
+      FileDiffer_MultipleSearchPatterns_FindsAllMatchingFiles (9ms): Assert.AreEqual faile
+      d. Expected:<2>. Actual:<0>. Should have 2 same files (*.txt and *.md)
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferPathTests.FileDiffer_MultipleSearchPatterns_Finds
+      AllMatchingFiles() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs:
+      line 168
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(51): error test failed:
+
+      FindFiles_ExistingFileName_ReturnsAllMatches (38ms): Assert.IsTrue failed. Root file
+       should be found
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileFinderTests.FindFiles_ExistingFileName_ReturnsAllMatche
+      s() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs:line 51
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(75): error test failed:
+
+      FindFiles_UniqueFileName_ReturnsSingleFile (1ms): Assert.AreEqual failed. Expected:<
+      /mock-test-dir\Subdir1\different.txt>. Actual:<C:\mock-test-dir\Subdir1\different.tx
+      t>. Should find the correct file
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileFinderTests.FindFiles_UniqueFileName_ReturnsSingleFile(
+      ) in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs:line 75
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(81): error test failed:
+
+      FindDifferences_RecursiveTrue_IncludesSubdirectoryFiles (17ms): Assert.AreEqual fail
+      ed. Expected:<9>. Actual:<8>. Should find all 9 files across all directories
+
+      Stack Trace:
+         at ktsu.DiffMore.Test.RecursiveDiffTests.FindDifferences_RecursiveTrue_IncludesSu
+      bdirectoryFiles() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs:li
+      ne 81
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(108): error test failed: 
+      FindDifferences_RecursiveFalse_ExcludesSubdirectoryFiles (27ms): Assert.AreEqual fai
+      led. Expected:<4>. Actual:<3>. Should find only 4 files in the root directories
+
+      Stack Trace:
+         at ktsu.DiffMore.Test.RecursiveDiffTests.FindDifferences_RecursiveFalse_ExcludesS
+      ubdirectoryFiles() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs:l
+      ine 108
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\bin\Debug\net9.0\ktsu.DiffMore.Test.dll : error
+ run failed: Tests failed: 'C:\dev\ktsu-dev\DiffMore\DiffMore.Test\bin\Debug\net9.0\TestRe
+sults\ktsu.DiffMore.Test_net9.0_x64.log' [net9.0|x64]
+
+Test summary: total: 61, failed: 10, succeeded: 51, skipped: 0, duration: 2.1s
+Build failed with 11 error(s) in 4.4s
+  00:46:01   DiffMore  4.832s   1 - ERROR 
+  10:46:01 main  ?2 ~8 
+
+```
+
+---
+
+I can see there are 10 test failures. Let me examine the core diff algorithm to understand what's happening. Let me first look at the FileDiffer implementation:
+
+---
+
+Read file: DiffMore.Core/FileDiffer.cs
+
+---
+
+Let me look at the Myers diff algorithm implementation:
+
+---
+
+Read file: DiffMore.Core/FileDiffer.cs
+
+---
+
+Let me see the rest of the BacktrackPath method and the CreateSimpleDiff method:
+
+---
+
+Read file: DiffMore.Core/FileDiffer.cs
+
+---
+
+Now let me look at the FindDifferences method that processes the edit script:
+
+---
+
+Read file: DiffMore.Core/FileDiffer.cs
+
+---
+
+Now let me look at some of the failing tests to understand what's expected:
+
+---
+
+Read file: DiffMore.Test/EdgeCaseTests.cs
+
+---
+
+Now let me look at the FileDifferDiffTests to understand what's expected:
+
+---
+
+Read file: DiffMore.Test/FileDifferDiffTests.cs
+
+---
+
+I can see the issue now. The problem is in how the diff algorithm is interpreting changes. Let me run a specific failing test to see the exact issue:
+
+---
+
+```bash
+dotnet test --filter "FindDifferences_ModifiedLine_ReturnsCorrectDifference" --verbosity normal
+```
+
+```
+         at ktsu.DiffMore.Test.EdgeCaseTests.FileDiffer_VeryLargeFile_HandlesCorrectly() i
+      n C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs:line 95
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(148): error test failed:
+
+      FileDiffer_AllLinesChangedFile_ShowsCompleteChanges (3ms): Assert.AreEqual failed. E
+      xpected:<3>. Actual:<0>. Should find all 3 lines modified
+      Stack Trace:
+         at ktsu.DiffMore.Test.EdgeCaseTests.FileDiffer_AllLinesChangedFile_ShowsCompleteC
+      hanges() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs:line 148
+
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(113): error test failed:
+
+      FindDifferences_ModifiedLine_ReturnsCorrectDifference (4ms): Assert.IsNotNull failed
+      . Should find difference at line 2
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferDiffTests.FindDifferences_ModifiedLine_ReturnsCor
+      rectDifference() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs:li
+      ne 113
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(221): error test failed:
+
+      GenerateChangeSummaryDiff_WithDifferences_ContainsSummaryInfo (5ms): Assert.IsTrue f
+      ailed. Summary should mention modified lines
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferDiffTests.GenerateChangeSummaryDiff_WithDifferenc
+      es_ContainsSummaryInfo() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTes
+      ts.cs:line 221
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(59): error test failed: 
+      FileDiffer_InvalidPaths_ThrowsDirectoryNotFoundException (12ms): Assert.ThrowsExcept
+      ion failed. Expected exception type:<System.IO.DirectoryNotFoundException> but no ex
+      ception was thrown.
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferPathTests.FileDiffer_InvalidPaths_ThrowsDirectory
+      NotFoundException() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs
+      :line 59
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(168): error test failed:
+
+      FileDiffer_MultipleSearchPatterns_FindsAllMatchingFiles (11ms): Assert.AreEqual fail
+      ed. Expected:<2>. Actual:<0>. Should have 2 same files (*.txt and *.md)
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferPathTests.FileDiffer_MultipleSearchPatterns_Finds
+      AllMatchingFiles() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs:
+      line 168
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(51): error test failed:
+
+      FindFiles_ExistingFileName_ReturnsAllMatches (33ms): Assert.IsTrue failed. Root file
+       should be found
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileFinderTests.FindFiles_ExistingFileName_ReturnsAllMatche
+      s() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs:line 51
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(75): error test failed:
+
+      FindFiles_UniqueFileName_ReturnsSingleFile (1ms): Assert.AreEqual failed. Expected:<
+      /mock-test-dir\Subdir1\different.txt>. Actual:<C:\mock-test-dir\Subdir1\different.tx
+      t>. Should find the correct file
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileFinderTests.FindFiles_UniqueFileName_ReturnsSingleFile(
+      ) in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs:line 75
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(81): error test failed:
+
+      FindDifferences_RecursiveTrue_IncludesSubdirectoryFiles (12ms): Assert.AreEqual fail
+      ed. Expected:<9>. Actual:<8>. Should find all 9 files across all directories
+
+      Stack Trace:
+         at ktsu.DiffMore.Test.RecursiveDiffTests.FindDifferences_RecursiveTrue_IncludesSu
+      bdirectoryFiles() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs:li
+      ne 81
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(108): error test failed: 
+      FindDifferences_RecursiveFalse_ExcludesSubdirectoryFiles (168ms): Assert.AreEqual fa
+      iled. Expected:<4>. Actual:<3>. Should find only 4 files in the root directories
+
+      Stack Trace:
+         at ktsu.DiffMore.Test.RecursiveDiffTests.FindDifferences_RecursiveFalse_ExcludesS
+      ubdirectoryFiles() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs:l
+      ine 108
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\bin\Debug\net9.0\ktsu.DiffMore.Test.dll : error
+ run failed: Tests failed: 'C:\dev\ktsu-dev\DiffMore\DiffMore.Test\bin\Debug\net9.0\TestRe
+sults\ktsu.DiffMore.Test_net9.0_x64.log' [net9.0|x64]
+
+Test summary: total: 61, failed: 10, succeeded: 51, skipped: 0, duration: 1.9s
+Build failed with 11 error(s) in 3.9s
+  00:46:40   DiffMore  4.284s   1 - ERROR 
+  10:46:40 main  ?2 ~8
+
+```
+
+---
+
+Let me run just the specific test to see the exact failure:
+
+---
+
+```bash
+dotnet test --filter "FindDifferences_ModifiedLine_ReturnsCorrectDifference" --verbosity detailed
+```
+
+```
+rrectDifference" --verbosity detailed
+Restore complete (0.7s)
+    Determining projects to restore...
+    All projects are up-to-date for restore.
+  DiffMore.Core succeeded (0.2s) → DiffMore.Core\bin\Debug\net9.0\ktsu.DiffMore.Core.dll
+
+  DiffMore.CLI succeeded (0.1s) → DiffMore.CLI\bin\Debug\net9.0\ktsu.DiffMore.CLI.dll
+  DiffMore.Test succeeded (0.1s) → DiffMore.Test\bin\Debug\net9.0\ktsu.DiffMore.Test.dll
+
+  DiffMore.Test test failed with 11 error(s) (2.3s)
+    Run tests: 'C:\dev\ktsu-dev\DiffMore\DiffMore.Test\bin\Debug\net9.0\ktsu.DiffMore.Test
+.dll' [net9.0|x64]
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(95): error test failed:
+
+      FileDiffer_VeryLargeFile_HandlesCorrectly (33ms): Assert.AreEqual failed. Expected:<
+      1>. Actual:<2>. Should find the one modified line
+      Stack Trace:
+         at ktsu.DiffMore.Test.EdgeCaseTests.FileDiffer_VeryLargeFile_HandlesCorrectly() i
+      n C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs:line 95
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(148): error test failed:
+
+      FileDiffer_AllLinesChangedFile_ShowsCompleteChanges (5ms): Assert.AreEqual failed. E
+      xpected:<3>. Actual:<0>. Should find all 3 lines modified
+      Stack Trace:
+         at ktsu.DiffMore.Test.EdgeCaseTests.FileDiffer_AllLinesChangedFile_ShowsCompleteC
+      hanges() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs:line 148
+
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(113): error test failed:
+
+      FindDifferences_ModifiedLine_ReturnsCorrectDifference (8ms): Assert.IsNotNull failed
+      . Should find difference at line 2
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferDiffTests.FindDifferences_ModifiedLine_ReturnsCor
+      rectDifference() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs:li
+      ne 113
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(221): error test failed:
+
+      GenerateChangeSummaryDiff_WithDifferences_ContainsSummaryInfo (6ms): Assert.IsTrue f
+      ailed. Summary should mention modified lines
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferDiffTests.GenerateChangeSummaryDiff_WithDifferenc
+      es_ContainsSummaryInfo() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTes
+      ts.cs:line 221
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(59): error test failed: 
+      FileDiffer_InvalidPaths_ThrowsDirectoryNotFoundException (10ms): Assert.ThrowsExcept
+      ion failed. Expected exception type:<System.IO.DirectoryNotFoundException> but no ex
+      ception was thrown.
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferPathTests.FileDiffer_InvalidPaths_ThrowsDirectory
+      NotFoundException() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs
+      :line 59
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(168): error test failed:
+
+      FileDiffer_MultipleSearchPatterns_FindsAllMatchingFiles (13ms): Assert.AreEqual fail
+      ed. Expected:<2>. Actual:<0>. Should have 2 same files (*.txt and *.md)
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferPathTests.FileDiffer_MultipleSearchPatterns_Finds
+      AllMatchingFiles() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs:
+      line 168
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(51): error test failed:
+
+      FindFiles_ExistingFileName_ReturnsAllMatches (36ms): Assert.IsTrue failed. Root file
+       should be found
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileFinderTests.FindFiles_ExistingFileName_ReturnsAllMatche
+      s() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs:line 51
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(75): error test failed:
+
+      FindFiles_UniqueFileName_ReturnsSingleFile (1ms): Assert.AreEqual failed. Expected:<
+      /mock-test-dir\Subdir1\different.txt>. Actual:<C:\mock-test-dir\Subdir1\different.tx
+      t>. Should find the correct file
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileFinderTests.FindFiles_UniqueFileName_ReturnsSingleFile(
+      ) in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs:line 75
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(81): error test failed:
+
+      FindDifferences_RecursiveTrue_IncludesSubdirectoryFiles (20ms): Assert.AreEqual fail
+      ed. Expected:<9>. Actual:<8>. Should find all 9 files across all directories
+
+      Stack Trace:
+         at ktsu.DiffMore.Test.RecursiveDiffTests.FindDifferences_RecursiveTrue_IncludesSu
+      bdirectoryFiles() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs:li
+      ne 81
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(108): error test failed: 
+      FindDifferences_RecursiveFalse_ExcludesSubdirectoryFiles (17ms): Assert.AreEqual fai
+      led. Expected:<4>. Actual:<3>. Should find only 4 files in the root directories
+
+      Stack Trace:
+         at ktsu.DiffMore.Test.RecursiveDiffTests.FindDifferences_RecursiveFalse_ExcludesS
+      ubdirectoryFiles() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs:l
+      ine 108
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\bin\Debug\net9.0\ktsu.DiffMore.Test.dll : error
+ run failed: Tests failed: 'C:\dev\ktsu-dev\DiffMore\DiffMore.Test\bin\Debug\net9.0\TestRe
+sults\ktsu.DiffMore.Test_net9.0_x64.log' [net9.0|x64]
+
+Test summary: total: 61, failed: 10, succeeded: 51, skipped: 0, duration: 2.0s
+Build failed with 11 error(s) in 4.0s
+  00:46:50   DiffMore  4.306s   1 - ERROR 
+  10:46:50 main  ?2 ~8
+
+```
+
+---
+
+I can see the issue. The problem is that the current diff algorithm is not correctly identifying modified lines. When a line is changed, it should be reported as both a deletion and an insertion at the same line numbers, but the test expects to find a single difference that represents a modification.
+
+Let me look at the test more closely to understand what it expects:
+
+---
+
+Read file: DiffMore.Test/FileDifferDiffTests.cs
+
+---
+
+I see the issue now. The test expects to find a single `LineDifference` object that represents a modification where both `LineNumber1` and `LineNumber2` are set to 2, and both `Content1` and `Content2` are populated. However, the current implementation treats modifications as separate delete and insert operations.
+
+The problem is in the `FindDifferences` method. It needs to be smarter about detecting when a delete followed by an insert at the same logical position represents a modification rather than separate operations.
+
+Let me fix this by modifying the `FindDifferences` method to detect and merge consecutive delete/insert operations that represent modifications:
+
+---
+
+
+
+---
+
+Now let's test this fix:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet build
+Restore complete (0.7s)
+  DiffMore.Core failed with 1 error(s) (0.4s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(242,53): error CA1859: Change ret
+urn type of method 'MergeModifications' from 'System.Collections.Generic.IReadOnlyCollecti
+on<ktsu.DiffMore.Core.LineDifference>' to 'System.Collections.ObjectModel.ReadOnlyCollecti
+on<ktsu.DiffMore.Core.LineDifference>' for improved performance (https://learn.microsoft.c
+om/dotnet/fundamentals/code-analysis/quality-rules/ca1859)
+
+Build failed with 1 error(s) in 1.5s
+  00:47:27   DiffMore  1.908s   1 - ERROR 
+  10:47:27 main  ?2 ~8 
+
+```
+
+---
+
+I need to fix the return type to satisfy the analyzer:
+
+---
+
+
+
+---
+
+
+
+---
+
+```bash
+dotnet build
+```
+
+```
+Restore complete (0.7s)
+  DiffMore.Core succeeded (0.4s) → DiffMore.Core\bin\Debug\net9.0\ktsu.DiffMore.Core.dll
+
+  DiffMore.CLI succeeded (0.2s) → DiffMore.CLI\bin\Debug\net9.0\ktsu.DiffMore.CLI.dll
+  DiffMore.Test succeeded (0.3s) → DiffMore.Test\bin\Debug\net9.0\ktsu.DiffMore.Test.dll
+
+
+Build succeeded in 1.9s
+  00:47:44   DiffMore  2.257s  
+  10:47:44 main  ?2 ~8 
+
+```
+
+---
+
+Great! Now let's test the specific failing test:
+
+---
+
+```bash
+dotnet test --filter "FindDifferences_ModifiedLine_ReturnsCorrectDifference"
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet test --filter "FindDifferences_ModifiedLine_ReturnsCo
+rrectDifference"
+Restore complete (0.8s)
+  DiffMore.Core succeeded (0.2s) → DiffMore.Core\bin\Debug\net9.0\ktsu.DiffMore.Core.dll
+
+  DiffMore.CLI succeeded (0.1s) → DiffMore.CLI\bin\Debug\net9.0\ktsu.DiffMore.CLI.dll
+  DiffMore.Test succeeded (0.1s) → DiffMore.Test\bin\Debug\net9.0\ktsu.DiffMore.Test.dll
+  DiffMore.Test test failed with 10 error(s) (1.4s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(95): error test failed:
+
+      FileDiffer_VeryLargeFile_HandlesCorrectly (24ms): Assert.AreEqual failed. Expected:<
+      1>. Actual:<2>. Should find the one modified line
+      Stack Trace:
+         at ktsu.DiffMore.Test.EdgeCaseTests.FileDiffer_VeryLargeFile_HandlesCorrectly() i
+      n C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs:line 95
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(148): error test failed:
+
+      FileDiffer_AllLinesChangedFile_ShowsCompleteChanges (4ms): Assert.AreEqual failed. E
+      xpected:<3>. Actual:<0>. Should find all 3 lines modified
+      Stack Trace:
+         at ktsu.DiffMore.Test.EdgeCaseTests.FileDiffer_AllLinesChangedFile_ShowsCompleteC
+      hanges() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs:line 148
+
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(221): error test failed:
+
+      GenerateChangeSummaryDiff_WithDifferences_ContainsSummaryInfo (3ms): Assert.IsTrue f
+      ailed. Summary should mention modified lines
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferDiffTests.GenerateChangeSummaryDiff_WithDifferenc
+      es_ContainsSummaryInfo() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTes
+      ts.cs:line 221
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(59): error test failed: 
+      FileDiffer_InvalidPaths_ThrowsDirectoryNotFoundException (9ms): Assert.ThrowsExcepti
+      on failed. Expected exception type:<System.IO.DirectoryNotFoundException> but no exc
+      eption was thrown.
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferPathTests.FileDiffer_InvalidPaths_ThrowsDirectory
+      NotFoundException() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs
+      :line 59
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(168): error test failed:
+
+      FileDiffer_MultipleSearchPatterns_FindsAllMatchingFiles (6ms): Assert.AreEqual faile
+      d. Expected:<2>. Actual:<0>. Should have 2 same files (*.txt and *.md)
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferPathTests.FileDiffer_MultipleSearchPatterns_Finds
+      AllMatchingFiles() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs:
+      line 168
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(51): error test failed:
+
+      FindFiles_ExistingFileName_ReturnsAllMatches (20ms): Assert.IsTrue failed. Root file
+       should be found
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileFinderTests.FindFiles_ExistingFileName_ReturnsAllMatche
+      s() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs:line 51
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(75): error test failed:
+
+      FindFiles_UniqueFileName_ReturnsSingleFile (0ms): Assert.AreEqual failed. Expected:<
+      /mock-test-dir\Subdir1\different.txt>. Actual:<C:\mock-test-dir\Subdir1\different.tx
+      t>. Should find the correct file
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileFinderTests.FindFiles_UniqueFileName_ReturnsSingleFile(
+      ) in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs:line 75
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(81): error test failed:
+
+      FindDifferences_RecursiveTrue_IncludesSubdirectoryFiles (10ms): Assert.AreEqual fail
+      ed. Expected:<9>. Actual:<8>. Should find all 9 files across all directories
+
+      Stack Trace:
+         at ktsu.DiffMore.Test.RecursiveDiffTests.FindDifferences_RecursiveTrue_IncludesSu
+      bdirectoryFiles() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs:li
+      ne 81
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(108): error test failed: 
+      FindDifferences_RecursiveFalse_ExcludesSubdirectoryFiles (9ms): Assert.AreEqual fail
+      ed. Expected:<4>. Actual:<3>. Should find only 4 files in the root directories
+
+      Stack Trace:
+         at ktsu.DiffMore.Test.RecursiveDiffTests.FindDifferences_RecursiveFalse_ExcludesS
+      ubdirectoryFiles() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs:l
+      ine 108
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\bin\Debug\net9.0\ktsu.DiffMore.Test.dll : error
+ run failed: Tests failed: 'C:\dev\ktsu-dev\DiffMore\DiffMore.Test\bin\Debug\net9.0\TestRe
+sults\ktsu.DiffMore.Test_net9.0_x64.log' [net9.0|x64]
+
+Test summary: total: 61, failed: 9, succeeded: 52, skipped: 0, duration: 1.2s
+Build failed with 10 error(s) in 2.9s
+  00:47:53   DiffMore  3.258s   1 - ERROR 
+  10:47:53 main  ?2 ~8
+
+```
+
+---
+
+Good! The `FindDifferences_ModifiedLine_ReturnsCorrectDifference` test is no longer failing, which means our fix worked for that specific issue. We went from 10 failures to 9 failures.
+
+Now let's look at the remaining issues. Let me check the "AllLinesChangedFile" test which is still failing:
+
+---
+
+```bash
+dotnet test --filter "FileDiffer_AllLinesChangedFile_ShowsCompleteChanges"
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet test --filter "FileDiffer_AllLinesChangedFile_ShowsCo
+mpleteChanges"
+Restore complete (0.9s)
+  DiffMore.Core succeeded (0.4s) → DiffMore.Core\bin\Debug\net9.0\ktsu.DiffMore.Core.dll
+
+  DiffMore.CLI succeeded (0.1s) → DiffMore.CLI\bin\Debug\net9.0\ktsu.DiffMore.CLI.dll
+  DiffMore.Test succeeded (0.1s) → DiffMore.Test\bin\Debug\net9.0\ktsu.DiffMore.Test.dll
+
+  DiffMore.Test test failed with 10 error(s) (2.6s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(95): error test failed:
+
+      FileDiffer_VeryLargeFile_HandlesCorrectly (36ms): Assert.AreEqual failed. Expected:<
+      1>. Actual:<2>. Should find the one modified line
+      Stack Trace:
+         at ktsu.DiffMore.Test.EdgeCaseTests.FileDiffer_VeryLargeFile_HandlesCorrectly() i
+      n C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs:line 95
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(148): error test failed:
+
+      FileDiffer_AllLinesChangedFile_ShowsCompleteChanges (3ms): Assert.AreEqual failed. E
+      xpected:<3>. Actual:<0>. Should find all 3 lines modified
+      Stack Trace:
+         at ktsu.DiffMore.Test.EdgeCaseTests.FileDiffer_AllLinesChangedFile_ShowsCompleteC
+      hanges() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs:line 148
+
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(221): error test failed:
+
+      GenerateChangeSummaryDiff_WithDifferences_ContainsSummaryInfo (7ms): Assert.IsTrue f
+      ailed. Summary should mention modified lines
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferDiffTests.GenerateChangeSummaryDiff_WithDifferenc
+      es_ContainsSummaryInfo() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTes
+      ts.cs:line 221
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(59): error test failed: 
+      FileDiffer_InvalidPaths_ThrowsDirectoryNotFoundException (22ms): Assert.ThrowsExcept
+      ion failed. Expected exception type:<System.IO.DirectoryNotFoundException> but no ex
+      ception was thrown.
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferPathTests.FileDiffer_InvalidPaths_ThrowsDirectory
+      NotFoundException() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs
+      :line 59
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(168): error test failed:
+
+      FileDiffer_MultipleSearchPatterns_FindsAllMatchingFiles (14ms): Assert.AreEqual fail
+      ed. Expected:<2>. Actual:<0>. Should have 2 same files (*.txt and *.md)
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileDifferPathTests.FileDiffer_MultipleSearchPatterns_Finds
+      AllMatchingFiles() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs:
+      line 168
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(51): error test failed:
+
+      FindFiles_ExistingFileName_ReturnsAllMatches (38ms): Assert.IsTrue failed. Root file
+       should be found
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileFinderTests.FindFiles_ExistingFileName_ReturnsAllMatche
+      s() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs:line 51
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(75): error test failed: 
+      FindFiles_UniqueFileName_ReturnsSingleFile (3ms): Assert.AreEqual failed. Expected:<
+      /mock-test-dir\Subdir1\different.txt>. Actual:<C:\mock-test-dir\Subdir1\different.tx
+      t>. Should find the correct file
+      Stack Trace:
+         at ktsu.DiffMore.Test.FileFinderTests.FindFiles_UniqueFileName_ReturnsSingleFile(
+      ) in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs:line 75
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(81): error test failed:
+
+      FindDifferences_RecursiveTrue_IncludesSubdirectoryFiles (17ms): Assert.AreEqual fail
+      ed. Expected:<9>. Actual:<8>. Should find all 9 files across all directories
+
+      Stack Trace:
+         at ktsu.DiffMore.Test.RecursiveDiffTests.FindDifferences_RecursiveTrue_IncludesSu
+      bdirectoryFiles() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs:li
+      ne 81
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(108): error test failed: 
+      FindDifferences_RecursiveFalse_ExcludesSubdirectoryFiles (18ms): Assert.AreEqual fai
+      led. Expected:<4>. Actual:<3>. Should find only 4 files in the root directories
+
+      Stack Trace:
+         at ktsu.DiffMore.Test.RecursiveDiffTests.FindDifferences_RecursiveFalse_ExcludesS
+      ubdirectoryFiles() in C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs:l
+      ine 108
+         at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signa
+      ture sig, Boolean isConstructor)
+         at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags 
+      invokeAttr)
+
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Test\bin\Debug\net9.0\ktsu.DiffMore.Test.dll : error
+ run failed: Tests failed: 'C:\dev\ktsu-dev\DiffMore\DiffMore.Test\bin\Debug\net9.0\TestRe
+sults\ktsu.DiffMore.Test_net9.0_x64.log' [net9.0|x64]
+
+Test summary: total: 61, failed: 9, succeeded: 52, skipped: 0, duration: 2.0s
+Build failed with 10 error(s) in 4.6s
+  00:48:06   DiffMore  5.101s   1 - ERROR 
+  10:48:06 main  ?2 ~8
+
+```
+
+---
+
+I notice the test is still failing. Let me look more closely at the "AllLinesChangedFile" test to understand what it's expecting:
+
+---
+
+Read file: DiffMore.Test/EdgeCaseTests.cs
+
+---
+
+I see the issue. The test expects to find 3 differences where both `LineNumber1 > 0` and `LineNumber2 > 0`, meaning it expects all 3 lines to be detected as modifications (not separate deletions and insertions). However, our current merging logic only works when the line numbers match exactly.
+
+The problem is that when all lines are different, the Myers algorithm might not produce a simple sequence of delete-insert pairs at matching positions. Let me debug this by creating a simple test to see what the algorithm is actually producing.
+
+Let me create a simple debug test to understand what's happening:
+
+---
+
+```diff
+- 
++ using System;
++ using System.IO;
++ using ktsu.DiffMore.Core;
++ 
++ class Program
++ {
++     static void Main()
++     {
++         // Create test files
++         var file1 = "test1.txt";
++         var file2 = "test2.txt";
++         
++         File.WriteAllLines(file1, new[] { "Line 1", "Line 2", "Line 3" });
++         File.WriteAllLines(file2, new[] { "Different Line 1", "Different Line 2", "Different Line 3" });
++         
++         // Test the diff
++         var differences = FileDiffer.FindDifferences(file1, file2);
++         
++         Console.WriteLine($"Found {differences.Count} differences:");
++         foreach (var diff in differences)
++         {
++             Console.WriteLine($"Line1: {diff.LineNumber1}, Line2: {diff.LineNumber2}");
++             Console.WriteLine($"Content1: '{diff.Content1}'");
++             Console.WriteLine($"Content2: '{diff.Content2}'");
++             Console.WriteLine("---");
++         }
++         
++         // Clean up
++         File.Delete(file1);
++         File.Delete(file2);
++     }
++ } 
+```
+
+---
+
+```bash
+csc debug_test.cs /reference:DiffMore.Core/bin/Debug/net9.0/ktsu.DiffMore.Core.dll && debug_test.exe
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >csc debug_test.cs /reference:DiffMore.Core/bin/Debug/net9.0/
+ktsu.DiffMore.Core.dll && debug_test.exe
+csc: The term 'csc' is not recognized as a name of a cmdlet, function, script file, or exe
+cutable program.
+Check the spelling of the name, or if a path was included, verify that the path is correct
+ and try again.
+
+[general]
+  The most similar commands are:
+    ➤ clc
+
+  00:49:29   DiffMore  110ms   1 - ERROR 
+  10:49:29 main  ?3 ~8 
+
+```
+
+---
+
+Let me use dotnet to compile and run the debug test:
+
+---
+
+```diff
+- 
++ <Project Sdk="Microsoft.NET.Sdk">
++ 
++   <PropertyGroup>
++     <OutputType>Exe</OutputType>
++     <TargetFramework>net9.0</TargetFramework>
++     <Nullable>enable</Nullable>
++   </PropertyGroup>
++ 
++   <ItemGroup>
++     <ProjectReference Include="DiffMore.Core/DiffMore.Core.csproj" />
++   </ItemGroup>
++ 
++ </Project> 
+```
+
+---
+
+```diff
+- 
++ using System;
++ using System.IO;
++ using ktsu.DiffMore.Core;
++ 
++ class Program
++ {
++     static void Main()
++     {
++         // Create test files
++         var file1 = "test1.txt";
++         var file2 = "test2.txt";
++         
++         File.WriteAllLines(file1, new[] { "Line 1", "Line 2", "Line 3" });
++         File.WriteAllLines(file2, new[] { "Different Line 1", "Different Line 2", "Different Line 3" });
++         
++         // Test the diff
++         var differences = FileDiffer.FindDifferences(file1, file2);
++         
++         Console.WriteLine($"Found {differences.Count} differences:");
++         foreach (var diff in differences)
++         {
++             Console.WriteLine($"Line1: {diff.LineNumber1}, Line2: {diff.LineNumber2}");
++             Console.WriteLine($"Content1: '{diff.Content1}'");
++             Console.WriteLine($"Content2: '{diff.Content2}'");
++             Console.WriteLine("---");
++         }
++         
++         // Clean up
++         File.Delete(file1);
++         File.Delete(file2);
++     }
++ } 
+```
+
+---
+
+```bash
+dotnet run
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet run
+
+  C:\dev\ktsu-dev\DiffMore\debug_test.csproj                               Restore (0.0s)
+                                                                                   (0.1s)
+                                                                                   (0.1s)
+                                                                                   (0.2s)
+                                                                                   (0.2s)
+                                                                                   (0.3s)
+                                                                                   (0.3s)
+                                                                                   (0.4s)
+                                                                                   (0.4s)
+                                                                                   (0.5s)
+                                                                                   (0.5s)
+                                                                                   (0.5s)
+                                                                                   (0.6s)
+
+
+                                                                                   (0.7s) 
+
+  C:\dev\ktsu-dev\DiffMore\debug_test.csproj                               Restore (0.7s) 
+                                                                                   (0.8s)
+                                                                                   (0.8s)
+                                                                                   (0.9s)
+                                                                                   (0.9s)
+                                                                                   (1.0s)
+                                                                                   (1.0s)
+                                                                                   (1.1s)
+                                                                                   (1.1s)
+                                                                                   (1.2s)
+                                                                                   (1.2s)
+                                                                                   (1.2s)
+                                                                                   (1.3s)
+                                                                                   (1.3s)
+                                                                                   (1.4s)
+                                                                                   (1.4s)
+                                                                                   (1.5s)
+                                                                                   (1.5s)
+                                                                                   (1.6s)
+                                                                                   (1.6s)
+                                                                                   (1.7s)
+                                                                                   (1.7s)
+                                                                                   (1.8s)
+                                                                                   (1.8s)
+                                                                                   (1.9s)
+                                                                                   (1.9s)
+                                                                                   (1.9s)
+                                                                                   (2.0s)
+                                                                                   (2.0s)
+                                                                                   (2.1s)
+                                                                                   (2.1s)
+                                                                                   (2.2s)
+                                                                                   (2.2s)
+                                                                                   (2.3s)
+                                                                                   (2.3s)
+                                                                                   (2.4s)
+                                                                                   (2.4s)
+                                                                                   (2.5s)
+                                                                                   (2.5s)
+                                                                                   (2.6s)
+                                                                                   (2.6s)
+                                                                                   (2.7s)
+                                                                                   (2.7s)
+                                                                                   (2.7s)
+                                                                                   (2.8s)
+                                                                                   (2.8s)
+                                                                                   (2.9s)
+                                                                                   (2.9s)
+                                                                                   (3.0s)
+                                                                                   (3.0s)
+                                                                                   (3.1s)
+                                                                                   (3.1s)
+                                                                                   (3.2s)
+                                                                                   (3.2s)
+                                                                                   (3.3s)
+                                                                                   (3.3s)
+                                                                                   (3.4s)
+                                                                                   (3.4s)
+                                                                                   (3.5s)
+                                                                                   (3.5s)
+                                                                                   (3.5s)
+                                                                                   (3.6s)
+                                                                                   (3.6s)
+                                                                                   (3.7s)
+                                                                                   (3.7s)
+                                                                                   (3.8s)
+                                                                                   (3.8s)
+                                                                                   (3.9s)
+                                                                                   (3.9s)
+                                                                                   (4.0s)
+                                                                                   (4.0s)
+                                                                                   (4.1s)
+                                                                                   (4.1s)
+                                                                                   (4.2s)
+                                                                                   (4.2s)
+                                                                                   (4.3s)
+                                                                                   (4.3s)
+C:\dev\ktsu-dev\DiffMore\Program.cs(5,7): error CS0101: The namespace '<global namespace>'
+ already contains a definition for 'Program'
+C:\dev\ktsu-dev\DiffMore\packages\microsoft.net.test.sdk\17.13.0\build\netcoreapp3.1\Micro
+soft.NET.Test.Sdk.Program.cs(4,7): error CS0101: The namespace '<global namespace>' alread
+y contains a definition for 'AutoGeneratedProgram'
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\obj\Debug\net8.0\.NETCoreApp,Version=v8.0.AssemblyA
+ttributes.cs(4,12): error CS0579: Duplicate 'global::System.Runtime.Versioning.TargetFrame
+workAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\obj\Debug\net8.0\DiffMore.Core.AssemblyInfo.cs(14,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyCompanyAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\obj\Debug\net8.0\DiffMore.Core.AssemblyInfo.cs(15,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyConfigurationAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\obj\Debug\net8.0\DiffMore.Core.AssemblyInfo.cs(16,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyCopyrightAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\obj\Debug\net8.0\DiffMore.Core.AssemblyInfo.cs(17,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyDescriptionAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\obj\Debug\net8.0\DiffMore.Core.AssemblyInfo.cs(19,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyFileVersionAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\obj\Debug\net8.0\DiffMore.Core.AssemblyInfo.cs(20,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyInformationalVersionAttribute' attr
+ibute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\obj\Debug\net8.0\DiffMore.Core.AssemblyInfo.cs(21,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyProductAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\obj\Debug\net8.0\DiffMore.Core.AssemblyInfo.cs(22,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyTitleAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\obj\Debug\net8.0\DiffMore.Core.AssemblyInfo.cs(23,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyVersionAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\obj\Debug\net8.0\DiffMore.Core.AssemblyInfo.cs(24,1
+2): error CS0579: Duplicate 'System.Resources.NeutralResourcesLanguageAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\obj\Debug\net9.0\.NETCoreApp,Version=v9.0.AssemblyA
+ttributes.cs(4,12): error CS0579: Duplicate 'global::System.Runtime.Versioning.TargetFrame
+workAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\obj\Debug\net9.0\DiffMore.Core.AssemblyInfo.cs(13,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyCompanyAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\obj\Debug\net9.0\DiffMore.Core.AssemblyInfo.cs(14,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyConfigurationAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\obj\Debug\net9.0\DiffMore.Core.AssemblyInfo.cs(15,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyCopyrightAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\obj\Debug\net9.0\DiffMore.Core.AssemblyInfo.cs(16,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyDescriptionAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\obj\Debug\net9.0\DiffMore.Core.AssemblyInfo.cs(18,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyFileVersionAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\obj\Debug\net9.0\DiffMore.Core.AssemblyInfo.cs(19,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyInformationalVersionAttribute' attr
+ibute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\obj\Debug\net9.0\DiffMore.Core.AssemblyInfo.cs(20,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyProductAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\obj\Debug\net9.0\DiffMore.Core.AssemblyInfo.cs(21,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyTitleAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\obj\Debug\net9.0\DiffMore.Core.AssemblyInfo.cs(22,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyVersionAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\obj\Debug\net9.0\DiffMore.Core.AssemblyInfo.cs(23,1
+2): error CS0579: Duplicate 'System.Resources.NeutralResourcesLanguageAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\obj\Debug\net9.0\.NETCoreApp,Version=v9.0.AssemblyA
+ttributes.cs(4,12): error CS0579: Duplicate 'global::System.Runtime.Versioning.TargetFrame
+workAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\obj\Debug\net9.0\DiffMore.Test.AssemblyInfo.cs(13,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyCompanyAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\obj\Debug\net9.0\DiffMore.Test.AssemblyInfo.cs(14,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyConfigurationAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\obj\Debug\net9.0\DiffMore.Test.AssemblyInfo.cs(15,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyCopyrightAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\obj\Debug\net9.0\DiffMore.Test.AssemblyInfo.cs(16,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyDescriptionAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\obj\Debug\net9.0\DiffMore.Test.AssemblyInfo.cs(18,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyFileVersionAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\obj\Debug\net9.0\DiffMore.Test.AssemblyInfo.cs(19,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyInformationalVersionAttribute' attr
+ibute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\obj\Debug\net9.0\DiffMore.Test.AssemblyInfo.cs(20,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyProductAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\obj\Debug\net9.0\DiffMore.Test.AssemblyInfo.cs(21,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyTitleAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\obj\Debug\net9.0\DiffMore.Test.AssemblyInfo.cs(22,1
+2): error CS0579: Duplicate 'System.Reflection.AssemblyVersionAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\obj\Debug\net9.0\DiffMore.Test.AssemblyInfo.cs(23,1
+2): error CS0579: Duplicate 'System.Resources.NeutralResourcesLanguageAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\obj\Debug\net9.0\.NETCoreApp,Version=v9.0.AssemblyAttributes.cs(4
+,12): error CS0579: Duplicate 'global::System.Runtime.Versioning.TargetFrameworkAttribute'
+ attribute
+C:\dev\ktsu-dev\DiffMore\obj\Debug\net9.0\debug_test.AssemblyInfo.cs(13,12): error CS0579:
+ Duplicate 'System.Reflection.AssemblyCompanyAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\obj\Debug\net9.0\debug_test.AssemblyInfo.cs(14,12): error CS0579:
+ Duplicate 'System.Reflection.AssemblyConfigurationAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\obj\Debug\net9.0\debug_test.AssemblyInfo.cs(15,12): error CS0579:
+ Duplicate 'System.Reflection.AssemblyFileVersionAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\obj\Debug\net9.0\debug_test.AssemblyInfo.cs(16,12): error CS0579:
+ Duplicate 'System.Reflection.AssemblyInformationalVersionAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\obj\Debug\net9.0\debug_test.AssemblyInfo.cs(17,12): error CS0579:
+ Duplicate 'System.Reflection.AssemblyProductAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\obj\Debug\net9.0\debug_test.AssemblyInfo.cs(18,12): error CS0579:
+ Duplicate 'System.Reflection.AssemblyTitleAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\obj\Debug\net9.0\debug_test.AssemblyInfo.cs(19,12): error CS0579:
+ Duplicate 'System.Reflection.AssemblyVersionAttribute' attribute
+C:\dev\ktsu-dev\DiffMore\packages\microsoft.net.test.sdk\17.11.1\build\netcoreapp3.1\Micro
+soft.NET.Test.Sdk.Program.cs(3,12): error CS0234: The type or namespace name 'VisualStudio
+' does not exist in the namespace 'Microsoft' (are you missing an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\packages\microsoft.net.test.sdk\17.13.0\build\netcoreapp3.1\Micro
+soft.NET.Test.Sdk.Program.cs(3,12): error CS0234: The type or namespace name 'VisualStudio
+' does not exist in the namespace 'Microsoft' (are you missing an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.CLI\obj\Debug\net9.0\DiffMore.CLI.GlobalUsings.g.cs(2,22
+): error CS0400: The type or namespace name 'CommandLine' could not be found in the global
+ namespace (are you missing an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.CLI\obj\Debug\net9.0\DiffMore.CLI.GlobalUsings.g.cs(3,22
+): error CS0400: The type or namespace name 'Spectre' could not be found in the global nam
+espace (are you missing an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.CLI\obj\Debug\net9.0\DiffMore.CLI.GlobalUsings.g.cs(4,22
+): error CS0400: The type or namespace name 'Spectre' could not be found in the global nam
+espace (are you missing an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\obj\Debug\net8.0\DiffMore.Test.GlobalUsings.g.cs(2,
+32): error CS0234: The type or namespace name 'VisualStudio' does not exist in the namespa
+ce 'Microsoft' (are you missing an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\obj\Debug\net9.0\DiffMore.Test.GlobalUsings.g.cs(2,
+32): error CS0234: The type or namespace name 'VisualStudio' does not exist in the namespa
+ce 'Microsoft' (are you missing an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\obj\Debug\net9.0\DiffMore.Test.GlobalUsings.g.cs(3,
+22): error CS0400: The type or namespace name 'Moq' could not be found in the global names
+pace (are you missing an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\obj\Debug\net9.0\DiffMore.Test.GlobalUsings.g.cs(7,
+45): error CS0234: The type or namespace name 'TestingHelpers' does not exist in the names
+pace 'System.IO.Abstractions' (are you missing an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\Program.cs(7,17): error CS0111: Type 'Program' already defines a 
+member called 'Main' with the same parameter types
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(11,17): error CS0234: The type or 
+namespace name 'VisualStudio' does not exist in the namespace 'Microsoft' (are you missing
+ an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\packages\microsoft.net.test.sdk\17.13.0\build\netcoreapp3.1\Micro
+soft.NET.Test.Sdk.Program.cs(4,41): error CS0111: Type 'AutoGeneratedProgram' already defi
+nes a member called 'Main' with the same parameter types
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(9,17): error CS0234: The typ
+e or namespace name 'VisualStudio' does not exist in the namespace 'Microsoft' (are you mi
+ssing an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(11,17): error CS0234: Th
+e type or namespace name 'VisualStudio' does not exist in the namespace 'Microsoft' (are y
+ou missing an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(10,17): error CS0234: The ty
+pe or namespace name 'VisualStudio' does not exist in the namespace 'Microsoft' (are you m
+issing an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(10,17): error CS0234: The type o
+r namespace name 'VisualStudio' does not exist in the namespace 'Microsoft' (are you missi
+ng an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(107,9): warning CS0436: The type 'Dif
+fColor' in 'C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs' conflicts with the impor
+ted type 'DiffColor' in 'ktsu.DiffMore.Core, Version=1.0.0.0, Culture=neutral, PublicKeyTo
+ken=null'. Using the type defined in 'C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs
+'.
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileHasherTests.cs(8,17): error CS0234: The type or
+ namespace name 'VisualStudio' does not exist in the namespace 'Microsoft' (are you missin
+g an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.CLI\Program.cs(139,37): warning CS0436: The type 'FileGr
+oup' in 'C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs' conflicts with the imported
+ type 'FileGroup' in 'ktsu.DiffMore.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken
+=null'. Using the type defined in 'C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs'.
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTestBase.cs(8,30): error CS0234: The 
+type or namespace name 'TestingHelpers' does not exist in the namespace 'System.IO.Abstrac
+tions' (are you missing an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTestBase.cs(9,17): error CS0234: The 
+type or namespace name 'VisualStudio' does not exist in the namespace 'Microsoft' (are you
+ missing an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(156,36): warning CS0436: The type 'Fi
+leGroup' in 'C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs' conflicts with the impo
+rted type 'FileGroup' in 'ktsu.DiffMore.Core, Version=1.0.0.0, Culture=neutral, PublicKeyT
+oken=null'. Using the type defined in 'C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.c
+s'.
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(184,36): warning CS0436: The type 'Li
+neDifference' in 'C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs' conflicts with the
+ imported type 'LineDifference' in 'ktsu.DiffMore.Core, Version=1.0.0.0, Culture=neutral,
+PublicKeyToken=null'. Using the type defined in 'C:\dev\ktsu-dev\DiffMore\DiffMore.Core\Fi
+leDiffer.cs'.
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(290,16): warning CS0436: The type 'Di
+rectoryComparisonResult' in 'C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs' conflic
+ts with the imported type 'DirectoryComparisonResult' in 'ktsu.DiffMore.Core, Version=1.0.
+0.0, Culture=neutral, PublicKeyToken=null'. Using the type defined in 'C:\dev\ktsu-dev\Dif
+fMore\DiffMore.Core\FileDiffer.cs'.
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(242,82): warning CS0436: The type 'Li
+neDifference' in 'C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs' conflicts with the
+ imported type 'LineDifference' in 'ktsu.DiffMore.Core, Version=1.0.0.0, Culture=neutral,
+PublicKeyToken=null'. Using the type defined in 'C:\dev\ktsu-dev\DiffMore\DiffMore.Core\Fi
+leDiffer.cs'.
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(242,36): warning CS0436: The type 'Li
+neDifference' in 'C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs' conflicts with the
+ imported type 'LineDifference' in 'ktsu.DiffMore.Core, Version=1.0.0.0, Culture=neutral,
+PublicKeyToken=null'. Using the type defined in 'C:\dev\ktsu-dev\DiffMore\DiffMore.Core\Fi
+leDiffer.cs'.
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(431,27): warning CS0436: The type 'Co
+loredDiffLine' in 'C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs' conflicts with th
+e imported type 'ColoredDiffLine' in 'ktsu.DiffMore.Core, Version=1.0.0.0, Culture=neutral
+, PublicKeyToken=null'. Using the type defined in 'C:\dev\ktsu-dev\DiffMore\DiffMore.Core\
+FileDiffer.cs'.
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(12,30): error CS0234: The ty
+pe or namespace name 'TestingHelpers' does not exist in the namespace 'System.IO.Abstracti
+ons' (are you missing an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(15,17): error CS0234: The ty
+pe or namespace name 'VisualStudio' does not exist in the namespace 'Microsoft' (are you m
+issing an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(16,7): error CS0246: The typ
+e or namespace name 'Moq' could not be found (are you missing a using directive or an asse
+mbly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(981,27): warning CS0436: The type 'Co
+loredDiffLine' in 'C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs' conflicts with th
+e imported type 'ColoredDiffLine' in 'ktsu.DiffMore.Core, Version=1.0.0.0, Culture=neutral
+, PublicKeyToken=null'. Using the type defined in 'C:\dev\ktsu-dev\DiffMore\DiffMore.Core\
+FileDiffer.cs'.
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(10,17): error CS0234: The type 
+or namespace name 'VisualStudio' does not exist in the namespace 'Microsoft' (are you miss
+ing an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(10,17): error CS0234: The type or n
+amespace name 'VisualStudio' does not exist in the namespace 'Microsoft' (are you missing
+an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(11,17): error CS0234: The typ
+e or namespace name 'VisualStudio' does not exist in the namespace 'Microsoft' (are you mi
+ssing an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\Adapters\FileDifferAdapter.cs(31,29): warning CS043
+6: The type 'LineDifference' in 'C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs' con
+flicts with the imported type 'LineDifference' in 'ktsu.DiffMore.Core, Version=1.0.0.0, Cu
+lture=neutral, PublicKeyToken=null'. Using the type defined in 'C:\dev\ktsu-dev\DiffMore\D
+iffMore.Core\FileDiffer.cs'.
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTestBase.cs(19,12): error CS0246: The
+ type or namespace name 'MockFileSystem' could not be found (are you missing a using direc
+tive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\Adapters\FileDifferAdapter.cs(109,20): warning CS04
+36: The type 'ColoredDiffLine' in 'C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs' c
+onflicts with the imported type 'ColoredDiffLine' in 'ktsu.DiffMore.Core, Version=1.0.0.0,
+ Culture=neutral, PublicKeyToken=null'. Using the type defined in 'C:\dev\ktsu-dev\DiffMor
+e\DiffMore.Core\FileDiffer.cs'.
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\Adapters\FileDifferAdapter.cs(149,36): warning CS04
+36: The type 'LineDifference' in 'C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs' co
+nflicts with the imported type 'LineDifference' in 'ktsu.DiffMore.Core, Version=1.0.0.0, C
+ulture=neutral, PublicKeyToken=null'. Using the type defined in 'C:\dev\ktsu-dev\DiffMore\
+DiffMore.Core\FileDiffer.cs'.
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\obj\Debug\net9.0\SelfRegisteredExtensions.cs(12,79)
+: error CS0234: The type or namespace name 'Testing' does not exist in the namespace 'Micr
+osoft' (are you missing an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(11,2): error CS0246: The typ
+e or namespace name 'TestClassAttribute' could not be found (are you missing a using direc
+tive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(11,2): error CS0246: The typ
+e or namespace name 'TestClass' could not be found (are you missing a using directive or a
+n assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(12,2): error CS0246: The type or
+ namespace name 'TestClassAttribute' could not be found (are you missing a using directive
+ or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(12,2): error CS0246: The type or
+ namespace name 'TestClass' could not be found (are you missing a using directive or an as
+sembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(12,2): error CS0246: The typ
+e or namespace name 'TestClassAttribute' could not be found (are you missing a using direc
+tive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(12,2): error CS0246: The typ
+e or namespace name 'TestClass' could not be found (are you missing a using directive or a
+n assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(13,2): error CS0246: The type or n
+amespace name 'TestClassAttribute' could not be found (are you missing a using directive o
+r an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(13,2): error CS0246: The type or n
+amespace name 'TestClass' could not be found (are you missing a using directive or an asse
+mbly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileHasherTests.cs(10,2): error CS0246: The type or
+ namespace name 'TestClassAttribute' could not be found (are you missing a using directive
+ or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileHasherTests.cs(10,2): error CS0246: The type or
+ namespace name 'TestClass' could not be found (are you missing a using directive or an as
+sembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(13,2): error CS0246: The
+ type or namespace name 'TestClassAttribute' could not be found (are you missing a using d
+irective or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(13,2): error CS0246: The
+ type or namespace name 'TestClass' could not be found (are you missing a using directive
+or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(12,2): error CS0246: The type or na
+mespace name 'TestClassAttribute' could not be found (are you missing a using directive or
+ an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(12,2): error CS0246: The type or na
+mespace name 'TestClass' could not be found (are you missing a using directive or an assem
+bly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(12,2): error CS0246: The type o
+r namespace name 'TestClassAttribute' could not be found (are you missing a using directiv
+e or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(12,2): error CS0246: The type o
+r namespace name 'TestClass' could not be found (are you missing a using directive or an a
+ssembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTestBase.cs(29,3): error CS0246: The 
+type or namespace name 'TestInitializeAttribute' could not be found (are you missing a usi
+ng directive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTestBase.cs(29,3): error CS0246: The 
+type or namespace name 'TestInitialize' could not be found (are you missing a using direct
+ive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(18,2): error CS0246: The typ
+e or namespace name 'TestClassAttribute' could not be found (are you missing a using direc
+tive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(18,2): error CS0246: The typ
+e or namespace name 'TestClass' could not be found (are you missing a using directive or a
+n assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(13,2): error CS0246: The type
+ or namespace name 'TestClassAttribute' could not be found (are you missing a using direct
+ive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(13,2): error CS0246: The type
+ or namespace name 'TestClass' could not be found (are you missing a using directive or an
+ assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(29,3): error CS0246: The typ
+e or namespace name 'TestInitializeAttribute' could not be found (are you missing a using
+directive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(29,3): error CS0246: The typ
+e or namespace name 'TestInitialize' could not be found (are you missing a using directive
+ or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(41,3): error CS0246: The type or
+ namespace name 'TestMethodAttribute' could not be found (are you missing a using directiv
+e or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(41,3): error CS0246: The type or
+ namespace name 'TestMethod' could not be found (are you missing a using directive or an a
+ssembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(21,10): error CS0246: The ty
+pe or namespace name 'MockFileSystem' could not be found (are you missing a using directiv
+e or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(20,3): error CS0246: The type or n
+amespace name 'TestInitializeAttribute' could not be found (are you missing a using direct
+ive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(20,3): error CS0246: The type or n
+amespace name 'TestInitialize' could not be found (are you missing a using directive or an
+ assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileHasherTests.cs(29,3): error CS0246: The type or
+ namespace name 'TestMethodAttribute' could not be found (are you missing a using directiv
+e or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileHasherTests.cs(29,3): error CS0246: The type or
+ namespace name 'TestMethod' could not be found (are you missing a using directive or an a
+ssembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(30,3): error CS0246: The typ
+e or namespace name 'TestInitializeAttribute' could not be found (are you missing a using
+directive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(30,3): error CS0246: The typ
+e or namespace name 'TestInitialize' could not be found (are you missing a using directive
+ or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(34,3): error CS0246: The type o
+r namespace name 'TestInitializeAttribute' could not be found (are you missing a using dir
+ective or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(34,3): error CS0246: The type o
+r namespace name 'TestInitialize' could not be found (are you missing a using directive or
+ an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(33,3): error CS0246: The type or na
+mespace name 'TestInitializeAttribute' could not be found (are you missing a using directi
+ve or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(33,3): error CS0246: The type or na
+mespace name 'TestInitialize' could not be found (are you missing a using directive or an
+assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(31,3): error CS0246: The
+ type or namespace name 'TestInitializeAttribute' could not be found (are you missing a us
+ing directive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(31,3): error CS0246: The
+ type or namespace name 'TestInitialize' could not be found (are you missing a using direc
+tive or an assembly reference?)
+  C:\dev\ktsu-dev\DiffMore\debug_test.csproj                               Restore (4.3s)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(57,3): error CS0246: The type or
+ namespace name 'TestMethodAttribute' could not be found (are you missing a using directiv
+e or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(57,3): error CS0246: The type or
+ namespace name 'TestMethod' could not be found (are you missing a using directive or an a
+ssembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(71,3): error CS0246: The typ
+e or namespace name 'TestCleanupAttribute' could not be found (are you missing a using dir
+ective or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(71,3): error CS0246: The typ
+e or namespace name 'TestCleanup' could not be found (are you missing a using directive or
+ an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(30,3): error CS0246: The type or n
+amespace name 'TestCleanupAttribute' could not be found (are you missing a using directive
+ or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(30,3): error CS0246: The type or n
+amespace name 'TestCleanup' could not be found (are you missing a using directive or an as
+sembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(35,3): error CS0246: The type
+ or namespace name 'TestInitializeAttribute' could not be found (are you missing a using d
+irective or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(35,3): error CS0246: The type
+ or namespace name 'TestInitialize' could not be found (are you missing a using directive
+or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileHasherTests.cs(40,3): error CS0246: The type or
+ namespace name 'TestMethodAttribute' could not be found (are you missing a using directiv
+e or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileHasherTests.cs(40,3): error CS0246: The type or
+ namespace name 'TestMethod' could not be found (are you missing a using directive or an a
+ssembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(26,3): error CS0246: The typ
+e or namespace name 'TestInitializeAttribute' could not be found (are you missing a using
+directive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(26,3): error CS0246: The typ
+e or namespace name 'TestInitialize' could not be found (are you missing a using directive
+ or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(67,3): error CS0246: The type or
+ namespace name 'TestMethodAttribute' could not be found (are you missing a using directiv
+e or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(67,3): error CS0246: The type or
+ namespace name 'TestMethod' could not be found (are you missing a using directive or an a
+ssembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(56,3): error CS0246: The type o
+r namespace name 'TestCleanupAttribute' could not be found (are you missing a using direct
+ive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(56,3): error CS0246: The type o
+r namespace name 'TestCleanup' could not be found (are you missing a using directive or an
+ assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(49,3): error CS0246: The typ
+e or namespace name 'TestCleanupAttribute' could not be found (are you missing a using dir
+ective or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(49,3): error CS0246: The typ
+e or namespace name 'TestCleanup' could not be found (are you missing a using directive or
+ an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(92,3): error CS0246: The typ
+e or namespace name 'TestMethodAttribute' could not be found (are you missing a using dire
+ctive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(92,3): error CS0246: The typ
+e or namespace name 'TestMethod' could not be found (are you missing a using directive or
+an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(60,3): error CS0246: The type or na
+mespace name 'TestCleanupAttribute' could not be found (are you missing a using directive
+or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(60,3): error CS0246: The type or na
+mespace name 'TestCleanup' could not be found (are you missing a using directive or an ass
+embly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(47,3): error CS0246: The
+ type or namespace name 'TestCleanupAttribute' could not be found (are you missing a using
+ directive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(47,3): error CS0246: The
+ type or namespace name 'TestCleanup' could not be found (are you missing a using directiv
+e or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(36,3): error CS0246: The type or n
+amespace name 'TestMethodAttribute' could not be found (are you missing a using directive
+or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(36,3): error CS0246: The type or n
+amespace name 'TestMethod' could not be found (are you missing a using directive or an ass
+embly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(78,3): error CS0246: The type or
+ namespace name 'TestMethodAttribute' could not be found (are you missing a using directiv
+e or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(78,3): error CS0246: The type or
+ namespace name 'TestMethod' could not be found (are you missing a using directive or an a
+ssembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(63,3): error CS0246: The type
+ or namespace name 'TestCleanupAttribute' could not be found (are you missing a using dire
+ctive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(63,3): error CS0246: The type
+ or namespace name 'TestCleanup' could not be found (are you missing a using directive or
+an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(48,3): error CS0246: The typ
+e or namespace name 'TestMethodAttribute' could not be found (are you missing a using dire
+ctive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(48,3): error CS0246: The typ
+e or namespace name 'TestMethod' could not be found (are you missing a using directive or
+an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(102,3): error CS0246: The ty
+pe or namespace name 'TestMethodAttribute' could not be found (are you missing a using dir
+ective or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(102,3): error CS0246: The ty
+pe or namespace name 'TestMethod' could not be found (are you missing a using directive or
+ an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileHasherTests.cs(51,3): error CS0246: The type or
+ namespace name 'TestMethodAttribute' could not be found (are you missing a using directiv
+e or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileHasherTests.cs(51,3): error CS0246: The type or
+ namespace name 'TestMethod' could not be found (are you missing a using directive or an a
+ssembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(55,3): error CS0246: The typ
+e or namespace name 'TestMethodAttribute' could not be found (are you missing a using dire
+ctive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(55,3): error CS0246: The typ
+e or namespace name 'TestMethod' could not be found (are you missing a using directive or
+an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(54,3): error CS0246: The type or n
+amespace name 'TestMethodAttribute' could not be found (are you missing a using directive
+or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(54,3): error CS0246: The type or n
+amespace name 'TestMethod' could not be found (are you missing a using directive or an ass
+embly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(85,3): error CS0246: The type or na
+mespace name 'TestMethodAttribute' could not be found (are you missing a using directive o
+r an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(85,3): error CS0246: The type or na
+mespace name 'TestMethod' could not be found (are you missing a using directive or an asse
+mbly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(79,3): error CS0246: The type o
+r namespace name 'TestMethodAttribute' could not be found (are you missing a using directi
+ve or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(79,3): error CS0246: The type o
+r namespace name 'TestMethod' could not be found (are you missing a using directive or an
+assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(80,3): error CS0246: The type o
+r namespace name 'TestCategoryAttribute' could not be found (are you missing a using direc
+tive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(80,3): error CS0246: The type o
+r namespace name 'TestCategory' could not be found (are you missing a using directive or a
+n assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(124,3): error CS0246: The ty
+pe or namespace name 'TestMethodAttribute' could not be found (are you missing a using dir
+ective or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(124,3): error CS0246: The ty
+pe or namespace name 'TestMethod' could not be found (are you missing a using directive or
+ an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(69,3): error CS0246: The type
+ or namespace name 'TestMethodAttribute' could not be found (are you missing a using direc
+tive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(69,3): error CS0246: The type
+ or namespace name 'TestMethod' could not be found (are you missing a using directive or a
+n assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(70,3): error CS0246: The typ
+e or namespace name 'TestMethodAttribute' could not be found (are you missing a using dire
+ctive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(70,3): error CS0246: The typ
+e or namespace name 'TestMethod' could not be found (are you missing a using directive or
+an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(88,3): error CS0246: The type or
+ namespace name 'TestMethodAttribute' could not be found (are you missing a using directiv
+e or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileFinderTests.cs(88,3): error CS0246: The type or
+ namespace name 'TestMethod' could not be found (are you missing a using directive or an a
+ssembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(66,3): error CS0246: The typ
+e or namespace name 'TestMethodAttribute' could not be found (are you missing a using dire
+ctive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(66,3): error CS0246: The typ
+e or namespace name 'TestMethod' could not be found (are you missing a using directive or
+an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(99,3): error CS0246: The type or n
+amespace name 'TestMethodAttribute' could not be found (are you missing a using directive
+or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(99,3): error CS0246: The type or n
+amespace name 'TestMethod' could not be found (are you missing a using directive or an ass
+embly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(68,3): error CS0246: The
+ type or namespace name 'TestMethodAttribute' could not be found (are you missing a using
+directive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(68,3): error CS0246: The
+ type or namespace name 'TestMethod' could not be found (are you missing a using directive
+ or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(100,3): error CS0246: The type or n
+amespace name 'TestMethodAttribute' could not be found (are you missing a using directive
+or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(100,3): error CS0246: The type or n
+amespace name 'TestMethod' could not be found (are you missing a using directive or an ass
+embly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(144,3): error CS0246: The ty
+pe or namespace name 'TestMethodAttribute' could not be found (are you missing a using dir
+ective or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(144,3): error CS0246: The ty
+pe or namespace name 'TestMethod' could not be found (are you missing a using directive or
+ an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(80,3): error CS0246: The typ
+e or namespace name 'TestMethodAttribute' could not be found (are you missing a using dire
+ctive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(80,3): error CS0246: The typ
+e or namespace name 'TestMethod' could not be found (are you missing a using directive or
+an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(93,3): error CS0246: The typ
+e or namespace name 'TestMethodAttribute' could not be found (are you missing a using dire
+ctive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(93,3): error CS0246: The typ
+e or namespace name 'TestMethod' could not be found (are you missing a using directive or
+an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(96,3): error CS0246: The type
+ or namespace name 'TestMethodAttribute' could not be found (are you missing a using direc
+tive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(96,3): error CS0246: The type
+ or namespace name 'TestMethod' could not be found (are you missing a using directive or a
+n assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(131,3): error CS0246: The type or 
+namespace name 'TestMethodAttribute' could not be found (are you missing a using directive
+ or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(131,3): error CS0246: The type or 
+namespace name 'TestMethod' could not be found (are you missing a using directive or an as
+sembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(96,3): error CS0246: The
+ type or namespace name 'TestMethodAttribute' could not be found (are you missing a using
+directive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(96,3): error CS0246: The
+ type or namespace name 'TestMethod' could not be found (are you missing a using directive
+ or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(97,3): error CS0246: The type o
+r namespace name 'TestMethodAttribute' could not be found (are you missing a using directi
+ve or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(97,3): error CS0246: The type o
+r namespace name 'TestMethod' could not be found (are you missing a using directive or an
+assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(98,3): error CS0246: The type o
+r namespace name 'TestCategoryAttribute' could not be found (are you missing a using direc
+tive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(98,3): error CS0246: The type o
+r namespace name 'TestCategory' could not be found (are you missing a using directive or a
+n assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileHasherTests.cs(65,3): error CS0246: The type or
+ namespace name 'TestMethodAttribute' could not be found (are you missing a using directiv
+e or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileHasherTests.cs(65,3): error CS0246: The type or
+ namespace name 'TestMethod' could not be found (are you missing a using directive or an a
+ssembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileHasherTests.cs(66,3): error CS0246: The type or
+ namespace name 'ExpectedExceptionAttribute' could not be found (are you missing a using d
+irective or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileHasherTests.cs(66,3): error CS0246: The type or
+ namespace name 'ExpectedException' could not be found (are you missing a using directive
+or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(154,3): error CS0246: The ty
+pe or namespace name 'TestMethodAttribute' could not be found (are you missing a using dir
+ective or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(154,3): error CS0246: The ty
+pe or namespace name 'TestMethod' could not be found (are you missing a using directive or
+ an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(106,3): error CS0246: The ty
+pe or namespace name 'TestMethodAttribute' could not be found (are you missing a using dir
+ective or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(106,3): error CS0246: The ty
+pe or namespace name 'TestMethod' could not be found (are you missing a using directive or
+ an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(115,3): error CS0246: The type or n
+amespace name 'TestMethodAttribute' could not be found (are you missing a using directive
+or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(115,3): error CS0246: The type or n
+amespace name 'TestMethod' could not be found (are you missing a using directive or an ass
+embly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(115,3): error CS0246: Th
+e type or namespace name 'TestMethodAttribute' could not be found (are you missing a using
+ directive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(115,3): error CS0246: Th
+e type or namespace name 'TestMethod' could not be found (are you missing a using directiv
+e or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(157,3): error CS0246: The type or 
+namespace name 'TestMethodAttribute' could not be found (are you missing a using directive
+ or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(157,3): error CS0246: The type or 
+namespace name 'TestMethod' could not be found (are you missing a using directive or an as
+sembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(125,3): error CS0246: The typ
+e or namespace name 'TestMethodAttribute' could not be found (are you missing a using dire
+ctive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(125,3): error CS0246: The typ
+e or namespace name 'TestMethod' could not be found (are you missing a using directive or
+an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(113,3): error CS0246: The ty
+pe or namespace name 'TestMethodAttribute' could not be found (are you missing a using dir
+ective or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(113,3): error CS0246: The ty
+pe or namespace name 'TestMethod' could not be found (are you missing a using directive or
+ an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(167,3): error CS0246: The ty
+pe or namespace name 'TestMethodAttribute' could not be found (are you missing a using dir
+ective or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(167,3): error CS0246: The ty
+pe or namespace name 'TestMethod' could not be found (are you missing a using directive or
+ an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(124,3): error CS0246: The ty
+pe or namespace name 'TestMethodAttribute' could not be found (are you missing a using dir
+ective or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(124,3): error CS0246: The ty
+pe or namespace name 'TestMethod' could not be found (are you missing a using directive or
+ an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(131,3): error CS0246: The type or n
+amespace name 'TestMethodAttribute' could not be found (are you missing a using directive
+or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(131,3): error CS0246: The type or n
+amespace name 'TestMethod' could not be found (are you missing a using directive or an ass
+embly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(177,3): error CS0246: The type or 
+namespace name 'TestMethodAttribute' could not be found (are you missing a using directive
+ or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(177,3): error CS0246: The type or 
+namespace name 'TestMethod' could not be found (are you missing a using directive or an as
+sembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(115,3): error CS0246: The type 
+or namespace name 'TestMethodAttribute' could not be found (are you missing a using direct
+ive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(115,3): error CS0246: The type 
+or namespace name 'TestMethod' could not be found (are you missing a using directive or an
+ assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(116,3): error CS0246: The type 
+or namespace name 'TestCategoryAttribute' could not be found (are you missing a using dire
+ctive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(116,3): error CS0246: The type 
+or namespace name 'TestCategory' could not be found (are you missing a using directive or
+an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(150,3): error CS0246: The typ
+e or namespace name 'TestMethodAttribute' could not be found (are you missing a using dire
+ctive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(150,3): error CS0246: The typ
+e or namespace name 'TestMethod' could not be found (are you missing a using directive or
+an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(129,3): error CS0246: The ty
+pe or namespace name 'TestMethodAttribute' could not be found (are you missing a using dir
+ective or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\MockFileSystemTests.cs(129,3): error CS0246: The ty
+pe or namespace name 'TestMethod' could not be found (are you missing a using directive or
+ an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(182,3): error CS0246: The ty
+pe or namespace name 'TestMethodAttribute' could not be found (are you missing a using dir
+ective or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(182,3): error CS0246: The ty
+pe or namespace name 'TestMethod' could not be found (are you missing a using directive or
+ an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(154,3): error CS0246: The ty
+pe or namespace name 'TestMethodAttribute' could not be found (are you missing a using dir
+ective or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferPathTests.cs(154,3): error CS0246: The ty
+pe or namespace name 'TestMethod' could not be found (are you missing a using directive or
+ an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(137,3): error CS0246: Th
+e type or namespace name 'TestMethodAttribute' could not be found (are you missing a using
+ directive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(137,3): error CS0246: Th
+e type or namespace name 'TestMethod' could not be found (are you missing a using directiv
+e or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(138,3): error CS0246: Th
+e type or namespace name 'ExpectedExceptionAttribute' could not be found (are you missing
+a using directive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(138,3): error CS0246: Th
+e type or namespace name 'ExpectedException' could not be found (are you missing a using d
+irective or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(194,3): error CS0246: The type or 
+namespace name 'TestMethodAttribute' could not be found (are you missing a using directive
+ or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\EdgeCaseTests.cs(194,3): error CS0246: The type or 
+namespace name 'TestMethod' could not be found (are you missing a using directive or an as
+sembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(145,3): error CS0246: The type or n
+amespace name 'TestMethodAttribute' could not be found (are you missing a using directive
+or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(145,3): error CS0246: The type or n
+amespace name 'TestMethod' could not be found (are you missing a using directive or an ass
+embly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(233,3): error CS0246: The typ
+e or namespace name 'TestMethodAttribute' could not be found (are you missing a using dire
+ctive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\RecursiveDiffTests.cs(233,3): error CS0246: The typ
+e or namespace name 'TestMethod' could not be found (are you missing a using directive or
+an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(145,3): error CS0246: Th
+e type or namespace name 'TestMethodAttribute' could not be found (are you missing a using
+ directive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(145,3): error CS0246: Th
+e type or namespace name 'TestMethod' could not be found (are you missing a using directiv
+e or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(205,3): error CS0246: The ty
+pe or namespace name 'TestMethodAttribute' could not be found (are you missing a using dir
+ective or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(205,3): error CS0246: The ty
+pe or namespace name 'TestMethod' could not be found (are you missing a using directive or
+ an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(206,3): error CS0246: The ty
+pe or namespace name 'ExpectedExceptionAttribute' could not be found (are you missing a us
+ing directive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(206,3): error CS0246: The ty
+pe or namespace name 'ExpectedException' could not be found (are you missing a using direc
+tive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(133,3): error CS0246: The type 
+or namespace name 'TestMethodAttribute' could not be found (are you missing a using direct
+ive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(133,3): error CS0246: The type 
+or namespace name 'TestMethod' could not be found (are you missing a using directive or an
+ assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(134,3): error CS0246: The type 
+or namespace name 'TestCategoryAttribute' could not be found (are you missing a using dire
+ctive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(134,3): error CS0246: The type 
+or namespace name 'TestCategory' could not be found (are you missing a using directive or
+an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(156,3): error CS0246: The type or n
+amespace name 'TestMethodAttribute' could not be found (are you missing a using directive
+or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(156,3): error CS0246: The type or n
+amespace name 'TestMethod' could not be found (are you missing a using directive or an ass
+embly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(155,3): error CS0246: Th
+e type or namespace name 'TestMethodAttribute' could not be found (are you missing a using
+ directive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferGroupingTests.cs(155,3): error CS0246: Th
+e type or namespace name 'TestMethod' could not be found (are you missing a using directiv
+e or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(213,3): error CS0246: The ty
+pe or namespace name 'TestMethodAttribute' could not be found (are you missing a using dir
+ective or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(213,3): error CS0246: The ty
+pe or namespace name 'TestMethod' could not be found (are you missing a using directive or
+ an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(174,3): error CS0246: The type or n
+amespace name 'TestMethodAttribute' could not be found (are you missing a using directive
+or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\ProgramTests.cs(174,3): error CS0246: The type or n
+amespace name 'TestMethod' could not be found (are you missing a using directive or an ass
+embly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(225,3): error CS0246: The ty
+pe or namespace name 'TestMethodAttribute' could not be found (are you missing a using dir
+ective or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\FileDifferDiffTests.cs(225,3): error CS0246: The ty
+pe or namespace name 'TestMethod' could not be found (are you missing a using directive or
+ an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(151,3): error CS0246: The type 
+or namespace name 'TestMethodAttribute' could not be found (are you missing a using direct
+ive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(151,3): error CS0246: The type 
+or namespace name 'TestMethod' could not be found (are you missing a using directive or an
+ assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(152,3): error CS0246: The type 
+or namespace name 'TestCategoryAttribute' could not be found (are you missing a using dire
+ctive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(152,3): error CS0246: The type 
+or namespace name 'TestCategory' could not be found (are you missing a using directive or
+an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(182,3): error CS0246: The type 
+or namespace name 'TestMethodAttribute' could not be found (are you missing a using direct
+ive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(182,3): error CS0246: The type 
+or namespace name 'TestMethod' could not be found (are you missing a using directive or an
+ assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(183,3): error CS0246: The type 
+or namespace name 'TestCategoryAttribute' could not be found (are you missing a using dire
+ctive or an assembly reference?)
+C:\dev\ktsu-dev\DiffMore\DiffMore.Test\PerformanceTests.cs(183,3): error CS0246: The type 
+or namespace name 'TestCategory' could not be found (are you missing a using directive or
+an assembly reference?)
+
+The build failed. Fix the build errors and run again.
+  00:49:55   DiffMore  6.505s   1 - ERROR 
+  10:49:55 main  ?5 ~8
+
+```
+
+---
+
+I'll continue working on the DiffMore application by addressing the remaining test failures. Let me first examine the current state and understand what's happening with the failing tests.
+
+---
+
+```bash
+cd /c/dev/ktsu-dev/DiffMore && dotnet test --no-build
+```
+
+```
+ktsu.DiffMore.Core.dll && debucd /c/dev/ktsu-dev/DiffMore && dotnet test --no-bu
+                              cd /c/dev/ktsu-dev/DiffMore && dotnet test --no-build
+Set-Location: Cannot find path 'C:\c\dev\ktsu-dev\DiffMore' because it does not exist.
+
+```
+
+---
+
 
 
 

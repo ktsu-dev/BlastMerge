@@ -7,8 +7,8 @@ namespace ktsu.DiffMore.Test;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ktsu.DiffMore.Core;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 [TestClass]
 public class FileDifferGroupingTests

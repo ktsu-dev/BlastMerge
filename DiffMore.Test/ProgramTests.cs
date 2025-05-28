@@ -6,8 +6,8 @@ namespace ktsu.DiffMore.Test;
 
 using System;
 using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ktsu.DiffMore.CLI;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 [TestClass]
 public sealed class ProgramTests : IDisposable

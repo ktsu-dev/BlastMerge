@@ -183,7 +183,7 @@ public static class FileDiffer
 	/// <returns>A collection of line differences</returns>
 	public static IReadOnlyCollection<LineDifference> FindDifferences(string file1, string file2)
 	{
-		var differences = new Collection<LineDifference>();
+		var rawDifferences = new Collection<LineDifference>();
 
 		// Read all lines from both files
 		var lines1 = File.ReadAllLines(file1);
@@ -199,7 +199,7 @@ public static class FileDiffer
 			switch (edit.Item1)
 			{
 				case EditOperation.Delete:
-					differences.Add(new LineDifference
+					rawDifferences.Add(new LineDifference
 					{
 						LineNumber1 = line1 + 1,
 						LineNumber2 = 0, // No corresponding line in file 2
@@ -210,7 +210,7 @@ public static class FileDiffer
 					break;
 
 				case EditOperation.Insert:
-					differences.Add(new LineDifference
+					rawDifferences.Add(new LineDifference
 					{
 						LineNumber1 = 0, // No corresponding line in file 1
 						LineNumber2 = line2 + 1,
@@ -230,7 +230,53 @@ public static class FileDiffer
 			}
 		}
 
-		return differences.AsReadOnly();
+		// Post-process to merge consecutive delete/insert operations into modifications
+		return MergeModifications(rawDifferences);
+	}
+
+	/// <summary>
+	/// Merges consecutive delete/insert operations into modification operations
+	/// </summary>
+	/// <param name="rawDifferences">Raw differences from the diff algorithm</param>
+	/// <returns>Processed differences with modifications merged</returns>
+	private static ReadOnlyCollection<LineDifference> MergeModifications(Collection<LineDifference> rawDifferences)
+	{
+		var mergedDifferences = new Collection<LineDifference>();
+
+		for (var i = 0; i < rawDifferences.Count; i++)
+		{
+			var current = rawDifferences[i];
+
+			// Check if this is a delete operation followed by an insert operation
+			if (current.LineNumber2 == 0 && current.Content1 != null && // This is a delete
+				i + 1 < rawDifferences.Count) // There's a next item
+			{
+				var next = rawDifferences[i + 1];
+
+				// Check if the next operation is an insert at the corresponding position
+				if (next.LineNumber1 == 0 && next.Content2 != null && // Next is an insert
+					next.LineNumber2 == current.LineNumber1) // At corresponding line position
+				{
+					// Merge into a modification
+					mergedDifferences.Add(new LineDifference
+					{
+						LineNumber1 = current.LineNumber1,
+						LineNumber2 = next.LineNumber2,
+						Content1 = current.Content1,
+						Content2 = next.Content2
+					});
+
+					// Skip the next item since we've merged it
+					i++;
+					continue;
+				}
+			}
+
+			// If we didn't merge, add the current difference as-is
+			mergedDifferences.Add(current);
+		}
+
+		return new ReadOnlyCollection<LineDifference>(mergedDifferences);
 	}
 
 	/// <summary>
@@ -387,6 +433,15 @@ public static class FileDiffer
 		ArgumentNullException.ThrowIfNull(lines1);
 		ArgumentNullException.ThrowIfNull(lines2);
 
+		// Get edit script from Myers algorithm
+		var editScript = GetMyersDiff(lines1, lines2);
+
+		// Check if files are identical (no differences)
+		if (editScript.All(edit => edit.Item1 == EditOperation.Equal))
+		{
+			return [];
+		}
+
 		var result = new Collection<ColoredDiffLine>
 		{
 			// Add file headers
@@ -399,9 +454,6 @@ public static class FileDiffer
 				Color = DiffColor.FileHeader
 			}
 		};
-
-		// Get edit script from Myers algorithm
-		var editScript = GetMyersDiff(lines1, lines2);
 
 		// Group edit operations into chunks with context
 		var chunks = GetDiffChunks(editScript, lines1, lines2);
@@ -596,7 +648,7 @@ public static class FileDiffer
 		var n = a.Length;
 		var m = b.Length;
 
-				// Handle edge cases for empty files
+		// Handle edge cases for empty files
 		if (n == 0 && m == 0)
 		{
 			// Both files are empty, no differences
@@ -611,6 +663,7 @@ public static class FileDiffer
 			{
 				insertResult.Add((EditOperation.Insert, b[i]));
 			}
+
 			return insertResult;
 		}
 
@@ -622,6 +675,7 @@ public static class FileDiffer
 			{
 				deleteResult.Add((EditOperation.Delete, a[i]));
 			}
+
 			return deleteResult;
 		}
 
