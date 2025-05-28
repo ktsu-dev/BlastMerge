@@ -57,6 +57,8 @@ globs: *
 -   Modify methods to catch a more specific allowed exception type, or rethrow the exception (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1031)
 -   In externally visible methods, validate parameter is non-null before using it. If appropriate, throw an 'ArgumentNullException' when the argument is 'null'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1062)
 -   Use `string.Contains(char)` instead of `string.Contains(string)` when searching for a single character (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1847)
+-   Use string comparison instead of unicode emoji characters in switch statements.
+-   Ensure switch statements are populated (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0072)
 
 ## FILE & DIRECTORY HANDLING
 

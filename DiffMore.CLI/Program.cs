@@ -101,7 +101,7 @@ public static class Program
 			{
 				CompareTwoSpecificFiles();
 			}
-			else if (choice.Contains("ℹ"))
+			else if (choice.Contains("ℹ️"))
 			{
 				ShowHelp();
 			}
@@ -336,15 +336,15 @@ public static class Program
 			AnsiConsole.MarkupLine($"[dim]  📁 {file2}[/]");
 			AnsiConsole.WriteLine();
 
-			if (diffFormat.StartsWith("📊"))
+			if (diffFormat.Contains("📊"))
 			{
 				ShowChangeSummary(file1, file2);
 			}
-			else if (diffFormat.StartsWith("🔧"))
+			else if (diffFormat.Contains("🔧"))
 			{
 				ShowGitStyleDiff(file1, file2);
 			}
-			else if (diffFormat.StartsWith("🎨"))
+			else if (diffFormat.Contains("🎨"))
 			{
 				ShowColoredDiff(file1, file2);
 			}
@@ -475,7 +475,7 @@ public static class Program
 		// For each other group, ask which files to sync
 		var otherGroups = fileGroups.Where((g, i) => i != sourceVersionIndex - 1).ToList();
 
-				foreach (var group in otherGroups)
+		foreach (var group in otherGroups)
 		{
 			var groupFiles = group.FilePaths.ToList();
 
@@ -500,9 +500,9 @@ public static class Program
 						"⏭️  Skip this group"
 					]));
 
-			List<string> filesToSync = new();
+			List<string> filesToSync = [];
 
-			if (syncChoice.StartsWith("🎯"))
+			if (syncChoice.Contains("🎯"))
 			{
 				var selectedIndices = AnsiConsole.Prompt(
 					new MultiSelectionPrompt<int>()
@@ -510,13 +510,13 @@ public static class Program
 						.AddChoices(Enumerable.Range(1, groupFiles.Count))
 						.UseConverter(i => $"{i}. {Path.GetFileName(groupFiles[i - 1])}"));
 
-				filesToSync = selectedIndices.Select(i => groupFiles[i - 1]).ToList();
+				filesToSync = [.. selectedIndices.Select(i => groupFiles[i - 1])];
 			}
-			else if (syncChoice.StartsWith("📋"))
+			else if (syncChoice.Contains("📋"))
 			{
 				filesToSync = groupFiles;
 			}
-			else if (syncChoice.StartsWith("⏭"))
+			else if (syncChoice.Contains("⏭️"))
 			{
 				continue;
 			}
@@ -542,6 +542,7 @@ public static class Program
 						{
 							AnsiConsole.MarkupLine($"[red]✗[/] Failed to sync {file}: {ex.Message}");
 						}
+
 						task.Increment(1);
 					}
 				});
@@ -676,15 +677,15 @@ public static class Program
 					"🎨 Colored Diff"
 				]));
 
-		if (diffFormat.StartsWith("📊"))
+		if (diffFormat.Contains("📊"))
 		{
 			ShowChangeSummary(file1, file2);
 		}
-		else if (diffFormat.StartsWith("🔧"))
+		else if (diffFormat.Contains("🔧"))
 		{
 			ShowGitStyleDiff(file1, file2);
 		}
-		else if (diffFormat.StartsWith("🎨"))
+		else if (diffFormat.Contains("🎨"))
 		{
 			ShowColoredDiff(file1, file2);
 		}
@@ -704,7 +705,7 @@ public static class Program
 			{
 				if (syncDirection.Contains('→'))
 				{
-					var isFirstToSecond = syncDirection.StartsWith($"📄 {Path.GetFileName(file1)}");
+					var isFirstToSecond = syncDirection.Contains($"📄 {Path.GetFileName(file1)}");
 					if (isFirstToSecond)
 					{
 						FileDiffer.SyncFile(file1, file2);
