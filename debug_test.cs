@@ -7,7 +7,10 @@ class DebugTest
 {
     static void Main()
     {
-        // Test the specific case that was failing
+        Console.WriteLine("=== Debugging DiffMore Algorithm ===");
+
+        // Test case: All lines different
+        Console.WriteLine("\n1. Testing all lines different:");
         var file1 = "test1.txt";
         var file2 = "test2.txt";
 
@@ -16,31 +19,36 @@ class DebugTest
 
         var differences = FileDiffer.FindDifferences(file1, file2);
 
-        Console.WriteLine($"Total differences found: {differences.Count}");
-        Console.WriteLine();
-
-        foreach (var diff in differences)
+        Console.WriteLine($"Total differences: {differences.Count}");
+        for (int i = 0; i < differences.Count; i++)
         {
-            Console.WriteLine($"Line1: {diff.LineNumber1}, Line2: {diff.LineNumber2}");
-            Console.WriteLine($"Content1: '{diff.Content1}'");
-            Console.WriteLine($"Content2: '{diff.Content2}'");
-            Console.WriteLine("---");
+            var diff = differences.ElementAt(i);
+            Console.WriteLine($"  [{i}] Line1: {diff.LineNumber1}, Line2: {diff.LineNumber2}");
+            Console.WriteLine($"      Content1: '{diff.Content1}'");
+            Console.WriteLine($"      Content2: '{diff.Content2}'");
         }
 
-        // Count modifications (where both line numbers > 0)
         var modifications = differences.Count(d => d.LineNumber1 > 0 && d.LineNumber2 > 0);
         Console.WriteLine($"Modifications (both line numbers > 0): {modifications}");
+        Console.WriteLine($"Expected: 3, Actual: {modifications}, Result: {(modifications == 3 ? "PASS" : "FAIL")}");
 
-        // Test the color diff as well
-        var coloredDiff = FileDiffer.GenerateColoredDiff(file1, file2,
-            File.ReadAllLines(file1),
-            File.ReadAllLines(file2));
+        // Test case: One line deleted, one added
+        Console.WriteLine("\n2. Testing one deletion, one addition:");
+        File.WriteAllLines(file1, new[] { "Line 1", "Line 2", "Line 3" });
+        File.WriteAllLines(file2, new[] { "Line 1", "Line 3", "New Line" });
 
-        Console.WriteLine("\nColored diff:");
-        foreach (var line in coloredDiff)
+        differences = FileDiffer.FindDifferences(file1, file2);
+
+        Console.WriteLine($"Total differences: {differences.Count}");
+        for (int i = 0; i < differences.Count; i++)
         {
-            Console.WriteLine($"{line.Color}: {line.Content}");
+            var diff = differences.ElementAt(i);
+            Console.WriteLine($"  [{i}] Line1: {diff.LineNumber1}, Line2: {diff.LineNumber2}");
+            Console.WriteLine($"      Content1: '{diff.Content1}'");
+            Console.WriteLine($"      Content2: '{diff.Content2}'");
         }
+
+        Console.WriteLine($"Expected at least 2 differences, Actual: {differences.Count}, Result: {(differences.Count >= 2 ? "PASS" : "FAIL")}");
 
         // Clean up
         File.Delete(file1);

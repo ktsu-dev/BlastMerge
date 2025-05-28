@@ -724,33 +724,7 @@ public static class FileDiffer
 		}
 
 		// Fallback to a simple edit script if the algorithm fails
-		var result = new Collection<(EditOperation, string)>();
-
-		for (var i = 0; i < Math.Min(n, m); i++)
-		{
-			if (a[i] == b[i])
-			{
-				result.Add((EditOperation.Equal, a[i]));
-			}
-			else
-			{
-				result.Add((EditOperation.Delete, a[i]));
-				result.Add((EditOperation.Insert, b[i]));
-			}
-		}
-
-		// Add remaining lines
-		for (var i = Math.Min(n, m); i < n; i++)
-		{
-			result.Add((EditOperation.Delete, a[i]));
-		}
-
-		for (var i = Math.Min(n, m); i < m; i++)
-		{
-			result.Add((EditOperation.Insert, b[i]));
-		}
-
-		return result;
+		return CreateSimpleDiff(a, b);
 	}
 
 	/// <summary>
@@ -865,16 +839,27 @@ public static class FileDiffer
 			prefixLength++;
 		}
 
-		// Add deletions from a
-		for (var i = prefixLength; i < a.Length; i++)
-		{
-			result.Add((EditOperation.Delete, a[i]));
-		}
+		// Process remaining lines by interleaving delete/insert pairs for better merging
+		var remainingA = a.Length - prefixLength;
+		var remainingB = b.Length - prefixLength;
+		var maxRemaining = Math.Max(remainingA, remainingB);
 
-		// Add insertions from b
-		for (var i = prefixLength; i < b.Length; i++)
+		for (var i = 0; i < maxRemaining; i++)
 		{
-			result.Add((EditOperation.Insert, b[i]));
+			var indexA = prefixLength + i;
+			var indexB = prefixLength + i;
+
+			// Add delete operation if we have more lines in A
+			if (indexA < a.Length)
+			{
+				result.Add((EditOperation.Delete, a[indexA]));
+			}
+
+			// Add insert operation if we have more lines in B
+			if (indexB < b.Length)
+			{
+				result.Add((EditOperation.Insert, b[indexB]));
+			}
 		}
 
 		return result;
