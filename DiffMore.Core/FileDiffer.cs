@@ -254,20 +254,30 @@ public static class FileDiffer
 				var next = rawDifferences[i + 1];
 
 				// Check if the next operation is an insert and they should be merged
+				// Only merge if they are truly consecutive (no other operations in between)
 				if (next.LineNumber1 == 0 && next.Content2 != null) // Next is an insert
 				{
-					// Merge into a modification - use the line numbers from each operation
-					mergedDifferences.Add(new LineDifference
-					{
-						LineNumber1 = current.LineNumber1,
-						LineNumber2 = next.LineNumber2,
-						Content1 = current.Content1,
-						Content2 = next.Content2
-					});
+					// Additional check: only merge if the line numbers suggest they are related
+					// For a true modification, the deleted line number should be close to where the insertion happens
+					var lineDistance = Math.Abs(current.LineNumber1 - next.LineNumber2);
 
-					// Skip the next item since we've merged it
-					i++;
-					continue;
+					// Only merge if the lines are close to each other (within 1 line difference)
+					// This prevents merging unrelated deletions and insertions
+					if (lineDistance <= 1)
+					{
+						// Merge into a modification - use the line numbers from each operation
+						mergedDifferences.Add(new LineDifference
+						{
+							LineNumber1 = current.LineNumber1,
+							LineNumber2 = next.LineNumber2,
+							Content1 = current.Content1,
+							Content2 = next.Content2
+						});
+
+						// Skip the next item since we've merged it
+						i++;
+						continue;
+					}
 				}
 			}
 
@@ -877,78 +887,97 @@ public static class FileDiffer
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		var lines1 = File.ReadAllLines(file1);
-		var lines2 = File.ReadAllLines(file2);
-
-		// Generate edit script
-		var editScript = GetMyersDiff(lines1, lines2);
+		// Get the differences using our main diff method
+		var differences = FindDifferences(file1, file2);
 
 		var sb = new StringBuilder();
 		sb.AppendLine($"Change Summary: {Path.GetFileName(file1)} vs {Path.GetFileName(file2)}");
 		sb.AppendLine("----------------------------------------");
 
-		// Track added and removed lines
-		var addedLines = new List<string>();
-		var removedLines = new List<string>();
+		// Count different types of changes
+		var modifications = differences.Count(d => d.LineNumber1 > 0 && d.LineNumber2 > 0);
+		var additions = differences.Count(d => d.LineNumber1 == 0 && d.LineNumber2 > 0);
+		var deletions = differences.Count(d => d.LineNumber1 > 0 && d.LineNumber2 == 0);
 
-		int line1 = 0, line2 = 0;
-
-		foreach (var (op, content) in editScript)
+		// Add summary statistics
+		if (modifications > 0)
 		{
-			switch (op)
-			{
-				case EditOperation.Delete:
-					removedLines.Add($"Line {line1 + 1}: {lines1[line1]}");
-					line1++;
-					break;
-
-				case EditOperation.Insert:
-					addedLines.Add($"Line {line2 + 1}: {lines2[line2]}");
-					line2++;
-					break;
-
-				case EditOperation.Equal:
-					line1++;
-					line2++;
-					break;
-
-				default:
-					break;
-			}
+			sb.AppendLine($"{modifications} line(s) modified");
 		}
 
-		// Output removed lines (in version 1 but not in version X)
-		if (removedLines.Count > 0)
+		if (additions > 0)
 		{
-			sb.AppendLine("REMOVED LINES (in version 1 but not in version X):");
-			foreach (var line in removedLines)
+			sb.AppendLine($"{additions} line(s) added");
+		}
+
+		if (deletions > 0)
+		{
+			sb.AppendLine($"{deletions} line(s) deleted");
+		}
+
+		if (modifications == 0 && additions == 0 && deletions == 0)
+		{
+			sb.AppendLine("No differences found");
+		}
+
+		sb.AppendLine();
+
+		// Output detailed changes
+		var modifiedLines = differences.Where(d => d.LineNumber1 > 0 && d.LineNumber2 > 0).ToList();
+		var addedLines = differences.Where(d => d.LineNumber1 == 0 && d.LineNumber2 > 0).ToList();
+		var deletedLines = differences.Where(d => d.LineNumber1 > 0 && d.LineNumber2 == 0).ToList();
+
+		// Output modified lines
+		if (modifiedLines.Count > 0)
+		{
+			sb.AppendLine("MODIFIED LINES:");
+			foreach (var diff in modifiedLines)
 			{
 				if (useColor)
 				{
-					sb.AppendLine($"\u001b[31m- {line}\u001b[0m"); // Red
+					sb.AppendLine($"\u001b[33m~ Line {diff.LineNumber1}: '{diff.Content1}' -> '{diff.Content2}'\u001b[0m"); // Yellow
 				}
 				else
 				{
-					sb.AppendLine($"- {line}");
+					sb.AppendLine($"~ Line {diff.LineNumber1}: '{diff.Content1}' -> '{diff.Content2}'");
 				}
 			}
 
 			sb.AppendLine();
 		}
 
-		// Output added lines (in version X but not in version 1)
+		// Output added lines
 		if (addedLines.Count > 0)
 		{
-			sb.AppendLine("ADDED LINES (in version X but not in version 1):");
-			foreach (var line in addedLines)
+			sb.AppendLine("ADDED LINES:");
+			foreach (var diff in addedLines)
 			{
 				if (useColor)
 				{
-					sb.AppendLine($"\u001b[32m+ {line}\u001b[0m"); // Green
+					sb.AppendLine($"\u001b[32m+ Line {diff.LineNumber2}: {diff.Content2}\u001b[0m"); // Green
 				}
 				else
 				{
-					sb.AppendLine($"+ {line}");
+					sb.AppendLine($"+ Line {diff.LineNumber2}: {diff.Content2}");
+				}
+			}
+
+			sb.AppendLine();
+		}
+
+		// Output deleted lines
+		if (deletedLines.Count > 0)
+		{
+			sb.AppendLine("DELETED LINES:");
+			foreach (var diff in deletedLines)
+			{
+				if (useColor)
+				{
+					sb.AppendLine($"\u001b[31m- Line {diff.LineNumber1}: {diff.Content1}\u001b[0m"); // Red
+				}
+				else
+				{
+					sb.AppendLine($"- Line {diff.LineNumber1}: {diff.Content1}");
 				}
 			}
 		}

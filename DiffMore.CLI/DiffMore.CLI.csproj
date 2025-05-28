@@ -1,2 +1,5 @@
 <Project Sdk="ktsu.Sdk.CLI/1.33.0">
+  <ItemGroup>
+    <PackageReference Include="Spectre.Console" />
+  </ItemGroup>
 </Project>
