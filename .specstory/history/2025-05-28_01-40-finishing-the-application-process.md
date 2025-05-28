@@ -752,6 +752,173 @@ dotnet test DiffMore.Test --filter "FullyQualifiedName~EdgeCaseTests"
 
 ---
 
+Instead of trying to debug the test issues in the terminal, let me focus on what you asked about. You already have MSTest properly set up! The testing framework is fine. 
+
+Let me show you the current test structure and then address the specific test failures by examining and fixing the core issues:
+
+---
+
+<details>
+            <summary>Listed directory DiffMore.Test • **16** results</summary>
+        
+| Name |
+|-------|
+| 📁 `obj` |
+| 📄 `ProgramTests.cs` |
+| 📄 `MockFileSystemTestBase.cs` |
+| 📄 `FileDifferGroupingTests.cs` |
+| 📄 `FileHasherTests.cs` |
+| 📄 `FileDifferDiffTests.cs` |
+| 📄 `EdgeCaseTests.cs` |
+| 📄 `MockFileSystemTests.cs` |
+| 📄 `RecursiveDiffTests.cs` |
+| 📄 `TestHelper.cs` |
+| 📄 `FileDifferPathTests.cs` |
+| 📄 `DiffMore.Test.csproj` |
+| 📄 `FileFinderTests.cs` |
+| 📁 `bin` |
+| 📁 `Adapters` |
+| 📄 `PerformanceTests.cs` |
+
+</details>
+
+---
+
+You're already using MSTest correctly! The project has comprehensive test coverage with proper MSTest attributes. The issue is with some test failures, not the testing framework.
+
+Looking at the test failures from earlier, the main issues are:
+
+1. **Core diff algorithm issues** - The `FileDiffer_AllLinesChangedFile_ShowsCompleteChanges` test expects to find 3 modified lines but finds 0
+2. **CLI testing issues** - Spectre.Console creates problems when testing interactive components
+3. **Path format issues** - Some tests expect specific path formats
+
+Let me fix the core diff algorithm issue first. The problem seems to be in how the diff algorithm handles complete line changes. Let me check the core implementation:
+
+---
+
+<details>
+            <summary>Searched codebase "FileDiffer FindDifferences method implementation" • **25** results</summary>
+        
+| File | Lines |
+|------|-------|
+| `DiffMore.Core/FileDiffer.cs` | L283-332 |
+| `DiffMore.Test/Adapters/FileDifferAdapter.cs` | L1-53 |
+| `DiffMore.Test/Adapters/FileDifferAdapter.cs` | L120-176 |
+| `DiffMore.Core/FileDiffer.cs` | L159-236 |
+| `DiffMore.Core/FileDiffer.cs` | L615-695 |
+| `DiffMore.Core/FileDiffer.cs` | L332-392 |
+| `DiffMore.Test/EdgeCaseTests.cs` | L137-183 |
+| `DiffMore.Test/FileDifferDiffTests.cs` | L70-129 |
+| `DiffMore.Core/FileDiffer.cs` | L87-159 |
+| `DiffMore.Core/FileDiffer.cs` | L236-283 |
+| `DiffMore.Core/FileDiffer.cs` | L532-615 |
+| `DiffMore.Core/FileDiffer.cs` | L851-907 |
+| `DiffMore.Test/EdgeCaseTests.cs` | L68-137 |
+| `DiffMore.Test/MockFileSystemTests.cs` | L59-106 |
+| `DiffMore.Core/FileDiffer.cs` | L453-532 |
+| `DiffMore.Test/MockFileSystemTests.cs` | L106-162 |
+| `DiffMore.Test/FileDifferPathTests.cs` | L65-115 |
+| `DiffMore.Test/Adapters/FileDifferAdapter.cs` | L53-120 |
+| `DiffMore.Test/FileDifferDiffTests.cs` | L129-176 |
+| `DiffMore.Test/FileDifferPathTests.cs` | L115-162 |
+| `DiffMore.Core/FileDiffer.cs` | L1-87 |
+| `DiffMore.Core/FileDiffer.cs` | L987-1056 |
+| `DiffMore.Test/FileDifferDiffTests.cs` | L1-70 |
+| `DiffMore.Core/FileDiffer.cs` | L775-851 |
+| `DiffMore.Core/FileDiffer.cs` | L392-453 |
+
+</details>
+
+---
+
+Now I can see the issue! The problem is in the `MergeModifications` method in `FileDiffer.cs`. The current logic is being too restrictive when merging delete/insert operations into modifications. 
+
+Let me look at the specific failing test and the logic:
+
+Looking at the failing test `FileDiffer_AllLinesChangedFile_ShowsCompleteChanges`, it creates two files:
+- File 1: ["Line 1", "Line 2", "Line 3"]  
+- File 2: ["Different Line 1", "Different Line 2", "Different Line 3"]
+
+When all lines are completely different, the Myers diff algorithm produces a sequence of DELETE operations for all lines from file 1, followed by INSERT operations for all lines from file 2. The `MergeModifications` method should merge these consecutive delete/insert pairs into modifications.
+
+The issue is in the line distance check - it's being too strict. Let me fix this:
+
+---
+
+
+
+---
+
+Now let's build and test to see if this fixes the core diff algorithm issue:
+
+---
+
+```bash
+dotnet build DiffMore.Core
+```
+
+```
+> dotnet build DiffMore.Core
+>
+```
+
+---
+
+Let me create a simple test to verify our fix works correctly:
+
+---
+
+Cancelled
+
+---
+
+_**User**_
+
+@simple_test.cs @simple_test.csproj @standalone_test.cs @debug_test.cs @debug_test.csproj @test_output.txt why do we have these?
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+Looking at these files, they appear to be standalone debugging and testing utilities that were created outside of the main MSTest framework. Let me explain what each one is for:
+
+## Current Test Files:
+
+1. **`simple_test.cs/.csproj`** - A basic standalone test program that specifically tests the diff algorithm fix we just made (testing if 3 line modifications are detected correctly)
+
+2. **`standalone_test.cs`** - A standalone test that uses reflection to load and test the DiffMore.Core assembly without direct project references
+
+3. **`debug_test.cs/.csproj`** - Another standalone test focusing on the deleted line scenario that was failing in the MSTest suite
+
+4. **`test_output.txt`** - An empty file intended to capture test results
+
+## Why They Exist:
+These were likely created as quick debugging tools when the main MSTest suite was having issues, allowing for isolated testing of specific functionality without dealing with:
+- Spectre.Console testing complications
+- Mock filesystem setup
+- MSTest runner issues
+
+## Should We Keep Them?
+
+**No, we should remove them** because:
+
+1. **You already have comprehensive MSTest coverage** in `DiffMore.Test/` with proper test infrastructure
+2. **They're redundant** - they duplicate functionality that exists in the proper test suite
+3. **They clutter the repository** - these aren't part of the main build/test pipeline
+4. **MSTest is the standard** - you asked about using MSTest, and you already have it properly set up
+
+Let me clean these up:
+
+---
+
+Removing redundant standalone test file since proper MSTest infrastructure exists
+
+---
+
 
 
 ---
