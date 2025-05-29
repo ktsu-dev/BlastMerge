@@ -43,12 +43,12 @@ public class LineDifference
 	/// <summary>
 	/// Gets or sets the line number in the first file
 	/// </summary>
-	public int LineNumber1 { get; set; }
+	public int? LineNumber1 { get; set; }
 
 	/// <summary>
 	/// Gets or sets the line number in the second file
 	/// </summary>
-	public int LineNumber2 { get; set; }
+	public int? LineNumber2 { get; set; }
 
 	/// <summary>
 	/// Gets or sets the content from the first file
@@ -59,6 +59,32 @@ public class LineDifference
 	/// Gets or sets the content from the second file
 	/// </summary>
 	public string? Content2 { get; set; }
+
+	/// <summary>
+	/// Gets or sets the type of difference
+	/// </summary>
+	public LineDifferenceType Type { get; set; }
+}
+
+/// <summary>
+/// Defines the types of line differences
+/// </summary>
+public enum LineDifferenceType
+{
+	/// <summary>
+	/// Line was added in the second file
+	/// </summary>
+	Added,
+
+	/// <summary>
+	/// Line was deleted from the first file
+	/// </summary>
+	Deleted,
+
+	/// <summary>
+	/// Line was modified between files
+	/// </summary>
+	Modified
 }
 
 /// <summary>
@@ -276,14 +302,14 @@ public static class FileDiffer
 	}
 
 	/// <summary>
-	/// Finds differences between two text files
+	/// Finds differences between two files using DiffPlex
 	/// </summary>
-	/// <param name="file1">Path to the first file</param>
-	/// <param name="file2">Path to the second file</param>
-	/// <returns>A collection of line differences</returns>
+	/// <param name="file1">First file path</param>
+	/// <param name="file2">Second file path</param>
+	/// <returns>Collection of line differences</returns>
 	public static IReadOnlyCollection<LineDifference> FindDifferences(string file1, string file2) =>
-		// Use LibGit2Sharp implementation for better performance and accuracy
-		LibGit2SharpDiffer.FindDifferences(file1, file2);
+		// Use DiffPlex implementation for better performance and accuracy
+		DiffPlexDiffer.FindDifferences(file1, file2);
 
 	/// <summary>
 	/// Compares two directories and finds differences between files
@@ -329,8 +355,8 @@ public static class FileDiffer
 
 			try
 			{
-				// Use LibGit2Sharp for better file comparison
-				if (LibGit2SharpDiffer.AreFilesIdentical(file1Path, file2Path))
+				// Use DiffPlex for better file comparison
+				if (DiffPlexDiffer.AreFilesIdentical(file1Path, file2Path))
 				{
 					sameFiles.Add(relativePath);
 				}
@@ -381,8 +407,8 @@ public static class FileDiffer
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		// Use LibGit2Sharp for git-style diff generation
-		var gitDiff = LibGit2SharpDiffer.GenerateGitStyleDiff(file1, file2);
+		// Use DiffPlex for git-style diff generation
+		var gitDiff = DiffPlexDiffer.GenerateUnifiedDiff(file1, file2);
 
 		if (!useColor || string.IsNullOrEmpty(gitDiff))
 		{
@@ -390,7 +416,7 @@ public static class FileDiffer
 		}
 
 		// Add color escape sequences for terminal if requested
-		var coloredDiff = LibGit2SharpDiffer.GenerateColoredDiff(file1, file2);
+		var coloredDiff = DiffPlexDiffer.GenerateColoredDiff(file1, file2);
 		var sb = new StringBuilder();
 
 		foreach (var line in coloredDiff)
@@ -429,9 +455,17 @@ public static class FileDiffer
 	/// <param name="lines2">Contents of the second file (unused - kept for API compatibility)</param>
 	/// <returns>List of colored diff lines</returns>
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Maintaining API compatibility")]
-	public static Collection<ColoredDiffLine> GenerateColoredDiff(string file1, string file2, string[] lines1, string[] lines2) =>
-		// Use LibGit2Sharp implementation
-		LibGit2SharpDiffer.GenerateColoredDiff(file1, file2);
+	public static Collection<ColoredDiffLine> GenerateColoredDiff(string file1, string file2, string[] lines1, string[] lines2)
+	{
+		// Use DiffPlex implementation
+		var diffLines = DiffPlexDiffer.GenerateColoredDiff(file1, file2);
+		var result = new Collection<ColoredDiffLine>();
+		foreach (var line in diffLines)
+		{
+			result.Add(line);
+		}
+		return result;
+	}
 
 	/// <summary>
 	/// Generates a change summary diff showing only lines added or removed between versions
@@ -445,7 +479,7 @@ public static class FileDiffer
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		// Get the differences using LibGit2Sharp
+		// Get the differences using DiffPlex
 		var differences = FindDifferences(file1, file2);
 
 		var sb = new StringBuilder();
@@ -453,9 +487,9 @@ public static class FileDiffer
 		sb.AppendLine("----------------------------------------");
 
 		// Count different types of changes
-		var modifications = differences.Count(d => d.LineNumber1 > 0 && d.LineNumber2 > 0);
-		var additions = differences.Count(d => d.LineNumber1 == 0 && d.LineNumber2 > 0);
-		var deletions = differences.Count(d => d.LineNumber1 > 0 && d.LineNumber2 == 0);
+		var modifications = differences.Count(d => d.LineNumber1.HasValue && d.LineNumber2.HasValue);
+		var additions = differences.Count(d => !d.LineNumber1.HasValue && d.LineNumber2.HasValue);
+		var deletions = differences.Count(d => d.LineNumber1.HasValue && !d.LineNumber2.HasValue);
 
 		// Add summary statistics
 		if (modifications > 0)
@@ -484,21 +518,21 @@ public static class FileDiffer
 		// Show details of changes
 		foreach (var diff in differences)
 		{
-			if (diff.LineNumber1 > 0 && diff.LineNumber2 > 0)
+			if (diff.LineNumber1.HasValue && diff.LineNumber2.HasValue)
 			{
 				// Modified line
 				var prefix = useColor ? "\u001b[33m" : "";
 				var suffix = useColor ? "\u001b[0m" : "";
 				sb.AppendLine($"{prefix}Modified line {diff.LineNumber1}: {diff.Content1} → {diff.Content2}{suffix}");
 			}
-			else if (diff.LineNumber1 == 0)
+			else if (!diff.LineNumber1.HasValue && diff.LineNumber2.HasValue)
 			{
 				// Added line
 				var prefix = useColor ? "\u001b[32m" : "";
 				var suffix = useColor ? "\u001b[0m" : "";
 				sb.AppendLine($"{prefix}Added line {diff.LineNumber2}: {diff.Content2}{suffix}");
 			}
-			else if (diff.LineNumber2 == 0)
+			else if (diff.LineNumber1.HasValue && !diff.LineNumber2.HasValue)
 			{
 				// Deleted line
 				var prefix = useColor ? "\u001b[31m" : "";
@@ -534,7 +568,7 @@ public static class FileDiffer
 			}
 		};
 
-		// Use LibGit2Sharp to get differences
+		// Use DiffPlex to get differences
 		var differences = FindDifferences(file1, file2);
 
 		// Track added and removed lines
@@ -543,15 +577,15 @@ public static class FileDiffer
 
 		foreach (var diff in differences)
 		{
-			if (diff.LineNumber1 > 0 && diff.LineNumber2 == 0)
+			if (diff.LineNumber1.HasValue && !diff.LineNumber2.HasValue)
 			{
 				// Deletion
-				removedLines.Add((diff.LineNumber1, diff.Content1 ?? ""));
+				removedLines.Add((diff.LineNumber1.Value, diff.Content1 ?? ""));
 			}
-			else if (diff.LineNumber1 == 0 && diff.LineNumber2 > 0)
+			else if (!diff.LineNumber1.HasValue && diff.LineNumber2.HasValue)
 			{
 				// Addition
-				addedLines.Add((diff.LineNumber2, diff.Content2 ?? ""));
+				addedLines.Add((diff.LineNumber2.Value, diff.Content2 ?? ""));
 			}
 		}
 
@@ -659,7 +693,7 @@ public static class FileDiffer
 			return 0.0; // One empty, completely different
 		}
 
-		// Create temporary files to use LibGit2Sharp for similarity calculation
+		// Create temporary files to use DiffPlex for similarity calculation
 		var tempFile1 = Path.GetTempFileName();
 		var tempFile2 = Path.GetTempFileName();
 
@@ -668,8 +702,8 @@ public static class FileDiffer
 			File.WriteAllLines(tempFile1, lines1);
 			File.WriteAllLines(tempFile2, lines2);
 
-			// Use LibGit2Sharp to get differences
-			var differences = LibGit2SharpDiffer.FindDifferences(tempFile1, tempFile2);
+			// Use DiffPlex to get differences
+			var differences = DiffPlexDiffer.FindDifferences(tempFile1, tempFile2);
 
 			// Calculate similarity based on unchanged lines
 			var totalOperations = differences.Count;
@@ -768,7 +802,7 @@ public static class FileDiffer
 		ArgumentNullException.ThrowIfNull(lines1);
 		ArgumentNullException.ThrowIfNull(lines2);
 
-		// Create temporary files to use LibGit2Sharp
+		// Create temporary files to use DiffPlex
 		var tempFile1 = Path.GetTempFileName();
 		var tempFile2 = Path.GetTempFileName();
 
@@ -777,7 +811,7 @@ public static class FileDiffer
 			File.WriteAllLines(tempFile1, lines1);
 			File.WriteAllLines(tempFile2, lines2);
 
-			var differences = LibGit2SharpDiffer.FindDifferences(tempFile1, tempFile2);
+			var differences = DiffPlexDiffer.FindDifferences(tempFile1, tempFile2);
 			var mergedLines = new List<string>();
 			var conflicts = new List<MergeConflict>();
 
@@ -849,14 +883,14 @@ public static class FileDiffer
 				}
 
 				// Update indices based on difference type
-				if (diff.LineNumber1 > 0)
+				if (diff.LineNumber1.HasValue && diff.LineNumber1 > 0)
 				{
-					line1Index = diff.LineNumber1;
+					line1Index = diff.LineNumber1.Value;
 				}
 
-				if (diff.LineNumber2 > 0)
+				if (diff.LineNumber2.HasValue && diff.LineNumber2 > 0)
 				{
-					line2Index = diff.LineNumber2;
+					line2Index = diff.LineNumber2.Value;
 				}
 			}
 

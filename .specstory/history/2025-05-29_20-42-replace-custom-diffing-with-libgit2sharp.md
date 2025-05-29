@@ -774,9 +774,289 @@ I need to fix the LibGit2Sharp API usage and the exception handling issues. Let 
 
 ---
 
+```diff
+  					Directory.Delete(tempDir, recursive: true);
+  				}
+- 				catch
++ 				catch (IOException)
+  				{
+- 					// Ignore cleanup errors
++ 					// Ignore IO errors during cleanup
++ 				}
++ 				catch (UnauthorizedAccessException)
++ 				{
++ 					// Ignore access errors during cleanup
+  				}
+  			}
+```
 
+```diff
+  					Directory.Delete(tempDir, recursive: true);
+  				}
+- 				catch
++ 				catch (IOException)
+  				{
+- 					// Ignore cleanup errors
++ 					// Ignore IO errors during cleanup
++ 				}
++ 				catch (UnauthorizedAccessException)
++ 				{
++ 					// Ignore access errors during cleanup
+  				}
+  			}
+```
+
+```diff
+  			}
+  		}
+- 		catch
++ 		catch (FormatException)
+  		{
+  			// Fall back to defaults if parsing fails
+  		}
++ 		catch (ArgumentOutOfRangeException)
++ 		{
++ 			// Fall back to defaults if index is out of range
++ 		}
++ 		catch (IndexOutOfRangeException)
++ 		{
++ 			// Fall back to defaults if array access is out of range
++ 		}
+  
+  		return (1, 1);
+```
+
+```diff
+  			sb.AppendLine($"+++ b/{fileName2}");
+  
+- 			// Add hunks
+- 			foreach (var hunk in filePatch.Hunks)
++ 			// Get the patch content directly from the PatchEntryChanges
++ 			var patchContent = filePatch.Patch;
++ 
++ 			if (!string.IsNullOrEmpty(patchContent))
+  			{
+- 				// Add hunk header
+- 				sb.AppendLine($"@@ -{hunk.OldStart},{hunk.OldCount} +{hunk.NewStart},{hunk.NewCount} @@");
+- 
+- 				// Add hunk content
+- 				foreach (var line in hunk.Lines)
++ 				// Parse the patch content and extract hunks
++ 				var lines = patchContent.Split('\n', StringSplitOptions.None);
++ 				var inHunk = false;
++ 
++ 				foreach (var line in lines)
+  				{
+- 					switch (line.Origin)
++ 					// Skip file headers as we've already added our own
++ 					if (line.StartsWith("---") || line.StartsWith("+++"))
+  					{
+- 						case ChangeKind.Added:
+- 							sb.AppendLine($"+{line.Content.TrimEnd('\n')}");
+- 							break;
+- 						case ChangeKind.Deleted:
+- 							sb.AppendLine($"-{line.Content.TrimEnd('\n')}");
+- 							break;
+- 						case ChangeKind.Unmodified:
+- 							sb.AppendLine($" {line.Content.TrimEnd('\n')}");
+- 							break;
++ 						continue;
++ 					}
++ 
++ 					// Check for hunk headers
++ 					if (line.StartsWith("@@"))
++ 					{
++ 						inHunk = true;
++ 						sb.AppendLine(line);
++ 					}
++ 					else if (inHunk && (line.StartsWith(' ') || line.StartsWith('+') || line.StartsWith('-')))
++ 					{
++ 						sb.AppendLine(line);
++ 					}
++ 					else if (inHunk && string.IsNullOrEmpty(line))
++ 					{
++ 						// Empty line in hunk - continue
++ 						sb.AppendLine(line);
++ 					}
++ 					else if (inHunk)
++ 					{
++ 						// End of hunk
++ 						inHunk = false;
+  					}
+  				}
+```
 
 ---
+
+Now let's test the implementation to make sure it compiles and works correctly:
+
+---
+
+```bash
+dotnet build DiffMore.Core
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet build DiffMore.Core
+  20:44:48   DiffMore 
+  06:44:48 main  ?1 ~2
+ PS C:\dev\ktsu-dev\DiffMore >
+  20:44:48   DiffMore 
+  06:44:48 main  ?1 ~2
+ PS C:\dev\ktsu-dev\DiffMore >dotnet build DiffMore.Core
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Restore complete (0.6s)
+  DiffMore.Core succeeded (0.5s) → DiffMore.Core\bin\Debug\net9.0\ktsu.DiffMore.
+Core.dll  
+
+Build succeeded in 1.6s
+  20:47:01   DiffMore  1.949s  
+  06:47:01 main  ?1 ~2 
+
+```
+
+---
+
+Great! The core library builds successfully. Now let's run a focused test on the LibGit2Sharp implementation to make sure it's working:
+
+---
+
+```bash
+dotnet test DiffMore.Test --filter "ClassName~LibGit2SharpDifferTests"
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet test DiffMore.Test --filter "ClassName~L
+Oops, something went wrong.
+Please report this bug with ALL the details below, including both the 'Environment' and 'E
+xception' sections.
+Please report on GitHub: https://github.com/PowerShell/PSReadLine/issues/new?template=Bug_
+Report.yaml
+Thank you!
+
+### Environment
+PSReadLine: 2.3.6+d2e770f93b7a53d8660a6402eb29d1ae1c35e767
+PowerShell: 7.5.1
+OS: Microsoft Windows 10.0.26100
+BufferWidth: 90
+BufferHeight: 1
+
+Last 200 Keys:
+
+ n d s o n \ A p p D a t a \ L o c a l \ P r o g r a m s \ c u r s o r \ r e s o u r c e s
+ \ a p p \ o u t \ v s \ w o r k b e n c h \ c o n t r i b \ t e r m i n a l \ c o m m o n
+ \ s c r i p t s \ s h e l l I n t e g r a t i o n . p s 1 " Enter
+ Ctrl+l Enter
+ d o t n e t Spacebar b u i l d Spacebar D i f f M o r e . C o r e Enter
+ d o t n e t Spacebar t e s t Spacebar D i f f M o r e . T e s t Spacebar - - f i l t e r 
+Spacebar " C l a s s N a m e ~ L i b G
+
+### Exception
+
+System.ArgumentOutOfRangeException: The value must be greater than or equal to zero and le
+ss than the console's buffer size in that dimension. (Parameter 'top')
+Actual value was 7.
+   at System.ConsolePal.SetCursorPosition(Int32 left, Int32 top)
+   at Microsoft.PowerShell.Internal.VirtualTerminal.SetCursorPosition(Int32 left, Int32 to
+p)
+   at Microsoft.PowerShell.PSConsoleReadLine.CalculateWhereAndWhatToRender(Boolean cursorM
+ovedToInitialPos, RenderData renderData, LineInfoForRendering& lineInfoForRendering)
+
+   at Microsoft.PowerShell.PSConsoleReadLine.ReallyRender(RenderData renderData, String de
+faultColor)
+   at Microsoft.PowerShell.PSConsoleReadLine.ForceRender()
+   at Microsoft.PowerShell.PSConsoleReadLine.Render()
+   at Microsoft.PowerShell.PSConsoleReadLine.Insert(Char c)
+   at Microsoft.PowerShell.PSConsoleReadLine.SelfInsert(Nullable`1 key, Object arg)
+
+   at Microsoft.PowerShell.PSConsoleReadLine.ProcessOneKey(PSKeyInfo key, Dictionary`2 dis
+patchTable, Boolean ignoreIfNoAction, Object arg)
+   at Microsoft.PowerShell.PSConsoleReadLine.InputLoop()
+   at Microsoft.PowerShell.PSConsoleReadLine.ReadLine(Runspace runspace, EngineIntrinsics 
+engineIntrinsics, CancellationToken cancellationToken, Nullable`1 lastRunStatus)
+
+
+  20:47:06   DiffMore  
+  06:47:06 main  ?1 ~2 
+ PS C:\dev\ktsu-dev\DiffMore >bGit2SharpDifferTests"
+> 
+
+
+
+
+
+
+
+
+
+
+
+```
+
+---
+
+There seems to be a PowerShell terminal issue. Let me try a different approach to run the tests:
+
+---
+
+```bash
+dotnet test DiffMore.Test --filter LibGit2SharpDifferTests
+```
+
+```
+> dotnet test DiffMore.Test --filter LibGit2SharpDifferTests
+>
+```
+
+---
+
+_**User**_
+
+╭────────────────────────────────────┬────────────────────────────────────╮
+│ Version 1                          │ Version 2                          │
+├────────────────────────────────────┼────────────────────────────────────┤
+│   "sdk": {                         │   "sdk": {                         │
+│     "version": "9.0.300",          │     "version": "9.0.300",          │
+│     "rollForward": "latestFeature" │     "rollForward": "latestFeature" │
+                                │                                    │
+                 │                                    │
+       │                                    │
+       │                                    │
+      │                                    │
+  │                                    │
+    │                                    │
+    │                                    │
+│   }                                │                                    │
+│ }                                  │                                    │
+╰────────────────────────────────────┴────────────────────────────────────╯
+This content exists only in Version 1. What would you like to do?
+
+---
+
+_**Assistant**_
 
 
 

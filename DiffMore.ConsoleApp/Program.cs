@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using ktsu.DiffMore.Core;
 using Spectre.Console;
+using DiffPlex.DiffBuilder.Model;
 
 /// <summary>
 /// Main program class for the DiffMore CLI TUI
@@ -412,35 +413,93 @@ public static class Program
 	}
 
 	/// <summary>
-	/// Shows a colored diff between two files
+	/// Shows a colored diff between two files in side-by-side format
 	/// </summary>
 	/// <param name="file1">First file path</param>
 	/// <param name="file2">Second file path</param>
 	private static void ShowColoredDiff(string file1, string file2)
 	{
-		var lines1 = File.ReadAllLines(file1);
-		var lines2 = File.ReadAllLines(file2);
-		var coloredDiff = FileDiffer.GenerateColoredDiff(file1, file2, lines1, lines2);
-
-		AnsiConsole.WriteLine();
-		foreach (var line in coloredDiff.Take(50)) // Limit output for TUI
+		try
 		{
-			var markup = line.Color switch
+			var sideBySideDiff = DiffPlexDiffer.GenerateSideBySideDiff(file1, file2);
+
+			var table = new Table()
+				.AddColumn(new TableColumn("[bold]Line[/]").Width(6))
+				.AddColumn(new TableColumn($"[bold]{Path.GetFileName(file1)}[/]").Width(50))
+				.AddColumn(new TableColumn("[bold]Line[/]").Width(6))
+				.AddColumn(new TableColumn($"[bold]{Path.GetFileName(file2)}[/]").Width(50))
+				.Border(TableBorder.Rounded)
+				.Expand();
+
+			var maxLines = Math.Max(sideBySideDiff.OldText.Lines.Count, sideBySideDiff.NewText.Lines.Count);
+			var displayedLines = 0;
+			const int maxDisplayLines = 100; // Limit for TUI performance
+
+			for (var i = 0; i < maxLines && displayedLines < maxDisplayLines; i++)
 			{
-				DiffColor.Addition => $"[green]{line.Content.EscapeMarkup()}[/]",
-				DiffColor.Deletion => $"[red]{line.Content.EscapeMarkup()}[/]",
-				DiffColor.ChunkHeader => $"[cyan]{line.Content.EscapeMarkup()}[/]",
-				DiffColor.FileHeader => $"[bold blue]{line.Content.EscapeMarkup()}[/]",
-				DiffColor.Default => line.Content.EscapeMarkup(),
-				_ => line.Content.EscapeMarkup()
-			};
-			AnsiConsole.MarkupLine(markup);
-		}
+				var oldLine = i < sideBySideDiff.OldText.Lines.Count ? sideBySideDiff.OldText.Lines[i] : null;
+				var newLine = i < sideBySideDiff.NewText.Lines.Count ? sideBySideDiff.NewText.Lines[i] : null;
 
-		if (coloredDiff.Count > 50)
-		{
-			AnsiConsole.MarkupLine($"[dim]... and {coloredDiff.Count - 50} more lines[/]");
+				var lineNum1 = "";
+				var content1 = "";
+				var lineNum2 = "";
+				var content2 = "";
+
+				if (oldLine != null)
+				{
+					lineNum1 = (oldLine.Position + 1).ToString();
+					content1 = FormatDiffLine(oldLine);
+				}
+
+				if (newLine != null)
+				{
+					lineNum2 = (newLine.Position + 1).ToString();
+					content2 = FormatDiffLine(newLine);
+				}
+
+				table.AddRow(lineNum1 ?? "", content1 ?? "", lineNum2 ?? "", content2 ?? "");
+				displayedLines++;
+			}
+
+			if (maxLines > maxDisplayLines)
+			{
+				table.AddRow("[dim]...[/]", "[dim]...[/]", "[dim]...[/]", $"[dim]... and {maxLines - maxDisplayLines} more lines[/]");
+			}
+
+			AnsiConsole.Write(table);
 		}
+		catch (FileNotFoundException ex)
+		{
+			AnsiConsole.MarkupLine($"[red]File not found: {ex.Message}[/]");
+		}
+		catch (IOException ex)
+		{
+			AnsiConsole.MarkupLine($"[red]IO error generating side-by-side diff: {ex.Message}[/]");
+		}
+		catch (UnauthorizedAccessException ex)
+		{
+			AnsiConsole.MarkupLine($"[red]Access denied: {ex.Message}[/]");
+		}
+	}
+
+	/// <summary>
+	/// Formats a diff line with appropriate color and prefix
+	/// </summary>
+	/// <param name="line">The diff line to format</param>
+	/// <returns>Formatted line with color markup</returns>
+	private static string FormatDiffLine(DiffPiece line)
+	{
+		var text = line.Text?.EscapeMarkup() ?? "";
+
+		return line.Type switch
+		{
+			ChangeType.Deleted => $"[red on darkred]- {text}[/]",
+			ChangeType.Inserted => $"[green on darkgreen]+ {text}[/]",
+			ChangeType.Modified => $"[yellow on darkorange]~ {text}[/]",
+			ChangeType.Imaginary => "[dim]   [/]",
+			ChangeType.Unchanged => $"  {text}",
+			_ => $"  {text}"
+		};
 	}
 
 	/// <summary>
@@ -611,7 +670,7 @@ public static class Program
 			.Spinner(Spinner.Known.Star)
 			.Start("[yellow]Comparing files...[/]", ctx =>
 			{
-				var areSame = LibGit2SharpDiffer.AreFilesIdentical(file1, file2);
+				var areSame = DiffPlexDiffer.AreFilesIdentical(file1, file2);
 
 				if (areSame)
 				{
@@ -821,60 +880,144 @@ public static class Program
 	}
 
 	/// <summary>
-	/// Shows a block with its context
+	/// Shows a block with its context in a side-by-side diff format
 	/// </summary>
 	/// <param name="block">The diff block to show</param>
 	/// <param name="context">The context around the block</param>
 	private static void ShowBlockWithContext(DiffBlock block, BlockContext context)
 	{
+		AnsiConsole.MarkupLine($"[yellow]Block Type: {block.Type}[/]");
+		AnsiConsole.WriteLine();
+
+		// Create a side-by-side diff visualization
 		var table = new Table()
-			.AddColumn("[bold]Version 1[/]")
-			.AddColumn("[bold]Version 2[/]")
-			.Border(TableBorder.Rounded);
+			.AddColumn(new TableColumn("[bold]Line[/]").Width(6))
+			.AddColumn(new TableColumn("[bold]Version 1[/]").Width(50))
+			.AddColumn(new TableColumn("[bold]Line[/]").Width(6))
+			.AddColumn(new TableColumn("[bold]Version 2[/]").Width(50))
+			.Border(TableBorder.Rounded)
+			.Expand();
 
-		// Build content for both versions
-		var version1Content = BuildVersionContent(block, context, true);
-		var version2Content = BuildVersionContent(block, context, false);
+		// Show context before the block
+		ShowContextLines(table, [.. context.ContextBefore1], [.. context.ContextBefore2], 1, 1);
 
-		table.AddRow(version1Content, version2Content);
+		// Show the actual diff block
+		ShowDiffBlock(table, block);
+
+		// Show context after the block
+		ShowContextLines(table, [.. context.ContextAfter1], [.. context.ContextAfter2],
+			block.LineNumbers1.LastOrDefault() + 1, block.LineNumbers2.LastOrDefault() + 1);
+
 		AnsiConsole.Write(table);
+		AnsiConsole.WriteLine();
 	}
 
 	/// <summary>
-	/// Builds display content for one version of a block
+	/// Shows context lines in the side-by-side table
 	/// </summary>
-	/// <param name="block">The diff block</param>
-	/// <param name="context">The context around the block</param>
-	/// <param name="isVersion1">Whether this is version 1 (true) or version 2 (false)</param>
-	/// <returns>Formatted content string</returns>
-	private static string BuildVersionContent(DiffBlock block, BlockContext context, bool isVersion1)
+	/// <param name="table">The table to add rows to</param>
+	/// <param name="lines1">Context lines from version 1</param>
+	/// <param name="lines2">Context lines from version 2</param>
+	/// <param name="startLine1">Starting line number for version 1</param>
+	/// <param name="startLine2">Starting line number for version 2</param>
+	private static void ShowContextLines(Table table, string[] lines1, string[] lines2, int startLine1, int startLine2)
 	{
-		var lines = new List<string>();
+		var maxLines = Math.Max(lines1.Length, lines2.Length);
 
-		// Add context before
-		var contextBefore = isVersion1 ? context.ContextBefore1 : context.ContextBefore2;
-		foreach (var line in contextBefore)
+		for (var i = 0; i < maxLines; i++)
 		{
-			lines.Add($"[dim]{line.EscapeMarkup()}[/]");
+			var line1 = i < lines1.Length ? lines1[i] : "";
+			var line2 = i < lines2.Length ? lines2[i] : "";
+
+			var lineNum1 = i < lines1.Length ? (startLine1 + i).ToString() : "";
+			var lineNum2 = i < lines2.Length ? (startLine2 + i).ToString() : "";
+
+			// Context lines are shown with dim styling
+			var content1 = string.IsNullOrEmpty(line1) ? "" : $"[dim]{line1.EscapeMarkup()}[/]";
+			var content2 = string.IsNullOrEmpty(line2) ? "" : $"[dim]{line2.EscapeMarkup()}[/]";
+
+			table.AddRow(lineNum1 ?? "", content1, lineNum2 ?? "", content2);
 		}
+	}
 
-		// Add block content
-		var blockLines = isVersion1 ? block.Lines1 : block.Lines2;
-		var color = isVersion1 ? "red" : "green";
-
-		foreach (var line in blockLines)
+	/// <summary>
+	/// Shows the diff block with proper highlighting
+	/// </summary>
+	/// <param name="table">The table to add rows to</param>
+	/// <param name="block">The diff block to display</param>
+	private static void ShowDiffBlock(Table table, DiffBlock block)
+	{
+		switch (block.Type)
 		{
-			lines.Add($"[{color} bold]{line.EscapeMarkup()}[/]");
+			case BlockType.Insert:
+				ShowInsertBlock(table, block);
+				break;
+			case BlockType.Delete:
+				ShowDeleteBlock(table, block);
+				break;
+			case BlockType.Replace:
+				ShowReplaceBlock(table, block);
+				break;
+			default:
+				break;
 		}
+	}
 
-		// Add context after
-		var contextAfter = isVersion1 ? context.ContextAfter1 : context.ContextAfter2;
-		foreach (var line in contextAfter)
+	/// <summary>
+	/// Shows an insert block (content only in version 2)
+	/// </summary>
+	/// <param name="table">The table to add rows to</param>
+	/// <param name="block">The insert block</param>
+	private static void ShowInsertBlock(Table table, DiffBlock block)
+	{
+		for (var i = 0; i < block.Lines2.Count; i++)
 		{
-			lines.Add($"[dim]{line.EscapeMarkup()}[/]");
-		}
+			var lineNum2 = block.LineNumbers2.Count > i ? block.LineNumbers2[i].ToString() : "";
+			var content2 = $"[green on darkgreen]+ {block.Lines2[i].EscapeMarkup()}[/]";
 
-		return string.Join("\n", lines);
+			table.AddRow("", "", lineNum2, content2);
+		}
+	}
+
+	/// <summary>
+	/// Shows a delete block (content only in version 1)
+	/// </summary>
+	/// <param name="table">The table to add rows to</param>
+	/// <param name="block">The delete block</param>
+	private static void ShowDeleteBlock(Table table, DiffBlock block)
+	{
+		for (var i = 0; i < block.Lines1.Count; i++)
+		{
+			var lineNum1 = block.LineNumbers1.Count > i ? block.LineNumbers1[i].ToString() : "";
+			var content1 = $"[red on darkred]- {block.Lines1[i].EscapeMarkup()}[/]";
+
+			table.AddRow(lineNum1, content1, "", "");
+		}
+	}
+
+	/// <summary>
+	/// Shows a replace block (content differs between versions)
+	/// </summary>
+	/// <param name="table">The table to add rows to</param>
+	/// <param name="block">The replace block</param>
+	private static void ShowReplaceBlock(Table table, DiffBlock block)
+	{
+		var maxLines = Math.Max(block.Lines1.Count, block.Lines2.Count);
+
+		for (var i = 0; i < maxLines; i++)
+		{
+			var lineNum1 = i < block.LineNumbers1.Count ? block.LineNumbers1[i].ToString() : "";
+			var lineNum2 = i < block.LineNumbers2.Count ? block.LineNumbers2[i].ToString() : "";
+
+			var content1 = i < block.Lines1.Count
+				? $"[red on darkred]- {block.Lines1[i].EscapeMarkup()}[/]"
+				: "";
+			var content2 = i < block.Lines2.Count
+				? $"[green on darkgreen]+ {block.Lines2[i].EscapeMarkup()}[/]"
+				: "";
+
+			table.AddRow(lineNum1, content1, lineNum2, content2);
+		}
 	}
 
 	/// <summary>

@@ -239,7 +239,7 @@ public static class BlockMerger
 		ArgumentNullException.ThrowIfNull(differences);
 
 		var blocks = new Collection<DiffBlock>();
-		var sortedDifferences = differences.OrderBy(d => Math.Max(d.LineNumber1, d.LineNumber2)).ToList();
+		var sortedDifferences = differences.OrderBy(d => Math.Max(d.LineNumber1 ?? 0, d.LineNumber2 ?? 0)).ToList();
 
 		if (sortedDifferences.Count == 0)
 		{
@@ -399,8 +399,8 @@ public static class BlockMerger
 		var lastLine2 = currentBlock.LastLineNumber2;
 
 		// Consider differences contiguous if they're within 1 line of each other
-		var isContiguous1 = diff.LineNumber1 <= 0 || lastLine1 <= 0 || Math.Abs(diff.LineNumber1 - lastLine1) <= 1;
-		var isContiguous2 = diff.LineNumber2 <= 0 || lastLine2 <= 0 || Math.Abs(diff.LineNumber2 - lastLine2) <= 1;
+		var isContiguous1 = !diff.LineNumber1.HasValue || lastLine1 <= 0 || Math.Abs((diff.LineNumber1 ?? 0) - lastLine1) <= 1;
+		var isContiguous2 = !diff.LineNumber2.HasValue || lastLine2 <= 0 || Math.Abs((diff.LineNumber2 ?? 0) - lastLine2) <= 1;
 
 		return isContiguous1 && isContiguous2;
 	}
@@ -410,16 +410,16 @@ public static class BlockMerger
 	/// </summary>
 	private static void AddDifferenceToBlock(DiffBlock currentBlock, LineDifference diff)
 	{
-		if (diff.LineNumber1 > 0 && !string.IsNullOrEmpty(diff.Content1))
+		if (diff.LineNumber1.HasValue && diff.LineNumber1 > 0 && !string.IsNullOrEmpty(diff.Content1))
 		{
 			currentBlock.Lines1.Add(diff.Content1);
-			currentBlock.LineNumbers1.Add(diff.LineNumber1);
+			currentBlock.LineNumbers1.Add(diff.LineNumber1.Value);
 		}
 
-		if (diff.LineNumber2 > 0 && !string.IsNullOrEmpty(diff.Content2))
+		if (diff.LineNumber2.HasValue && diff.LineNumber2 > 0 && !string.IsNullOrEmpty(diff.Content2))
 		{
 			currentBlock.Lines2.Add(diff.Content2);
-			currentBlock.LineNumbers2.Add(diff.LineNumber2);
+			currentBlock.LineNumbers2.Add(diff.LineNumber2.Value);
 		}
 
 		// Determine block type
