@@ -998,7 +998,11 @@ public static class Program
 				continue;
 			}
 
-			AnsiConsole.WriteLine();
+			// Only add a line break if this isn't the first conflict
+			if (conflictIndex > 1)
+			{
+				AnsiConsole.WriteLine();
+			}
 			AnsiConsole.MarkupLine($"[yellow]Conflict {conflictIndex}/{mergeResult.Conflicts.Count} at line {conflict.LineNumber}:[/]");
 
 			// Show the conflict with context in side-by-side view
@@ -1085,7 +1089,8 @@ public static class Program
 	/// <param name="originalLines2">Original lines from second file/content</param>
 	private static void ShowConflictWithContext(MergeConflict conflict, string[] originalLines1, string[] originalLines2)
 	{
-		const int contextLines = 3; // Number of context lines before and after conflict
+		const int contextLines = 2; // Number of context lines before and after conflict (reduced from 3)
+		const int maxDisplayLines = 12; // Maximum lines to display per panel to keep menu visible
 
 		// Find the actual lines in the original files that contain the conflicting content
 		var line1Index = FindLineInFile(originalLines1, conflict.Content1);
@@ -1189,19 +1194,20 @@ public static class Program
 			}
 		}
 
-		// Ensure both sides have the same number of lines for better alignment
-		var maxLines = Math.Max(version1Content.Count, version2Content.Count);
-		while (version1Content.Count < maxLines)
+		// Truncate display if too long, prioritizing conflict lines
+		if (version1Content.Count > maxDisplayLines)
 		{
-			version1Content.Add($"[dim]    : [/]");
+			var keepLines = Math.Min(maxDisplayLines, version1Content.Count);
+			version1Content = [.. version1Content.Take(keepLines), "[dim]... (truncated)[/]"];
 		}
 
-		while (version2Content.Count < maxLines)
+		if (version2Content.Count > maxDisplayLines)
 		{
-			version2Content.Add($"[dim]    : [/]");
+			var keepLines = Math.Min(maxDisplayLines, version2Content.Count);
+			version2Content = [.. version2Content.Take(keepLines), "[dim]... (truncated)[/]"];
 		}
 
-		// Create side-by-side layout
+		// Create side-by-side layout without unnecessary alignment padding
 		var leftPanel = new Panel(string.Join("\n", version1Content))
 		{
 			Header = new PanelHeader("[red bold]Version 1[/]"),
@@ -1224,7 +1230,6 @@ public static class Program
 			);
 
 		AnsiConsole.Write(layout);
-		AnsiConsole.WriteLine();
 	}
 
 	/// <summary>

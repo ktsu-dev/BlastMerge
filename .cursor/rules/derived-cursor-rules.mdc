@@ -92,13 +92,7 @@ globs: *
 -   When using the Myers diff algorithm, add a specific check for empty files at the beginning of the `GetMyersDiff` method to avoid `IndexOutOfRangeException`.
 -   In GenerateGitStyleDiff, if the files are identical, return an empty string.
 -   When doing an interactive merge, show the blocks side by side with some context. The context should be extracted from the original file content, not the merged lines. The implementation should properly extract context from the original files.
--   When displaying conflicts in interactive merge, use the following logic in the `ShowConflictWithContext` method in `Program.cs` (DiffMore.ConsoleApp project):
-    -   If the conflict line is found in Version 1, show context lines around it.
-    -   If the conflict line is not found in Version 1, attempt fuzzy matching using `FindBestMatchingLine`. If a good match is found (at least 50% word similarity), show context around the best matching line. If no match is found, show the conflict content along with a message indicating it was not found.
-    -   Handle Version 1 deletions by indicating that content was deleted.
-    -   Repeat the same logic for Version 2.
-    -   The `FindBestMatchingLine` method should use exact matching, partial matching, and word-based similarity to find the best match.
-    -   Improve the `FindLineInFile` method to first attempt an exact match, then an exact match on trimmed content, and finally a partial match.
+-   In GenerateGitStyleDiff, ensure the application doesn't add a lot of blank lines after a diff.
 
 ## DEBUGGING
 
@@ -191,3 +185,10 @@ globs: *
     -   Repeat the same logic for Version 2.
     -   The `FindBestMatchingLine` method should use exact matching, partial matching, and word-based similarity to find the best match.
     -   Improve the `FindLineInFile` method to first attempt an exact match, then an exact match on trimmed content, and finally a partial match.
+    -   When displaying conflicts, ensure proper alignment and context is shown for both versions. If a conflict line cannot be found in either version, display the conflict content and a message indicating it was not found.
+-   To prevent excessive blank lines from pushing the diff content off the screen in iterative merge mode, apply the following:
+    -   Only add line breaks between conflicts, not before the first one.
+    -   Eliminate the code that adds empty lines to match panel heights.
+    -   Reduce the context lines around conflicts from 3 to 2.
+    -   Limit diff panels to 12 lines maximum and add truncation indicators when content is too long.
+    -   Remove the extra `AnsiConsole.WriteLine()` after each diff display.
