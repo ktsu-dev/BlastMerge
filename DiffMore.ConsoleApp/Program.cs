@@ -982,12 +982,6 @@ public static class Program
 	/// <returns>The resolved merge result</returns>
 	private static MergeResult ResolveConflictsInteractively(MergeResult mergeResult, string[]? originalLines1, string[]? originalLines2)
 	{
-		var rule = new Rule("[bold]Interactive Conflict Resolution[/]")
-		{
-			Style = Style.Parse("red")
-		};
-		AnsiConsole.Write(rule);
-
 		var resolvedLines = mergeResult.MergedLines.ToList();
 		var conflictIndex = 1;
 
@@ -998,29 +992,17 @@ public static class Program
 				continue;
 			}
 
-			// Only add a line break if this isn't the first conflict
-			if (conflictIndex > 1)
+			AnsiConsole.Write(new Rule("[bold]Interactive Conflict Resolution[/]")
 			{
-				AnsiConsole.WriteLine();
-			}
+				Style = Style.Parse("red")
+			});
+
 			AnsiConsole.MarkupLine($"[yellow]Conflict {conflictIndex}/{mergeResult.Conflicts.Count} at line {conflict.LineNumber}:[/]");
 
 			// Show the conflict with context in side-by-side view
 			if (originalLines1 != null && originalLines2 != null)
 			{
-				ShowConflictWithContext(conflict, originalLines1, originalLines2);
-			}
-			else
-			{
-				// Fallback to simple display if original lines are not available
-				var panel = new Panel(
-					$"[red]Version 1:[/]\n{conflict.Content1 ?? "(deleted)"}\n\n" +
-					$"[green]Version 2:[/]\n{conflict.Content2 ?? "(added)"}")
-				{
-					Header = new PanelHeader("Conflict Details"),
-					Border = BoxBorder.Rounded
-				};
-				AnsiConsole.Write(panel);
+				MakeConflictColumnLayout(conflict, originalLines1, originalLines2);
 			}
 
 			// Let user choose resolution
@@ -1087,9 +1069,9 @@ public static class Program
 	/// <param name="conflict">The conflict to display</param>
 	/// <param name="originalLines1">Original lines from first file/content</param>
 	/// <param name="originalLines2">Original lines from second file/content</param>
-	private static void ShowConflictWithContext(MergeConflict conflict, string[] originalLines1, string[] originalLines2)
+	private static void MakeConflictColumnLayout(MergeConflict conflict, string[] originalLines1, string[] originalLines2)
 	{
-		const int contextLines = 2; // Number of context lines before and after conflict (reduced from 3)
+		const int contextLines = 3; // Number of context lines before and after conflict
 		const int maxDisplayLines = 12; // Maximum lines to display per panel to keep menu visible
 
 		// Find the actual lines in the original files that contain the conflicting content
@@ -1222,14 +1204,10 @@ public static class Program
 			BorderStyle = Style.Parse("green")
 		};
 
-		// Create the layout with two columns
-		var layout = new Layout()
-			.SplitColumns(
-				new Layout("left").Update(leftPanel),
-				new Layout("right").Update(rightPanel)
-			);
-
-		AnsiConsole.Write(layout);
+		AnsiConsole.Write(new Columns(leftPanel, rightPanel)
+		{
+			Expand = false,
+		});
 	}
 
 	/// <summary>
