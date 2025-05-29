@@ -95,6 +95,7 @@ globs: *
 
 -   When an error occurs, log the error message and rethrow the exception for debugging purposes.
 -   When encountering build errors, check the error messages to identify missing package references, incorrect project references, or other dependency-related issues.
+-   When using Spectre.Console, avoid running interactive functions (e.g., prompts, progress displays) concurrently to prevent `System.InvalidOperationException`.
 
 ## UNIT TESTING
 

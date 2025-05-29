@@ -24,6 +24,8 @@ public static class Program
 	{
 		ArgumentNullException.ThrowIfNull(args);
 
+		Console.OutputEncoding = System.Text.Encoding.UTF8;
+
 		try
 		{
 			ShowBanner();
@@ -756,6 +758,9 @@ public static class Program
 
 		var fileName = AnsiConsole.Ask<string>("[cyan]Enter the filename to search for (multiple versions):[/]");
 
+		// First, find files and prepare data (within Status operation)
+		List<FileGroup>? uniqueGroups = null;
+
 		AnsiConsole.Status()
 			.Spinner(Spinner.Known.Star)
 			.Start("[yellow]Finding file versions...[/]", ctx =>
@@ -771,7 +776,7 @@ public static class Program
 
 				// Group files by hash to find unique versions
 				var fileGroups = FileDiffer.GroupFilesByHash(files);
-				var uniqueGroups = fileGroups.Where(g => g.FilePaths.Count >= 1).ToList();
+				uniqueGroups = [.. fileGroups.Where(g => g.FilePaths.Count >= 1)];
 
 				if (uniqueGroups.Count < 2)
 				{
@@ -780,9 +785,13 @@ public static class Program
 				}
 
 				AnsiConsole.MarkupLine($"[green]Found {uniqueGroups.Count} unique versions to merge.[/]");
-
-				StartIterativeMergeProcess(uniqueGroups, fileName);
 			});
+
+		// Then, run the interactive merge process (outside Status operation)
+		if (uniqueGroups != null && uniqueGroups.Count >= 2)
+		{
+			StartIterativeMergeProcess(uniqueGroups, fileName);
+		}
 	}
 
 	/// <summary>
