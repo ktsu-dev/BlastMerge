@@ -89,9 +89,13 @@ public static class LibGit2SharpDiffer
 				{
 					Directory.Delete(tempDir, recursive: true);
 				}
-				catch
+				catch (IOException)
 				{
-					// Ignore cleanup errors
+					// Ignore IO errors during cleanup
+				}
+				catch (UnauthorizedAccessException)
+				{
+					// Ignore access errors during cleanup
 				}
 			}
 		}
@@ -168,9 +172,13 @@ public static class LibGit2SharpDiffer
 				{
 					Directory.Delete(tempDir, recursive: true);
 				}
-				catch
+				catch (IOException)
 				{
-					// Ignore cleanup errors
+					// Ignore IO errors during cleanup
+				}
+				catch (UnauthorizedAccessException)
+				{
+					// Ignore access errors during cleanup
 				}
 			}
 		}
@@ -338,9 +346,17 @@ public static class LibGit2SharpDiffer
 				return (oldStart, newStart);
 			}
 		}
-		catch
+		catch (FormatException)
 		{
 			// Fall back to defaults if parsing fails
+		}
+		catch (ArgumentOutOfRangeException)
+		{
+			// Fall back to defaults if index is out of range
+		}
+		catch (IndexOutOfRangeException)
+		{
+			// Fall back to defaults if array access is out of range
 		}
 
 		return (1, 1);
@@ -368,26 +384,42 @@ public static class LibGit2SharpDiffer
 			sb.AppendLine($"--- a/{fileName1}");
 			sb.AppendLine($"+++ b/{fileName2}");
 
-			// Add hunks
-			foreach (var hunk in filePatch.Hunks)
-			{
-				// Add hunk header
-				sb.AppendLine($"@@ -{hunk.OldStart},{hunk.OldCount} +{hunk.NewStart},{hunk.NewCount} @@");
+			// Get the patch content directly from the PatchEntryChanges
+			var patchContent = filePatch.Patch;
 
-				// Add hunk content
-				foreach (var line in hunk.Lines)
+			if (!string.IsNullOrEmpty(patchContent))
+			{
+				// Parse the patch content and extract hunks
+				var lines = patchContent.Split('\n', StringSplitOptions.None);
+				var inHunk = false;
+
+				foreach (var line in lines)
 				{
-					switch (line.Origin)
+					// Skip file headers as we've already added our own
+					if (line.StartsWith("---") || line.StartsWith("+++"))
 					{
-						case ChangeKind.Added:
-							sb.AppendLine($"+{line.Content.TrimEnd('\n')}");
-							break;
-						case ChangeKind.Deleted:
-							sb.AppendLine($"-{line.Content.TrimEnd('\n')}");
-							break;
-						case ChangeKind.Unmodified:
-							sb.AppendLine($" {line.Content.TrimEnd('\n')}");
-							break;
+						continue;
+					}
+
+					// Check for hunk headers
+					if (line.StartsWith("@@"))
+					{
+						inHunk = true;
+						sb.AppendLine(line);
+					}
+					else if (inHunk && (line.StartsWith(' ') || line.StartsWith('+') || line.StartsWith('-')))
+					{
+						sb.AppendLine(line);
+					}
+					else if (inHunk && string.IsNullOrEmpty(line))
+					{
+						// Empty line in hunk - continue
+						sb.AppendLine(line);
+					}
+					else if (inHunk)
+					{
+						// End of hunk
+						inHunk = false;
 					}
 				}
 			}

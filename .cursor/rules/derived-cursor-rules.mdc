@@ -101,6 +101,10 @@ globs: *
 -   The bespoke diffing functionality has been replaced with LibGit2Sharp. The original `FileDiffer` class maintains API compatibility by delegating calls to the `LibGit2SharpDiffer` class. A hybrid approach is used for a gradual migration.
 -   The custom Myers diff algorithm implementation has been removed.
 -   The EditOperation enum has been removed.
+-   The `LibGit2SharpDiffer` class should use LibGit2Sharp for Git-based diffing functionality, providing industry-standard diff algorithms.
+-   The `AreFilesIdentical` method should use Git's object comparison for efficiency with larger files.
+-   The `FindDifferences` method should use LibGit2Sharp for finding differences between files.
+-   The `ParseHunkHeader` method should extract line number information from a hunk header.
 
 ## DEBUGGING
 
