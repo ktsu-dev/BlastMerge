@@ -94,6 +94,7 @@ globs: *
 -   In GenerateGitStyleDiff, if the files are identical, return an empty string.
 -   When doing an interactive merge, show the blocks side by side with some context. The context should be extracted from the original file content, not the merged lines. The implementation should properly extract context from the original files.
 -   In GenerateGitStyleDiff, ensure the application doesn't add a lot of blank lines after a diff.
+-   The program should guide the user to do a manual merge by showing the differences and asking which block to take, instead of doing an automatic merge with manual conflict resolution.
 
 ## DEBUGGING
 

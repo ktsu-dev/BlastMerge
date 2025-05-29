@@ -777,7 +777,7 @@ public static class Program
 
 				// Group files by hash to find unique versions
 				var fileGroups = FileDiffer.GroupFilesByHash(files);
-				uniqueGroups = [.. fileGroups.Where(g => g.FilePaths.Count >= 1)];
+				uniqueGroups = new List<FileGroup>(fileGroups.Where(g => g.FilePaths.Count >= 1));
 
 				if (uniqueGroups.Count < 2)
 				{
@@ -931,423 +931,183 @@ public static class Program
 	}
 
 	/// <summary>
-	/// Performs a merge with interactive conflict resolution
+	/// Performs a merge with manual block selection
 	/// </summary>
 	/// <param name="file1">First file to merge</param>
 	/// <param name="file2">Second file to merge</param>
 	/// <param name="existingMergedContent">Existing merged content (if any)</param>
-	/// <returns>The resolved merge result, or null if cancelled</returns>
+	/// <returns>The manually merged result, or null if cancelled</returns>
 	private static MergeResult? PerformMergeWithConflictResolution(string file1, string file2, string? existingMergedContent)
 	{
-		MergeResult mergeResult;
-		string[]? originalLines1 = null;
-		string[]? originalLines2 = null;
+		string[] lines1;
+		string[] lines2;
 
 		if (existingMergedContent != null)
 		{
 			// Merge with existing content
-			var mergedLines = existingMergedContent.Split(Environment.NewLine);
-			var file2Lines = File.ReadAllLines(file2);
-			originalLines1 = mergedLines;
-			originalLines2 = file2Lines;
-			mergeResult = FileDiffer.MergeLines(mergedLines, file2Lines);
+			lines1 = existingMergedContent.Split(Environment.NewLine);
+			lines2 = File.ReadAllLines(file2);
 		}
 		else
 		{
 			// Merge two files
-			originalLines1 = File.ReadAllLines(file1);
-			originalLines2 = File.ReadAllLines(file2);
-			mergeResult = FileDiffer.MergeFiles(file1, file2);
+			lines1 = File.ReadAllLines(file1);
+			lines2 = File.ReadAllLines(file2);
 		}
 
-		if (mergeResult.Conflicts.Count == 0)
-		{
-			AnsiConsole.MarkupLine("[green]✓ Automatic merge successful (no conflicts)![/]");
-			return mergeResult;
-		}
-
-		AnsiConsole.MarkupLine($"[yellow]⚠ Found {mergeResult.Conflicts.Count} conflict(s) that need resolution.[/]");
-
-		return !AnsiConsole.Confirm("[cyan]Would you like to resolve conflicts interactively?[/]", true)
-			? null
-			: ResolveConflictsInteractively(mergeResult, originalLines1, originalLines2);
+		return PerformManualBlockSelection(lines1, lines2);
 	}
 
 	/// <summary>
-	/// Resolves merge conflicts interactively through TUI
+	/// Performs manual block-by-block selection for merging
 	/// </summary>
-	/// <param name="mergeResult">The merge result with conflicts</param>
-	/// <param name="originalLines1">Original lines of the first file</param>
-	/// <param name="originalLines2">Original lines of the second file</param>
-	/// <returns>The resolved merge result</returns>
-	private static MergeResult ResolveConflictsInteractively(MergeResult mergeResult, string[]? originalLines1, string[]? originalLines2)
+	/// <param name="lines1">Lines from version 1</param>
+	/// <param name="lines2">Lines from version 2</param>
+	/// <returns>The manually merged result</returns>
+	private static MergeResult PerformManualBlockSelection(string[] lines1, string[] lines2)
 	{
-		var resolvedLines = mergeResult.MergedLines.ToList();
-		var conflictIndex = 1;
+		// Create temporary files to use with FileDiffer
+		var tempFile1 = Path.GetTempFileName();
+		var tempFile2 = Path.GetTempFileName();
 
-		foreach (var conflict in mergeResult.Conflicts)
+		try
 		{
-			if (conflict.IsResolved)
+			File.WriteAllLines(tempFile1, lines1);
+			File.WriteAllLines(tempFile2, lines2);
+
+			var differences = FileDiffer.FindDifferences(tempFile1, tempFile2);
+			var mergedLines = new List<string>();
+			var conflicts = new List<MergeConflict>();
+
+			AnsiConsole.MarkupLine("[yellow]Manual merge mode: Choose which blocks to include in the final result.[/]");
+			AnsiConsole.WriteLine();
+
+			var blockNumber = 1;
+
+			// Convert differences to our custom block format
+			var blocks = ConvertDifferencesToBlocks(differences, lines1, lines2);
+
+			foreach (var block in blocks)
 			{
-				continue;
-			}
-
-			AnsiConsole.Write(new Rule("[bold]Interactive Conflict Resolution[/]")
-			{
-				Style = Style.Parse("red")
-			});
-
-			AnsiConsole.MarkupLine($"[yellow]Conflict {conflictIndex}/{mergeResult.Conflicts.Count} at line {conflict.LineNumber}:[/]");
-
-			// Show the conflict with context in side-by-side view
-			if (originalLines1 != null && originalLines2 != null)
-			{
-				MakeConflictColumnLayout(conflict, originalLines1, originalLines2);
-			}
-
-			// Let user choose resolution
-			var choices = new List<string>
-			{
-				"📄 Use Version 1",
-				"📄 Use Version 2",
-				"✏️  Edit Manually",
-				"❌ Skip This Conflict"
-			};
-
-			if (conflict.Content1 != null && conflict.Content2 != null)
-			{
-				choices.Insert(2, "🔀 Combine Both");
-			}
-
-			var choice = AnsiConsole.Prompt(
-				new SelectionPrompt<string>()
-					.Title("[cyan]How would you like to resolve this conflict?[/]")
-					.AddChoices(choices));
-
-			if (choice.Contains("Use Version 1"))
-			{
-				conflict.ResolvedContent = conflict.Content1 ?? "";
-				conflict.IsResolved = true;
-			}
-			else if (choice.Contains("Use Version 2"))
-			{
-				conflict.ResolvedContent = conflict.Content2 ?? "";
-				conflict.IsResolved = true;
-			}
-			else if (choice.Contains("Combine Both"))
-			{
-				conflict.ResolvedContent = $"{conflict.Content1}\n{conflict.Content2}";
-				conflict.IsResolved = true;
-			}
-			else if (choice.Contains("Edit Manually"))
-			{
-				var manualContent = HistoryInput.AskWithHistory("[cyan]Enter the resolved content:[/]");
-				conflict.ResolvedContent = manualContent;
-				conflict.IsResolved = true;
-			}
-			else
-			{
-				AnsiConsole.MarkupLine("[yellow]Skipping conflict - will keep conflict markers.[/]");
-			}
-
-			conflictIndex++;
-		}
-
-		// Apply resolved conflicts to the merged content
-		ApplyConflictResolutions(resolvedLines, mergeResult.Conflicts);
-
-		return new MergeResult
-		{
-			MergedLines = resolvedLines.AsReadOnly(),
-			Conflicts = mergeResult.Conflicts
-		};
-	}
-
-	/// <summary>
-	/// Shows a conflict with context lines in a side-by-side view
-	/// </summary>
-	/// <param name="conflict">The conflict to display</param>
-	/// <param name="originalLines1">Original lines from first file/content</param>
-	/// <param name="originalLines2">Original lines from second file/content</param>
-	private static void MakeConflictColumnLayout(MergeConflict conflict, string[] originalLines1, string[] originalLines2)
-	{
-		const int contextLines = 3;
-		const int maxDisplayLines = 12;
-
-		// Find conflict lines and determine reference index
-		var line1Index = FindLineInFile(originalLines1, conflict.Content1);
-		var line2Index = FindLineInFile(originalLines2, conflict.Content2);
-		var referenceLineIndex = DetermineReferenceLineIndex(line1Index, line2Index, conflict.LineNumber);
-
-		// Calculate display ranges
-		var startIndex1 = Math.Max(0, referenceLineIndex - contextLines);
-		var endIndex1 = Math.Min(originalLines1.Length - 1, referenceLineIndex + contextLines);
-		var startIndex2 = Math.Max(0, referenceLineIndex - contextLines);
-		var endIndex2 = Math.Min(originalLines2.Length - 1, referenceLineIndex + contextLines);
-
-		// Build content for both versions
-		var version1Content = BuildVersionContent(originalLines1, originalLines2, conflict.Content1, line1Index,
-			startIndex1, endIndex1, startIndex2, isVersion1: true);
-		var version2Content = BuildVersionContent(originalLines2, originalLines1, conflict.Content2, line2Index,
-			startIndex2, endIndex2, startIndex1, isVersion1: false);
-
-		// Truncate if needed
-		TruncateContentIfNeeded(version1Content, maxDisplayLines);
-		TruncateContentIfNeeded(version2Content, maxDisplayLines);
-
-		// Display the panels
-		DisplayConflictPanels(version1Content, version2Content);
-	}
-
-	/// <summary>
-	/// Determines the reference line index for consistent region display
-	/// </summary>
-	private static int DetermineReferenceLineIndex(int line1Index, int line2Index, int conflictLineNumber)
-	{
-		if (line1Index >= 0 && line2Index >= 0)
-		{
-			return line1Index; // Both found, use the first one
-		}
-
-		if (line1Index >= 0)
-		{
-			return line1Index;
-		}
-
-		if (line2Index >= 0)
-		{
-			return line2Index;
-		}
-
-		return Math.Max(0, conflictLineNumber - 1); // Neither found, use conflict line number
-	}
-
-	/// <summary>
-	/// Builds content for one version, comparing against the other version
-	/// </summary>
-	private static List<string> BuildVersionContent(string[] currentLines, string[] otherLines, string? conflictContent,
-		int conflictLineIndex, int startIndex, int endIndex, int otherStartIndex, bool isVersion1)
-	{
-		var content = new List<string>();
-		var colors = isVersion1 ? ("red", "yellow") : ("green", "yellow");
-
-		// Handle case where conflict content is null (addition/deletion)
-		if (conflictContent == null)
-		{
-			if (isVersion1)
-			{
-				// This is a deletion case for Version 1
-				AddContextLinesWithComparison(content, currentLines, otherLines, startIndex, endIndex,
-					otherStartIndex, conflictLineIndex, colors);
-				content.Add($"[dim](deleted content)[/]");
-			}
-			else
-			{
-				// This is an addition case for Version 2
-				AddContextLinesWithComparison(content, currentLines, otherLines, startIndex, endIndex,
-					otherStartIndex, conflictLineIndex, colors);
-				content.Add($"[{colors.Item1} bold](added content)[/]");
-			}
-			return content;
-		}
-
-		// Handle case where conflict line was not found in this version
-		if (conflictLineIndex < 0)
-		{
-			// Show context around where the conflict should be, based on line number
-			var estimatedLine = Math.Max(0, Math.Min(currentLines.Length - 1, startIndex));
-			AddContextLinesWithComparison(content, currentLines, otherLines, startIndex, endIndex,
-				otherStartIndex, -1, colors);
-
-			// Add the conflict content with a "not found" indicator
-			content.Add($"[{colors.Item1} bold]---- {conflictContent.EscapeMarkup()} ----[/]");
-			content.Add($"[dim](conflict content not found in this version)[/]");
-			return content;
-		}
-
-		// Normal case: show context lines with the conflict highlighted
-		AddContextLinesWithComparison(content, currentLines, otherLines, startIndex, endIndex,
-			otherStartIndex, conflictLineIndex, colors);
-
-		return content;
-	}
-
-	/// <summary>
-	/// Adds context lines with comparison highlighting
-	/// </summary>
-	private static void AddContextLinesWithComparison(List<string> content, string[] currentLines, string[] otherLines,
-		int startIndex, int endIndex, int otherStartIndex, int conflictLineIndex, (string primary, string modified) colors)
-	{
-		for (var i = startIndex; i <= endIndex; i++)
-		{
-			if (i >= currentLines.Length)
-			{
-				continue;
-			}
-
-			var isConflictLine = i == conflictLineIndex;
-			var correspondingIndex = otherStartIndex + (i - startIndex);
-			var isModified = IsLineModified(currentLines, otherLines, i, correspondingIndex);
-
-			var lineContent = FormatLine(currentLines[i], i + 1, isConflictLine, isModified, colors);
-			content.Add(lineContent);
-		}
-	}
-
-	/// <summary>
-	/// Checks if a line is modified compared to the corresponding line in the other version
-	/// </summary>
-	private static bool IsLineModified(string[] currentLines, string[] otherLines, int currentIndex, int otherIndex)
-	{
-		return otherIndex >= 0 && otherIndex < otherLines.Length &&
-			   currentIndex < currentLines.Length &&
-			   currentLines[currentIndex] != otherLines[otherIndex];
-	}
-
-	/// <summary>
-	/// Formats a line with appropriate coloring
-	/// </summary>
-	private static string FormatLine(string line, int lineNumber, bool isConflictLine, bool isModified,
-		(string primary, string modified) colors)
-	{
-		return isConflictLine
-			? $"[{colors.primary} bold]{lineNumber,4}: {line.EscapeMarkup()}[/]"
-			: isModified
-				? $"[{colors.modified}]{lineNumber,4}: {line.EscapeMarkup()}[/]"
-				: $"[dim]{lineNumber,4}: {line.EscapeMarkup()}[/]";
-	}
-
-	/// <summary>
-	/// Truncates content if it exceeds the maximum display lines
-	/// </summary>
-	private static void TruncateContentIfNeeded(List<string> content, int maxDisplayLines)
-	{
-		if (content.Count > maxDisplayLines)
-		{
-			content.RemoveRange(maxDisplayLines - 1, content.Count - maxDisplayLines + 1);
-			content.Add("[dim]... (truncated)[/]");
-		}
-	}
-
-	/// <summary>
-	/// Displays the conflict panels side by side
-	/// </summary>
-	private static void DisplayConflictPanels(List<string> version1Content, List<string> version2Content)
-	{
-		var leftPanel = new Panel(string.Join("\n", version1Content))
-		{
-			Header = new PanelHeader("[red bold]Version 1[/]"),
-			Border = BoxBorder.Rounded,
-			BorderStyle = Style.Parse("red")
-		};
-
-		var rightPanel = new Panel(string.Join("\n", version2Content))
-		{
-			Header = new PanelHeader("[green bold]Version 2[/]"),
-			Border = BoxBorder.Rounded,
-			BorderStyle = Style.Parse("green")
-		};
-
-		AnsiConsole.Write(new Columns(leftPanel, rightPanel)
-		{
-			Expand = false,
-		});
-	}
-
-	/// <summary>
-	/// Finds the line index of the given content in the file lines
-	/// </summary>
-	/// <param name="lines">The file lines to search</param>
-	/// <param name="content">The content to find</param>
-	/// <returns>The line index if found, -1 if not found</returns>
-	private static int FindLineInFile(string[] lines, string? content)
-	{
-		if (content == null || lines.Length == 0)
-		{
-			return -1;
-		}
-
-		// First try exact match
-		for (var i = 0; i < lines.Length; i++)
-		{
-			if (lines[i] == content)
-			{
-				return i;
-			}
-		}
-
-		// Try exact match on trimmed content
-		var contentTrimmed = content.Trim();
-		for (var i = 0; i < lines.Length; i++)
-		{
-			if (lines[i].Trim() == contentTrimmed)
-			{
-				return i;
-			}
-		}
-
-		// If exact match not found, try to find a line that contains the content
-		for (var i = 0; i < lines.Length; i++)
-		{
-			if (lines[i].Contains(content) || content.Contains(lines[i]))
-			{
-				return i;
-			}
-		}
-
-		// Try trimmed partial matching
-		for (var i = 0; i < lines.Length; i++)
-		{
-			var lineTrimmed = lines[i].Trim();
-			if (!string.IsNullOrEmpty(lineTrimmed) &&
-				(contentTrimmed.Contains(lineTrimmed) || lineTrimmed.Contains(contentTrimmed)))
-			{
-				return i;
-			}
-		}
-
-		return -1;
-	}
-
-	/// <summary>
-	/// Applies conflict resolutions to the merged lines
-	/// </summary>
-	/// <param name="mergedLines">The merged lines to update</param>
-	/// <param name="conflicts">The conflicts with resolutions</param>
-	private static void ApplyConflictResolutions(List<string> mergedLines, IReadOnlyCollection<MergeConflict> conflicts)
-	{
-		// Work backwards through conflicts to avoid index shifting
-		foreach (var conflict in conflicts.Where(c => c.IsResolved).OrderByDescending(c => c.LineNumber))
-		{
-			// Find and replace conflict markers with resolved content
-			for (var i = mergedLines.Count - 1; i >= 0; i--)
-			{
-				if (mergedLines[i].Contains("<<<<<<< Version"))
+				switch (block.Type)
 				{
-					// Find the end of this conflict block
-					var endIndex = i;
-					while (endIndex < mergedLines.Count && !mergedLines[endIndex].Contains(">>>>>>> Version"))
-					{
-						endIndex++;
-					}
-
-					if (endIndex < mergedLines.Count)
-					{
-						// Remove the conflict block and replace with resolved content
-						var linesToRemove = endIndex - i + 1;
-						mergedLines.RemoveRange(i, linesToRemove);
-
-						if (!string.IsNullOrEmpty(conflict.ResolvedContent))
+					case BlockType.Equal:
+						// Add equal lines directly
+						for (var i = 0; i < block.Lines.Count; i++)
 						{
-							var resolvedLines = conflict.ResolvedContent.Split('\n');
-							mergedLines.InsertRange(i, resolvedLines);
+							mergedLines.Add(block.Lines[i]);
 						}
-
 						break;
-					}
+
+					case BlockType.Insert:
+						// Show insertion and ask user
+						HandleInsertionBlock(block.Lines.ToArray(), 0, block.Lines.Count, mergedLines, blockNumber);
+						blockNumber++;
+						break;
+
+					case BlockType.Delete:
+						// Show deletion and ask user
+						HandleDeletionBlock(block.Lines.ToArray(), 0, block.Lines.Count, mergedLines, blockNumber);
+						blockNumber++;
+						break;
+
+					case BlockType.Replace:
+						// Show replacement and ask user
+						HandleReplacementBlock(block.Lines1.ToArray(), block.Lines2.ToArray(), 0, 0,
+							block.Lines1.Count, block.Lines2.Count, mergedLines, blockNumber);
+						blockNumber++;
+						break;
+
+					default:
+						// Handle unexpected block types
+						break;
 				}
 			}
+
+			return new MergeResult
+			{
+				MergedLines = mergedLines.AsReadOnly(),
+				Conflicts = conflicts.AsReadOnly()
+			};
 		}
+		finally
+		{
+			// Clean up temporary files
+			if (File.Exists(tempFile1))
+			{
+				File.Delete(tempFile1);
+			}
+			if (File.Exists(tempFile2))
+			{
+				File.Delete(tempFile2);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Represents a block type for manual selection
+	/// </summary>
+	private enum BlockType
+	{
+		Equal,
+		Insert,
+		Delete,
+		Replace
+	}
+
+	/// <summary>
+	/// Represents a diff block for manual selection
+	/// </summary>
+	private class DiffBlock
+	{
+		public BlockType Type { get; set; }
+		public List<string> Lines { get; set; } = [];
+		public List<string> Lines1 { get; set; } = [];
+		public List<string> Lines2 { get; set; } = [];
+	}
+
+	/// <summary>
+	/// Converts line differences to blocks for manual selection
+	/// </summary>
+	private static List<DiffBlock> ConvertDifferencesToBlocks(IReadOnlyCollection<LineDifference> differences, string[] lines1, string[] lines2)
+	{
+		var blocks = new List<DiffBlock>();
+		var sortedDifferences = differences.OrderBy(d => Math.Max(d.LineNumber1, d.LineNumber2)).ToList();
+
+		foreach (var diff in sortedDifferences)
+		{
+			// Handle the difference
+			if (diff.LineNumber1 > 0 && diff.LineNumber2 > 0)
+			{
+				// Both files have content - this is a replacement
+				blocks.Add(new DiffBlock
+				{
+					Type = BlockType.Replace,
+					Lines1 = new List<string> { diff.Content1 ?? "" },
+					Lines2 = new List<string> { diff.Content2 ?? "" }
+				});
+			}
+			else if (diff.LineNumber1 > 0)
+			{
+				// Line only in first file - deletion
+				blocks.Add(new DiffBlock
+				{
+					Type = BlockType.Delete,
+					Lines = new List<string> { diff.Content1 ?? "" }
+				});
+			}
+			else if (diff.LineNumber2 > 0)
+			{
+				// Line only in second file - insertion
+				blocks.Add(new DiffBlock
+				{
+					Type = BlockType.Insert,
+					Lines = new List<string> { diff.Content2 ?? "" }
+				});
+			}
+		}
+
+		return blocks;
 	}
 
 	/// <summary>
@@ -1412,6 +1172,179 @@ public static class Program
 				AnsiConsole.MarkupLine($"[red]✗ Failed to save merged content: {ex.Message}[/]");
 			}
 		}
+	}
+
+	/// <summary>
+	/// Handles an insertion block (content only in version 2)
+	/// </summary>
+	private static void HandleInsertionBlock(string[] lines2, int startIndex, int length, List<string> mergedLines, int blockNumber)
+	{
+		var rule = new Rule($"[bold green]Block {blockNumber}: Addition in Version 2[/]")
+		{
+			Style = Style.Parse("green")
+		};
+		AnsiConsole.Write(rule);
+
+		// Show the insertion content
+		var panel = new Panel(string.Join("\n", lines2.Skip(startIndex).Take(length).Select((line, i) => $"{startIndex + i + 1,4}: {line.EscapeMarkup()}")))
+		{
+			Header = new PanelHeader("[green bold]Content to Add[/]"),
+			Border = BoxBorder.Rounded,
+			BorderStyle = Style.Parse("green")
+		};
+
+		AnsiConsole.Write(panel);
+
+		var choice = AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("[cyan]What would you like to do with this addition?[/]")
+				.AddChoices([
+					"✅ Include this content",
+					"❌ Skip this content"
+				]));
+
+		if (choice.Contains("Include"))
+		{
+			for (var i = 0; i < length; i++)
+			{
+				mergedLines.Add(lines2[startIndex + i]);
+			}
+			AnsiConsole.MarkupLine("[green]✓ Content included[/]");
+		}
+		else
+		{
+			AnsiConsole.MarkupLine("[yellow]⚠ Content skipped[/]");
+		}
+
+		AnsiConsole.WriteLine();
+	}
+
+	/// <summary>
+	/// Handles a deletion block (content only in version 1)
+	/// </summary>
+	private static void HandleDeletionBlock(string[] lines1, int startIndex, int length, List<string> mergedLines, int blockNumber)
+	{
+		var rule = new Rule($"[bold red]Block {blockNumber}: Deletion from Version 1[/]")
+		{
+			Style = Style.Parse("red")
+		};
+		AnsiConsole.Write(rule);
+
+		// Show the deletion content
+		var panel = new Panel(string.Join("\n", lines1.Skip(startIndex).Take(length).Select((line, i) => $"{startIndex + i + 1,4}: {line.EscapeMarkup()}")))
+		{
+			Header = new PanelHeader("[red bold]Content to Remove[/]"),
+			Border = BoxBorder.Rounded,
+			BorderStyle = Style.Parse("red")
+		};
+
+		AnsiConsole.Write(panel);
+
+		var choice = AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("[cyan]What would you like to do with this deletion?[/]")
+				.AddChoices([
+					"✅ Keep this content (don't delete)",
+					"❌ Remove this content (confirm deletion)"
+				]));
+
+		if (choice.Contains("Keep"))
+		{
+			for (var i = 0; i < length; i++)
+			{
+				mergedLines.Add(lines1[startIndex + i]);
+			}
+			AnsiConsole.MarkupLine("[green]✓ Content kept[/]");
+		}
+		else
+		{
+			AnsiConsole.MarkupLine("[yellow]⚠ Content removed[/]");
+		}
+
+		AnsiConsole.WriteLine();
+	}
+
+	/// <summary>
+	/// Handles a replacement block (different content in both versions)
+	/// </summary>
+	private static void HandleReplacementBlock(string[] lines1, string[] lines2, int startIndex1, int startIndex2,
+		int length1, int length2, List<string> mergedLines, int blockNumber)
+	{
+		var rule = new Rule($"[bold yellow]Block {blockNumber}: Different Content[/]")
+		{
+			Style = Style.Parse("yellow")
+		};
+		AnsiConsole.Write(rule);
+
+		// Show both versions side by side
+		var version1Content = string.Join("\n", lines1.Skip(startIndex1).Take(length1).Select((line, i) => $"{startIndex1 + i + 1,4}: {line.EscapeMarkup()}"));
+		var version2Content = string.Join("\n", lines2.Skip(startIndex2).Take(length2).Select((line, i) => $"{startIndex2 + i + 1,4}: {line.EscapeMarkup()}"));
+
+		var leftPanel = new Panel(version1Content)
+		{
+			Header = new PanelHeader("[red bold]Version 1[/]"),
+			Border = BoxBorder.Rounded,
+			BorderStyle = Style.Parse("red")
+		};
+
+		var rightPanel = new Panel(version2Content)
+		{
+			Header = new PanelHeader("[green bold]Version 2[/]"),
+			Border = BoxBorder.Rounded,
+			BorderStyle = Style.Parse("green")
+		};
+
+		AnsiConsole.Write(new Columns(leftPanel, rightPanel)
+		{
+			Expand = false,
+		});
+
+		var choice = AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("[cyan]Which version would you like to use?[/]")
+				.AddChoices([
+					"📄 Use Version 1 (red)",
+					"📄 Use Version 2 (green)",
+					"🔀 Use Both (Version 1 first, then Version 2)",
+					"❌ Skip Both (exclude this content)"
+				]));
+
+		if (choice.Contains("Use Version 1"))
+		{
+			for (var i = 0; i < length1; i++)
+			{
+				mergedLines.Add(lines1[startIndex1 + i]);
+			}
+			AnsiConsole.MarkupLine("[red]✓ Version 1 selected[/]");
+		}
+		else if (choice.Contains("Use Version 2"))
+		{
+			for (var i = 0; i < length2; i++)
+			{
+				mergedLines.Add(lines2[startIndex2 + i]);
+			}
+			AnsiConsole.MarkupLine("[green]✓ Version 2 selected[/]");
+		}
+		else if (choice.Contains("Use Both"))
+		{
+			// Add Version 1 first
+			for (var i = 0; i < length1; i++)
+			{
+				mergedLines.Add(lines1[startIndex1 + i]);
+			}
+			// Then add Version 2
+			for (var i = 0; i < length2; i++)
+			{
+				mergedLines.Add(lines2[startIndex2 + i]);
+			}
+			AnsiConsole.MarkupLine("[yellow]✓ Both versions included[/]");
+		}
+		else
+		{
+			AnsiConsole.MarkupLine("[yellow]⚠ Both versions skipped[/]");
+		}
+
+		AnsiConsole.WriteLine();
 	}
 }
 
