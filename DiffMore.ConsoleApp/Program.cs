@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using ktsu.DiffMore.Core;
 using Spectre.Console;
 
@@ -130,7 +131,7 @@ public static class Program
 	/// </summary>
 	private static void CompareFilesInDirectory()
 	{
-		var directory = AnsiConsole.Ask<string>("[cyan]Enter the directory path:[/]");
+		var directory = HistoryInput.AskWithHistory("[cyan]Enter the directory path:[/]");
 
 		if (!Directory.Exists(directory))
 		{
@@ -138,7 +139,7 @@ public static class Program
 			return;
 		}
 
-		var fileName = AnsiConsole.Ask<string>("[cyan]Enter the filename to search for:[/]");
+		var fileName = HistoryInput.AskWithHistory("[cyan]Enter the filename to search for:[/]");
 
 		ProcessFiles(directory, fileName);
 	}
@@ -148,7 +149,7 @@ public static class Program
 	/// </summary>
 	private static void CompareTwoDirectories()
 	{
-		var dir1 = AnsiConsole.Ask<string>("[cyan]Enter the first directory path:[/]");
+		var dir1 = HistoryInput.AskWithHistory("[cyan]Enter the first directory path:[/]");
 
 		if (!Directory.Exists(dir1))
 		{
@@ -156,7 +157,7 @@ public static class Program
 			return;
 		}
 
-		var dir2 = AnsiConsole.Ask<string>("[cyan]Enter the second directory path:[/]");
+		var dir2 = HistoryInput.AskWithHistory("[cyan]Enter the second directory path:[/]");
 
 		if (!Directory.Exists(dir2))
 		{
@@ -164,7 +165,7 @@ public static class Program
 			return;
 		}
 
-		var pattern = AnsiConsole.Ask("[cyan]Enter file pattern (e.g., *.txt, *.cs):[/]", "*.*");
+		var pattern = HistoryInput.AskWithHistory("[cyan]Enter file pattern (e.g., *.txt, *.cs):[/]", "*.*");
 		var recursive = AnsiConsole.Confirm("[cyan]Search subdirectories recursively?[/]", false);
 
 		CompareDirectories(dir1, dir2, pattern, recursive);
@@ -175,7 +176,7 @@ public static class Program
 	/// </summary>
 	private static void CompareTwoSpecificFiles()
 	{
-		var file1 = AnsiConsole.Ask<string>("[cyan]Enter the first file path:[/]");
+		var file1 = HistoryInput.AskWithHistory("[cyan]Enter the first file path:[/]");
 
 		if (!File.Exists(file1))
 		{
@@ -183,7 +184,7 @@ public static class Program
 			return;
 		}
 
-		var file2 = AnsiConsole.Ask<string>("[cyan]Enter the second file path:[/]");
+		var file2 = HistoryInput.AskWithHistory("[cyan]Enter the second file path:[/]");
 
 		if (!File.Exists(file2))
 		{
@@ -748,7 +749,7 @@ public static class Program
 	/// </summary>
 	private static void RunIterativeMerge()
 	{
-		var directory = AnsiConsole.Ask<string>("[cyan]Enter the directory path containing multiple versions:[/]");
+		var directory = HistoryInput.AskWithHistory("[cyan]Enter the directory path containing multiple versions:[/]");
 
 		if (!Directory.Exists(directory))
 		{
@@ -756,7 +757,7 @@ public static class Program
 			return;
 		}
 
-		var fileName = AnsiConsole.Ask<string>("[cyan]Enter the filename to search for (multiple versions):[/]");
+		var fileName = HistoryInput.AskWithHistory("[cyan]Enter the filename to search for (multiple versions):[/]");
 
 		// First, find files and prepare data (within Status operation)
 		List<FileGroup>? uniqueGroups = null;
@@ -1054,7 +1055,7 @@ public static class Program
 			}
 			else if (choice.Contains("Edit Manually"))
 			{
-				var manualContent = AnsiConsole.Ask<string>("[cyan]Enter the resolved content:[/]");
+				var manualContent = HistoryInput.AskWithHistory("[cyan]Enter the resolved content:[/]");
 				conflict.ResolvedContent = manualContent;
 				conflict.IsResolved = true;
 			}
@@ -1426,7 +1427,7 @@ public static class Program
 
 		if (AnsiConsole.Confirm("[cyan]Would you like to save the merged content to a file?[/]", true))
 		{
-			var outputPath = AnsiConsole.Ask("[cyan]Enter output file path:[/]", $"merged_{originalFileName}");
+			var outputPath = HistoryInput.AskWithHistory("[cyan]Enter output file path:[/]", $"merged_{originalFileName}");
 
 			try
 			{
@@ -1447,6 +1448,461 @@ public static class Program
 			{
 				AnsiConsole.MarkupLine($"[red]✗ Failed to save merged content: {ex.Message}[/]");
 			}
+		}
+	}
+}
+
+/// <summary>
+/// Manages command history for the CLI application
+/// </summary>
+public class InputHistory
+{
+	private readonly List<string> _history = [];
+	private readonly string _historyFilePath;
+	private const int MaxHistorySize = 100;
+	private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+
+	/// <summary>
+	/// Initializes a new instance of the InputHistory class
+	/// </summary>
+	public InputHistory()
+	{
+		var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+		var diffMorePath = Path.Combine(appDataPath, "DiffMore");
+		Directory.CreateDirectory(diffMorePath);
+		_historyFilePath = Path.Combine(diffMorePath, "input_history.json");
+		LoadHistory();
+	}
+
+	/// <summary>
+	/// Gets the current history as a read-only list
+	/// </summary>
+	public IReadOnlyList<string> History => _history.AsReadOnly();
+
+	/// <summary>
+	/// Adds a new entry to the history
+	/// </summary>
+	/// <param name="input">The input to add to history</param>
+	public void AddToHistory(string input)
+	{
+		if (string.IsNullOrWhiteSpace(input))
+		{
+			return;
+		}
+
+		// Remove existing entry if it exists
+		_history.Remove(input);
+
+		// Add to the end (most recent)
+		_history.Add(input);
+
+		// Keep only the last MaxHistorySize entries
+		while (_history.Count > MaxHistorySize)
+		{
+			_history.RemoveAt(0);
+		}
+
+		SaveHistory();
+	}
+
+	/// <summary>
+	/// Loads history from the file
+	/// </summary>
+	private void LoadHistory()
+	{
+		try
+		{
+			if (File.Exists(_historyFilePath))
+			{
+				var json = File.ReadAllText(_historyFilePath);
+				var history = JsonSerializer.Deserialize<List<string>>(json);
+				if (history != null)
+				{
+					_history.Clear();
+					_history.AddRange(history);
+				}
+			}
+		}
+		catch (JsonException)
+		{
+			// Ignore JSON parsing errors - start with empty history
+		}
+		catch (IOException)
+		{
+			// Ignore file I/O errors - start with empty history
+		}
+		catch (UnauthorizedAccessException)
+		{
+			// Ignore access errors - start with empty history
+		}
+	}
+
+	/// <summary>
+	/// Saves history to the file
+	/// </summary>
+	private void SaveHistory()
+	{
+		try
+		{
+			var json = JsonSerializer.Serialize(_history, JsonOptions);
+			File.WriteAllText(_historyFilePath, json);
+		}
+		catch (JsonException)
+		{
+			// Ignore JSON serialization errors
+		}
+		catch (IOException)
+		{
+			// Ignore file I/O errors
+		}
+		catch (UnauthorizedAccessException)
+		{
+			// Ignore access errors
+		}
+	}
+}
+
+/// <summary>
+/// Provides input methods with history support
+/// </summary>
+public static class HistoryInput
+{
+	private static readonly InputHistory _inputHistory = new();
+
+	/// <summary>
+	/// Prompts for input with history support using arrow keys
+	/// </summary>
+	/// <param name="prompt">The prompt message to display</param>
+	/// <param name="defaultValue">Default value if provided</param>
+	/// <returns>The user input</returns>
+	public static string AskWithHistory(string prompt, string? defaultValue = null)
+	{
+		AnsiConsole.Markup(prompt + " ");
+
+		var input = new List<char>();
+		var historyIndex = _inputHistory.History.Count; // Start at end (no history selected)
+		var originalInput = defaultValue ?? "";
+
+		// Initialize with default value if provided
+		if (!string.IsNullOrEmpty(defaultValue))
+		{
+			input.AddRange(defaultValue);
+			AnsiConsole.Markup(defaultValue);
+		}
+
+		var cursorPosition = input.Count;
+
+		while (true)
+		{
+			var key = Console.ReadKey(true);
+
+			if (key.Key == ConsoleKey.Enter)
+			{
+				AnsiConsole.WriteLine();
+				var result = new string([.. input]);
+				if (!string.IsNullOrWhiteSpace(result))
+				{
+					_inputHistory.AddToHistory(result);
+				}
+				return result;
+			}
+
+			if (ProcessSpecialKey(key, input, ref historyIndex, ref cursorPosition, originalInput))
+			{
+				continue;
+			}
+
+			// Handle regular character input
+			if (!char.IsControl(key.KeyChar))
+			{
+				HandleRegularInput(input, ref cursorPosition, ref historyIndex, key);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Processes special keys (arrows, home, end, etc.)
+	/// </summary>
+	/// <returns>True if the key was handled, false otherwise</returns>
+	private static bool ProcessSpecialKey(ConsoleKeyInfo key, List<char> input, ref int historyIndex, ref int cursorPosition, string originalInput)
+	{
+		return key.Key switch
+		{
+			ConsoleKey.UpArrow => HandleUpArrowAndReturn(input, ref historyIndex, ref cursorPosition),
+			ConsoleKey.DownArrow => HandleDownArrowAndReturn(input, ref historyIndex, ref cursorPosition, originalInput),
+			ConsoleKey.LeftArrow => HandleLeftArrowAndReturn(ref cursorPosition),
+			ConsoleKey.RightArrow => HandleRightArrowAndReturn(input, ref cursorPosition),
+			ConsoleKey.Home => HandleHomeAndReturn(ref cursorPosition),
+			ConsoleKey.End => HandleEndAndReturn(input, ref cursorPosition),
+			ConsoleKey.Backspace => HandleBackspaceAndReturn(input, ref cursorPosition, ref historyIndex),
+			ConsoleKey.Delete => HandleDeleteAndReturn(input, ref cursorPosition, ref historyIndex),
+			ConsoleKey.Escape => HandleEscapeAndReturn(input, ref cursorPosition, ref historyIndex),
+			_ => false // Key not handled
+		};
+	}
+
+	/// <summary>
+	/// Handles up arrow key press for history navigation and returns true
+	/// </summary>
+	private static bool HandleUpArrowAndReturn(List<char> input, ref int historyIndex, ref int cursorPosition)
+	{
+		HandleUpArrow(input, ref historyIndex, ref cursorPosition);
+		return true;
+	}
+
+	/// <summary>
+	/// Handles down arrow key press for history navigation and returns true
+	/// </summary>
+	private static bool HandleDownArrowAndReturn(List<char> input, ref int historyIndex, ref int cursorPosition, string originalInput)
+	{
+		HandleDownArrow(input, ref historyIndex, ref cursorPosition, originalInput);
+		return true;
+	}
+
+	/// <summary>
+	/// Handles left arrow key press for cursor movement and returns true
+	/// </summary>
+	private static bool HandleLeftArrowAndReturn(ref int cursorPosition)
+	{
+		HandleLeftArrow(ref cursorPosition);
+		return true;
+	}
+
+	/// <summary>
+	/// Handles right arrow key press for cursor movement and returns true
+	/// </summary>
+	private static bool HandleRightArrowAndReturn(List<char> input, ref int cursorPosition)
+	{
+		HandleRightArrow(input, ref cursorPosition);
+		return true;
+	}
+
+	/// <summary>
+	/// Handles Home key press to move cursor to beginning and returns true
+	/// </summary>
+	private static bool HandleHomeAndReturn(ref int cursorPosition)
+	{
+		HandleHome(ref cursorPosition);
+		return true;
+	}
+
+	/// <summary>
+	/// Handles End key press to move cursor to end and returns true
+	/// </summary>
+	private static bool HandleEndAndReturn(List<char> input, ref int cursorPosition)
+	{
+		HandleEnd(input, ref cursorPosition);
+		return true;
+	}
+
+	/// <summary>
+	/// Handles Backspace key press and returns true
+	/// </summary>
+	private static bool HandleBackspaceAndReturn(List<char> input, ref int cursorPosition, ref int historyIndex)
+	{
+		HandleBackspace(input, ref cursorPosition, ref historyIndex);
+		return true;
+	}
+
+	/// <summary>
+	/// Handles Delete key press and returns true
+	/// </summary>
+	private static bool HandleDeleteAndReturn(List<char> input, ref int cursorPosition, ref int historyIndex)
+	{
+		HandleDelete(input, ref cursorPosition, ref historyIndex);
+		return true;
+	}
+
+	/// <summary>
+	/// Handles Escape key press to clear input and returns true
+	/// </summary>
+	private static bool HandleEscapeAndReturn(List<char> input, ref int cursorPosition, ref int historyIndex)
+	{
+		HandleEscape(input, ref cursorPosition, ref historyIndex);
+		return true;
+	}
+
+	/// <summary>
+	/// Handles up arrow key press for history navigation
+	/// </summary>
+	private static void HandleUpArrow(List<char> input, ref int historyIndex, ref int cursorPosition)
+	{
+		if (_inputHistory.History.Count > 0 && historyIndex > 0)
+		{
+			historyIndex--;
+			ReplaceCurrentInput(input, _inputHistory.History[historyIndex], ref cursorPosition);
+		}
+	}
+
+	/// <summary>
+	/// Handles down arrow key press for history navigation
+	/// </summary>
+	private static void HandleDownArrow(List<char> input, ref int historyIndex, ref int cursorPosition, string originalInput)
+	{
+		if (historyIndex < _inputHistory.History.Count - 1)
+		{
+			historyIndex++;
+			ReplaceCurrentInput(input, _inputHistory.History[historyIndex], ref cursorPosition);
+		}
+		else if (historyIndex == _inputHistory.History.Count - 1)
+		{
+			historyIndex++;
+			ReplaceCurrentInput(input, originalInput, ref cursorPosition);
+		}
+	}
+
+	/// <summary>
+	/// Handles left arrow key press for cursor movement
+	/// </summary>
+	private static void HandleLeftArrow(ref int cursorPosition)
+	{
+		if (cursorPosition > 0)
+		{
+			cursorPosition--;
+			AnsiConsole.Cursor.Move(CursorDirection.Left, 1);
+		}
+	}
+
+	/// <summary>
+	/// Handles right arrow key press for cursor movement
+	/// </summary>
+	private static void HandleRightArrow(List<char> input, ref int cursorPosition)
+	{
+		if (cursorPosition < input.Count)
+		{
+			cursorPosition++;
+			AnsiConsole.Cursor.Move(CursorDirection.Right, 1);
+		}
+	}
+
+	/// <summary>
+	/// Handles Home key press to move cursor to beginning
+	/// </summary>
+	private static void HandleHome(ref int cursorPosition)
+	{
+		if (cursorPosition > 0)
+		{
+			AnsiConsole.Cursor.Move(CursorDirection.Left, cursorPosition);
+			cursorPosition = 0;
+		}
+	}
+
+	/// <summary>
+	/// Handles End key press to move cursor to end
+	/// </summary>
+	private static void HandleEnd(List<char> input, ref int cursorPosition)
+	{
+		if (cursorPosition < input.Count)
+		{
+			AnsiConsole.Cursor.Move(CursorDirection.Right, input.Count - cursorPosition);
+			cursorPosition = input.Count;
+		}
+	}
+
+	/// <summary>
+	/// Handles Backspace key press
+	/// </summary>
+	private static void HandleBackspace(List<char> input, ref int cursorPosition, ref int historyIndex)
+	{
+		if (cursorPosition > 0)
+		{
+			input.RemoveAt(cursorPosition - 1);
+			cursorPosition--;
+			RedrawInput(input, cursorPosition);
+			historyIndex = _inputHistory.History.Count; // Reset history navigation
+		}
+	}
+
+	/// <summary>
+	/// Handles Delete key press
+	/// </summary>
+	private static void HandleDelete(List<char> input, ref int cursorPosition, ref int historyIndex)
+	{
+		if (cursorPosition < input.Count)
+		{
+			input.RemoveAt(cursorPosition);
+			RedrawInput(input, cursorPosition);
+			historyIndex = _inputHistory.History.Count; // Reset history navigation
+		}
+	}
+
+	/// <summary>
+	/// Handles Escape key press to clear input
+	/// </summary>
+	private static void HandleEscape(List<char> input, ref int cursorPosition, ref int historyIndex)
+	{
+		ReplaceCurrentInput(input, "", ref cursorPosition);
+		historyIndex = _inputHistory.History.Count;
+	}
+
+	/// <summary>
+	/// Replaces the current input with new text
+	/// </summary>
+	/// <param name="input">The current input list</param>
+	/// <param name="newText">The new text to replace with</param>
+	/// <param name="cursorPosition">The cursor position reference</param>
+	private static void ReplaceCurrentInput(List<char> input, string newText, ref int cursorPosition)
+	{
+		// Clear current line
+		AnsiConsole.Cursor.Move(CursorDirection.Left, cursorPosition);
+		AnsiConsole.Markup(new string(' ', input.Count));
+		AnsiConsole.Cursor.Move(CursorDirection.Left, input.Count);
+
+		// Update input
+		input.Clear();
+		input.AddRange(newText);
+		cursorPosition = input.Count;
+
+		// Display new text
+		if (input.Count > 0)
+		{
+			AnsiConsole.Markup(new string([.. input]).EscapeMarkup());
+		}
+	}
+
+	/// <summary>
+	/// Redraws the input line from the current cursor position
+	/// </summary>
+	/// <param name="input">The current input</param>
+	/// <param name="cursorPosition">The cursor position</param>
+	private static void RedrawInput(List<char> input, int cursorPosition)
+	{
+		// Save current cursor position
+		var savedPosition = cursorPosition;
+
+		// Move to beginning of input
+		AnsiConsole.Cursor.Move(CursorDirection.Left, cursorPosition);
+
+		// Clear the line and redraw
+		var inputText = new string([.. input]);
+		AnsiConsole.Markup(inputText.EscapeMarkup() + " "); // Extra space to clear any remaining character
+
+		// Move cursor back to correct position
+		AnsiConsole.Cursor.Move(CursorDirection.Left, inputText.Length + 1 - savedPosition);
+	}
+
+	/// <summary>
+	/// Handles regular character input
+	/// </summary>
+	private static void HandleRegularInput(List<char> input, ref int cursorPosition, ref int historyIndex, ConsoleKeyInfo key)
+	{
+		if (!char.IsControl(key.KeyChar))
+		{
+			input.Insert(cursorPosition, key.KeyChar);
+			cursorPosition++;
+
+			// Redraw from cursor position
+			var remainingChars = input.Skip(cursorPosition - 1).ToArray();
+			var remainingText = new string(remainingChars);
+			AnsiConsole.Markup(remainingText.EscapeMarkup());
+
+			// Move cursor back to correct position
+			if (remainingText.Length > 1)
+			{
+				AnsiConsole.Cursor.Move(CursorDirection.Left, remainingText.Length - 1);
+			}
+
+			historyIndex = _inputHistory.History.Count; // Reset history navigation
 		}
 	}
 }

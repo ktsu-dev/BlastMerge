@@ -29,6 +29,7 @@ globs: *
 -   coverlet.collector Version="6.0.2"
 -   Spectre.Console
 -   Spectre.Console.Cli
+-   System.Text.Json
 
 ## PROJECT DOCUMENTATION & CONTEXT SYSTEM
 
@@ -91,6 +92,13 @@ globs: *
 -   When using the Myers diff algorithm, add a specific check for empty files at the beginning of the `GetMyersDiff` method to avoid `IndexOutOfRangeException`.
 -   In GenerateGitStyleDiff, if the files are identical, return an empty string.
 -   When doing an interactive merge, show the blocks side by side with some context. The context should be extracted from the original file content, not the merged lines. The implementation should properly extract context from the original files.
+-   When displaying conflicts in interactive merge, use the following logic in the `ShowConflictWithContext` method in `Program.cs` (DiffMore.ConsoleApp project):
+    -   If the conflict line is found in Version 1, show context lines around it.
+    -   If the conflict line is not found in Version 1, attempt fuzzy matching using `FindBestMatchingLine`. If a good match is found (at least 50% word similarity), show context around the best matching line. If no match is found, show the conflict content along with a message indicating it was not found.
+    -   Handle Version 1 deletions by indicating that content was deleted.
+    -   Repeat the same logic for Version 2.
+    -   The `FindBestMatchingLine` method should use exact matching, partial matching, and word-based similarity to find the best match.
+    -   Improve the `FindLineInFile` method to first attempt an exact match, then an exact match on trimmed content, and finally a partial match.
 
 ## DEBUGGING
 
@@ -164,6 +172,7 @@ globs: *
 -   Implement an iterative merge feature for multiple file versions, where the two most similar versions are found and a visual TUI is offered for resolving the merge. This process is repeated until all versions are merged.
 -   When adding package references, use `dotnet add package <package_name>`
 -   When adding project references, use `dotnet add reference <project_path>`
+-   The DiffMore CLI should have command history functionality, allowing users to use arrow keys to navigate through previous inputs.
 
 ## DIRECTORY COMPARISON
 
@@ -172,3 +181,13 @@ globs: *
     -   `ModifiedFiles`: Files that exist in both directories but have different content.
     -   `OnlyInDir1`: Files that exist only in the first directory.
     -   `OnlyInDir2`: Files that exist only in the second directory.
+
+## USER INTERFACE
+
+-   When displaying conflicts in interactive merge, use the following logic in the `ShowConflictWithContext` method in `Program.cs` (DiffMore.ConsoleApp project):
+    -   If the conflict line is found in Version 1, show context lines around it.
+    -   If the conflict line is not found in Version 1, attempt fuzzy matching using `FindBestMatchingLine`. If a good match is found (at least 50% word similarity), show context around the best matching line. If no match is found, show the conflict content along with a message indicating it was not found.
+    -   Handle Version 1 deletions by indicating that content was deleted.
+    -   Repeat the same logic for Version 2.
+    -   The `FindBestMatchingLine` method should use exact matching, partial matching, and word-based similarity to find the best match.
+    -   Improve the `FindLineInFile` method to first attempt an exact match, then an exact match on trimmed content, and finally a partial match.

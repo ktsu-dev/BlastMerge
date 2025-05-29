@@ -516,3 +516,336 @@ Set-Location: Cannot find path 'C:\c%3A\dev\ktsu-dev\DiffMore' because it does n
 
 ---
 
+_**User**_
+
+I want it to have a history of the input I use and allow me to use the arrow keys to access them
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+I'll add command history functionality to the DiffMore CLI application that allows you to use arrow keys to navigate through previous inputs. This will require creating a custom input handler since Spectre.Console's basic `Ask` method doesn't support this feature.
+
+Let me implement this step by step:
+
+---
+
+```diff
+  using System.IO;
+  using System.Linq;
++ using System.Text.Json;
+  using ktsu.DiffMore.Core;
+  using Spectre.Console;
+```
+
+```diff
+  	}
+  }
++ 
++ /// <summary>
++ /// Manages command history for the CLI application
++ /// </summary>
++ public class InputHistory
++ {
++ 	private readonly List<string> _history = [];
++ 	private readonly string _historyFilePath;
++ 	private const int MaxHistorySize = 100;
++ 
++ 	/// <summary>
++ 	/// Initializes a new instance of the InputHistory class
++ 	/// </summary>
++ 	public InputHistory()
++ 	{
++ 		var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
++ 		var diffMorePath = Path.Combine(appDataPath, "DiffMore");
++ 		Directory.CreateDirectory(diffMorePath);
++ 		_historyFilePath = Path.Combine(diffMorePath, "input_history.json");
++ 		LoadHistory();
++ 	}
++ 
++ 	/// <summary>
++ 	/// Gets the current history as a read-only list
++ 	/// </summary>
++ 	public IReadOnlyList<string> History => _history.AsReadOnly();
++ 
++ 	/// <summary>
++ 	/// Adds a new entry to the history
++ 	/// </summary>
++ 	/// <param name="input">The input to add to history</param>
++ 	public void AddToHistory(string input)
++ 	{
++ 		if (string.IsNullOrWhiteSpace(input))
++ 		{
++ 			return;
++ 		}
++ 
++ 		// Remove existing entry if it exists
++ 		_history.Remove(input);
++ 
++ 		// Add to the end (most recent)
++ 		_history.Add(input);
++ 
++ 		// Keep only the last MaxHistorySize entries
++ 		while (_history.Count > MaxHistorySize)
++ 		{
++ 			_history.RemoveAt(0);
++ 		}
++ 
++ 		SaveHistory();
++ 	}
++ 
++ 	/// <summary>
++ 	/// Loads history from the file
++ 	/// </summary>
++ 	private void LoadHistory()
++ 	{
++ 		try
++ 		{
++ 			if (File.Exists(_historyFilePath))
++ 			{
++ 				var json = File.ReadAllText(_historyFilePath);
++ 				var history = JsonSerializer.Deserialize<List<string>>(json);
++ 				if (history != null)
++ 				{
++ 					_history.Clear();
++ 					_history.AddRange(history);
++ 				}
++ 			}
++ 		}
++ 		catch (Exception)
++ 		{
++ 			// Ignore errors when loading history - start with empty history
++ 		}
++ 	}
++ 
++ 	/// <summary>
++ 	/// Saves history to the file
++ 	/// </summary>
++ 	private void SaveHistory()
++ 	{
++ 		try
++ 		{
++ 			var json = JsonSerializer.Serialize(_history, new JsonSerializerOptions { WriteIndented = true });
++ 			File.WriteAllText(_historyFilePath, json);
++ 		}
++ 		catch (Exception)
++ 		{
++ 			// Ignore errors when saving history
++ 		}
++ 	}
++ }
++ 
++ /// <summary>
++ /// Provides input methods with history support
++ /// </summary>
++ public static class HistoryInput
++ {
++ 	private static readonly InputHistory _inputHistory = new();
++ 
++ 	/// <summary>
++ 	/// Prompts for input with history support using arrow keys
++ 	/// </summary>
++ 	/// <param name="prompt">The prompt message to display</param>
++ 	/// <param name="defaultValue">Default value if provided</param>
++ 	/// <returns>The user input</returns>
++ 	public static string AskWithHistory(string prompt, string? defaultValue = null)
++ 	{
++ 		AnsiConsole.Markup(prompt + " ");
++ 		
++ 		var input = new List<char>();
++ 		var historyIndex = _inputHistory.History.Count; // Start at end (no history selected)
++ 		var originalInput = defaultValue ?? "";
++ 		
++ 		// Initialize with default value if provided
++ 		if (!string.IsNullOrEmpty(defaultValue))
++ 		{
++ 			input.AddRange(defaultValue);
++ 			AnsiConsole.Markup(defaultValue);
++ 		}
++ 
++ 		var cursorPosition = input.Count;
++ 
++ 		while (true)
++ 		{
++ 			var key = Console.ReadKey(true);
++ 
++ 			switch (key.Key)
++ 			{
++ 				case ConsoleKey.Enter:
++ 					AnsiConsole.WriteLine();
++ 					var result = new string([.. input]);
++ 					if (!string.IsNullOrWhiteSpace(result))
++ 					{
++ 						_inputHistory.AddToHistory(result);
++ 					}
++ 					return result;
++ 
++ 				case ConsoleKey.UpArrow:
++ 					if (_inputHistory.History.Count > 0 && historyIndex > 0)
++ 					{
++ 						historyIndex--;
++ 						ReplaceCurrentInput(input, _inputHistory.History[historyIndex], ref cursorPosition);
++ 					}
++ 					break;
++ 
++ 				case ConsoleKey.DownArrow:
++ 					if (historyIndex < _inputHistory.History.Count - 1)
++ 					{
++ 						historyIndex++;
++ 						ReplaceCurrentInput(input, _inputHistory.History[historyIndex], ref cursorPosition);
++ 					}
++ 					else if (historyIndex == _inputHistory.History.Count - 1)
++ 					{
++ 						historyIndex++;
++ 						ReplaceCurrentInput(input, originalInput, ref cursorPosition);
++ 					}
++ 					break;
++ 
++ 				case ConsoleKey.LeftArrow:
++ 					if (cursorPosition > 0)
++ 					{
++ 						cursorPosition--;
++ 						AnsiConsole.Cursor.Move(CursorDirection.Left, 1);
++ 					}
++ 					break;
++ 
++ 				case ConsoleKey.RightArrow:
++ 					if (cursorPosition < input.Count)
++ 					{
++ 						cursorPosition++;
++ 						AnsiConsole.Cursor.Move(CursorDirection.Right, 1);
++ 					}
++ 					break;
++ 
++ 				case ConsoleKey.Home:
++ 					if (cursorPosition > 0)
++ 					{
++ 						AnsiConsole.Cursor.Move(CursorDirection.Left, cursorPosition);
++ 						cursorPosition = 0;
++ 					}
++ 					break;
++ 
++ 				case ConsoleKey.End:
++ 					if (cursorPosition < input.Count)
++ 					{
++ 						AnsiConsole.Cursor.Move(CursorDirection.Right, input.Count - cursorPosition);
++ 						cursorPosition = input.Count;
++ 					}
++ 					break;
++ 
++ 				case ConsoleKey.Backspace:
++ 					if (cursorPosition > 0)
++ 					{
++ 						input.RemoveAt(cursorPosition - 1);
++ 						cursorPosition--;
++ 						RedrawInput(input, cursorPosition);
++ 						historyIndex = _inputHistory.History.Count; // Reset history navigation
++ 					}
++ 					break;
++ 
++ 				case ConsoleKey.Delete:
++ 					if (cursorPosition < input.Count)
++ 					{
++ 						input.RemoveAt(cursorPosition);
++ 						RedrawInput(input, cursorPosition);
++ 						historyIndex = _inputHistory.History.Count; // Reset history navigation
++ 					}
++ 					break;
++ 
++ 				case ConsoleKey.Escape:
++ 					// Clear current input
++ 					ReplaceCurrentInput(input, "", ref cursorPosition);
++ 					historyIndex = _inputHistory.History.Count;
++ 					break;
++ 
++ 				default:
++ 					// Handle regular character input
++ 					if (!char.IsControl(key.KeyChar))
++ 					{
++ 						input.Insert(cursorPosition, key.KeyChar);
++ 						cursorPosition++;
++ 						
++ 						// Redraw from cursor position
++ 						var remainingText = new string([.. input[cursorPosition - 1..]]);
++ 						AnsiConsole.Markup(remainingText.EscapeMarkup());
++ 						
++ 						// Move cursor back to correct position
++ 						if (remainingText.Length > 1)
++ 						{
++ 							AnsiConsole.Cursor.Move(CursorDirection.Left, remainingText.Length - 1);
++ 						}
++ 						
++ 						historyIndex = _inputHistory.History.Count; // Reset history navigation
++ 					}
++ 					break;
++ 			}
++ 		}
++ 	}
++ 
++ 	/// <summary>
++ 	/// Replaces the current input with new text
++ 	/// </summary>
++ 	/// <param name="input">The current input list</param>
++ 	/// <param name="newText">The new text to replace with</param>
++ 	/// <param name="cursorPosition">The cursor position reference</param>
++ 	private static void ReplaceCurrentInput(List<char> input, string newText, ref int cursorPosition)
++ 	{
++ 		// Clear current line
++ 		AnsiConsole.Cursor.Move(CursorDirection.Left, cursorPosition);
++ 		AnsiConsole.Markup(new string(' ', input.Count));
++ 		AnsiConsole.Cursor.Move(CursorDirection.Left, input.Count);
++ 
++ 		// Update input
++ 		input.Clear();
++ 		input.AddRange(newText);
++ 		cursorPosition = input.Count;
++ 
++ 		// Display new text
++ 		if (input.Count > 0)
++ 		{
++ 			AnsiConsole.Markup(new string([.. input]).EscapeMarkup());
++ 		}
++ 	}
++ 
++ 	/// <summary>
++ 	/// Redraws the input line from the current cursor position
++ 	/// </summary>
++ 	/// <param name="input">The current input</param>
++ 	/// <param name="cursorPosition">The cursor position</param>
++ 	private static void RedrawInput(List<char> input, int cursorPosition)
++ 	{
++ 		// Save current cursor position
++ 		var savedPosition = cursorPosition;
++ 
++ 		// Move to beginning of input
++ 		AnsiConsole.Cursor.Move(CursorDirection.Left, cursorPosition);
++ 
++ 		// Clear the line and redraw
++ 		var inputText = new string([.. input]);
++ 		AnsiConsole.Markup(inputText.EscapeMarkup() + " "); // Extra space to clear any remaining character
++ 		
++ 		// Move cursor back to correct position
++ 		AnsiConsole.Cursor.Move(CursorDirection.Left, inputText.Length + 1 - savedPosition);
++ 	}
++ }
+  
+```
+
+---
+
+Now I need to replace the existing `AnsiConsole.Ask<string>()` calls with the new `HistoryInput.AskWithHistory()` method. Let me update the methods that take user input:
+
+---
+
+
+
+---
+
+
+
+---
+
