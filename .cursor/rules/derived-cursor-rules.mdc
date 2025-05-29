@@ -116,7 +116,7 @@ globs: *
 -   Implement tests for mock file system operations to verify correct behavior with mocked dependencies.
 -   Test file operations with relative paths.
 -   Test file operations with paths containing trailing slashes.
--   Test file operations with paths using different casing.
+-   Test file operations with different casing.
 -   Test file operations with multiple search patterns.
 -   Test with files in deep directory structures.
 -   Test with symbolic links, but skip if the test environment does not support them.

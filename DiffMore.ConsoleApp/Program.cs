@@ -1604,7 +1604,6 @@ public static class HistoryInput
 				{
 					_inputHistory.AddToHistory(result);
 				}
-
 				return result;
 			}
 

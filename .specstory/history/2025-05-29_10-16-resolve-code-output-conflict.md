@@ -1406,9 +1406,702 @@ You're right! The `AskWithHistory` method has too much cyclomatic complexity. I 
 
 ---
 
+```diff
+  			var key = Console.ReadKey(true);
+  
+- 			switch (key.Key)
++ 			if (key.Key == ConsoleKey.Enter)
+  			{
+- 				case ConsoleKey.Enter:
+  				AnsiConsole.WriteLine();
+  				var result = new string([.. input]);
+```
 
+```diff
+  					_inputHistory.AddToHistory(result);
+  				}
+- 
+  				return result;
+- 
++ 			}
++ 
++ 			if (ProcessSpecialKey(key, input, ref historyIndex, ref cursorPosition, originalInput))
++ 			{
++ 				continue;
++ 			}
++ 
++ 			// Handle regular character input
++ 			if (!char.IsControl(key.KeyChar))
++ 			{
++ 				HandleRegularInput(input, ref cursorPosition, ref historyIndex, key);
++ 			}
++ 		}
++ 	}
++ 
++ 	/// <summary>
++ 	/// Processes special keys (arrows, home, end, etc.)
++ 	/// </summary>
++ 	/// <returns>True if the key was handled, false otherwise</returns>
++ 	private static bool ProcessSpecialKey(ConsoleKeyInfo key, List<char> input, ref int historyIndex, ref int cursorPosition, string originalInput)
++ 	{
++ 		switch (key.Key)
++ 		{
+  			case ConsoleKey.UpArrow:
+  				HandleUpArrow(input, ref historyIndex, ref cursorPosition);
+- 
+- 					break;
++ 				return true;
+  
+  			case ConsoleKey.DownArrow:
+  				HandleDownArrow(input, ref historyIndex, ref cursorPosition, originalInput);
+- 
+- 					break;
++ 				return true;
+  
+  			case ConsoleKey.LeftArrow:
+  				HandleLeftArrow(ref cursorPosition);
+- 
+- 					break;
++ 				return true;
+  
+  			case ConsoleKey.RightArrow:
+  				HandleRightArrow(input, ref cursorPosition);
+- 
+- 					break;
++ 				return true;
+  
+  			case ConsoleKey.Home:
+  				HandleHome(ref cursorPosition);
+- 
+- 					break;
++ 				return true;
+  
+  			case ConsoleKey.End:
+  				HandleEnd(input, ref cursorPosition);
+- 
+- 					break;
++ 				return true;
+  
+  			case ConsoleKey.Backspace:
+  				HandleBackspace(input, ref cursorPosition, ref historyIndex);
+- 
+- 					break;
++ 				return true;
+  
+  			case ConsoleKey.Delete:
+  				HandleDelete(input, ref cursorPosition, ref historyIndex);
+- 
+- 					break;
++ 				return true;
+  
+  			case ConsoleKey.Escape:
+  				HandleEscape(input, ref cursorPosition, ref historyIndex);
+- 
+- 					break;
+- 				case ConsoleKey.None:
+- 					break;
+- 				case ConsoleKey.Tab:
+- 					break;
+- 				case ConsoleKey.Clear:
+- 					break;
+- 				case ConsoleKey.Pause:
+- 					break;
+- 				case ConsoleKey.Spacebar:
+- 					break;
+- 				case ConsoleKey.PageUp:
+- 					break;
+- 				case ConsoleKey.PageDown:
+- 					break;
+- 				case ConsoleKey.Select:
+- 					break;
+- 				case ConsoleKey.Print:
+- 					break;
+- 				case ConsoleKey.Execute:
+- 					break;
+- 				case ConsoleKey.PrintScreen:
+- 					break;
+- 				case ConsoleKey.Insert:
+- 					break;
+- 				case ConsoleKey.Help:
+- 					break;
+- 				case ConsoleKey.D0:
+- 					break;
+- 				case ConsoleKey.D1:
+- 					break;
+- 				case ConsoleKey.D2:
+- 					break;
+- 				case ConsoleKey.D3:
+- 					break;
+- 				case ConsoleKey.D4:
+- 					break;
+- 				case ConsoleKey.D5:
+- 					break;
+- 				case ConsoleKey.D6:
+- 					break;
+- 				case ConsoleKey.D7:
+- 					break;
+- 				case ConsoleKey.D8:
+- 					break;
+- 				case ConsoleKey.D9:
+- 					break;
+- 				case ConsoleKey.A:
+- 					break;
+- 				case ConsoleKey.B:
+- 					break;
+- 				case ConsoleKey.C:
+- 					break;
+- 				case ConsoleKey.D:
+- 					break;
+- 				case ConsoleKey.E:
+- 					break;
+- 				case ConsoleKey.F:
+- 					break;
+- 				case ConsoleKey.G:
+- 					break;
+- 				case ConsoleKey.H:
+- 					break;
+- 				case ConsoleKey.I:
+- 					break;
+- 				case ConsoleKey.J:
+- 					break;
+- 				case ConsoleKey.K:
+- 					break;
+- 				case ConsoleKey.L:
+- 					break;
+- 				case ConsoleKey.M:
+- 					break;
+- 				case ConsoleKey.N:
+- 					break;
+- 				case ConsoleKey.O:
+- 					break;
+- 				case ConsoleKey.P:
+- 					break;
+- 				case ConsoleKey.Q:
+- 					break;
+- 				case ConsoleKey.R:
+- 					break;
+- 				case ConsoleKey.S:
+- 					break;
+- 				case ConsoleKey.T:
+- 					break;
+- 				case ConsoleKey.U:
+- 					break;
+- 				case ConsoleKey.V:
+- 					break;
+- 				case ConsoleKey.W:
+- 					break;
+- 				case ConsoleKey.X:
+- 					break;
+- 				case ConsoleKey.Y:
+- 					break;
+- 				case ConsoleKey.Z:
+- 					break;
+- 				case ConsoleKey.LeftWindows:
+- 					break;
+- 				case ConsoleKey.RightWindows:
+- 					break;
+- 				case ConsoleKey.Applications:
+- 					break;
+- 				case ConsoleKey.Sleep:
+- 					break;
+- 				case ConsoleKey.NumPad0:
+- 					break;
+- 				case ConsoleKey.NumPad1:
+- 					break;
+- 				case ConsoleKey.NumPad2:
+- 					break;
+- 				case ConsoleKey.NumPad3:
+- 					break;
+- 				case ConsoleKey.NumPad4:
+- 					break;
+- 				case ConsoleKey.NumPad5:
+- 					break;
+- 				case ConsoleKey.NumPad6:
+- 					break;
+- 				case ConsoleKey.NumPad7:
+- 					break;
+- 				case ConsoleKey.NumPad8:
+- 					break;
+- 				case ConsoleKey.NumPad9:
+- 					break;
+- 				case ConsoleKey.Multiply:
+- 					break;
+- 				case ConsoleKey.Add:
+- 					break;
+- 				case ConsoleKey.Separator:
+- 					break;
+- 				case ConsoleKey.Subtract:
+- 					break;
+- 				case ConsoleKey.Decimal:
+- 					break;
+- 				case ConsoleKey.Divide:
+- 					break;
+- 				case ConsoleKey.F1:
+- 					break;
+- 				case ConsoleKey.F2:
+- 					break;
+- 				case ConsoleKey.F3:
+- 					break;
+- 				case ConsoleKey.F4:
+- 					break;
+- 				case ConsoleKey.F5:
+- 					break;
+- 				case ConsoleKey.F6:
+- 					break;
+- 				case ConsoleKey.F7:
+- 					break;
+- 				case ConsoleKey.F8:
+- 					break;
+- 				case ConsoleKey.F9:
+- 					break;
+- 				case ConsoleKey.F10:
+- 					break;
+- 				case ConsoleKey.F11:
+- 					break;
+- 				case ConsoleKey.F12:
+- 					break;
+- 				case ConsoleKey.F13:
+- 					break;
+- 				case ConsoleKey.F14:
+- 					break;
+- 				case ConsoleKey.F15:
+- 					break;
+- 				case ConsoleKey.F16:
+- 					break;
+- 				case ConsoleKey.F17:
+- 					break;
+- 				case ConsoleKey.F18:
+- 					break;
+- 				case ConsoleKey.F19:
+- 					break;
+- 				case ConsoleKey.F20:
+- 					break;
+- 				case ConsoleKey.F21:
+- 					break;
+- 				case ConsoleKey.F22:
+- 					break;
+- 				case ConsoleKey.F23:
+- 					break;
+- 				case ConsoleKey.F24:
+- 					break;
+- 				case ConsoleKey.BrowserBack:
+- 					break;
+- 				case ConsoleKey.BrowserForward:
+- 					break;
+- 				case ConsoleKey.BrowserRefresh:
+- 					break;
+- 				case ConsoleKey.BrowserStop:
+- 					break;
+- 				case ConsoleKey.BrowserSearch:
+- 					break;
+- 				case ConsoleKey.BrowserFavorites:
+- 					break;
+- 				case ConsoleKey.BrowserHome:
+- 					break;
+- 				case ConsoleKey.VolumeMute:
+- 					break;
+- 				case ConsoleKey.VolumeDown:
+- 					break;
+- 				case ConsoleKey.VolumeUp:
+- 					break;
+- 				case ConsoleKey.MediaNext:
+- 					break;
+- 				case ConsoleKey.MediaPrevious:
+- 					break;
+- 				case ConsoleKey.MediaStop:
+- 					break;
+- 				case ConsoleKey.MediaPlay:
+- 					break;
+- 				case ConsoleKey.LaunchMail:
+- 					break;
+- 				case ConsoleKey.LaunchMediaSelect:
+- 					break;
+- 				case ConsoleKey.LaunchApp1:
+- 					break;
+- 				case ConsoleKey.LaunchApp2:
+- 					break;
+- 				case ConsoleKey.Oem1:
+- 					break;
+- 				case ConsoleKey.OemPlus:
+- 					break;
+- 				case ConsoleKey.OemComma:
+- 					break;
+- 				case ConsoleKey.OemMinus:
+- 					break;
+- 				case ConsoleKey.OemPeriod:
+- 					break;
+- 				case ConsoleKey.Oem2:
+- 					break;
+- 				case ConsoleKey.Oem3:
+- 					break;
+- 				case ConsoleKey.Oem4:
+- 					break;
+- 				case ConsoleKey.Oem5:
+- 					break;
+- 				case ConsoleKey.Oem6:
+- 					break;
+- 				case ConsoleKey.Oem7:
+- 					break;
+- 				case ConsoleKey.Oem8:
+- 					break;
+- 				case ConsoleKey.Oem102:
+- 					break;
+- 				case ConsoleKey.Process:
+- 					break;
+- 				case ConsoleKey.Packet:
+- 					break;
+- 				case ConsoleKey.Attention:
+- 					break;
+- 				case ConsoleKey.CrSel:
+- 					break;
+- 				case ConsoleKey.ExSel:
+- 					break;
+- 				case ConsoleKey.EraseEndOfFile:
+- 					break;
+- 				case ConsoleKey.Play:
+- 					break;
+- 				case ConsoleKey.Zoom:
+- 					break;
+- 				case ConsoleKey.NoName:
+- 					break;
+- 				case ConsoleKey.Pa1:
+- 					break;
+- 				case ConsoleKey.OemClear:
+- 					break;
++ 				return true;
++ 
+  			default:
+- 					HandleRegularInput(input, ref cursorPosition, ref historyIndex, key);
+- 
+- 					break;
+- 			}
++ 				return false; // Key not handled
+  		}
+  	}
+```
 
 ---
+
+Now let's build again to see if we've resolved the cyclomatic complexity issue:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet build
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.sln                                    Restore (0.0s) 
+Restore complete (0.8s)
+  DiffMore.Core succeeded (0.1s) → DiffMore.Core\bin\Debug\net9.0\ktsu.DiffMore.Core.dll
+
+  DiffMore.ConsoleApp failed with 2 error(s) (0.2s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1629,3): error IDE0010: Popula
+te switch (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide00
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1606,5): error IDE2003: Blank
+line required between block and subsequent statement (https://learn.microsoft.com/dotnet/f
+undamentals/code-analysis/style-rules/ide2003)
+
+Build failed with 2 error(s) in 1.5s
+  10:25:33   DiffMore  1.695s   1 - ERROR 
+  20:25:33 main  ~3 |  ~2 
+
+```
+
+---
+
+I need to add the missing blank line and handle the switch statement issue:
+
+---
+
+```diff
+  	private static bool ProcessSpecialKey(ConsoleKeyInfo key, List<char> input, ref int historyIndex, ref int cursorPosition, string originalInput)
+  	{
+- 		switch (key.Key)
+- 		{
+- 			case ConsoleKey.UpArrow:
++ 		return key.Key switch
++ 		{
++ 			ConsoleKey.UpArrow => HandleUpArrowAndReturn(input, ref historyIndex, ref cursorPosition),
++ 			ConsoleKey.DownArrow => HandleDownArrowAndReturn(input, ref historyIndex, ref cursorPosition, originalInput),
++ 			ConsoleKey.LeftArrow => HandleLeftArrowAndReturn(ref cursorPosition),
++ 			ConsoleKey.RightArrow => HandleRightArrowAndReturn(input, ref cursorPosition),
++ 			ConsoleKey.Home => HandleHomeAndReturn(ref cursorPosition),
++ 			ConsoleKey.End => HandleEndAndReturn(input, ref cursorPosition),
++ 			ConsoleKey.Backspace => HandleBackspaceAndReturn(input, ref cursorPosition, ref historyIndex),
++ 			ConsoleKey.Delete => HandleDeleteAndReturn(input, ref cursorPosition, ref historyIndex),
++ 			ConsoleKey.Escape => HandleEscapeAndReturn(input, ref cursorPosition, ref historyIndex),
++ 			_ => false // Key not handled
++ 		};
++ 	}
++ 
++ 	/// <summary>
++ 	/// Handles up arrow key press for history navigation and returns true
++ 	/// </summary>
++ 	private static bool HandleUpArrowAndReturn(List<char> input, ref int historyIndex, ref int cursorPosition)
++ 	{
+  		HandleUpArrow(input, ref historyIndex, ref cursorPosition);
+  		return true;
+- 
+- 			case ConsoleKey.DownArrow:
++ 	}
++ 
++ 	/// <summary>
++ 	/// Handles down arrow key press for history navigation and returns true
++ 	/// </summary>
++ 	private static bool HandleDownArrowAndReturn(List<char> input, ref int historyIndex, ref int cursorPosition, string originalInput)
++ 	{
+  		HandleDownArrow(input, ref historyIndex, ref cursorPosition, originalInput);
+  		return true;
+- 
+- 			case ConsoleKey.LeftArrow:
++ 	}
++ 
++ 	/// <summary>
++ 	/// Handles left arrow key press for cursor movement and returns true
++ 	/// </summary>
++ 	private static bool HandleLeftArrowAndReturn(ref int cursorPosition)
++ 	{
+  		HandleLeftArrow(ref cursorPosition);
+  		return true;
+- 
+- 			case ConsoleKey.RightArrow:
++ 	}
++ 
++ 	/// <summary>
++ 	/// Handles right arrow key press for cursor movement and returns true
++ 	/// </summary>
++ 	private static bool HandleRightArrowAndReturn(List<char> input, ref int cursorPosition)
++ 	{
+  		HandleRightArrow(input, ref cursorPosition);
+  		return true;
+- 
+- 			case ConsoleKey.Home:
++ 	}
++ 
++ 	/// <summary>
++ 	/// Handles Home key press to move cursor to beginning and returns true
++ 	/// </summary>
++ 	private static bool HandleHomeAndReturn(ref int cursorPosition)
++ 	{
+  		HandleHome(ref cursorPosition);
+  		return true;
+- 
+- 			case ConsoleKey.End:
++ 	}
++ 
++ 	/// <summary>
++ 	/// Handles End key press to move cursor to end and returns true
++ 	/// </summary>
++ 	private static bool HandleEndAndReturn(List<char> input, ref int cursorPosition)
++ 	{
+  		HandleEnd(input, ref cursorPosition);
+  		return true;
+- 
+- 			case ConsoleKey.Backspace:
++ 	}
++ 
++ 	/// <summary>
++ 	/// Handles Backspace key press and returns true
++ 	/// </summary>
++ 	private static bool HandleBackspaceAndReturn(List<char> input, ref int cursorPosition, ref int historyIndex)
++ 	{
+  		HandleBackspace(input, ref cursorPosition, ref historyIndex);
+  		return true;
+- 
+- 			case ConsoleKey.Delete:
++ 	}
++ 
++ 	/// <summary>
++ 	/// Handles Delete key press and returns true
++ 	/// </summary>
++ 	private static bool HandleDeleteAndReturn(List<char> input, ref int cursorPosition, ref int historyIndex)
++ 	{
+  		HandleDelete(input, ref cursorPosition, ref historyIndex);
+  		return true;
+- 
+- 			case ConsoleKey.Escape:
++ 	}
++ 
++ 	/// <summary>
++ 	/// Handles Escape key press to clear input and returns true
++ 	/// </summary>
++ 	private static bool HandleEscapeAndReturn(List<char> input, ref int cursorPosition, ref int historyIndex)
++ 	{
+  		HandleEscape(input, ref cursorPosition, ref historyIndex);
+  		return true;
+- 
+- 			default:
+- 				return false; // Key not handled
+- 		}
+  	}
+  
+```
+
+```diff
+  		historyIndex = _inputHistory.History.Count;
+  	}
+- 
+- 	/// <summary>
+- 	/// Handles regular character input
+- 	/// </summary>
+- 	private static void HandleRegularInput(List<char> input, ref int cursorPosition, ref int historyIndex, ConsoleKeyInfo key)
+- 	{
+- 		if (!char.IsControl(key.KeyChar))
+- 		{
+- 			input.Insert(cursorPosition, key.KeyChar);
+- 			cursorPosition++;
+- 
+- 			// Redraw from cursor position
+- 			var remainingChars = input.Skip(cursorPosition - 1).ToArray();
+- 			var remainingText = new string(remainingChars);
+- 			AnsiConsole.Markup(remainingText.EscapeMarkup());
+- 
+- 			// Move cursor back to correct position
+- 			if (remainingText.Length > 1)
+- 			{
+- 				AnsiConsole.Cursor.Move(CursorDirection.Left, remainingText.Length - 1);
+- 			}
+- 
+- 			historyIndex = _inputHistory.History.Count; // Reset history navigation
+- 		}
+- 	}
+  
+  	/// <summary>
+```
+
+---
+
+I accidentally removed the `HandleRegularInput` method. Let me add it back:
+
+---
+
+```diff
+  		AnsiConsole.Cursor.Move(CursorDirection.Left, inputText.Length + 1 - savedPosition);
+  	}
++ 
++ 	/// <summary>
++ 	/// Handles regular character input
++ 	/// </summary>
++ 	private static void HandleRegularInput(List<char> input, ref int cursorPosition, ref int historyIndex, ConsoleKeyInfo key)
++ 	{
++ 		if (!char.IsControl(key.KeyChar))
++ 		{
++ 			input.Insert(cursorPosition, key.KeyChar);
++ 			cursorPosition++;
++ 
++ 			// Redraw from cursor position
++ 			var remainingChars = input.Skip(cursorPosition - 1).ToArray();
++ 			var remainingText = new string(remainingChars);
++ 			AnsiConsole.Markup(remainingText.EscapeMarkup());
++ 
++ 			// Move cursor back to correct position
++ 			if (remainingText.Length > 1)
++ 			{
++ 				AnsiConsole.Cursor.Move(CursorDirection.Left, remainingText.Length - 1);
++ 			}
++ 
++ 			historyIndex = _inputHistory.History.Count; // Reset history navigation
++ 		}
++ 	}
+  }
+  
+```
+
+---
+
+Now let's build the project again:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet build
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.sln                                    Restore (0.0s)
+                                                                                   (0.1s) 
+Restore complete (0.8s)
+  DiffMore.Core succeeded (0.5s) → DiffMore.Core\bin\Debug\net9.0\ktsu.DiffMore.Core.dll
+
+  DiffMore.ConsoleApp failed with 2 error(s) (0.3s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1629,18): error IDE0072: Popul
+072)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1606,5): error IDE2003: Blank 
+line required between block and subsequent statement (https://learn.microsoft.com/dotnet/f
+undamentals/code-analysis/style-rules/ide2003)
+
+Build failed with 2 error(s) in 1.9s
+  10:26:12   DiffMore  2.218s   1 - ERROR 
+  20:26:12 main  ~1 
+
+```
+
+---
+
+I need to fix the remaining blank line issue and populate the switch statement. Let me check what's on line 1606:
+
+---
+
+Read file: DiffMore.ConsoleApp/Program.cs
+
+---
+
+Now I can see the issue. I need to add a blank line after the return statement and fix the switch expression. Let me fix this:
+
+---
+
+Cancelled
+
+---
+
+_**User**_
+
+Conflict 1/13 at line 1:
+╭─Version 1──────────────────────────────────╮              ╭─Version 2─────╮
+│    4:     "rollForward": "latestFeature"   │              │     : (added) │
+│    5:   },                                 │              │     :         │
+│    6:   "msbuild-sdks": {                  │              │     :         │
+│    7:     "ktsu.Sdk": "1.35.0",            │              │     :         │
+│    8:     "ktsu.Sdk.Lib": "1.35.0",        │              │     :         │
+│    9:     "ktsu.Sdk.ConsoleApp": "1.35.0", │              │     :         │
+│   10:     "ktsu.Sdk.Test": "1.35.0",       │              │     :         │
+╰────────────────────────────────────────────╯              ╰───────────────╯
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+How would you like to resolve this conflict?
+
+> 📄 Use Version 1
+  📄 Use Version 2
+  ✏️  Edit Manually
+  ❌ Skip This Conflict
+
+---
+
+_**Assistant**_
 
 
 
