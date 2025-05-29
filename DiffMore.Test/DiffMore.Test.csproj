@@ -1,2 +1,13 @@
-﻿<Project Sdk="ktsu.Sdk.Test/1.33.0">
+﻿<Project Sdk="ktsu.Sdk.Test">
+  <ItemGroup>
+    <PackageReference Include="TestableIO.System.IO.Abstractions" />
+    <PackageReference Include="TestableIO.System.IO.Abstractions.Wrappers" />
+    <PackageReference Include="TestableIO.System.IO.Abstractions.TestingHelpers" />
+    <PackageReference Include="Moq" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DiffMore.Core\DiffMore.Core.csproj" />
+    <ProjectReference Include="..\DiffMore.ConsoleApp\DiffMore.ConsoleApp.csproj" />
+  </ItemGroup>
 </Project>

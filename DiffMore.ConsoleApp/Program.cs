@@ -838,8 +838,8 @@ public static class Program
 				break;
 			}
 
-					// Update session
-		lastMergedContent = string.Join(Environment.NewLine, mergeResult.MergedLines);
+			// Update session
+			lastMergedContent = string.Join(Environment.NewLine, mergeResult.MergedLines);
 			session.AddMergedContent(lastMergedContent);
 
 			// Remove the merged files from remaining files
@@ -1132,7 +1132,7 @@ public static class Program
 
 		if (AnsiConsole.Confirm("[cyan]Would you like to save the merged content to a file?[/]", true))
 		{
-			var outputPath = AnsiConsole.Ask<string>("[cyan]Enter output file path:[/]", $"merged_{originalFileName}");
+			var outputPath = AnsiConsole.Ask("[cyan]Enter output file path:[/]", $"merged_{originalFileName}");
 
 			try
 			{

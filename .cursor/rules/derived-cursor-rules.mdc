@@ -94,6 +94,7 @@ globs: *
 ## DEBUGGING
 
 -   When an error occurs, log the error message and rethrow the exception for debugging purposes.
+-   When encountering build errors, check the error messages to identify missing package references, incorrect project references, or other dependency-related issues.
 
 ## UNIT TESTING
 
@@ -119,6 +120,8 @@ globs: *
 -   When writing tests, ensure proper instantiation of static classes. Do not attempt to create instances of static classes directly; instead, access their members directly using the class name.
 -   When tests use classes implementing `IDisposable`, ensure the `Dispose` method is properly implemented. The `Dispose` method should call `Dispose(true)`, then call `GC.SuppressFinalize` on the current object instance (`this` or `Me` in Visual Basic), and then return.
 -   Use MSTest framework for unit tests.
+-   When tests fail due to missing assembly references, add the necessary package references to the test project file (.csproj).
+-   If a test project references a namespace from another project, ensure to add a project reference to the corresponding project in the test project file (.csproj).
 
 ## WORKFLOW & RELEASE RULES
 
@@ -157,6 +160,8 @@ globs: *
     ```
 -   The application should have a TUI using Spectre.Console.
 -   Implement an iterative merge feature for multiple file versions, where the two most similar versions are found and a visual TUI is offered for resolving the merge. This process is repeated until all versions are merged.
+-   When adding package references, use `dotnet add package <package_name>`
+-   When adding project references, use `dotnet add reference <project_path>`
 
 ## DIRECTORY COMPARISON
 

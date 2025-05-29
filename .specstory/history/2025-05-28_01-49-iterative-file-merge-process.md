@@ -1286,3 +1286,303 @@ Now let me also fix the linter errors in the CLI file:
 
 ---
 
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+Now let me also fix the linter errors in the Core file:
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+Now I need to update the CLI code to handle the change from string[] to IReadOnlyList<string>:
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+Now let's try building again:
+
+---
+
+```bash
+dotnet build --verbosity minimal
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet build --verbosity minimal
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.sln                                    Restore (0.0s) 
+Restore complete (0.9s)
+  DiffMore.Core failed with 2 error(s) (0.6s)
+nalysis/style-rules/ide0305)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(1498,1): error IDE2002: Consecuti
+ve braces must not have blank line between them (https://learn.microsoft.com/dotnet/fundam
+entals/code-analysis/style-rules/ide2002)
+
+Build failed with 2 error(s) in 2.1s
+  02:00:15   DiffMore  2.522s   1 - ERROR 
+  12:00:15 main  +5 ~3 
+ PS C:\dev\ktsu-dev\DiffMore >
+```
+
+---
+
+Let me fix the remaining linter errors:
+
+---
+
+Read file: DiffMore.Core/FileDiffer.cs
+
+---
+
+
+
+---
+
+Now let me check for the collection initialization issue:
+
+---
+
+<details>
+            <summary>Grep search for "Collection initialization can be simplified" • **4** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///c%3A/dev/ktsu-dev/DiffMore/.specstory/history/2025-05-27_15-17-application-development-progress.md` | L189 | `1. **IDE0028**: Collection initialization can be simplified (2 instances in MockFileSystemTests.cs)` |
+| `file:///c%3A/dev/ktsu-dev/DiffMore/.specstory/history/2025-05-27_15-08-project-completion-discussion.md` | L282 | `Collection initialization can be simplified (https://learn.microsoft.com/dotnet/fundamenta` |
+| `file:///c%3A/dev/ktsu-dev/DiffMore/.specstory/history/2025-05-27_15-08-project-completion-discussion.md` | L557 | `Collection initialization can be simplified (https://learn.microsoft.com/dotnet/fundamenta` |
+| `file:///c%3A/dev/ktsu-dev/DiffMore/.specstory/history/2025-05-27_14-50-continuation-of-discussion.md` | L1193 | `Collection initialization can be simplified (https://learn.microsoft.com/dotnet/fundamenta` |
+| `file:///c%3A/dev/ktsu-dev/DiffMore/.cursor/rules/derived-cursor-rules.mdc` | L43 | `-   Collection initialization can be simplified.` |
+
+</details>
+
+---
+
+Let me check the specific line mentioned in the error:
+
+---
+
+```bash
+dotnet build --verbosity normal 2>&1 | grep -A 5 -B 5 "Collection initialization"
+```
+
+```
+  12:00:39 main  +5 ~3 
+
+
+```
+
+---
+
+```bash
+dotnet build --verbosity normal
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet build --verbosity normal 2>&1 | grep -A 5 -B 5 "Colle
+ction initialization"         dotnet build --verbosity normal
+
+                                                                                   (0.1s) 
+Restore complete (1.1s)
+  DiffMore.Core failed with 1 error(s) (0.7s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\FileDiffer.cs(225,55): error IDE0305: Collectio
+n initialization can be simplified (https://learn.microsoft.com/dotnet/fundamentals/code-a
+nalysis/style-rules/ide0305)
+
+Build failed with 1 error(s) in 2.4s
+  02:00:47   DiffMore  2.723s   1 - ERROR 
+  12:00:47 main 
+ PS C:\dev\ktsu-dev\DiffMore >
+```
+
+---
+
+Read file: DiffMore.Core/FileDiffer.cs
+
+---
+
+I can see the issue is on line 225. Let me fix it:
+
+---
+
+
+
+---
+
+Now let's try building again:
+
+---
+
+```bash
+dotnet build --verbosity minimal
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet build --verbosity minimal
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.sln                                    Restore (0.0s)
+                                                                                   (0.1s) 
+Restore complete (1.0s)
+  DiffMore.Core succeeded (0.9s) → DiffMore.Core\bin\Debug\net9.0\ktsu.DiffMore.Core.dll
+
+    C:\dev\ktsu-dev\DiffMore\DiffMore.CLI\Program.cs(841,4): error IDE0055: Fix formatting
+ (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.CLI\Program.cs(842,3): error IDE0055: Fix formatting
+ (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055)
+
+Build failed with 2 error(s) in 2.9s
+  02:01:07   DiffMore  3.387s   1 - ERROR 
+  12:01:07 main  ~1 
+
+```
+
+---
+
+Let me fix the formatting issues in the CLI:
+
+---
+
+Read file: DiffMore.CLI/Program.cs
+
+---
+
+I'll help you implement the iterative merge functionality for multiple file versions. Let me start by exploring the existing codebase to understand the current structure and capabilities.
+
+---
+
+<details>
+            <summary>Listed current directory • **35** results</summary>
+        
+| Name |
+|-------|
+| 📁 `.git` |
+| 📄 `Directory.Build.props` |
+| 📁 `DiffMore.CLI` |
+| 📄 `standalone_test.cs` |
+| 📁 `obj` |
+| 📁 `bin` |
+| 📄 `Program.cs` |
+| 📄 `Directory.Packages.props` |
+| 📁 `DiffMore.Core` |
+| 📁 `DiffMore.Test` |
+| 📁 `packages` |
+| 📄 `.runsettings` |
+| 📁 `.specstory` |
+| 📄 `.cursorignore` |
+| 📁 `.cursor` |
+| 📄 `.cursorindexingignore` |
+| 📄 `VERSION.md` |
+| 📄 `PROJECT_URL.url` |
+| 📄 `LICENSE.md` |
+| 📄 `COPYRIGHT.md` |
+| 📄 `CHANGELOG.md` |
+| 📄 `AUTHORS.url` |
+| 📁 `.vs` |
+| 📄 `DiffMore.sln` |
+| 📁 `.github` |
+| 📁 `scripts` |
+| 📄 `.mailmap` |
+| 📄 `.editorconfig` |
+| 📄 `.gitattributes` |
+| 📄 `.gitignore` |
+| 📄 `AUTHORS.md` |
+| 📄 `TAGS.md` |
+| 📄 `DESCRIPTION.md` |
+| 📄 `README.md` |
+| 📄 `icon.png` |
+
+</details>
+
+---
+
+<details>
+            <summary>Listed directory DiffMore.Core • **6** results</summary>
+        
+| Name |
+|-------|
+| 📄 `FileDiffer.cs` |
+| 📁 `obj` |
+| 📄 `DiffMore.Core.csproj` |
+| 📄 `FileHasher.cs` |
+| 📄 `FileFinder.cs` |
+| 📁 `bin` |
+
+</details>
+
+---
+
+<details>
+            <summary>Listed directory DiffMore.CLI • **5** results</summary>
+        
+| Name |
+|-------|
+| 📄 `Program.cs` |
+| 📁 `TestFiles` |
+| 📁 `obj` |
+| 📄 `DiffMore.CLI.csproj` |
+| 📁 `bin` |
+
+</details>
+
+---
+
+
+
+
+
+---
+
+_**User**_
+
+continue
+
+---
+
+_**Assistant**_
+
+
+
+---
+

@@ -222,7 +222,7 @@ public class MergeResult
 /// </summary>
 public class IterativeMergeSession(IEnumerable<string> filePaths)
 {
-	private readonly List<string> _filePaths = filePaths.ToList();
+	private readonly List<string> _filePaths = [.. filePaths];
 	private readonly List<string> _mergedContents = [];
 
 	/// <summary>
