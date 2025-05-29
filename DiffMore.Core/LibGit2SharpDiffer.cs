@@ -10,10 +10,10 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using LibGit2Sharp;
 
 /// <summary>
-/// Provides improved diffing functionality that was originally planned to use LibGit2Sharp
-/// but now uses an enhanced text-based algorithm for better reliability
+/// Provides Git-based diffing functionality using LibGit2Sharp for industry-standard diff algorithms
 /// </summary>
 public static class LibGit2SharpDiffer
 {
@@ -29,7 +29,7 @@ public static class LibGit2SharpDiffer
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		// Read file contents
+		// Check if files exist and handle non-existent files
 		var content1 = File.Exists(file1) ? File.ReadAllText(file1) : string.Empty;
 		var content2 = File.Exists(file2) ? File.ReadAllText(file2) : string.Empty;
 
@@ -39,8 +39,62 @@ public static class LibGit2SharpDiffer
 			return string.Empty;
 		}
 
-		// Generate diff using improved text-based algorithm
-		return GenerateTextBasedDiff(file1, file2, content1, content2, contextLines);
+		// Create a temporary Git repository to use LibGit2Sharp diffing
+		var tempDir = Path.Combine(Path.GetTempPath(), $"diffmore-{Guid.NewGuid()}");
+
+		try
+		{
+			Directory.CreateDirectory(tempDir);
+			Repository.Init(tempDir);
+
+			using var repo = new Repository(tempDir);
+
+			// Create signature for commits
+			var signature = new Signature("DiffMore", "diffmore@temp.local", DateTimeOffset.Now);
+
+			// Create temp filenames
+			var fileName = "comparison.txt";
+			var filePath = Path.Combine(tempDir, fileName);
+
+			// Write first version and commit
+			File.WriteAllText(filePath, content1);
+			Commands.Stage(repo, fileName);
+			var commit1 = repo.Commit("First version", signature, signature);
+
+			// Write second version and commit
+			File.WriteAllText(filePath, content2);
+			Commands.Stage(repo, fileName);
+			var commit2 = repo.Commit("Second version", signature, signature);
+
+			// Configure compare options
+			var compareOptions = new CompareOptions
+			{
+				ContextLines = contextLines,
+				InterhunkLines = 0
+			};
+
+			// Generate patch between the two commits
+			var patch = repo.Diff.Compare<Patch>(commit1.Tree, commit2.Tree, compareOptions);
+
+			// Format the patch to match git diff output format
+			var result = FormatPatchOutput(patch, Path.GetFileName(file1), Path.GetFileName(file2));
+			return result;
+		}
+		finally
+		{
+			// Clean up temporary directory
+			if (Directory.Exists(tempDir))
+			{
+				try
+				{
+					Directory.Delete(tempDir, recursive: true);
+				}
+				catch
+				{
+					// Ignore cleanup errors
+				}
+			}
+		}
 	}
 
 	/// <summary>
@@ -59,7 +113,7 @@ public static class LibGit2SharpDiffer
 			return false;
 		}
 
-		// First check file sizes
+		// First check file sizes for quick comparison
 		var fileInfo1 = new FileInfo(file1);
 		var fileInfo2 = new FileInfo(file2);
 
@@ -68,11 +122,58 @@ public static class LibGit2SharpDiffer
 			return false;
 		}
 
-		// Compare content
-		var content1 = File.ReadAllText(file1);
-		var content2 = File.ReadAllText(file2);
+		// For small files, compare content directly
+		if (fileInfo1.Length < 1024 * 1024) // 1MB threshold
+		{
+			var content1 = File.ReadAllText(file1);
+			var content2 = File.ReadAllText(file2);
+			return content1 == content2;
+		}
 
-		return content1 == content2;
+		// For larger files, use Git's object comparison for efficiency
+		var tempDir = Path.Combine(Path.GetTempPath(), $"diffmore-compare-{Guid.NewGuid()}");
+
+		try
+		{
+			Directory.CreateDirectory(tempDir);
+			Repository.Init(tempDir);
+
+			using var repo = new Repository(tempDir);
+
+			var signature = new Signature("DiffMore", "diffmore@temp.local", DateTimeOffset.Now);
+			var fileName = "comparison.txt";
+			var filePath = Path.Combine(tempDir, fileName);
+
+			// Create blob from first file
+			File.Copy(file1, filePath, overwrite: true);
+			Commands.Stage(repo, fileName);
+			var commit1 = repo.Commit("First version", signature, signature);
+
+			// Create blob from second file
+			File.Copy(file2, filePath, overwrite: true);
+			Commands.Stage(repo, fileName);
+			var commit2 = repo.Commit("Second version", signature, signature);
+
+			// Compare the tree entries
+			var tree1 = commit1.Tree;
+			var tree2 = commit2.Tree;
+
+			return tree1[fileName].Target.Sha == tree2[fileName].Target.Sha;
+		}
+		finally
+		{
+			if (Directory.Exists(tempDir))
+			{
+				try
+				{
+					Directory.Delete(tempDir, recursive: true);
+				}
+				catch
+				{
+					// Ignore cleanup errors
+				}
+			}
+		}
 	}
 
 	/// <summary>
@@ -147,7 +248,7 @@ public static class LibGit2SharpDiffer
 	}
 
 	/// <summary>
-	/// Finds differences between two files
+	/// Finds differences between two files using LibGit2Sharp
 	/// </summary>
 	/// <param name="file1">Path to the first file</param>
 	/// <param name="file2">Path to the second file</param>
@@ -203,9 +304,9 @@ public static class LibGit2SharpDiffer
 				});
 				currentNewLine++;
 			}
-			else if (!line.StartsWith("---") && !line.StartsWith("+++") && !string.IsNullOrEmpty(line))
+			else if (line.StartsWith(' '))
 			{
-				// Context line (unchanged)
+				// Context line - increment both counters
 				currentOldLine++;
 				currentNewLine++;
 			}
@@ -215,287 +316,83 @@ public static class LibGit2SharpDiffer
 	}
 
 	/// <summary>
-	/// Parses a diff hunk header to extract starting line numbers
+	/// Parses a hunk header to extract line number information
 	/// </summary>
-	/// <param name="hunkHeader">The hunk header line (e.g., "@@ -1,4 +1,6 @@")</param>
-	/// <returns>A tuple containing the old start line and new start line</returns>
+	/// <param name="hunkHeader">The hunk header line (e.g., "@@ -1,4 +1,5 @@")</param>
+	/// <returns>Tuple containing old start line and new start line</returns>
 	private static (int oldStart, int newStart) ParseHunkHeader(string hunkHeader)
 	{
-		// Example: "@@ -1,4 +1,6 @@"
-		var parts = hunkHeader.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
-		var oldStart = 1;
-		var newStart = 1;
-
-		if (parts.Length >= 3)
+		try
 		{
-			// Parse old start (after '-')
-			var oldPart = parts[1];
-			if (oldPart.StartsWith('-'))
-			{
-				var oldInfo = oldPart[1..].Split(',');
-				if (oldInfo.Length > 0 && int.TryParse(oldInfo[0], out var oldLineNum))
-				{
-					oldStart = oldLineNum;
-				}
-			}
+			// Format: @@ -oldStart,oldCount +newStart,newCount @@
+			var parts = hunkHeader.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
-			// Parse new start (after '+')
-			var newPart = parts[2];
-			if (newPart.StartsWith('+'))
+			if (parts.Length >= 3)
 			{
-				var newInfo = newPart[1..].Split(',');
-				if (newInfo.Length > 0 && int.TryParse(newInfo[0], out var newLineNum))
-				{
-					newStart = newLineNum;
-				}
+				var oldPart = parts[1]; // -oldStart,oldCount
+				var newPart = parts[2]; // +newStart,newCount
+
+				var oldStart = int.Parse(oldPart.Split(',')[0][1..]); // Remove '-' and parse
+				var newStart = int.Parse(newPart.Split(',')[0][1..]); // Remove '+' and parse
+
+				return (oldStart, newStart);
 			}
 		}
+		catch
+		{
+			// Fall back to defaults if parsing fails
+		}
 
-		return (oldStart, newStart);
+		return (1, 1);
 	}
 
 	/// <summary>
-	/// Generates a git-style diff using enhanced text-based algorithm
+	/// Formats the LibGit2Sharp patch output to match standard git diff format
 	/// </summary>
-	/// <param name="file1">Path to first file</param>
-	/// <param name="file2">Path to second file</param>
-	/// <param name="content1">Content of first file</param>
-	/// <param name="content2">Content of second file</param>
-	/// <param name="contextLines">Number of context lines</param>
-	/// <returns>Git-style diff output</returns>
-	private static string GenerateTextBasedDiff(string file1, string file2, string content1, string content2, int contextLines)
+	/// <param name="patch">The patch object from LibGit2Sharp</param>
+	/// <param name="fileName1">Name of the first file</param>
+	/// <param name="fileName2">Name of the second file</param>
+	/// <returns>Formatted git diff string</returns>
+	private static string FormatPatchOutput(Patch patch, string fileName1, string fileName2)
 	{
-		var lines1 = content1.Split('\n').ToArray();
-		var lines2 = content2.Split('\n').ToArray();
-
-		var sb = new StringBuilder();
-		sb.AppendLine($"--- {Path.GetFileName(file1)}");
-		sb.AppendLine($"+++ {Path.GetFileName(file2)}");
-
-		// Use a simple LCS-based algorithm to find differences
-		var operations = CalculateEditOperations(lines1, lines2);
-
-		if (operations.Count == 0)
+		if (patch == null || !patch.Any())
 		{
 			return string.Empty;
 		}
 
-		// Generate hunks with context
-		var hunks = GenerateHunks(operations, lines1, contextLines);
+		var sb = new StringBuilder();
 
-		foreach (var hunk in hunks)
+		foreach (var filePatch in patch)
 		{
-			sb.AppendLine(hunk);
-		}
+			// Add file header
+			sb.AppendLine($"--- a/{fileName1}");
+			sb.AppendLine($"+++ b/{fileName2}");
 
-		return sb.ToString();
-	}
+			// Add hunks
+			foreach (var hunk in filePatch.Hunks)
+			{
+				// Add hunk header
+				sb.AppendLine($"@@ -{hunk.OldStart},{hunk.OldCount} +{hunk.NewStart},{hunk.NewCount} @@");
 
-	/// <summary>
-	/// Calculates edit operations using a simplified LCS algorithm
-	/// </summary>
-	private static List<EditOperation> CalculateEditOperations(string[] lines1, string[] lines2)
-	{
-		var operations = new List<EditOperation>();
-		var i = 0; // index in lines1
-		var j = 0; // index in lines2
-
-		while (i < lines1.Length || j < lines2.Length)
-		{
-			if (i >= lines1.Length)
-			{
-				// All remaining lines in lines2 are additions
-				operations.Add(new EditOperation { Type = EditType.Add, Line2Index = j, Content = lines2[j] });
-				j++;
-			}
-			else if (j >= lines2.Length)
-			{
-				// All remaining lines in lines1 are deletions
-				operations.Add(new EditOperation { Type = EditType.Delete, Line1Index = i, Content = lines1[i] });
-				i++;
-			}
-			else if (lines1[i] == lines2[j])
-			{
-				// Lines are equal
-				operations.Add(new EditOperation { Type = EditType.Equal, Line1Index = i, Line2Index = j, Content = lines1[i] });
-				i++;
-				j++;
-			}
-			else
-			{
-				// Lines are different - find the best match
-				var lookAhead = Math.Min(10, Math.Min(lines1.Length - i, lines2.Length - j));
-				var found = false;
-
-				// Look for a match in the next few lines
-				for (var k = 1; k <= lookAhead && !found; k++)
+				// Add hunk content
+				foreach (var line in hunk.Lines)
 				{
-					if (i + k < lines1.Length && lines1[i + k] == lines2[j])
+					switch (line.Origin)
 					{
-						// Found a match by deleting k lines from lines1
-						for (var del = 0; del < k; del++)
-						{
-							operations.Add(new EditOperation { Type = EditType.Delete, Line1Index = i + del, Content = lines1[i + del] });
-						}
-						i += k;
-						found = true;
+						case ChangeKind.Added:
+							sb.AppendLine($"+{line.Content.TrimEnd('\n')}");
+							break;
+						case ChangeKind.Deleted:
+							sb.AppendLine($"-{line.Content.TrimEnd('\n')}");
+							break;
+						case ChangeKind.Unmodified:
+							sb.AppendLine($" {line.Content.TrimEnd('\n')}");
+							break;
 					}
-					else if (j + k < lines2.Length && lines1[i] == lines2[j + k])
-					{
-						// Found a match by adding k lines from lines2
-						for (var add = 0; add < k; add++)
-						{
-							operations.Add(new EditOperation { Type = EditType.Add, Line2Index = j + add, Content = lines2[j + add] });
-						}
-						j += k;
-						found = true;
-					}
-				}
-
-				if (!found)
-				{
-					// No match found, treat as change
-					operations.Add(new EditOperation { Type = EditType.Delete, Line1Index = i, Content = lines1[i] });
-					operations.Add(new EditOperation { Type = EditType.Add, Line2Index = j, Content = lines2[j] });
-					i++;
-					j++;
 				}
 			}
 		}
 
-		return operations;
-	}
-
-	/// <summary>
-	/// Generates diff hunks with context lines
-	/// </summary>
-	private static List<string> GenerateHunks(List<EditOperation> operations, string[] lines1, int contextLines)
-	{
-		var hunks = new List<string>();
-		var currentHunk = new StringBuilder();
-		var hunkStartOld = -1;
-		var hunkStartNew = -1;
-		var oldCount = 0;
-		var newCount = 0;
-		var inHunk = false;
-
-		for (var i = 0; i < operations.Count; i++)
-		{
-			var op = operations[i];
-
-			if (op.Type != EditType.Equal)
-			{
-				if (!inHunk)
-				{
-					// Start a new hunk
-					hunkStartOld = Math.Max(1, (op.Line1Index ?? op.Line2Index ?? 0) - contextLines + 1);
-					hunkStartNew = Math.Max(1, (op.Line2Index ?? op.Line1Index ?? 0) - contextLines + 1);
-
-					// Add context before
-					var contextStart = Math.Max(0, (op.Line1Index ?? op.Line2Index ?? 0) - contextLines);
-					for (var ctx = contextStart; ctx < (op.Line1Index ?? op.Line2Index ?? 0); ctx++)
-					{
-						if (ctx < lines1.Length)
-						{
-							currentHunk.AppendLine($" {lines1[ctx]}");
-							oldCount++;
-							newCount++;
-						}
-					}
-
-					inHunk = true;
-				}
-
-				// Add the changed line
-				switch (op.Type)
-				{
-					case EditType.Delete:
-						currentHunk.AppendLine($"-{op.Content}");
-						oldCount++;
-						break;
-					case EditType.Add:
-						currentHunk.AppendLine($"+{op.Content}");
-						newCount++;
-						break;
-					case EditType.Equal:
-						// This case is handled above, but included for completeness
-						currentHunk.AppendLine($" {op.Content}");
-						oldCount++;
-						newCount++;
-						break;
-					default:
-						throw new InvalidOperationException($"Unknown edit type: {op.Type}");
-				}
-			}
-			else if (inHunk)
-			{
-				// Equal line in a hunk (context)
-				currentHunk.AppendLine($" {op.Content}");
-				oldCount++;
-				newCount++;
-
-				// Check if we should end the hunk
-				var remainingOps = operations.Skip(i + 1).Take(contextLines * 2).ToList();
-				var hasMoreChanges = remainingOps.Any(r => r.Type != EditType.Equal);
-
-				if (!hasMoreChanges)
-				{
-					// Add remaining context and end hunk
-					var contextEnd = Math.Min(i + contextLines, operations.Count - 1);
-					for (var ctx = i + 1; ctx <= contextEnd && ctx < operations.Count; ctx++)
-					{
-						if (operations[ctx].Type == EditType.Equal)
-						{
-							currentHunk.AppendLine($" {operations[ctx].Content}");
-							oldCount++;
-							newCount++;
-						}
-					}
-
-					// Create hunk header and add to hunks
-					var hunkHeader = $"@@ -{hunkStartOld},{oldCount} +{hunkStartNew},{newCount} @@";
-					hunks.Add(hunkHeader);
-					hunks.Add(currentHunk.ToString().TrimEnd());
-
-					// Reset for next hunk
-					currentHunk.Clear();
-					oldCount = 0;
-					newCount = 0;
-					inHunk = false;
-				}
-			}
-		}
-
-		// If we're still in a hunk, close it
-		if (inHunk && currentHunk.Length > 0)
-		{
-			var hunkHeader = $"@@ -{hunkStartOld},{oldCount} +{hunkStartNew},{newCount} @@";
-			hunks.Add(hunkHeader);
-			hunks.Add(currentHunk.ToString().TrimEnd());
-		}
-
-		return hunks;
-	}
-
-	/// <summary>
-	/// Represents an edit operation in the diff
-	/// </summary>
-	private class EditOperation
-	{
-		public EditType Type { get; set; }
-		public int? Line1Index { get; set; }
-		public int? Line2Index { get; set; }
-		public string Content { get; set; } = string.Empty;
-	}
-
-	/// <summary>
-	/// Types of edit operations
-	/// </summary>
-	private enum EditType
-	{
-		Equal,
-		Delete,
-		Add
+		return sb.ToString();
 	}
 }
