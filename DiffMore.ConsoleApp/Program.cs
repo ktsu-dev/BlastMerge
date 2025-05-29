@@ -939,17 +939,23 @@ public static class Program
 	private static MergeResult? PerformMergeWithConflictResolution(string file1, string file2, string? existingMergedContent)
 	{
 		MergeResult mergeResult;
+		string[]? originalLines1 = null;
+		string[]? originalLines2 = null;
 
 		if (existingMergedContent != null)
 		{
 			// Merge with existing content
 			var mergedLines = existingMergedContent.Split(Environment.NewLine);
 			var file2Lines = File.ReadAllLines(file2);
+			originalLines1 = mergedLines;
+			originalLines2 = file2Lines;
 			mergeResult = FileDiffer.MergeLines(mergedLines, file2Lines);
 		}
 		else
 		{
 			// Merge two files
+			originalLines1 = File.ReadAllLines(file1);
+			originalLines2 = File.ReadAllLines(file2);
 			mergeResult = FileDiffer.MergeFiles(file1, file2);
 		}
 
@@ -963,15 +969,17 @@ public static class Program
 
 		return !AnsiConsole.Confirm("[cyan]Would you like to resolve conflicts interactively?[/]", true)
 			? null
-			: ResolveConflictsInteractively(mergeResult);
+			: ResolveConflictsInteractively(mergeResult, originalLines1, originalLines2);
 	}
 
 	/// <summary>
 	/// Resolves merge conflicts interactively through TUI
 	/// </summary>
 	/// <param name="mergeResult">The merge result with conflicts</param>
+	/// <param name="originalLines1">Original lines of the first file</param>
+	/// <param name="originalLines2">Original lines of the second file</param>
 	/// <returns>The resolved merge result</returns>
-	private static MergeResult ResolveConflictsInteractively(MergeResult mergeResult)
+	private static MergeResult ResolveConflictsInteractively(MergeResult mergeResult, string[]? originalLines1, string[]? originalLines2)
 	{
 		var rule = new Rule("[bold]Interactive Conflict Resolution[/]")
 		{
@@ -992,15 +1000,23 @@ public static class Program
 			AnsiConsole.WriteLine();
 			AnsiConsole.MarkupLine($"[yellow]Conflict {conflictIndex}/{mergeResult.Conflicts.Count} at line {conflict.LineNumber}:[/]");
 
-			// Show the conflict
-			var panel = new Panel(
-				$"[red]Version 1:[/]\n{conflict.Content1 ?? "(deleted)"}\n\n" +
-				$"[green]Version 2:[/]\n{conflict.Content2 ?? "(added)"}")
+			// Show the conflict with context in side-by-side view
+			if (originalLines1 != null && originalLines2 != null)
 			{
-				Header = new PanelHeader("Conflict Details"),
-				Border = BoxBorder.Rounded
-			};
-			AnsiConsole.Write(panel);
+				ShowConflictWithContext(conflict, originalLines1, originalLines2);
+			}
+			else
+			{
+				// Fallback to simple display if original lines are not available
+				var panel = new Panel(
+					$"[red]Version 1:[/]\n{conflict.Content1 ?? "(deleted)"}\n\n" +
+					$"[green]Version 2:[/]\n{conflict.Content2 ?? "(added)"}")
+				{
+					Header = new PanelHeader("Conflict Details"),
+					Border = BoxBorder.Rounded
+				};
+				AnsiConsole.Write(panel);
+			}
 
 			// Let user choose resolution
 			var choices = new List<string>
@@ -1058,6 +1074,117 @@ public static class Program
 			MergedLines = resolvedLines.AsReadOnly(),
 			Conflicts = mergeResult.Conflicts
 		};
+	}
+
+	/// <summary>
+	/// Shows a conflict with context lines in a side-by-side view
+	/// </summary>
+	/// <param name="conflict">The conflict to display</param>
+	/// <param name="originalLines1">Original lines from first file/content</param>
+	/// <param name="originalLines2">Original lines from second file/content</param>
+	private static void ShowConflictWithContext(MergeConflict conflict, string[] originalLines1, string[] originalLines2)
+	{
+		const int contextLines = 3; // Number of context lines before and after conflict
+
+		// Find the approximate line numbers in original files
+		// This is a simplified approach - we use the conflict line number as a reference
+		var conflictLineIndex = Math.Max(0, conflict.LineNumber - 1);
+
+		// For simplicity, we'll show context around the same line number in both files
+		// In a more sophisticated implementation, we'd track the actual mapping
+		var startContext1 = Math.Max(0, conflictLineIndex - contextLines);
+		var endContext1 = Math.Min(originalLines1.Length - 1, conflictLineIndex + contextLines);
+		var startContext2 = Math.Max(0, conflictLineIndex - contextLines);
+		var endContext2 = Math.Min(originalLines2.Length - 1, conflictLineIndex + contextLines);
+
+		// Build version 1 content (left side)
+		var version1Content = new List<string>();
+		var version2Content = new List<string>();
+
+		// Add context and highlight the conflict area
+		var maxLines = Math.Max(endContext1 - startContext1 + 1, endContext2 - startContext2 + 1);
+
+		for (var i = 0; i < maxLines; i++)
+		{
+			var line1Index = startContext1 + i;
+			var line2Index = startContext2 + i;
+
+			// Version 1 content
+			if (line1Index <= endContext1 && line1Index < originalLines1.Length)
+			{
+				var line1 = originalLines1[line1Index];
+				var isConflictLine = line1 == conflict.Content1;
+				var lineContent = isConflictLine
+					? $"[red bold]{line1Index + 1,4}: {line1.EscapeMarkup()}[/]"
+					: $"[dim]{line1Index + 1,4}: {line1.EscapeMarkup()}[/]";
+				version1Content.Add(lineContent);
+			}
+			else if (conflict.Content1 != null && i == contextLines)
+			{
+				// Add the conflict content if it wasn't found in the original lines
+				version1Content.Add($"[red bold]{conflictLineIndex + 1,4}: {conflict.Content1.EscapeMarkup()}[/]");
+			}
+			else
+			{
+				version1Content.Add($"[dim]{line1Index + 1,4}: [/]");
+			}
+
+			// Version 2 content
+			if (line2Index <= endContext2 && line2Index < originalLines2.Length)
+			{
+				var line2 = originalLines2[line2Index];
+				var isConflictLine = line2 == conflict.Content2;
+				var lineContent = isConflictLine
+					? $"[green bold]{line2Index + 1,4}: {line2.EscapeMarkup()}[/]"
+					: $"[dim]{line2Index + 1,4}: {line2.EscapeMarkup()}[/]";
+				version2Content.Add(lineContent);
+			}
+			else if (conflict.Content2 != null && i == contextLines)
+			{
+				// Add the conflict content if it wasn't found in the original lines
+				version2Content.Add($"[green bold]{conflictLineIndex + 1,4}: {conflict.Content2.EscapeMarkup()}[/]");
+			}
+			else
+			{
+				version2Content.Add($"[dim]{line2Index + 1,4}: [/]");
+			}
+		}
+
+		// Special handling for deletions and additions
+		if (conflict.Content1 == null)
+		{
+			version1Content.Add($"[red bold]{conflictLineIndex + 1,4}: (deleted)[/]");
+		}
+
+		if (conflict.Content2 == null)
+		{
+			version2Content.Add($"[green bold]{conflictLineIndex + 1,4}: (added)[/]");
+		}
+
+		// Create side-by-side layout
+		var leftPanel = new Panel(string.Join("\n", version1Content))
+		{
+			Header = new PanelHeader("[red bold]Version 1[/]"),
+			Border = BoxBorder.Rounded,
+			BorderStyle = Style.Parse("red")
+		};
+
+		var rightPanel = new Panel(string.Join("\n", version2Content))
+		{
+			Header = new PanelHeader("[green bold]Version 2[/]"),
+			Border = BoxBorder.Rounded,
+			BorderStyle = Style.Parse("green")
+		};
+
+		// Create the layout with two columns
+		var layout = new Layout()
+			.SplitColumns(
+				new Layout("left").Update(leftPanel),
+				new Layout("right").Update(rightPanel)
+			);
+
+		AnsiConsole.Write(layout);
+		AnsiConsole.WriteLine();
 	}
 
 	/// <summary>
