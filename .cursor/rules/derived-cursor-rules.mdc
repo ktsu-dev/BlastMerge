@@ -62,6 +62,7 @@ globs: *
 -   Ensure switch statements are populated (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0072)
 -   Use primary constructors (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0290)
 -   Change return type of method 'FindDifferences' from 'System.Collections.Generic.IReadOnlyCollection<ktsu.DiffMore.Core.LineDifference>' to 'System.Collections.ObjectModel.ReadOnlyCollection<ktsu.DiffMore.Core.LineDifference>' for improved performance (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1859)
+-   'MakeConflictColumnLayout' has a cyclomatic complexity of '49'. Refactor the code to decrease its complexity.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -189,6 +190,30 @@ globs: *
 -   To prevent excessive blank lines from pushing the diff content off the screen in iterative merge mode, apply the following:
     -   Only add line breaks between conflicts, not before the first one.
     -   Eliminate the code that adds empty lines to match panel heights.
-    -   Reduce the context lines around conflicts from 3 to 2.
+    -   The number of context lines around conflicts should be 3.
     -   Limit diff panels to 12 lines maximum and add truncation indicators when content is too long.
     -   Remove the extra `AnsiConsole.WriteLine()` after each diff display.
+-   When displaying conflicts, the display on the right (Version 2) should show the same region as on the left (Version 1), but with the differences highlighted.
+    -   For each line in the context, compare the corresponding line between Version 1 and Version 2.
+        -   Red Bold: Primary conflict lines (exact matches from `FindLineInFile`).
+	    -   Yellow: Modified lines (lines that differ between versions).
+	    -   Dim Gray: Unchanged context lines (identical between versions).
+	    -   Green Bold: Addition markers and conflict lines in Version 2.
+-   When `conflict.Content2` is null (addition cases), the Version 2 panel should display context lines from the original file around where the addition would occur, with an "(added content)" marker inserted at the end.
+-   When `conflict.Content1` is null (deletion cases), the Version 1 panel should display context lines from the original file around where the deletion would occur, with an "(deleted content)" marker.
+-   `BuildVersionContent` should build the display content for one version of a conflict, showing context lines with appropriate highlighting.
+    -   The `BuildVersionContent` method handles three main scenarios:
+        -   **Addition/Deletion Cases** (`conflictContent == null`):
+            -   For Version 1 (isVersion1 = true): Handles deletion cases by showing context lines and adding a "[dim](deleted content)[/]" marker.
+            -   For Version 2 (isVersion1 = false): Handles addition cases by showing context lines and adding an "[{colors.Item1} bold](added content)[/]" marker.
+        -   **Conflict Not Found Cases** (`conflictLineIndex < 0`):
+            -   Shows context lines around where the conflict should be located.
+            -   Displays the conflict content with visual markers (`---- content ----`).
+            -   Adds a "[dim](conflict content not found in this version)[/]" message.
+        -   **Normal Cases**:
+            -   Shows context lines with the conflict properly highlighted.
+            -   Uses the `AddContextLinesWithComparison` method to format and color the lines appropriately.
+        -   **Color Scheme**:
+            -   Version 1: Uses red for primary conflicts and yellow for modified lines.
+            -   Version 2: Uses green for primary conflicts and yellow for modified lines.
+            -   Context lines: Uses dim gray for unchanged content.

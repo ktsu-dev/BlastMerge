@@ -1071,125 +1071,169 @@ public static class Program
 	/// <param name="originalLines2">Original lines from second file/content</param>
 	private static void MakeConflictColumnLayout(MergeConflict conflict, string[] originalLines1, string[] originalLines2)
 	{
-		const int contextLines = 3; // Number of context lines before and after conflict
-		const int maxDisplayLines = 12; // Maximum lines to display per panel to keep menu visible
+		const int contextLines = 3;
+		const int maxDisplayLines = 12;
 
-		// Find the actual lines in the original files that contain the conflicting content
+		// Find conflict lines and determine reference index
 		var line1Index = FindLineInFile(originalLines1, conflict.Content1);
 		var line2Index = FindLineInFile(originalLines2, conflict.Content2);
+		var referenceLineIndex = DetermineReferenceLineIndex(line1Index, line2Index, conflict.LineNumber);
 
-		// Build version 1 content (left side)
-		var version1Content = new List<string>();
-		var version2Content = new List<string>();
+		// Calculate display ranges
+		var startIndex1 = Math.Max(0, referenceLineIndex - contextLines);
+		var endIndex1 = Math.Min(originalLines1.Length - 1, referenceLineIndex + contextLines);
+		var startIndex2 = Math.Max(0, referenceLineIndex - contextLines);
+		var endIndex2 = Math.Min(originalLines2.Length - 1, referenceLineIndex + contextLines);
 
-		// Handle Version 1 display
+		// Build content for both versions
+		var version1Content = BuildVersionContent(originalLines1, originalLines2, conflict.Content1, line1Index,
+			startIndex1, endIndex1, startIndex2, isVersion1: true);
+		var version2Content = BuildVersionContent(originalLines2, originalLines1, conflict.Content2, line2Index,
+			startIndex2, endIndex2, startIndex1, isVersion1: false);
+
+		// Truncate if needed
+		TruncateContentIfNeeded(version1Content, maxDisplayLines);
+		TruncateContentIfNeeded(version2Content, maxDisplayLines);
+
+		// Display the panels
+		DisplayConflictPanels(version1Content, version2Content);
+	}
+
+	/// <summary>
+	/// Determines the reference line index for consistent region display
+	/// </summary>
+	private static int DetermineReferenceLineIndex(int line1Index, int line2Index, int conflictLineNumber)
+	{
+		if (line1Index >= 0 && line2Index >= 0)
+		{
+			return line1Index; // Both found, use the first one
+		}
+
 		if (line1Index >= 0)
 		{
-			// Found the conflict line, show context around it
-			var startIndex = Math.Max(0, line1Index - contextLines);
-			var endIndex = Math.Min(originalLines1.Length - 1, line1Index + contextLines);
-
-			for (var i = startIndex; i <= endIndex; i++)
-			{
-				var isConflictLine = i == line1Index;
-				var lineContent = isConflictLine
-					? $"[red bold]{i + 1,4}: {originalLines1[i].EscapeMarkup()}[/]"
-					: $"[dim]{i + 1,4}: {originalLines1[i].EscapeMarkup()}[/]";
-				version1Content.Add(lineContent);
-			}
-		}
-		else if (conflict.Content1 == null)
-		{
-			// Handle deletion case - show that content was deleted
-			version1Content.Add($"[red bold]    : (deleted)[/]");
-		}
-		else
-		{
-			// Could not find the exact line, but we have content - try fuzzy matching or show best effort
-			var bestMatch = FindBestMatchingLine(originalLines1, conflict.Content1);
-			if (bestMatch >= 0)
-			{
-				var startIndex = Math.Max(0, bestMatch - contextLines);
-				var endIndex = Math.Min(originalLines1.Length - 1, bestMatch + contextLines);
-
-				for (var i = startIndex; i <= endIndex; i++)
-				{
-					var isMatchLine = i == bestMatch;
-					var lineContent = isMatchLine
-						? $"[red bold]{i + 1,4}: {originalLines1[i].EscapeMarkup()}[/]"
-						: $"[dim]{i + 1,4}: {originalLines1[i].EscapeMarkup()}[/]";
-					version1Content.Add(lineContent);
-				}
-			}
-			else
-			{
-				// Show the conflict content as it appears in the conflict
-				version1Content.Add($"[red bold]????: {conflict.Content1.EscapeMarkup()}[/]");
-				version1Content.Add($"[dim]     (content not found in original file)[/]");
-			}
+			return line1Index;
 		}
 
-		// Handle Version 2 display
 		if (line2Index >= 0)
 		{
-			// Found the conflict line, show context around it
-			var startIndex = Math.Max(0, line2Index - contextLines);
-			var endIndex = Math.Min(originalLines2.Length - 1, line2Index + contextLines);
-
-			for (var i = startIndex; i <= endIndex; i++)
-			{
-				var isConflictLine = i == line2Index;
-				var lineContent = isConflictLine
-					? $"[green bold]{i + 1,4}: {originalLines2[i].EscapeMarkup()}[/]"
-					: $"[dim]{i + 1,4}: {originalLines2[i].EscapeMarkup()}[/]";
-				version2Content.Add(lineContent);
-			}
+			return line2Index;
 		}
-		else if (conflict.Content2 == null)
-		{
-			// Handle addition case - show that content was added
-			version2Content.Add($"[green bold]    : (added)[/]");
-		}
-		else
-		{
-			// Could not find the exact line, but we have content - try fuzzy matching or show best effort
-			var bestMatch = FindBestMatchingLine(originalLines2, conflict.Content2);
-			if (bestMatch >= 0)
-			{
-				var startIndex = Math.Max(0, bestMatch - contextLines);
-				var endIndex = Math.Min(originalLines2.Length - 1, bestMatch + contextLines);
 
-				for (var i = startIndex; i <= endIndex; i++)
-				{
-					var isMatchLine = i == bestMatch;
-					var lineContent = isMatchLine
-						? $"[green bold]{i + 1,4}: {originalLines2[i].EscapeMarkup()}[/]"
-						: $"[dim]{i + 1,4}: {originalLines2[i].EscapeMarkup()}[/]";
-					version2Content.Add(lineContent);
-				}
+		return Math.Max(0, conflictLineNumber - 1); // Neither found, use conflict line number
+	}
+
+	/// <summary>
+	/// Builds content for one version, comparing against the other version
+	/// </summary>
+	private static List<string> BuildVersionContent(string[] currentLines, string[] otherLines, string? conflictContent,
+		int conflictLineIndex, int startIndex, int endIndex, int otherStartIndex, bool isVersion1)
+	{
+		var content = new List<string>();
+		var colors = isVersion1 ? ("red", "yellow") : ("green", "yellow");
+
+		// Handle case where conflict content is null (addition/deletion)
+		if (conflictContent == null)
+		{
+			if (isVersion1)
+			{
+				// This is a deletion case for Version 1
+				AddContextLinesWithComparison(content, currentLines, otherLines, startIndex, endIndex,
+					otherStartIndex, conflictLineIndex, colors);
+				content.Add($"[dim](deleted content)[/]");
 			}
 			else
 			{
-				// Show the conflict content as it appears in the conflict
-				version2Content.Add($"[green bold]????: {conflict.Content2.EscapeMarkup()}[/]");
-				version2Content.Add($"[dim]     (content not found in original file)[/]");
+				// This is an addition case for Version 2
+				AddContextLinesWithComparison(content, currentLines, otherLines, startIndex, endIndex,
+					otherStartIndex, conflictLineIndex, colors);
+				content.Add($"[{colors.Item1} bold](added content)[/]");
 			}
+			return content;
 		}
 
-		// Truncate display if too long, prioritizing conflict lines
-		if (version1Content.Count > maxDisplayLines)
+		// Handle case where conflict line was not found in this version
+		if (conflictLineIndex < 0)
 		{
-			var keepLines = Math.Min(maxDisplayLines, version1Content.Count);
-			version1Content = [.. version1Content.Take(keepLines), "[dim]... (truncated)[/]"];
+			// Show context around where the conflict should be, based on line number
+			var estimatedLine = Math.Max(0, Math.Min(currentLines.Length - 1, startIndex));
+			AddContextLinesWithComparison(content, currentLines, otherLines, startIndex, endIndex,
+				otherStartIndex, -1, colors);
+
+			// Add the conflict content with a "not found" indicator
+			content.Add($"[{colors.Item1} bold]---- {conflictContent.EscapeMarkup()} ----[/]");
+			content.Add($"[dim](conflict content not found in this version)[/]");
+			return content;
 		}
 
-		if (version2Content.Count > maxDisplayLines)
+		// Normal case: show context lines with the conflict highlighted
+		AddContextLinesWithComparison(content, currentLines, otherLines, startIndex, endIndex,
+			otherStartIndex, conflictLineIndex, colors);
+
+		return content;
+	}
+
+	/// <summary>
+	/// Adds context lines with comparison highlighting
+	/// </summary>
+	private static void AddContextLinesWithComparison(List<string> content, string[] currentLines, string[] otherLines,
+		int startIndex, int endIndex, int otherStartIndex, int conflictLineIndex, (string primary, string modified) colors)
+	{
+		for (var i = startIndex; i <= endIndex; i++)
 		{
-			var keepLines = Math.Min(maxDisplayLines, version2Content.Count);
-			version2Content = [.. version2Content.Take(keepLines), "[dim]... (truncated)[/]"];
-		}
+			if (i >= currentLines.Length)
+			{
+				continue;
+			}
 
-		// Create side-by-side layout without unnecessary alignment padding
+			var isConflictLine = i == conflictLineIndex;
+			var correspondingIndex = otherStartIndex + (i - startIndex);
+			var isModified = IsLineModified(currentLines, otherLines, i, correspondingIndex);
+
+			var lineContent = FormatLine(currentLines[i], i + 1, isConflictLine, isModified, colors);
+			content.Add(lineContent);
+		}
+	}
+
+	/// <summary>
+	/// Checks if a line is modified compared to the corresponding line in the other version
+	/// </summary>
+	private static bool IsLineModified(string[] currentLines, string[] otherLines, int currentIndex, int otherIndex)
+	{
+		return otherIndex >= 0 && otherIndex < otherLines.Length &&
+			   currentIndex < currentLines.Length &&
+			   currentLines[currentIndex] != otherLines[otherIndex];
+	}
+
+	/// <summary>
+	/// Formats a line with appropriate coloring
+	/// </summary>
+	private static string FormatLine(string line, int lineNumber, bool isConflictLine, bool isModified,
+		(string primary, string modified) colors)
+	{
+		return isConflictLine
+			? $"[{colors.primary} bold]{lineNumber,4}: {line.EscapeMarkup()}[/]"
+			: isModified
+				? $"[{colors.modified}]{lineNumber,4}: {line.EscapeMarkup()}[/]"
+				: $"[dim]{lineNumber,4}: {line.EscapeMarkup()}[/]";
+	}
+
+	/// <summary>
+	/// Truncates content if it exceeds the maximum display lines
+	/// </summary>
+	private static void TruncateContentIfNeeded(List<string> content, int maxDisplayLines)
+	{
+		if (content.Count > maxDisplayLines)
+		{
+			content.RemoveRange(maxDisplayLines - 1, content.Count - maxDisplayLines + 1);
+			content.Add("[dim]... (truncated)[/]");
+		}
+	}
+
+	/// <summary>
+	/// Displays the conflict panels side by side
+	/// </summary>
+	private static void DisplayConflictPanels(List<string> version1Content, List<string> version2Content)
+	{
 		var leftPanel = new Panel(string.Join("\n", version1Content))
 		{
 			Header = new PanelHeader("[red bold]Version 1[/]"),
@@ -1208,70 +1252,6 @@ public static class Program
 		{
 			Expand = false,
 		});
-	}
-
-	/// <summary>
-	/// Finds the best matching line for the given content using fuzzy matching
-	/// </summary>
-	/// <param name="lines">The file lines to search</param>
-	/// <param name="content">The content to find</param>
-	/// <returns>The line index if a reasonable match is found, -1 if not found</returns>
-	private static int FindBestMatchingLine(string[] lines, string? content)
-	{
-		if (content == null || lines.Length == 0)
-		{
-			return -1;
-		}
-
-		var contentTrimmed = content.Trim();
-		if (string.IsNullOrEmpty(contentTrimmed))
-		{
-			return -1;
-		}
-
-		// First try exact match on trimmed content
-		for (var i = 0; i < lines.Length; i++)
-		{
-			if (lines[i].Trim() == contentTrimmed)
-			{
-				return i;
-			}
-		}
-
-		// Try partial match - content contains line or line contains content
-		for (var i = 0; i < lines.Length; i++)
-		{
-			var lineTrimmed = lines[i].Trim();
-			if (!string.IsNullOrEmpty(lineTrimmed) &&
-				(contentTrimmed.Contains(lineTrimmed) || lineTrimmed.Contains(contentTrimmed)))
-			{
-				return i;
-			}
-		}
-
-		// Try word-based similarity for more flexible matching
-		var contentWords = contentTrimmed.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries);
-		var bestMatch = -1;
-		var bestScore = 0.0;
-
-		for (var i = 0; i < lines.Length; i++)
-		{
-			var lineWords = lines[i].Trim().Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries);
-			var commonWords = contentWords.Intersect(lineWords, StringComparer.OrdinalIgnoreCase).Count();
-			var totalWords = Math.Max(contentWords.Length, lineWords.Length);
-
-			if (totalWords > 0)
-			{
-				var score = (double)commonWords / totalWords;
-				if (score > bestScore && score >= 0.5) // At least 50% word similarity
-				{
-					bestScore = score;
-					bestMatch = i;
-				}
-			}
-		}
-
-		return bestMatch;
 	}
 
 	/// <summary>
