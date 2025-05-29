@@ -1604,6 +1604,7 @@ public static class HistoryInput
 				{
 					_inputHistory.AddToHistory(result);
 				}
+
 				return result;
 			}
 
@@ -1624,6 +1625,7 @@ public static class HistoryInput
 	/// Processes special keys (arrows, home, end, etc.)
 	/// </summary>
 	/// <returns>True if the key was handled, false otherwise</returns>
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0072:Add missing cases", Justification = "<Pending>")]
 	private static bool ProcessSpecialKey(ConsoleKeyInfo key, List<char> input, ref int historyIndex, ref int cursorPosition, string originalInput)
 	{
 		return key.Key switch
