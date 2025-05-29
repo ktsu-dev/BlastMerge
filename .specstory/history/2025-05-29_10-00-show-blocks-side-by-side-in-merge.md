@@ -1139,6 +1139,141 @@ I still have the same formatting issue. Let me check the exact line and fix it:
 
 ---
 
+Read file: DiffMore.ConsoleApp/Program.cs
+
+---
+
+I can see the issue - line 1157 is where we have the closing brace `}` followed immediately by `/// <summary>` without a blank line. Let me fix this:
+
+---
+
+
+
+---
+
+Let me try a different approach by targeting the specific area around the closing brace:
+
+---
+
+
+
+---
+
+Let me try using a simple text replacement command:
+
+---
+
+```bash
+(Get-Content "DiffMore.ConsoleApp/Program.cs") -replace "^\t}\r?\n\t/// <summary>", "`t}`n`n`t/// <summary>" | Set-Content "DiffMore.ConsoleApp/Program.cs"
+```
+
+```
+  20:07:51 main  ?1 ~2 
+
+
+```
+
+---
+
+Now let me build to see if the issue is fixed:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet build
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.sln                                    Restore (0.0s)
+                                                                                   (0.1s) 
+Restore complete (0.6s)
+  DiffMore.ConsoleApp failed with 1 error(s) (0.2s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1157,3): error IDE2003: Blank 
+line required between block and subsequent statement (https://learn.microsoft.com/dotnet/f
+undamentals/code-analysis/style-rules/ide2003)
+
+Build failed with 1 error(s) in 1.2s
+  10:07:57   DiffMore  1.485s   1 - ERROR 
+  20:07:57 main  ?1 ~2 
+ PS C:\dev\ktsu-dev\DiffMore >
+```
+
+---
+
+Let me try a different approach. Let me check if there are multiple instances of this pattern and fix them all:
+
+---
+
+_**User**_
+
+i fixed the build errors
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+Great! Let me verify that the build is now working and then we can test the enhanced interactive merge functionality.
+
+---
+
+```bash
+dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet build
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.sln                                    Restore (0.0s) 
+Restore complete (1.0s)
+  DiffMore.Core succeeded (0.2s) → DiffMore.Core\bin\Debug\net9.0\ktsu.DiffMore.Core.dll
+
+  DiffMore.ConsoleApp succeeded (0.3s) → DiffMore.ConsoleApp\bin\Debug\net9.0\ktsu.DiffMor
+e.ConsoleApp.dll
+  DiffMore.Test succeeded (0.1s) → DiffMore.Test\bin\Debug\net9.0\ktsu.DiffMore.Test.dll
+
+
+Build succeeded in 1.9s
+  10:10:17   DiffMore  2.158s  
+  20:10:17 main  +1 ~2 
+
+```
+
+---
+
+Perfect! The build is now successful. Let's test the enhanced interactive merge functionality that shows conflicts side by side with context. Let me create some test files to demonstrate this feature:
+
+---
+
+```bash
+mkdir TestMerge -Force
+```
+
+---
+
+_**User**_
+
+I dont think showing the sidebyside versions with context works properly
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+You're right! Let me analyze the issues with the current side-by-side implementation. The main problem is that the conflict line numbers from the merge result don't directly correspond to line numbers in the original files, and the way I'm trying to find the conflicting lines is too simplistic.
+
+Let me improve the implementation to properly extract context from the original files:
+
+---
+
 
 
 ---

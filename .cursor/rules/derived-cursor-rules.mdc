@@ -90,6 +90,7 @@ globs: *
 -   In BacktrackPath, implement a try/catch to handle IndexOutOfRangeException and fallback to a simple edit script if the algorithm fails.
 -   When using the Myers diff algorithm, add a specific check for empty files at the beginning of the `GetMyersDiff` method to avoid `IndexOutOfRangeException`.
 -   In GenerateGitStyleDiff, if the files are identical, return an empty string.
+-   When doing an interactive merge, show the blocks side by side with some context. The context should be extracted from the original file content, not the merged lines. The implementation should properly extract context from the original files.
 
 ## DEBUGGING
 
@@ -163,7 +164,6 @@ globs: *
 -   Implement an iterative merge feature for multiple file versions, where the two most similar versions are found and a visual TUI is offered for resolving the merge. This process is repeated until all versions are merged.
 -   When adding package references, use `dotnet add package <package_name>`
 -   When adding project references, use `dotnet add reference <project_path>`
--   When doing an interactive merge, show the blocks side by side with some context. The context should be extracted from the original file content, not the merged lines.
 
 ## DIRECTORY COMPARISON
 

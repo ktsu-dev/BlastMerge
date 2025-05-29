@@ -1086,79 +1086,118 @@ public static class Program
 	{
 		const int contextLines = 3; // Number of context lines before and after conflict
 
-		// Find the approximate line numbers in original files
-		// This is a simplified approach - we use the conflict line number as a reference
-		var conflictLineIndex = Math.Max(0, conflict.LineNumber - 1);
-
-		// For simplicity, we'll show context around the same line number in both files
-		// In a more sophisticated implementation, we'd track the actual mapping
-		var startContext1 = Math.Max(0, conflictLineIndex - contextLines);
-		var endContext1 = Math.Min(originalLines1.Length - 1, conflictLineIndex + contextLines);
-		var startContext2 = Math.Max(0, conflictLineIndex - contextLines);
-		var endContext2 = Math.Min(originalLines2.Length - 1, conflictLineIndex + contextLines);
+		// Find the actual lines in the original files that contain the conflicting content
+		var line1Index = FindLineInFile(originalLines1, conflict.Content1);
+		var line2Index = FindLineInFile(originalLines2, conflict.Content2);
 
 		// Build version 1 content (left side)
 		var version1Content = new List<string>();
 		var version2Content = new List<string>();
 
-		// Add context and highlight the conflict area
-		var maxLines = Math.Max(endContext1 - startContext1 + 1, endContext2 - startContext2 + 1);
-
-		for (var i = 0; i < maxLines; i++)
+		// Handle Version 1 display
+		if (line1Index >= 0)
 		{
-			var line1Index = startContext1 + i;
-			var line2Index = startContext2 + i;
+			// Found the conflict line, show context around it
+			var startIndex = Math.Max(0, line1Index - contextLines);
+			var endIndex = Math.Min(originalLines1.Length - 1, line1Index + contextLines);
 
-			// Version 1 content
-			if (line1Index <= endContext1 && line1Index < originalLines1.Length)
+			for (var i = startIndex; i <= endIndex; i++)
 			{
-				var line1 = originalLines1[line1Index];
-				var isConflictLine = line1 == conflict.Content1;
+				var isConflictLine = i == line1Index;
 				var lineContent = isConflictLine
-					? $"[red bold]{line1Index + 1,4}: {line1.EscapeMarkup()}[/]"
-					: $"[dim]{line1Index + 1,4}: {line1.EscapeMarkup()}[/]";
+					? $"[red bold]{i + 1,4}: {originalLines1[i].EscapeMarkup()}[/]"
+					: $"[dim]{i + 1,4}: {originalLines1[i].EscapeMarkup()}[/]";
 				version1Content.Add(lineContent);
 			}
-			else if (conflict.Content1 != null && i == contextLines)
+		}
+		else if (conflict.Content1 == null)
+		{
+			// Handle deletion case - show that content was deleted
+			version1Content.Add($"[red bold]    : (deleted)[/]");
+		}
+		else
+		{
+			// Could not find the exact line, but we have content - try fuzzy matching or show best effort
+			var bestMatch = FindBestMatchingLine(originalLines1, conflict.Content1);
+			if (bestMatch >= 0)
 			{
-				// Add the conflict content if it wasn't found in the original lines
-				version1Content.Add($"[red bold]{conflictLineIndex + 1,4}: {conflict.Content1.EscapeMarkup()}[/]");
+				var startIndex = Math.Max(0, bestMatch - contextLines);
+				var endIndex = Math.Min(originalLines1.Length - 1, bestMatch + contextLines);
+
+				for (var i = startIndex; i <= endIndex; i++)
+				{
+					var isMatchLine = i == bestMatch;
+					var lineContent = isMatchLine
+						? $"[red bold]{i + 1,4}: {originalLines1[i].EscapeMarkup()}[/]"
+						: $"[dim]{i + 1,4}: {originalLines1[i].EscapeMarkup()}[/]";
+					version1Content.Add(lineContent);
+				}
 			}
 			else
 			{
-				version1Content.Add($"[dim]{line1Index + 1,4}: [/]");
+				// Show the conflict content as it appears in the conflict
+				version1Content.Add($"[red bold]????: {conflict.Content1.EscapeMarkup()}[/]");
+				version1Content.Add($"[dim]     (content not found in original file)[/]");
 			}
+		}
 
-			// Version 2 content
-			if (line2Index <= endContext2 && line2Index < originalLines2.Length)
+		// Handle Version 2 display
+		if (line2Index >= 0)
+		{
+			// Found the conflict line, show context around it
+			var startIndex = Math.Max(0, line2Index - contextLines);
+			var endIndex = Math.Min(originalLines2.Length - 1, line2Index + contextLines);
+
+			for (var i = startIndex; i <= endIndex; i++)
 			{
-				var line2 = originalLines2[line2Index];
-				var isConflictLine = line2 == conflict.Content2;
+				var isConflictLine = i == line2Index;
 				var lineContent = isConflictLine
-					? $"[green bold]{line2Index + 1,4}: {line2.EscapeMarkup()}[/]"
-					: $"[dim]{line2Index + 1,4}: {line2.EscapeMarkup()}[/]";
+					? $"[green bold]{i + 1,4}: {originalLines2[i].EscapeMarkup()}[/]"
+					: $"[dim]{i + 1,4}: {originalLines2[i].EscapeMarkup()}[/]";
 				version2Content.Add(lineContent);
 			}
-			else if (conflict.Content2 != null && i == contextLines)
+		}
+		else if (conflict.Content2 == null)
+		{
+			// Handle addition case - show that content was added
+			version2Content.Add($"[green bold]    : (added)[/]");
+		}
+		else
+		{
+			// Could not find the exact line, but we have content - try fuzzy matching or show best effort
+			var bestMatch = FindBestMatchingLine(originalLines2, conflict.Content2);
+			if (bestMatch >= 0)
 			{
-				// Add the conflict content if it wasn't found in the original lines
-				version2Content.Add($"[green bold]{conflictLineIndex + 1,4}: {conflict.Content2.EscapeMarkup()}[/]");
+				var startIndex = Math.Max(0, bestMatch - contextLines);
+				var endIndex = Math.Min(originalLines2.Length - 1, bestMatch + contextLines);
+
+				for (var i = startIndex; i <= endIndex; i++)
+				{
+					var isMatchLine = i == bestMatch;
+					var lineContent = isMatchLine
+						? $"[green bold]{i + 1,4}: {originalLines2[i].EscapeMarkup()}[/]"
+						: $"[dim]{i + 1,4}: {originalLines2[i].EscapeMarkup()}[/]";
+					version2Content.Add(lineContent);
+				}
 			}
 			else
 			{
-				version2Content.Add($"[dim]{line2Index + 1,4}: [/]");
+				// Show the conflict content as it appears in the conflict
+				version2Content.Add($"[green bold]????: {conflict.Content2.EscapeMarkup()}[/]");
+				version2Content.Add($"[dim]     (content not found in original file)[/]");
 			}
 		}
 
-		// Special handling for deletions and additions
-		if (conflict.Content1 == null)
+		// Ensure both sides have the same number of lines for better alignment
+		var maxLines = Math.Max(version1Content.Count, version2Content.Count);
+		while (version1Content.Count < maxLines)
 		{
-			version1Content.Add($"[red bold]{conflictLineIndex + 1,4}: (deleted)[/]");
+			version1Content.Add($"[dim]    : [/]");
 		}
 
-		if (conflict.Content2 == null)
+		while (version2Content.Count < maxLines)
 		{
-			version2Content.Add($"[green bold]{conflictLineIndex + 1,4}: (added)[/]");
+			version2Content.Add($"[dim]    : [/]");
 		}
 
 		// Create side-by-side layout
@@ -1185,6 +1224,125 @@ public static class Program
 
 		AnsiConsole.Write(layout);
 		AnsiConsole.WriteLine();
+	}
+
+	/// <summary>
+	/// Finds the best matching line for the given content using fuzzy matching
+	/// </summary>
+	/// <param name="lines">The file lines to search</param>
+	/// <param name="content">The content to find</param>
+	/// <returns>The line index if a reasonable match is found, -1 if not found</returns>
+	private static int FindBestMatchingLine(string[] lines, string? content)
+	{
+		if (content == null || lines.Length == 0)
+		{
+			return -1;
+		}
+
+		var contentTrimmed = content.Trim();
+		if (string.IsNullOrEmpty(contentTrimmed))
+		{
+			return -1;
+		}
+
+		// First try exact match on trimmed content
+		for (var i = 0; i < lines.Length; i++)
+		{
+			if (lines[i].Trim() == contentTrimmed)
+			{
+				return i;
+			}
+		}
+
+		// Try partial match - content contains line or line contains content
+		for (var i = 0; i < lines.Length; i++)
+		{
+			var lineTrimmed = lines[i].Trim();
+			if (!string.IsNullOrEmpty(lineTrimmed) &&
+				(contentTrimmed.Contains(lineTrimmed) || lineTrimmed.Contains(contentTrimmed)))
+			{
+				return i;
+			}
+		}
+
+		// Try word-based similarity for more flexible matching
+		var contentWords = contentTrimmed.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries);
+		var bestMatch = -1;
+		var bestScore = 0.0;
+
+		for (var i = 0; i < lines.Length; i++)
+		{
+			var lineWords = lines[i].Trim().Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries);
+			var commonWords = contentWords.Intersect(lineWords, StringComparer.OrdinalIgnoreCase).Count();
+			var totalWords = Math.Max(contentWords.Length, lineWords.Length);
+
+			if (totalWords > 0)
+			{
+				var score = (double)commonWords / totalWords;
+				if (score > bestScore && score >= 0.5) // At least 50% word similarity
+				{
+					bestScore = score;
+					bestMatch = i;
+				}
+			}
+		}
+
+		return bestMatch;
+	}
+
+	/// <summary>
+	/// Finds the line index of the given content in the file lines
+	/// </summary>
+	/// <param name="lines">The file lines to search</param>
+	/// <param name="content">The content to find</param>
+	/// <returns>The line index if found, -1 if not found</returns>
+	private static int FindLineInFile(string[] lines, string? content)
+	{
+		if (content == null || lines.Length == 0)
+		{
+			return -1;
+		}
+
+		// First try exact match
+		for (var i = 0; i < lines.Length; i++)
+		{
+			if (lines[i] == content)
+			{
+				return i;
+			}
+		}
+
+		// Try exact match on trimmed content
+		var contentTrimmed = content.Trim();
+		for (var i = 0; i < lines.Length; i++)
+		{
+			if (lines[i].Trim() == contentTrimmed)
+			{
+				return i;
+			}
+		}
+
+		// If exact match not found, try to find a line that contains the content
+		for (var i = 0; i < lines.Length; i++)
+		{
+			if (lines[i].Contains(content) || content.Contains(lines[i]))
+			{
+				return i;
+			}
+		}
+
+		// Try trimmed partial matching
+		for (var i = 0; i < lines.Length; i++)
+		{
+			var lineTrimmed = lines[i].Trim();
+			if (!string.IsNullOrEmpty(lineTrimmed) &&
+				(contentTrimmed.Contains(lineTrimmed) || lineTrimmed.Contains(contentTrimmed)))
+			{
+				return i;
+			}
+		}
+
+		return -1;
 	}
 
 	/// <summary>
