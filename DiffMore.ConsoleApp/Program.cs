@@ -777,7 +777,7 @@ public static class Program
 
 				// Group files by hash to find unique versions
 				var fileGroups = FileDiffer.GroupFilesByHash(files);
-				uniqueGroups = new List<FileGroup>(fileGroups.Where(g => g.FilePaths.Count >= 1));
+				uniqueGroups = [.. fileGroups.Where(g => g.FilePaths.Count >= 1)];
 
 				if (uniqueGroups.Count < 2)
 				{
@@ -983,46 +983,52 @@ public static class Program
 			AnsiConsole.WriteLine();
 
 			var blockNumber = 1;
+			var lastProcessedLine1 = 0;
+			var lastProcessedLine2 = 0;
 
 			// Convert differences to our custom block format
-			var blocks = ConvertDifferencesToBlocks(differences, lines1, lines2);
+			var blocks = ConvertDifferencesToBlocks(differences);
 
 			foreach (var block in blocks)
 			{
+				// Add unchanged lines between blocks (equal content)
+				AddEqualLinesBetweenBlocks(lines1, lines2, ref lastProcessedLine1, ref lastProcessedLine2,
+					block, mergedLines);
+
 				switch (block.Type)
 				{
-					case BlockType.Equal:
-						// Add equal lines directly
-						for (var i = 0; i < block.Lines.Count; i++)
-						{
-							mergedLines.Add(block.Lines[i]);
-						}
-						break;
-
 					case BlockType.Insert:
-						// Show insertion and ask user
-						HandleInsertionBlock(block.Lines.ToArray(), 0, block.Lines.Count, mergedLines, blockNumber);
-						blockNumber++;
+						HandleInsertionBlockWithContext(lines1, lines2, block, mergedLines, blockNumber);
 						break;
 
 					case BlockType.Delete:
-						// Show deletion and ask user
-						HandleDeletionBlock(block.Lines.ToArray(), 0, block.Lines.Count, mergedLines, blockNumber);
-						blockNumber++;
+						HandleDeletionBlockWithContext(lines1, lines2, block, mergedLines, blockNumber);
 						break;
 
 					case BlockType.Replace:
-						// Show replacement and ask user
-						HandleReplacementBlock(block.Lines1.ToArray(), block.Lines2.ToArray(), 0, 0,
-							block.Lines1.Count, block.Lines2.Count, mergedLines, blockNumber);
-						blockNumber++;
+						HandleReplacementBlockWithContext(lines1, lines2, block, mergedLines, blockNumber);
 						break;
 
 					default:
 						// Handle unexpected block types
 						break;
 				}
+
+				// Update last processed line numbers
+				if (block.LineNumbers1.Count > 0)
+				{
+					lastProcessedLine1 = block.LineNumbers1.Max();
+				}
+				if (block.LineNumbers2.Count > 0)
+				{
+					lastProcessedLine2 = block.LineNumbers2.Max();
+				}
+
+				blockNumber++;
 			}
+
+			// Add any remaining equal lines after the last block
+			AddRemainingEqualLines(lines1, lines2, lastProcessedLine1, lastProcessedLine2, mergedLines);
 
 			return new MergeResult
 			{
@@ -1045,69 +1051,88 @@ public static class Program
 	}
 
 	/// <summary>
-	/// Represents a block type for manual selection
+	/// Adds unchanged lines between blocks
 	/// </summary>
-	private enum BlockType
+	private static void AddEqualLinesBetweenBlocks(string[] lines1, string[] lines2, ref int lastProcessedLine1,
+		ref int lastProcessedLine2, DiffBlock block, List<string> mergedLines)
 	{
-		Equal,
-		Insert,
-		Delete,
-		Replace
-	}
+		var nextLine1 = block.LineNumbers1.Count > 0 ? block.LineNumbers1.Min() : lines1.Length + 1;
+		var nextLine2 = block.LineNumbers2.Count > 0 ? block.LineNumbers2.Min() : lines2.Length + 1;
 
-	/// <summary>
-	/// Represents a diff block for manual selection
-	/// </summary>
-	private class DiffBlock
-	{
-		public BlockType Type { get; set; }
-		public List<string> Lines { get; set; } = [];
-		public List<string> Lines1 { get; set; } = [];
-		public List<string> Lines2 { get; set; } = [];
-	}
+		// Add equal lines from the last processed line to the current block
+		var equalLinesEnd1 = Math.Min(nextLine1 - 1, lines1.Length);
+		var equalLinesEnd2 = Math.Min(nextLine2 - 1, lines2.Length);
 
-	/// <summary>
-	/// Converts line differences to blocks for manual selection
-	/// </summary>
-	private static List<DiffBlock> ConvertDifferencesToBlocks(IReadOnlyCollection<LineDifference> differences, string[] lines1, string[] lines2)
-	{
-		var blocks = new List<DiffBlock>();
-		var sortedDifferences = differences.OrderBy(d => Math.Max(d.LineNumber1, d.LineNumber2)).ToList();
-
-		foreach (var diff in sortedDifferences)
+		for (var i = lastProcessedLine1; i < equalLinesEnd1 && i < equalLinesEnd2; i++)
 		{
-			// Handle the difference
-			if (diff.LineNumber1 > 0 && diff.LineNumber2 > 0)
+			if (i < lines1.Length && i < lines2.Length && lines1[i] == lines2[i])
 			{
-				// Both files have content - this is a replacement
-				blocks.Add(new DiffBlock
-				{
-					Type = BlockType.Replace,
-					Lines1 = new List<string> { diff.Content1 ?? "" },
-					Lines2 = new List<string> { diff.Content2 ?? "" }
-				});
-			}
-			else if (diff.LineNumber1 > 0)
-			{
-				// Line only in first file - deletion
-				blocks.Add(new DiffBlock
-				{
-					Type = BlockType.Delete,
-					Lines = new List<string> { diff.Content1 ?? "" }
-				});
-			}
-			else if (diff.LineNumber2 > 0)
-			{
-				// Line only in second file - insertion
-				blocks.Add(new DiffBlock
-				{
-					Type = BlockType.Insert,
-					Lines = new List<string> { diff.Content2 ?? "" }
-				});
+				mergedLines.Add(lines1[i]);
 			}
 		}
 
-		return blocks;
+		// Update the last processed line for version 2 as well
+		lastProcessedLine2 = Math.Max(lastProcessedLine2, equalLinesEnd2);
+	}
+
+	/// <summary>
+	/// Adds remaining equal lines after all blocks have been processed
+	/// </summary>
+	private static void AddRemainingEqualLines(string[] lines1, string[] lines2, int lastProcessedLine1,
+		int lastProcessedLine2, List<string> mergedLines)
+	{
+		var remainingLines = Math.Min(lines1.Length - lastProcessedLine1, lines2.Length - lastProcessedLine2);
+
+		for (var i = 0; i < remainingLines; i++)
+		{
+			var line1Index = lastProcessedLine1 + i;
+			var line2Index = lastProcessedLine2 + i;
+
+			if (line1Index < lines1.Length && line2Index < lines2.Length &&
+				lines1[line1Index] == lines2[line2Index])
+			{
+				mergedLines.Add(lines1[line1Index]);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Gets context lines around a block
+	/// </summary>
+	private static (string[] contextBefore1, string[] contextAfter1, string[] contextBefore2, string[] contextAfter2)
+		GetContextLines(string[] lines1, string[] lines2, DiffBlock block, int contextSize = 3)
+	{
+		var startLine1 = block.LineNumbers1.Count > 0 ? block.LineNumbers1.Min() - 1 : 0;
+		var endLine1 = block.LineNumbers1.Count > 0 ? block.LineNumbers1.Max() - 1 : 0;
+		var startLine2 = block.LineNumbers2.Count > 0 ? block.LineNumbers2.Min() - 1 : 0;
+		var endLine2 = block.LineNumbers2.Count > 0 ? block.LineNumbers2.Max() - 1 : 0;
+
+		// Context before
+		var contextBefore1 = GetLinesInRange(lines1, Math.Max(0, startLine1 - contextSize), startLine1);
+		var contextAfter1 = GetLinesInRange(lines1, endLine1 + 1, Math.Min(lines1.Length, endLine1 + 1 + contextSize));
+
+		var contextBefore2 = GetLinesInRange(lines2, Math.Max(0, startLine2 - contextSize), startLine2);
+		var contextAfter2 = GetLinesInRange(lines2, endLine2 + 1, Math.Min(lines2.Length, endLine2 + 1 + contextSize));
+
+		return (contextBefore1, contextAfter1, contextBefore2, contextAfter2);
+	}
+
+	/// <summary>
+	/// Gets lines in a specific range from an array
+	/// </summary>
+	private static string[] GetLinesInRange(string[] lines, int start, int end)
+	{
+		if (start >= end || start >= lines.Length || end <= 0)
+		{
+			return [];
+		}
+
+		var actualStart = Math.Max(0, start);
+		var actualEnd = Math.Min(lines.Length, end);
+		var result = new string[actualEnd - actualStart];
+
+		Array.Copy(lines, actualStart, result, 0, actualEnd - actualStart);
+		return result;
 	}
 
 	/// <summary>
@@ -1175,10 +1200,136 @@ public static class Program
 	}
 
 	/// <summary>
+	/// Represents a block type for manual selection
+	/// </summary>
+	private enum BlockType
+	{
+		Insert,
+		Delete,
+		Replace
+	}
+
+	/// <summary>
+	/// Represents a diff block for manual selection
+	/// </summary>
+	private class DiffBlock
+	{
+		public BlockType Type { get; set; }
+		public List<string> Lines1 { get; set; } = [];
+		public List<string> Lines2 { get; set; } = [];
+		public List<int> LineNumbers1 { get; set; } = [];
+		public List<int> LineNumbers2 { get; set; } = [];
+
+		public int LastLineNumber1 => LineNumbers1.Count > 0 ? LineNumbers1.Last() : 0;
+		public int LastLineNumber2 => LineNumbers2.Count > 0 ? LineNumbers2.Last() : 0;
+	}
+
+	/// <summary>
+	/// Converts line differences to blocks for manual selection
+	/// </summary>
+	private static List<DiffBlock> ConvertDifferencesToBlocks(IReadOnlyCollection<LineDifference> differences)
+	{
+		var blocks = new List<DiffBlock>();
+		var sortedDifferences = differences.OrderBy(d => Math.Max(d.LineNumber1, d.LineNumber2)).ToList();
+
+		if (sortedDifferences.Count == 0)
+		{
+			return blocks;
+		}
+
+		var currentBlock = new DiffBlock();
+		var isFirstDifference = true;
+
+		foreach (var diff in sortedDifferences)
+		{
+			// If this is the first difference or it's contiguous with the previous one
+			if (isFirstDifference || IsContiguousDifference(currentBlock, diff))
+			{
+				AddDifferenceToBlock(currentBlock, diff);
+				isFirstDifference = false;
+			}
+			else
+			{
+				// Finalize the current block and start a new one
+				if (currentBlock.Lines1.Count > 0 || currentBlock.Lines2.Count > 0)
+				{
+					blocks.Add(currentBlock);
+				}
+
+				currentBlock = new DiffBlock();
+				AddDifferenceToBlock(currentBlock, diff);
+			}
+		}
+
+		// Add the final block
+		if (currentBlock.Lines1.Count > 0 || currentBlock.Lines2.Count > 0)
+		{
+			blocks.Add(currentBlock);
+		}
+
+		return blocks;
+	}
+
+	/// <summary>
+	/// Checks if a difference is contiguous with the current block
+	/// </summary>
+	private static bool IsContiguousDifference(DiffBlock currentBlock, LineDifference diff)
+	{
+		if (currentBlock.Lines1.Count == 0 && currentBlock.Lines2.Count == 0)
+		{
+			return true;
+		}
+
+		// Get the last line numbers from the current block
+		var lastLine1 = currentBlock.LastLineNumber1;
+		var lastLine2 = currentBlock.LastLineNumber2;
+
+		// Consider differences contiguous if they're within 1 line of each other
+		var isContiguous1 = diff.LineNumber1 <= 0 || lastLine1 <= 0 || Math.Abs(diff.LineNumber1 - lastLine1) <= 1;
+		var isContiguous2 = diff.LineNumber2 <= 0 || lastLine2 <= 0 || Math.Abs(diff.LineNumber2 - lastLine2) <= 1;
+
+		return isContiguous1 && isContiguous2;
+	}
+
+	/// <summary>
+	/// Adds a difference to the current block
+	/// </summary>
+	private static void AddDifferenceToBlock(DiffBlock currentBlock, LineDifference diff)
+	{
+		if (diff.LineNumber1 > 0 && !string.IsNullOrEmpty(diff.Content1))
+		{
+			currentBlock.Lines1.Add(diff.Content1);
+			currentBlock.LineNumbers1.Add(diff.LineNumber1);
+		}
+
+		if (diff.LineNumber2 > 0 && !string.IsNullOrEmpty(diff.Content2))
+		{
+			currentBlock.Lines2.Add(diff.Content2);
+			currentBlock.LineNumbers2.Add(diff.LineNumber2);
+		}
+
+		// Determine block type
+		if (currentBlock.Lines1.Count > 0 && currentBlock.Lines2.Count > 0)
+		{
+			currentBlock.Type = BlockType.Replace;
+		}
+		else if (currentBlock.Lines1.Count > 0)
+		{
+			currentBlock.Type = BlockType.Delete;
+		}
+		else if (currentBlock.Lines2.Count > 0)
+		{
+			currentBlock.Type = BlockType.Insert;
+		}
+	}
+
+	/// <summary>
 	/// Handles an insertion block (content only in version 2)
 	/// </summary>
-	private static void HandleInsertionBlock(string[] lines2, int startIndex, int length, List<string> mergedLines, int blockNumber)
+	private static void HandleInsertionBlockWithContext(string[] lines1, string[] lines2, DiffBlock block, List<string> mergedLines, int blockNumber)
 	{
+		var (contextBefore1, contextAfter1, contextBefore2, contextAfter2) = GetContextLines(lines1, lines2, block);
+
 		var rule = new Rule($"[bold green]Block {blockNumber}: Addition in Version 2[/]")
 		{
 			Style = Style.Parse("green")
@@ -1186,9 +1337,27 @@ public static class Program
 		AnsiConsole.Write(rule);
 
 		// Show the insertion content
-		var panel = new Panel(string.Join("\n", lines2.Skip(startIndex).Take(length).Select((line, i) => $"{startIndex + i + 1,4}: {line.EscapeMarkup()}")))
+		var panel = new Panel(string.Join("\n", contextBefore2.Select((line, i) => $"{i + 1,4}: {line.EscapeMarkup()}")))
+		{
+			Header = new PanelHeader("[green bold]Context before[/]"),
+			Border = BoxBorder.Rounded,
+			BorderStyle = Style.Parse("green")
+		};
+
+		AnsiConsole.Write(panel);
+
+		panel = new Panel(string.Join("\n", block.Lines2.Select((line, i) => $"{i + 1,4}: {line.EscapeMarkup()}")))
 		{
 			Header = new PanelHeader("[green bold]Content to Add[/]"),
+			Border = BoxBorder.Rounded,
+			BorderStyle = Style.Parse("green")
+		};
+
+		AnsiConsole.Write(panel);
+
+		panel = new Panel(string.Join("\n", contextAfter2.Select((line, i) => $"{i + 1,4}: {line.EscapeMarkup()}")))
+		{
+			Header = new PanelHeader("[green bold]Context after[/]"),
 			Border = BoxBorder.Rounded,
 			BorderStyle = Style.Parse("green")
 		};
@@ -1205,9 +1374,9 @@ public static class Program
 
 		if (choice.Contains("Include"))
 		{
-			for (var i = 0; i < length; i++)
+			for (var i = 0; i < block.Lines2.Count; i++)
 			{
-				mergedLines.Add(lines2[startIndex + i]);
+				mergedLines.Add(block.Lines2[i]);
 			}
 			AnsiConsole.MarkupLine("[green]✓ Content included[/]");
 		}
@@ -1222,8 +1391,10 @@ public static class Program
 	/// <summary>
 	/// Handles a deletion block (content only in version 1)
 	/// </summary>
-	private static void HandleDeletionBlock(string[] lines1, int startIndex, int length, List<string> mergedLines, int blockNumber)
+	private static void HandleDeletionBlockWithContext(string[] lines1, string[] lines2, DiffBlock block, List<string> mergedLines, int blockNumber)
 	{
+		var (contextBefore1, contextAfter1, contextBefore2, contextAfter2) = GetContextLines(lines1, lines2, block);
+
 		var rule = new Rule($"[bold red]Block {blockNumber}: Deletion from Version 1[/]")
 		{
 			Style = Style.Parse("red")
@@ -1231,9 +1402,27 @@ public static class Program
 		AnsiConsole.Write(rule);
 
 		// Show the deletion content
-		var panel = new Panel(string.Join("\n", lines1.Skip(startIndex).Take(length).Select((line, i) => $"{startIndex + i + 1,4}: {line.EscapeMarkup()}")))
+		var panel = new Panel(string.Join("\n", contextBefore1.Select((line, i) => $"{i + 1,4}: {line.EscapeMarkup()}")))
+		{
+			Header = new PanelHeader("[red bold]Context before[/]"),
+			Border = BoxBorder.Rounded,
+			BorderStyle = Style.Parse("red")
+		};
+
+		AnsiConsole.Write(panel);
+
+		panel = new Panel(string.Join("\n", block.Lines1.Select((line, i) => $"{i + 1,4}: {line.EscapeMarkup()}")))
 		{
 			Header = new PanelHeader("[red bold]Content to Remove[/]"),
+			Border = BoxBorder.Rounded,
+			BorderStyle = Style.Parse("red")
+		};
+
+		AnsiConsole.Write(panel);
+
+		panel = new Panel(string.Join("\n", contextAfter1.Select((line, i) => $"{i + 1,4}: {line.EscapeMarkup()}")))
+		{
+			Header = new PanelHeader("[red bold]Context after[/]"),
 			Border = BoxBorder.Rounded,
 			BorderStyle = Style.Parse("red")
 		};
@@ -1250,9 +1439,9 @@ public static class Program
 
 		if (choice.Contains("Keep"))
 		{
-			for (var i = 0; i < length; i++)
+			for (var i = 0; i < block.Lines1.Count; i++)
 			{
-				mergedLines.Add(lines1[startIndex + i]);
+				mergedLines.Add(block.Lines1[i]);
 			}
 			AnsiConsole.MarkupLine("[green]✓ Content kept[/]");
 		}
@@ -1267,9 +1456,10 @@ public static class Program
 	/// <summary>
 	/// Handles a replacement block (different content in both versions)
 	/// </summary>
-	private static void HandleReplacementBlock(string[] lines1, string[] lines2, int startIndex1, int startIndex2,
-		int length1, int length2, List<string> mergedLines, int blockNumber)
+	private static void HandleReplacementBlockWithContext(string[] lines1, string[] lines2, DiffBlock block, List<string> mergedLines, int blockNumber)
 	{
+		var (contextBefore1, contextAfter1, contextBefore2, contextAfter2) = GetContextLines(lines1, lines2, block);
+
 		var rule = new Rule($"[bold yellow]Block {blockNumber}: Different Content[/]")
 		{
 			Style = Style.Parse("yellow")
@@ -1277,8 +1467,12 @@ public static class Program
 		AnsiConsole.Write(rule);
 
 		// Show both versions side by side
-		var version1Content = string.Join("\n", lines1.Skip(startIndex1).Take(length1).Select((line, i) => $"{startIndex1 + i + 1,4}: {line.EscapeMarkup()}"));
-		var version2Content = string.Join("\n", lines2.Skip(startIndex2).Take(length2).Select((line, i) => $"{startIndex2 + i + 1,4}: {line.EscapeMarkup()}"));
+		var version1Content = string.Join("\n", contextBefore1.Select((line, i) => $"{i + 1,4}: {line.EscapeMarkup()}")
+			.Concat(block.Lines1.Select((line, i) => $"{i + 1,4}: {line.EscapeMarkup()}"))
+			.Concat(contextAfter1.Select((line, i) => $"{i + 1,4}: {line.EscapeMarkup()}")));
+		var version2Content = string.Join("\n", contextBefore2.Select((line, i) => $"{i + 1,4}: {line.EscapeMarkup()}")
+			.Concat(block.Lines2.Select((line, i) => $"{i + 1,4}: {line.EscapeMarkup()}"))
+			.Concat(contextAfter2.Select((line, i) => $"{i + 1,4}: {line.EscapeMarkup()}")));
 
 		var leftPanel = new Panel(version1Content)
 		{
@@ -1311,31 +1505,31 @@ public static class Program
 
 		if (choice.Contains("Use Version 1"))
 		{
-			for (var i = 0; i < length1; i++)
+			for (var i = 0; i < block.Lines1.Count; i++)
 			{
-				mergedLines.Add(lines1[startIndex1 + i]);
+				mergedLines.Add(block.Lines1[i]);
 			}
 			AnsiConsole.MarkupLine("[red]✓ Version 1 selected[/]");
 		}
 		else if (choice.Contains("Use Version 2"))
 		{
-			for (var i = 0; i < length2; i++)
+			for (var i = 0; i < block.Lines2.Count; i++)
 			{
-				mergedLines.Add(lines2[startIndex2 + i]);
+				mergedLines.Add(block.Lines2[i]);
 			}
 			AnsiConsole.MarkupLine("[green]✓ Version 2 selected[/]");
 		}
 		else if (choice.Contains("Use Both"))
 		{
 			// Add Version 1 first
-			for (var i = 0; i < length1; i++)
+			for (var i = 0; i < block.Lines1.Count; i++)
 			{
-				mergedLines.Add(lines1[startIndex1 + i]);
+				mergedLines.Add(block.Lines1[i]);
 			}
 			// Then add Version 2
-			for (var i = 0; i < length2; i++)
+			for (var i = 0; i < block.Lines2.Count; i++)
 			{
-				mergedLines.Add(lines2[startIndex2 + i]);
+				mergedLines.Add(block.Lines2[i]);
 			}
 			AnsiConsole.MarkupLine("[yellow]✓ Both versions included[/]");
 		}

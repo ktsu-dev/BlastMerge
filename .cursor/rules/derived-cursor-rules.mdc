@@ -30,6 +30,7 @@ globs: *
 -   Spectre.Console
 -   Spectre.Console.Cli
 -   System.Text.Json
+-   LibGit2Sharp Version="0.31.0"
 
 ## PROJECT DOCUMENTATION & CONTEXT SYSTEM
 
@@ -95,6 +96,7 @@ globs: *
 -   When doing an interactive merge, show the blocks side by side with some context. The context should be extracted from the original file content, not the merged lines. The implementation should properly extract context from the original files.
 -   In GenerateGitStyleDiff, ensure the application doesn't add a lot of blank lines after a diff.
 -   The program should guide the user to do a manual merge by showing the differences and asking which block to take, instead of doing an automatic merge with manual conflict resolution.
+-   Where there is a contiguous block of changed lines, they should all be shown at the same time, allow the user to compare the two versions with 3 context lines so the user can choose which versions block to keep
 
 ## DEBUGGING
 
@@ -218,3 +220,6 @@ globs: *
             -   Version 1: Uses red for primary conflicts and yellow for modified lines.
             -   Version 2: Uses green for primary conflicts and yellow for modified lines.
             -   Context lines: Uses dim gray for unchanged content.
+-   When doing an interactive merge, contiguous changed lines should be grouped together and shown with 3 lines of context for better comparison.
+    -   Changed lines that are adjacent or within 1 line of each other are grouped into single blocks.
+    -   Each block shows 3 lines before and 3 lines after the changes.
