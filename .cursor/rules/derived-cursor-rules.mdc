@@ -64,6 +64,7 @@ globs: *
 -   Use primary constructors (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0290)
 -   Change return type of method 'FindDifferences' from 'System.Collections.Generic.IReadOnlyCollection<ktsu.DiffMore.Core.LineDifference>' to 'System.Collections.ObjectModel.ReadOnlyCollection<ktsu.DiffMore.Core.LineDifference>' for improved performance (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1859)
 -   'MakeConflictColumnLayout' has a cyclomatic complexity of '49'. Refactor the code to decrease its complexity.
+-   The console app must only contain code for input handling and display. All the work must be done in the core library in case we want to implement another type of UI in the future.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -97,6 +98,12 @@ globs: *
 -   In GenerateGitStyleDiff, ensure the application doesn't add a lot of blank lines after a diff.
 -   The program should guide the user to do a manual merge by showing the differences and asking which block to take, instead of doing an automatic merge with manual conflict resolution.
 -   Where there is a contiguous block of changed lines, they should all be shown at the same time, allow the user to compare the two versions with 3 context lines so the user can choose which versions block to keep
+-   **Implementation**: The DiffMore project currently has extensive custom diffing functionality in `FileDiffer.cs`. Rather than completely replacing the custom diffing, a hybrid approach is recommended:
+    1.  **LibGit2Sharp Integration Layer**: Create a class `LibGit2SharpDiffer` to implements Git-based diffing functionality using LibGit2Sharp.
+    2.  **API Compatibility**: Maintain existing API by keeping current `FileDiffer` methods working and adding LibGit2Sharp alternatives, offering a gradual migration path.
+-   **Migration to LibGit2Sharp**: The bespoke diffing functionality has been replaced with LibGit2Sharp. The original `FileDiffer` class maintains API compatibility by delegating calls to the `LibGit2SharpDiffer` class. A hybrid approach is used for a gradual migration.
+-   The custom Myers diff algorithm implementation has been removed.
+-   The EditOperation enum has been removed.
 
 ## DEBUGGING
 
