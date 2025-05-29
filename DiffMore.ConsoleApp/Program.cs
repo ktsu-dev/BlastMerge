@@ -898,8 +898,15 @@ public static class Program
 			.Border(TableBorder.Rounded)
 			.Expand();
 
+		// Calculate correct starting line numbers for context before the block
+		var firstLine1 = block.LineNumbers1.Count > 0 ? block.LineNumbers1.Min() : 1;
+		var firstLine2 = block.LineNumbers2.Count > 0 ? block.LineNumbers2.Min() : 1;
+
+		var contextStartLine1 = Math.Max(1, firstLine1 - context.ContextBefore1.Count);
+		var contextStartLine2 = Math.Max(1, firstLine2 - context.ContextBefore2.Count);
+
 		// Show context before the block
-		ShowContextLines(table, [.. context.ContextBefore1], [.. context.ContextBefore2], 1, 1);
+		ShowContextLines(table, [.. context.ContextBefore1], [.. context.ContextBefore2], contextStartLine1, contextStartLine2);
 
 		// Show the actual diff block
 		ShowDiffBlock(table, block);

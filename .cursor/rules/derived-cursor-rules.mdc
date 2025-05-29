@@ -66,6 +66,7 @@ globs: *
 -   'MakeConflictColumnLayout' has a cyclomatic complexity of '49'. Refactor the code to decrease its complexity.
 -   The console app must only contain code for input handling and display. All the work must be done in the core library in case we want to implement another type of UI in the future.
 -   The current side-by-side diff implementation is incomplete, and the sophisticated version of the `BuildVersionContent` method and supporting methods like `FindLineInFile`, `FindBestMatchingLine`, and `AddContextLinesWithComparison` are missing. These methods must be implemented to ensure proper side-by-side diff display.
+-   When displaying diffs in a side-by-side format, ensure that the prologue (initial context lines) shows the correct context around the differences, and not hardcoded line numbers.
 
 ## FILE & DIRECTORY HANDLING
 
