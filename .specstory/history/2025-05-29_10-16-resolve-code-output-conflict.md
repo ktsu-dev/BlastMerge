@@ -841,6 +841,571 @@ Now I need to replace the existing `AnsiConsole.Ask<string>()` calls with the ne
 
 ---
 
+```diff
+  	private static void CompareFilesInDirectory()
+  	{
+- 		var directory = AnsiConsole.Ask<string>("[cyan]Enter the directory path:[/]");
++ 		var directory = HistoryInput.AskWithHistory("[cyan]Enter the directory path:[/]");
+  
+  		if (!Directory.Exists(directory))
+```
+
+```diff
+  		}
+  
+- 		var fileName = AnsiConsole.Ask<string>("[cyan]Enter the filename to search for:[/]");
++ 		var fileName = HistoryInput.AskWithHistory("[cyan]Enter the filename to search for:[/]");
+  
+  		ProcessFiles(directory, fileName);
+```
+
+---
+
+```diff
+  	private static void CompareTwoDirectories()
+  	{
+- 		var dir1 = AnsiConsole.Ask<string>("[cyan]Enter the first directory path:[/]");
++ 		var dir1 = HistoryInput.AskWithHistory("[cyan]Enter the first directory path:[/]");
+  
+  		if (!Directory.Exists(dir1))
+```
+
+```diff
+  		}
+  
+- 		var dir2 = AnsiConsole.Ask<string>("[cyan]Enter the second directory path:[/]");
++ 		var dir2 = HistoryInput.AskWithHistory("[cyan]Enter the second directory path:[/]");
+  
+  		if (!Directory.Exists(dir2))
+```
+
+```diff
+  		}
+  
+- 		var pattern = AnsiConsole.Ask("[cyan]Enter file pattern (e.g., *.txt, *.cs):[/]", "*.*");
++ 		var pattern = HistoryInput.AskWithHistory("[cyan]Enter file pattern (e.g., *.txt, *.cs):[/]", "*.*");
+  		var recursive = AnsiConsole.Confirm("[cyan]Search subdirectories recursively?[/]", false);
+  
+```
+
+---
+
+```diff
+  	private static void CompareTwoSpecificFiles()
+  	{
+- 		var file1 = AnsiConsole.Ask<string>("[cyan]Enter the first file path:[/]");
++ 		var file1 = HistoryInput.AskWithHistory("[cyan]Enter the first file path:[/]");
+  
+  		if (!File.Exists(file1))
+```
+
+```diff
+  		}
+  
+- 		var file2 = AnsiConsole.Ask<string>("[cyan]Enter the second file path:[/]");
++ 		var file2 = HistoryInput.AskWithHistory("[cyan]Enter the second file path:[/]");
+  
+  		if (!File.Exists(file2))
+```
+
+---
+
+```diff
+  	private static void RunIterativeMerge()
+  	{
+- 		var directory = AnsiConsole.Ask<string>("[cyan]Enter the directory path containing multiple versions:[/]");
++ 		var directory = HistoryInput.AskWithHistory("[cyan]Enter the directory path containing multiple versions:[/]");
+  
+  		if (!Directory.Exists(directory))
+```
+
+```diff
+  		}
+  
+- 		var fileName = AnsiConsole.Ask<string>("[cyan]Enter the filename to search for (multiple versions):[/]");
++ 		var fileName = HistoryInput.AskWithHistory("[cyan]Enter the filename to search for (multiple versions):[/]");
+  
+  		// First, find files and prepare data (within Status operation)
+```
+
+---
+
+```diff
+  			else if (choice.Contains("Edit Manually"))
+  			{
+- 				var manualContent = AnsiConsole.Ask<string>("[cyan]Enter the resolved content:[/]");
++ 				var manualContent = HistoryInput.AskWithHistory("[cyan]Enter the resolved content:[/]");
+  				conflict.ResolvedContent = manualContent;
+  				conflict.IsResolved = true;
+```
+
+---
+
+```diff
+  		if (AnsiConsole.Confirm("[cyan]Would you like to save the merged content to a file?[/]", true))
+  		{
+- 			var outputPath = AnsiConsole.Ask("[cyan]Enter output file path:[/]", $"merged_{originalFileName}");
++ 			var outputPath = HistoryInput.AskWithHistory("[cyan]Enter output file path:[/]", $"merged_{originalFileName}");
+  
+  			try
+```
+
+---
+
+Now let's build the project to make sure everything compiles correctly:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet build
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.sln                                    Restore (0.0s) 
+Restore complete (2.2s)
+  DiffMore.Core succeeded (0.4s) → DiffMore.Core\bin\Debug\net9.0\ktsu.DiffMore.Core.dll
+
+  DiffMore.ConsoleApp failed with 17 error(s) (0.2s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1679,48): error CS0019: Operat
+or '-' cannot be applied to operands of type 'int' and 'Range'
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1679,42): error CS9212: Spread
+ operator '..' cannot operate on variables of type 'char' because 'char' does not contain
+a public instance or extension definition for 'GetEnumerator'
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1538,50): error CA1869: Avoid 
+creating a new 'JsonSerializerOptions' instance for every serialization operation. Cache a
+nd reuse instances instead. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis
+/quality-rules/ca1869)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1525,3): error CA1031: Modify 
+'LoadHistory' to catch a more specific allowed exception type, or rethrow the exception (h
+ttps://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1031)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1541,3): error CA1031: Modify 
+'SaveHistory' to catch a more specific allowed exception type, or rethrow the exception (h
+ttps://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1031)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1582,4): error IDE0010: Popula
+te switch (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide00
+10)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1590,6): error IDE2003: Blank 
+line required between block and subsequent statement (https://learn.microsoft.com/dotnet/f
+undamentals/code-analysis/style-rules/ide2003)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1598,6): error IDE2003: Blank 
+line required between block and subsequent statement (https://learn.microsoft.com/dotnet/f
+undamentals/code-analysis/style-rules/ide2003)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1611,6): error IDE2003: Blank 
+line required between block and subsequent statement (https://learn.microsoft.com/dotnet/f
+undamentals/code-analysis/style-rules/ide2003)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1619,6): error IDE2003: Blank 
+line required between block and subsequent statement (https://learn.microsoft.com/dotnet/f
+undamentals/code-analysis/style-rules/ide2003)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1627,6): error IDE2003: Blank 
+line required between block and subsequent statement (https://learn.microsoft.com/dotnet/f
+undamentals/code-analysis/style-rules/ide2003)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1635,6): error IDE2003: Blank 
+line required between block and subsequent statement (https://learn.microsoft.com/dotnet/f
+undamentals/code-analysis/style-rules/ide2003)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1643,6): error IDE2003: Blank 
+line required between block and subsequent statement (https://learn.microsoft.com/dotnet/f
+undamentals/code-analysis/style-rules/ide2003)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1653,6): error IDE2003: Blank 
+line required between block and subsequent statement (https://learn.microsoft.com/dotnet/f
+undamentals/code-analysis/style-rules/ide2003)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1662,6): error IDE2003: Blank 
+line required between block and subsequent statement (https://learn.microsoft.com/dotnet/f
+undamentals/code-analysis/style-rules/ide2003)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1689,6): error IDE2003: Blank 
+line required between block and subsequent statement (https://learn.microsoft.com/dotnet/f
+undamentals/code-analysis/style-rules/ide2003)
+thHistory' has a cyclomatic complexity of '28'. Rewrite or refactor the code to decrease i
+ts complexity below '26'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/q
+uality-rules/ca1502)
+
+Build failed with 17 error(s) in 3.1s
+  10:21:18   DiffMore  3.337s   1 - ERROR 
+  20:21:18 main  ~3 
+
+```
+
+---
+
+I need to fix the build errors. Let me address them one by one:
+
+---
+
+```diff
+  	private readonly string _historyFilePath;
+  	private const int MaxHistorySize = 100;
++ 	private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+  
+  	/// <summary>
+```
+
+```diff
+  			}
+  		}
+- 		catch (Exception)
++ 		catch (JsonException)
+  		{
+- 			// Ignore errors when loading history - start with empty history
++ 			// Ignore JSON parsing errors - start with empty history
++ 		}
++ 		catch (IOException)
++ 		{
++ 			// Ignore file I/O errors - start with empty history
++ 		}
++ 		catch (UnauthorizedAccessException)
++ 		{
++ 			// Ignore access errors - start with empty history
+  		}
+  	}
+```
+
+```diff
+  		try
+  		{
+- 			var json = JsonSerializer.Serialize(_history, new JsonSerializerOptions { WriteIndented = true });
++ 			var json = JsonSerializer.Serialize(_history, JsonOptions);
+  			File.WriteAllText(_historyFilePath, json);
+  		}
+- 		catch (Exception)
++ 		catch (JsonException)
+  		{
+- 			// Ignore errors when saving history
++ 			// Ignore JSON serialization errors
++ 		}
++ 		catch (IOException)
++ 		{
++ 			// Ignore file I/O errors
++ 		}
++ 		catch (UnauthorizedAccessException)
++ 		{
++ 			// Ignore access errors
+  		}
+  	}
+```
+
+---
+
+Now I need to fix the complex `AskWithHistory` method by breaking it down into smaller methods and fixing the spread operator issue:
+
+---
+
+```diff
+  				case ConsoleKey.Enter:
+  					AnsiConsole.WriteLine();
+- 					var result = new string([.. input]);
++ 					var result = new string(input.ToArray());
+  					if (!string.IsNullOrWhiteSpace(result))
+  					{
+```
+
+```diff
+  
+  				case ConsoleKey.UpArrow:
++ 					HandleUpArrow(input, ref historyIndex, ref cursorPosition);
++ 
++ 					break;
++ 
++ 				case ConsoleKey.DownArrow:
++ 					HandleDownArrow(input, ref historyIndex, ref cursorPosition, originalInput);
++ 
++ 					break;
++ 
++ 				case ConsoleKey.LeftArrow:
++ 					HandleLeftArrow(ref cursorPosition);
++ 
++ 					break;
++ 
++ 				case ConsoleKey.RightArrow:
++ 					HandleRightArrow(input, ref cursorPosition);
++ 
++ 					break;
++ 
++ 				case ConsoleKey.Home:
++ 					HandleHome(ref cursorPosition);
++ 
++ 					break;
++ 
++ 				case ConsoleKey.End:
++ 					HandleEnd(input, ref cursorPosition);
++ 
++ 					break;
++ 
++ 				case ConsoleKey.Backspace:
++ 					HandleBackspace(input, ref cursorPosition, ref historyIndex);
++ 
++ 					break;
++ 
++ 				case ConsoleKey.Delete:
++ 					HandleDelete(input, ref cursorPosition, ref historyIndex);
++ 
++ 					break;
++ 
++ 				case ConsoleKey.Escape:
++ 					HandleEscape(input, ref cursorPosition, ref historyIndex);
++ 
++ 					break;
++ 
++ 				default:
++ 					HandleRegularInput(input, ref cursorPosition, ref historyIndex, key);
++ 
++ 					break;
++ 			}
++ 		}
++ 	}
++ 
++ 	/// <summary>
++ 	/// Handles up arrow key press for history navigation
++ 	/// </summary>
++ 	private static void HandleUpArrow(List<char> input, ref int historyIndex, ref int cursorPosition)
++ 	{
+  		if (_inputHistory.History.Count > 0 && historyIndex > 0)
+  		{
+  			historyIndex--;
+  			ReplaceCurrentInput(input, _inputHistory.History[historyIndex], ref cursorPosition);
+  		}
+- 					break;
+- 
+- 				case ConsoleKey.DownArrow:
++ 	}
++ 
++ 	/// <summary>
++ 	/// Handles down arrow key press for history navigation
++ 	/// </summary>
++ 	private static void HandleDownArrow(List<char> input, ref int historyIndex, ref int cursorPosition, string originalInput)
++ 	{
+  		if (historyIndex < _inputHistory.History.Count - 1)
+  		{
+```
+
+```diff
+  			ReplaceCurrentInput(input, originalInput, ref cursorPosition);
+  		}
+- 					break;
+- 
+- 				case ConsoleKey.LeftArrow:
++ 	}
++ 
++ 	/// <summary>
++ 	/// Handles left arrow key press for cursor movement
++ 	/// </summary>
++ 	private static void HandleLeftArrow(ref int cursorPosition)
++ 	{
+  		if (cursorPosition > 0)
+  		{
+  			cursorPosition--;
+  			AnsiConsole.Cursor.Move(CursorDirection.Left, 1);
+  		}
+- 					break;
+- 
+- 				case ConsoleKey.RightArrow:
++ 	}
++ 
++ 	/// <summary>
++ 	/// Handles right arrow key press for cursor movement
++ 	/// </summary>
++ 	private static void HandleRightArrow(List<char> input, ref int cursorPosition)
++ 	{
+  		if (cursorPosition < input.Count)
+  		{
+  			cursorPosition++;
+  			AnsiConsole.Cursor.Move(CursorDirection.Right, 1);
+  		}
+- 					break;
+- 
+- 				case ConsoleKey.Home:
++ 	}
++ 
++ 	/// <summary>
++ 	/// Handles Home key press to move cursor to beginning
++ 	/// </summary>
++ 	private static void HandleHome(ref int cursorPosition)
++ 	{
+  		if (cursorPosition > 0)
+  		{
+  			AnsiConsole.Cursor.Move(CursorDirection.Left, cursorPosition);
+  			cursorPosition = 0;
+  		}
+- 					break;
+- 
+- 				case ConsoleKey.End:
++ 	}
++ 
++ 	/// <summary>
++ 	/// Handles End key press to move cursor to end
++ 	/// </summary>
++ 	private static void HandleEnd(List<char> input, ref int cursorPosition)
++ 	{
+  		if (cursorPosition < input.Count)
+  		{
+  			AnsiConsole.Cursor.Move(CursorDirection.Right, input.Count - cursorPosition);
+  			cursorPosition = input.Count;
+  		}
+- 					break;
+- 
+- 				case ConsoleKey.Backspace:
++ 	}
++ 
++ 	/// <summary>
++ 	/// Handles Backspace key press
++ 	/// </summary>
++ 	private static void HandleBackspace(List<char> input, ref int cursorPosition, ref int historyIndex)
++ 	{
+  		if (cursorPosition > 0)
+  		{
+```
+
+```diff
+  			historyIndex = _inputHistory.History.Count; // Reset history navigation
+  		}
+- 					break;
+- 
+- 				case ConsoleKey.Delete:
++ 	}
++ 
++ 	/// <summary>
++ 	/// Handles Delete key press
++ 	/// </summary>
++ 	private static void HandleDelete(List<char> input, ref int cursorPosition, ref int historyIndex)
++ 	{
+  		if (cursorPosition < input.Count)
+  		{
+```
+
+```diff
+  			historyIndex = _inputHistory.History.Count; // Reset history navigation
+  		}
+- 					break;
+- 
+- 				case ConsoleKey.Escape:
+- 					// Clear current input
++ 	}
++ 
++ 	/// <summary>
++ 	/// Handles Escape key press to clear input
++ 	/// </summary>
++ 	private static void HandleEscape(List<char> input, ref int cursorPosition, ref int historyIndex)
++ 	{
+  		ReplaceCurrentInput(input, "", ref cursorPosition);
+  		historyIndex = _inputHistory.History.Count;
+- 					break;
+- 
+- 				default:
+- 					// Handle regular character input
++ 	}
++ 
++ 	/// <summary>
++ 	/// Handles regular character input
++ 	/// </summary>
++ 	private static void HandleRegularInput(List<char> input, ref int cursorPosition, ref int historyIndex, ConsoleKeyInfo key)
++ 	{
+  		if (!char.IsControl(key.KeyChar))
+  		{
+```
+
+```diff
+  			
+  			// Redraw from cursor position
+- 						var remainingText = new string([.. input[cursorPosition - 1..]]);
++ 			var remainingChars = input.Skip(cursorPosition - 1).ToArray();
++ 			var remainingText = new string(remainingChars);
+  			AnsiConsole.Markup(remainingText.EscapeMarkup());
+  			
+```
+
+```diff
+  			
+  			historyIndex = _inputHistory.History.Count; // Reset history navigation
+- 					}
+- 					break;
+- 			}
+  		}
+  	}
+```
+
+```diff
+  		if (input.Count > 0)
+  		{
+- 			AnsiConsole.Markup(new string([.. input]).EscapeMarkup());
++ 			AnsiConsole.Markup(new string(input.ToArray()).EscapeMarkup());
+  		}
+  	}
+```
+
+```diff
+  
+  		// Clear the line and redraw
+- 		var inputText = new string([.. input]);
++ 		var inputText = new string(input.ToArray());
+  		AnsiConsole.Markup(inputText.EscapeMarkup() + " "); // Extra space to clear any remaining character
+  		
+```
+
+---
+
+Now let's build again to see if we've fixed all the issues:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet build
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.sln                                    Restore (0.0s) 
+Restore complete (0.5s)
+  DiffMore.Core succeeded (0.2s) → DiffMore.Core\bin\Debug\net9.0\ktsu.DiffMore.Core.dll
+
+  DiffMore.ConsoleApp failed with 5 error(s) (0.2s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1599,4): error IDE0010: Popula
+te switch (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide00
+10)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1822,40): error IDE0305: Colle
+ction initialization can be simplified (https://learn.microsoft.com/dotnet/fundamentals/co
+de-analysis/style-rules/ide0305)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1840,36): error IDE0305: Colle
+ction initialization can be simplified (https://learn.microsoft.com/dotnet/fundamentals/co
+de-analysis/style-rules/ide0305)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1607,6): error IDE2003: Blank 
+line required between block and subsequent statement (https://learn.microsoft.com/dotnet/f
+    C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\Program.cs(1603,36): error IDE0305: Colle
+ction initialization can be simplified (https://learn.microsoft.com/dotnet/fundamentals/co
+de-analysis/style-rules/ide0305)
+
+Build failed with 5 error(s) in 1.2s
+  10:22:22   DiffMore  1.375s   1 - ERROR 
+  20:22:22 main  ~3 
+
+```
+
+---
+
+I need to fix the remaining issues:
+
+---
+
+Cancelled
+
+---
+
+_**User**_
+
+AskWithHistory has too much cyclomatic complexity
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+You're right! The `AskWithHistory` method has too much cyclomatic complexity. I need to refactor it further. Let me simplify it by removing the unnecessary switch cases and restructuring the logic:
+
+---
+
 
 
 ---
