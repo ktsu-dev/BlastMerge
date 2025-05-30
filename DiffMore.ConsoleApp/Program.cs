@@ -813,17 +813,26 @@ public static class Program
 		AnsiConsole.MarkupLine($"[yellow]🔀 Merging:[/]");
 		if (existingMergedContent != null)
 		{
-			AnsiConsole.MarkupLine($"[dim]  📋 <existing merged content>[/]");
+			AnsiConsole.MarkupLine($"[dim]  📋 <existing merged content> → {Path.GetFileName(file1)}[/]");
 		}
 		else
 		{
-			AnsiConsole.MarkupLine($"[dim]  📁 {file1}[/]");
+			AnsiConsole.MarkupLine($"[dim]  📁 {Path.GetFileName(file1)}[/]");
 		}
-		AnsiConsole.MarkupLine($"[dim]  📁 {file2}[/]");
+		AnsiConsole.MarkupLine($"[dim]  📁 {Path.GetFileName(file2)}[/]");
+		AnsiConsole.MarkupLine($"[green]  ➡️  Result will replace {Path.GetFileName(file1)} (and delete {Path.GetFileName(file2)})[/]");
 		AnsiConsole.WriteLine();
 
-		return IterativeMergeOrchestrator.PerformMergeWithConflictResolution(
+		var result = IterativeMergeOrchestrator.PerformMergeWithConflictResolution(
 			file1, file2, existingMergedContent, GetBlockChoice);
+
+		if (result != null)
+		{
+			AnsiConsole.MarkupLine($"[green]✅ Merged successfully! Files reduced by 1.[/]");
+			AnsiConsole.WriteLine();
+		}
+
+		return result;
 	}
 
 	/// <summary>

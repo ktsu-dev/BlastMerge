@@ -160,5 +160,512 @@ Now let's test this fix by running the application to see if the prologue shows 
 cd DiffMore.ConsoleApp && dotnet run
 ```
 
+```
+ PS C:\dev\ktsu-dev\DiffMore >
+  22:12:26   DiffMore  
+  08:12:26 main  ?1 ~1 
+ PS C:\dev\ktsu-dev\DiffMore >cd DiffMore.ConsoleApp && dotnet run
+```
+
+---
+
+_**User**_
+
+I noticed the input history isnt working
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+I see that the code is calling `HistoryInput.AskWithHistory()` in several places, but I don't see the `HistoryInput` class defined. Let me search for it to understand the issue.
+
+---
+
+<details>
+            <summary>Searched codebase "HistoryInput class AskWithHistory input history" • **16** results</summary>
+        
+| File | Lines |
+|------|-------|
+| `DiffMore.ConsoleApp/HistoryInput.cs` | L1-78 |
+| `DiffMore.ConsoleApp/HistoryInput.cs` | L78-140 |
+| `DiffMore.ConsoleApp/Program.cs` | L521-582 |
+| `DiffMore.ConsoleApp/Program.cs` | L153-219 |
+| `DiffMore.ConsoleApp/Program.cs` | L76-153 |
+| `DiffMore.Core/IterativeMergeOrchestrator.cs` | L222-271 |
+| `DiffMore.Core/IterativeMergeOrchestrator.cs` | L68-110 |
+| `DiffMore.ConsoleApp/Program.cs` | L1056-1082 |
+| `DiffMore.Core/BlockMerger.cs` | L84-160 |
+| `DiffMore.ConsoleApp/Program.cs` | L840-891 |
+| `DiffMore.ConsoleApp/Program.cs` | L997-1056 |
+| `.cursor/rules/derived-cursor-rules.mdc` | L159-181 |
+| `DiffMore.ConsoleApp/Program.cs` | L276-342 |
+| `scripts/PSBuild.psm1` | L1866-1904 |
+| `DiffMore.ConsoleApp/Program.cs` | L1-76 |
+| `DiffMore.Core/BlockMerger.cs` | L160-231 |
+
+</details>
+
+---
+
+I can see that the `HistoryInput` class exists and looks well-implemented. Looking at the `HistoryInput.cs` file, the history functionality should work by:
+
+1. Saving history to a JSON file in the application data folder
+2. Using `TextPrompt` with `AddChoices()` to provide history options
+3. However, I notice a potential issue - the history choices are added but `ShowChoices(false)` is called
+
+Let me check if there might be an issue with how the history is being displayed or accessed:
+
+---
+
+Read file: DiffMore.ConsoleApp/HistoryInput.cs
+
+---
+
+I found the issue! On line 54, there's this problematic line:
+
+```csharp
+textPrompt.ShowChoices(false);
+```
+
+The `ShowChoices(false)` call is hiding the history choices, which makes them inaccessible to the user. When `ShowChoices` is set to `false`, the choices are added but not displayed, so users can't see or select from their input history.
+
+The fix is to either remove this line entirely or set it to `true`. Based on the cursor rules mentioned that "The DiffMore CLI should have command history functionality, allowing users to use arrow keys to navigate through previous inputs," the choices should be visible. Let me fix this:
+
+---
+
+```diff
+  		{
+  			textPrompt.AddChoices(history);
+- 			textPrompt.ShowChoices(false);
++ 			textPrompt.ShowChoices(true);
+  		}
+  
+```
+
+---
+
+Actually, let me check Spectre.Console documentation to see what the best approach is for arrow key navigation. Let me also check if there's a better way to implement this:
+
+---
+
+<details>
+            <summary>Searched web "Spectre.Console TextPrompt arrow key navigation history choices ShowChoices" • **6** results</summary>
+        
+| Title | URL |
+|-------|-----|
+| Spectre.Console - TextPrompt<T> | https://spectreconsole.net/api/spectre.console/textprompt_1/ |
+| Support for Escape key in SelectionPrompt and ... | https://github.com/spectreconsole/spectre.console/discussions/700 |
+| Read-SpectreText - PwshSpectreConsole | https://pwshspectreconsole.com/reference/prompts/read-spectretext/ |
+| Spectre.Console - Text prompt | https://spectreconsole.net/prompts/text |
+| Spectre.Console - Multi Selection | https://spectreconsole.net/prompts/multiselection |
+| CommandDotNet - Spectre | https://commanddotnet.bilal-fazlani.com/otherfeatures/spectre/ |
+
+</details>
+
+---
+
+Based on my research, I can see a few things:
+
+1. **The fix I made (`ShowChoices(true)`) should work**, but there might be additional issues.
+2. **Spectre.Console TextPrompt with choices** - when you add choices, the user should be able to navigate through them, but the behavior might not be exactly like arrow key history navigation in a traditional command line.
+3. **The PowerShell documentation warns against using Spectre Console text prompts** for exactly this reason - they don't have session history access like standard command line tools.
+
+However, looking at the code, when `ShowChoices(true)` is set and choices are available, users should be able to use Tab or up/down arrows to cycle through the choices. Let me test the current implementation and also improve it to make it more obvious to users how the history works:
+
+---
+
+```bash
+dotnet run
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp >dotnet run
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\DiffMore.ConsoleApp.csproj  Restore (0.0s) 
+──────────────────────────── DiffMore - File Comparison Tool ─────────────────────────────
+
+…
+  📁 Compare Two Directories
+
+(Move up and down to reveal more choices)
+```
+
+---
+
+_**User**_
+
+during the iterative merge, at each step it should replace both input files with the merged output
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+I understand! You want the iterative merge process to actually replace the input files with the merged output at each step, so the number of files decreases as we progress. Let me examine the current implementation and modify it to replace both input files with the merged result.
+
+---
+
+Read file: DiffMore.Core/IterativeMergeOrchestrator.cs
+
+---
+
+I can see that the current implementation keeps the merged content in memory but doesn't replace the actual files. Let me also look at the `IterativeMergeSession` class to understand how it manages the files:
+
+---
+
+<details>
+            <summary>Searched codebase "IterativeMergeSession class RemoveFile AddMergedContent" • **21** results</summary>
+        
+| File | Lines |
+|------|-------|
+| `DiffMore.Core/IterativeMergeOrchestrator.cs` | L68-110 |
+| `DiffMore.Core/IterativeMergeOrchestrator.cs` | L1-68 |
+| `DiffMore.Core/IterativeMergeOrchestrator.cs` | L110-175 |
+| `DiffMore.Core/FileDiffer.cs` | L240-303 |
+| `DiffMore.Core/IterativeMergeOrchestrator.cs` | L175-222 |
+| `DiffMore.Core/FileDiffer.cs` | L167-240 |
+| `DiffMore.Core/IterativeMergeOrchestrator.cs` | L222-271 |
+| `DiffMore.Core/IterativeMergeOrchestrator.cs` | L271-292 |
+| `DiffMore.Core/FileDiffer.cs` | L793-849 |
+| `DiffMore.Core/BlockMerger.cs` | L160-231 |
+| `DiffMore.Core/FileDiffer.cs` | L849-923 |
+| `DiffMore.ConsoleApp/Program.cs` | L521-582 |
+| `DiffMore.ConsoleApp/Program.cs` | L770-840 |
+| `DiffMore.Core/FileDiffer.cs` | L734-793 |
+| `DiffMore.Core/BlockMerger.cs` | L365-418 |
+| `DiffMore.Core/DiffPlexDiffer.cs` | L60-130 |
+| `DiffMore.Core/BlockMerger.cs` | L418-483 |
+| `DiffMore.Core/FileDiffer.cs` | L546-609 |
+| `DiffMore.Core/BlockMerger.cs` | L84-160 |
+| `DiffMore.Core/BlockMerger.cs` | L316-365 |
+| `DiffMore.Core/BlockMerger.cs` | L483-535 |
+
+</details>
+
+---
+
+Now I understand the current implementation. The issue is that while the `IterativeMergeSession` removes files from the tracking list, it doesn't actually replace the physical files with the merged content. Let me modify the `IterativeMergeOrchestrator` to replace the files at each step.
+
+The key changes needed are:
+
+1. After each successful merge, write the merged content to one of the input files and delete the other
+2. Update the file tracking to use the updated file for the next iteration
+3. Ensure the process continues until only one file remains
+
+---
+
+```diff
+  		var mergeCount = 1;
+  		string? lastMergedContent = null;
++ 		string? mergedFilePath = null; // Track the file containing merged content
+  
+  		while (session.RemainingFiles.Count > 1)
+  		{
+  			FileSimilarity? similarity;
+  
+- 			if (lastMergedContent != null)
++ 			if (lastMergedContent != null && mergedFilePath != null)
+  			{
+  				// Find the most similar file to our current merged result
+  				similarity = FindMostSimilarToMergedContent(session.RemainingFiles, lastMergedContent);
++ 				
++ 				// Update the similarity to use the merged file path as file1
++ 				if (similarity != null)
++ 				{
++ 					similarity = new FileSimilarity
++ 					{
++ 						FilePath1 = mergedFilePath,
++ 						FilePath2 = similarity.FilePath2,
++ 						SimilarityScore = similarity.SimilarityScore
++ 					};
++ 				}
+  			}
+  			else
+```
+
+```diff
+  			session.AddMergedContent(lastMergedContent);
+  
+- 			// Remove the merged files from remaining files
+- 			session.RemoveFile(similarity.FilePath1);
+- 			if (lastMergedContent == null) // Only remove second file if this wasn't a merge with existing content
+- 			{
+- 				session.RemoveFile(similarity.FilePath2);
+- 			}
+- 			else
+- 			{
+- 				session.RemoveFile(similarity.FilePath2);
++ 			// Replace both input files with the merged output
++ 			try
++ 			{
++ 				// Choose which file to keep (use the first one as the target)
++ 				var targetFile = similarity.FilePath1;
++ 				var fileToDelete = similarity.FilePath2;
++ 
++ 				// Write merged content to the target file
++ 				File.WriteAllText(targetFile, lastMergedContent);
++ 				
++ 				// Delete the second file
++ 				if (File.Exists(fileToDelete))
++ 				{
++ 					File.Delete(fileToDelete);
++ 				}
++ 
++ 				// Update tracking
++ 				mergedFilePath = targetFile;
++ 				session.RemoveFile(fileToDelete);
++ 
++ 				// Keep the target file in the session for the next iteration
++ 				// (it will be automatically part of RemainingFiles since we only removed fileToDelete)
++ 			}
++ 			catch (IOException ex)
++ 			{
++ 				return new MergeCompletionResult
++ 				{
++ 					IsSuccessful = false,
++ 					FinalMergedContent = lastMergedContent,
++ 					FinalLineCount = lastMergedContent?.Split(Environment.NewLine).Length ?? 0,
++ 					OriginalFileName = $"error: {ex.Message}"
++ 				};
++ 			}
++ 			catch (UnauthorizedAccessException ex)
++ 			{
++ 				return new MergeCompletionResult
++ 				{
++ 					IsSuccessful = false,
++ 					FinalMergedContent = lastMergedContent,
++ 					FinalLineCount = lastMergedContent?.Split(Environment.NewLine).Length ?? 0,
++ 					OriginalFileName = $"access denied: {ex.Message}"
++ 				};
+  			}
+  
+```
+
+```diff
+  		// Merge completed successfully
+  		var finalLines = lastMergedContent?.Split(Environment.NewLine) ?? [];
++ 		var finalFilePath = mergedFilePath ?? session.RemainingFiles.FirstOrDefault() ?? "unknown";
++ 		
+  		return new MergeCompletionResult
+  		{
+  			IsSuccessful = true,
+  			FinalMergedContent = lastMergedContent,
+  			FinalLineCount = finalLines.Length,
+- 			OriginalFileName = "merged"
++ 			OriginalFileName = Path.GetFileName(finalFilePath)
+  		};
+  	}
+```
+
+---
+
+Now I need to also update the `FindMostSimilarToMergedContent` method to properly handle the case where we're comparing merged content with remaining files, and ensure the similarity object is created correctly:
+
+---
+
+```diff
+  				mostSimilar = new FileSimilarity
+  				{
+- 					FilePath1 = "<merged_content>",
++ 					FilePath1 = "<merged_content>", // Placeholder - will be updated by caller
+  					FilePath2 = file,
+  					SimilarityScore = similarity
+```
+
+---
+
+Now let's also update the UI to reflect what's happening during the merge process. The user should see that files are being replaced:
+
+---
+
+```diff
+  		if (existingMergedContent != null)
+  		{
+- 			AnsiConsole.MarkupLine($"[dim]  📋 <existing merged content>[/]");
++ 			AnsiConsole.MarkupLine($"[dim]  📋 <existing merged content> → {Path.GetFileName(file1)}[/]");
+  		}
+  		else
+  		{
+- 			AnsiConsole.MarkupLine($"[dim]  📁 {file1}[/]");
++ 			AnsiConsole.MarkupLine($"[dim]  📁 {Path.GetFileName(file1)}[/]");
+  		}
+- 		AnsiConsole.MarkupLine($"[dim]  📁 {file2}[/]");
++ 		AnsiConsole.MarkupLine($"[dim]  📁 {Path.GetFileName(file2)}[/]");
++ 		AnsiConsole.MarkupLine($"[green]  ➡️  Result will replace {Path.GetFileName(file1)} (and delete {Path.GetFileName(file2)})[/]");
+  		AnsiConsole.WriteLine();
+  
+- 		return IterativeMergeOrchestrator.PerformMergeWithConflictResolution(
++ 		var result = IterativeMergeOrchestrator.PerformMergeWithConflictResolution(
+  			file1, file2, existingMergedContent, GetBlockChoice);
++ 
++ 		if (result != null)
++ 		{
++ 			AnsiConsole.MarkupLine($"[green]✅ Merged successfully! Files reduced by 1.[/]");
++ 			AnsiConsole.WriteLine();
++ 		}
++ 
++ 		return result;
+  	}
+  
+```
+
+---
+
+Now let's run the application to test the new iterative merge functionality:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >
+  22:20:11   DiffMore 
+  08:20:11 main  ~5
+ PS C:\dev\ktsu-dev\DiffMore >
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  22:20:11   DiffMore  
+  08:20:11 main  ~5 
+ PS C:\dev\ktsu-dev\DiffMore >
+```
+
+---
+
+```bash
+cd DiffMore.ConsoleApp && dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore >dotnet build
+  C:\dev\ktsu-dev\DiffMore\DiffMore.sln                                    Restore (3.4s)
+
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.sln                                    Restore (3.5s) 
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.sln                                    Restore (3.6s) 
+  DiffMore.Core failed with 1 error(s) (0.5s)
+    C:\dev\ktsu-dev\DiffMore\DiffMore.Core\IterativeMergeOrchestrator.cs(223,41): error CA
+1826: Do not use Enumerable methods on indexable collections. Instead use the collection d
+irectly. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca18
+26)
+
+Build failed with 1 error(s) in 4.9s
+  22:20:16   DiffMore  5.127s   1 - ERROR 
+  08:20:16 main  ~5 
+ PS C:\dev\ktsu-dev\DiffMore >cd DiffMore.ConsoleApp && dotnet build
+
+```
+
+---
+
+I have a build error due to a code analysis rule. Let me fix it by using direct collection access instead of LINQ:
+
+---
+
+Read file: DiffMore.Core/IterativeMergeOrchestrator.cs
+
+---
+
+The error is on line 223 with `session.RemainingFiles.FirstOrDefault()`. Let me fix it by using indexer access instead:
+
+---
+
+```diff
+  		// Merge completed successfully
+  		var finalLines = lastMergedContent?.Split(Environment.NewLine) ?? [];
+- 		var finalFilePath = mergedFilePath ?? session.RemainingFiles.FirstOrDefault() ?? "unknown";
++ 		var finalFilePath = mergedFilePath ?? (session.RemainingFiles.Count > 0 ? session.RemainingFiles[0] : "unknown");
+  
+  		return new MergeCompletionResult
+```
+
+---
+
+Now let's build again to see if the error is fixed:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+ PS C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp >dotnet build ProjectDirector.sln /p:Trea
+
+
+
+  C:\dev\ktsu-dev\DiffMore\DiffMore.ConsoleApp\DiffMore.ConsoleApp.csproj  Restore (0.0s)
+                                                                                   (0.1s) 
+Restore complete (0.4s)
+  DiffMore.Core succeeded (0.4s) → C:\dev\ktsu-dev\DiffMore\DiffMore.Core\bin\Debug\net9.0
+\ktsu.DiffMore.Core.dll
+  DiffMore.ConsoleApp succeeded (0.4s) → bin\Debug\net9.0\ktsu.DiffMore.ConsoleApp.dll
+
+
+Build succeeded in 1.8s
+  22:20:36   DiffMore  2.023s  
+  08:20:36 main  ~5 
+
+```
+
+---
+
+Great! The build is successful. Now let's test the iterative merge functionality. But first, let me create some test files to demonstrate the new behavior:
+
+---
+
+```bash
+mkdir TestMerge && cd TestMerge
+```
+
+---
+
+
+
+---
+
+_**User**_
+
+when showing the differences put the file with the least number of changes on the left, and instead of calling them version 1, version 2 use the relative directory from the search path
+
+---
+
+_**Assistant**_
+
+
+
 ---
 

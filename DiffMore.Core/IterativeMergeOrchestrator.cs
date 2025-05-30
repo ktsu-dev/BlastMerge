@@ -91,15 +91,27 @@ public static class IterativeMergeOrchestrator
 
 		var mergeCount = 1;
 		string? lastMergedContent = null;
+		string? mergedFilePath = null; // Track the file containing merged content
 
 		while (session.RemainingFiles.Count > 1)
 		{
 			FileSimilarity? similarity;
 
-			if (lastMergedContent != null)
+			if (lastMergedContent != null && mergedFilePath != null)
 			{
 				// Find the most similar file to our current merged result
 				similarity = FindMostSimilarToMergedContent(session.RemainingFiles, lastMergedContent);
+
+				// Update the similarity to use the merged file path as file1
+				if (similarity != null)
+				{
+					similarity = new FileSimilarity
+					{
+						FilePath1 = mergedFilePath,
+						FilePath2 = similarity.FilePath2,
+						SimilarityScore = similarity.SimilarityScore
+					};
+				}
 			}
 			else
 			{
@@ -147,15 +159,48 @@ public static class IterativeMergeOrchestrator
 			lastMergedContent = string.Join(Environment.NewLine, mergeResult.MergedLines);
 			session.AddMergedContent(lastMergedContent);
 
-			// Remove the merged files from remaining files
-			session.RemoveFile(similarity.FilePath1);
-			if (lastMergedContent == null) // Only remove second file if this wasn't a merge with existing content
+			// Replace both input files with the merged output
+			try
 			{
-				session.RemoveFile(similarity.FilePath2);
+				// Choose which file to keep (use the first one as the target)
+				var targetFile = similarity.FilePath1;
+				var fileToDelete = similarity.FilePath2;
+
+				// Write merged content to the target file
+				File.WriteAllText(targetFile, lastMergedContent);
+
+				// Delete the second file
+				if (File.Exists(fileToDelete))
+				{
+					File.Delete(fileToDelete);
+				}
+
+				// Update tracking
+				mergedFilePath = targetFile;
+				session.RemoveFile(fileToDelete);
+
+				// Keep the target file in the session for the next iteration
+				// (it will be automatically part of RemainingFiles since we only removed fileToDelete)
 			}
-			else
+			catch (IOException ex)
 			{
-				session.RemoveFile(similarity.FilePath2);
+				return new MergeCompletionResult
+				{
+					IsSuccessful = false,
+					FinalMergedContent = lastMergedContent,
+					FinalLineCount = lastMergedContent?.Split(Environment.NewLine).Length ?? 0,
+					OriginalFileName = $"error: {ex.Message}"
+				};
+			}
+			catch (UnauthorizedAccessException ex)
+			{
+				return new MergeCompletionResult
+				{
+					IsSuccessful = false,
+					FinalMergedContent = lastMergedContent,
+					FinalLineCount = lastMergedContent?.Split(Environment.NewLine).Length ?? 0,
+					OriginalFileName = $"access denied: {ex.Message}"
+				};
 			}
 
 			mergeCount++;
@@ -175,12 +220,14 @@ public static class IterativeMergeOrchestrator
 
 		// Merge completed successfully
 		var finalLines = lastMergedContent?.Split(Environment.NewLine) ?? [];
+		var finalFilePath = mergedFilePath ?? (session.RemainingFiles.Count > 0 ? session.RemainingFiles[0] : "unknown");
+
 		return new MergeCompletionResult
 		{
 			IsSuccessful = true,
 			FinalMergedContent = lastMergedContent,
 			FinalLineCount = finalLines.Length,
-			OriginalFileName = "merged"
+			OriginalFileName = Path.GetFileName(finalFilePath)
 		};
 	}
 
@@ -279,7 +326,7 @@ public static class IterativeMergeOrchestrator
 				highestSimilarity = similarity;
 				mostSimilar = new FileSimilarity
 				{
-					FilePath1 = "<merged_content>",
+					FilePath1 = "<merged_content>", // Placeholder - will be updated by caller
 					FilePath2 = file,
 					SimilarityScore = similarity
 				};

@@ -54,7 +54,7 @@ public static class HistoryInput
 		if (history.Count > 0)
 		{
 			textPrompt.AddChoices(history);
-			textPrompt.ShowChoices(false);
+			textPrompt.ShowChoices(true);
 		}
 
 		var input = AnsiConsole.Prompt(textPrompt);
