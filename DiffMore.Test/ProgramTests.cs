@@ -6,7 +6,7 @@ namespace ktsu.DiffMore.Test;
 
 using System;
 using System.IO;
-using ktsu.DiffMore.CLI;
+using ktsu.DiffMore.ConsoleApp;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 [TestClass]

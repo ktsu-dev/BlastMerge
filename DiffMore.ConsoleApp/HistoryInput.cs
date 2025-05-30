@@ -2,7 +2,7 @@
 // All rights reserved.
 // Licensed under the MIT license.
 
-namespace ktsu.DiffMore.CLI;
+namespace ktsu.DiffMore.ConsoleApp;
 
 using System;
 using System.Collections.Generic;

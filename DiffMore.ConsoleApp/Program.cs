@@ -2,7 +2,7 @@
 // All rights reserved.
 // Licensed under the MIT license.
 
-namespace ktsu.DiffMore.CLI;
+namespace ktsu.DiffMore.ConsoleApp;
 
 using System;
 using System.Collections.Generic;
@@ -13,7 +13,7 @@ using Spectre.Console;
 using DiffPlex.DiffBuilder.Model;
 
 /// <summary>
-/// Main program class for the DiffMore CLI TUI
+/// Main program class for the DiffMore TUI
 /// </summary>
 public static class Program
 {
@@ -129,6 +129,58 @@ public static class Program
 	/// <summary>
 	/// Compares files with the same name in a directory
 	/// </summary>
+	/// <param name="directory">The directory to search</param>
+	/// <param name="fileName">The filename to search for</param>
+	private static void ProcessFiles(string directory, string fileName)
+	{
+		List<FileGroup>? fileGroupsList = null;
+		var filesList = new List<string>();
+
+		// Show progress while searching
+		AnsiConsole.Status()
+			.Spinner(Spinner.Known.Star)
+			.Start($"[yellow]Searching for '{fileName}' in '{directory}'...[/]", ctx =>
+			{
+				var files = FileFinder.FindFiles(directory, fileName);
+				filesList = [.. files];
+
+				ctx.Status($"[yellow]Found {filesList.Count} files. Analyzing...[/]");
+
+				if (filesList.Count == 0)
+				{
+					return;
+				}
+
+				// Group files by hash
+				var fileGroups = FileDiffer.GroupFilesByHash(files);
+				fileGroupsList = [.. fileGroups];
+
+				// Sort groups by number of files (descending)
+				fileGroupsList.Sort((a, b) => b.FilePaths.Count.CompareTo(a.FilePaths.Count));
+			});
+
+		// Handle results outside the status context
+		if (filesList.Count == 0)
+		{
+			AnsiConsole.MarkupLine($"[red]No files with name '{fileName}' found.[/]");
+			return;
+		}
+
+		ShowFileGroups(fileGroupsList!, filesList.Count);
+
+		if (fileGroupsList!.Count <= 1)
+		{
+			AnsiConsole.MarkupLine("[green]All files are identical.[/]");
+			return;
+		}
+
+		ShowDifferences(fileGroupsList);
+		OfferSyncOptions(fileGroupsList);
+	}
+
+	/// <summary>
+	/// Compares files with the same name in a directory
+	/// </summary>
 	private static void CompareFilesInDirectory()
 	{
 		var directory = HistoryInput.AskWithHistory("[cyan]Enter the directory path:[/]");
@@ -142,136 +194,6 @@ public static class Program
 		var fileName = HistoryInput.AskWithHistory("[cyan]Enter the filename to search for:[/]");
 
 		ProcessFiles(directory, fileName);
-	}
-
-	/// <summary>
-	/// Compares two directories
-	/// </summary>
-	private static void CompareTwoDirectories()
-	{
-		var dir1 = HistoryInput.AskWithHistory("[cyan]Enter the first directory path:[/]");
-
-		if (!Directory.Exists(dir1))
-		{
-			AnsiConsole.MarkupLine("[red]Error: First directory does not exist![/]");
-			return;
-		}
-
-		var dir2 = HistoryInput.AskWithHistory("[cyan]Enter the second directory path:[/]");
-
-		if (!Directory.Exists(dir2))
-		{
-			AnsiConsole.MarkupLine("[red]Error: Second directory does not exist![/]");
-			return;
-		}
-
-		var pattern = HistoryInput.AskWithHistory("[cyan]Enter file pattern (e.g., *.txt, *.cs):[/]", "*.*");
-		var recursive = AnsiConsole.Confirm("[cyan]Search subdirectories recursively?[/]", false);
-
-		CompareDirectories(dir1, dir2, pattern, recursive);
-	}
-
-	/// <summary>
-	/// Compares two specific files
-	/// </summary>
-	private static void CompareTwoSpecificFiles()
-	{
-		var file1 = HistoryInput.AskWithHistory("[cyan]Enter the first file path:[/]");
-
-		if (!File.Exists(file1))
-		{
-			AnsiConsole.MarkupLine("[red]Error: First file does not exist![/]");
-			return;
-		}
-
-		var file2 = HistoryInput.AskWithHistory("[cyan]Enter the second file path:[/]");
-
-		if (!File.Exists(file2))
-		{
-			AnsiConsole.MarkupLine("[red]Error: Second file does not exist![/]");
-			return;
-		}
-
-		CompareTwoFiles(file1, file2);
-	}
-
-	/// <summary>
-	/// Shows help information
-	/// </summary>
-	private static void ShowHelp()
-	{
-		var panel = new Panel("""
-		[bold]DiffMore - File Comparison Tool[/]
-
-		[yellow]Features:[/]
-		• Compare files with the same name across directories
-		• Compare two directories with file patterns
-		• Compare two specific files
-		• [cyan]Iterative merge multiple file versions[/]
-		• View differences in multiple formats (git-style, change summary)
-		• Sync files to make them identical
-
-		[yellow]Command Line Usage:[/]
-		DiffMore.CLI <directory> <filename>
-
-		[yellow]Interactive Mode:[/]
-		Run without arguments to use the interactive TUI interface.
-
-		[yellow]Iterative Merge:[/]
-		• Automatically finds the most similar files and merges them step by step
-		• Interactive conflict resolution with visual TUI
-		• Optimal merge order based on similarity calculation
-		• Save final merged result to a new file
-		""")
-		{
-			Header = new PanelHeader("[bold blue]Help[/]"),
-			Border = BoxBorder.Rounded
-		};
-
-		AnsiConsole.Write(panel);
-	}
-
-	/// <summary>
-	/// Processes files with the same name in a directory
-	/// </summary>
-	/// <param name="directory">The directory to search</param>
-	/// <param name="fileName">The filename to search for</param>
-	private static void ProcessFiles(string directory, string fileName)
-	{
-		// Show progress while searching
-		AnsiConsole.Status()
-			.Spinner(Spinner.Known.Star)
-			.Start($"[yellow]Searching for '{fileName}' in '{directory}'...[/]", ctx =>
-			{
-				var files = FileFinder.FindFiles(directory, fileName);
-				var filesList = files.ToList();
-
-				ctx.Status($"[yellow]Found {filesList.Count} files. Analyzing...[/]");
-
-				if (filesList.Count == 0)
-				{
-					AnsiConsole.MarkupLine($"[red]No files with name '{fileName}' found.[/]");
-					return;
-				}
-
-				// Group files by hash
-				var fileGroups = FileDiffer.GroupFilesByHash(files);
-				var fileGroupsList = fileGroups.ToList();
-
-				// Sort groups by number of files (descending)
-				fileGroupsList.Sort((a, b) => b.FilePaths.Count.CompareTo(a.FilePaths.Count));
-
-				ShowFileGroups(fileGroupsList, filesList.Count);
-
-				if (fileGroupsList.Count <= 1)
-				{
-					AnsiConsole.MarkupLine("[green]All files are identical.[/]");
-					return;
-				}
-
-				ShowDifferences(fileGroupsList);
-				OfferSyncOptions(fileGroupsList);
-			});
 	}
 
 	/// <summary>
@@ -623,6 +545,93 @@ public static class Program
 	}
 
 	/// <summary>
+	/// Compares two directories interactively
+	/// </summary>
+	private static void CompareTwoDirectories()
+	{
+		var dir1 = HistoryInput.AskWithHistory("[cyan]Enter the first directory path:[/]");
+
+		if (!Directory.Exists(dir1))
+		{
+			AnsiConsole.MarkupLine("[red]Error: First directory does not exist![/]");
+			return;
+		}
+
+		var dir2 = HistoryInput.AskWithHistory("[cyan]Enter the second directory path:[/]");
+
+		if (!Directory.Exists(dir2))
+		{
+			AnsiConsole.MarkupLine("[red]Error: Second directory does not exist![/]");
+			return;
+		}
+
+		var pattern = HistoryInput.AskWithHistory("[cyan]Enter file pattern (e.g., *.txt, *.cs):[/]", "*.*");
+		var recursive = AnsiConsole.Confirm("[cyan]Search subdirectories recursively?[/]", false);
+
+		CompareDirectories(dir1, dir2, pattern, recursive);
+	}
+
+	/// <summary>
+	/// Compares two specific files
+	/// </summary>
+	private static void CompareTwoSpecificFiles()
+	{
+		var file1 = HistoryInput.AskWithHistory("[cyan]Enter the first file path:[/]");
+
+		if (!File.Exists(file1))
+		{
+			AnsiConsole.MarkupLine("[red]Error: First file does not exist![/]");
+			return;
+		}
+
+		var file2 = HistoryInput.AskWithHistory("[cyan]Enter the second file path:[/]");
+
+		if (!File.Exists(file2))
+		{
+			AnsiConsole.MarkupLine("[red]Error: Second file does not exist![/]");
+			return;
+		}
+
+		CompareTwoFiles(file1, file2);
+	}
+
+	/// <summary>
+	/// Shows help information
+	/// </summary>
+	private static void ShowHelp()
+	{
+		var panel = new Panel("""
+		[bold]DiffMore - File Comparison Tool[/]
+
+		[yellow]Features:[/]
+		• Compare files with the same name across directories
+		• Compare two directories with file patterns
+		• Compare two specific files
+		• [cyan]Iterative merge multiple file versions[/]
+		• View differences in multiple formats (git-style, change summary)
+		• Sync files to make them identical
+
+		[yellow]Command Line Usage:[/]
+		DiffMore.CLI <directory> <filename>
+
+		[yellow]Interactive Mode:[/]
+		Run without arguments to use the interactive TUI interface.
+
+		[yellow]Iterative Merge:[/]
+		• Automatically finds the most similar files and merges them step by step
+		• Interactive conflict resolution with visual TUI
+		• Optimal merge order based on similarity calculation
+		• Save final merged result to a new file
+		""")
+		{
+			Header = new PanelHeader("[bold blue]Help[/]"),
+			Border = BoxBorder.Rounded
+		};
+
+		AnsiConsole.Write(panel);
+	}
+
+	/// <summary>
 	/// Compares two directories
 	/// </summary>
 	/// <param name="dir1">First directory path</param>
@@ -631,67 +640,68 @@ public static class Program
 	/// <param name="recursive">Whether to search recursively</param>
 	private static void CompareDirectories(string dir1, string dir2, string pattern, bool recursive)
 	{
+		DirectoryComparisonResult? result = null;
+
 		AnsiConsole.Status()
 			.Spinner(Spinner.Known.Star)
 			.Start($"[yellow]Comparing directories...[/]", ctx =>
 			{
-				var result = FileDiffer.FindDifferences(dir1, dir2, pattern, recursive);
-
+				result = FileDiffer.FindDifferences(dir1, dir2, pattern, recursive);
 				ctx.Status("[yellow]Creating comparison report...[/]");
-
-				// Display results
-				var table = new Table()
-					.AddColumn("[bold]Category[/]")
-					.AddColumn("[bold]Count[/]")
-					.AddColumn("[bold]Examples[/]")
-					.Border(TableBorder.Rounded);
-
-				table.AddRow(
-					"[green]Identical Files[/]",
-					$"[cyan]{result.SameFiles.Count}[/]",
-					string.Join(", ", result.SameFiles.Take(3).Select(Path.GetFileName))
-				);
-
-				table.AddRow(
-					"[yellow]Modified Files[/]",
-					$"[cyan]{result.ModifiedFiles.Count}[/]",
-					string.Join(", ", result.ModifiedFiles.Take(3).Select(Path.GetFileName))
-				);
-
-				table.AddRow(
-					"[red]Only in First Directory[/]",
-					$"[cyan]{result.OnlyInDir1.Count}[/]",
-					string.Join(", ", result.OnlyInDir1.Take(3).Select(Path.GetFileName))
-				);
-
-				table.AddRow(
-					"[red]Only in Second Directory[/]",
-					$"[cyan]{result.OnlyInDir2.Count}[/]",
-					string.Join(", ", result.OnlyInDir2.Take(3).Select(Path.GetFileName))
-				);
-
-				AnsiConsole.Write(table);
-
-				// Show detailed differences for modified files if requested
-				if (result.ModifiedFiles.Count > 0 &&
-					AnsiConsole.Confirm("[cyan]Show detailed differences for modified files?[/]", false))
-				{
-					foreach (var file in result.ModifiedFiles.Take(5)) // Limit to first 5
-					{
-						var file1 = Path.Combine(dir1, file);
-						var file2 = Path.Combine(dir2, file);
-
-						AnsiConsole.WriteLine();
-						var rule = new Rule($"[bold]Differences: {file}[/]")
-						{
-							Style = Style.Parse("blue")
-						};
-						AnsiConsole.Write(rule);
-
-						ShowChangeSummary(file1, file2);
-					}
-				}
 			});
+
+		// Display results (outside the status context)
+		var table = new Table()
+			.AddColumn("[bold]Category[/]")
+			.AddColumn("[bold]Count[/]")
+			.AddColumn("[bold]Examples[/]")
+			.Border(TableBorder.Rounded);
+
+		table.AddRow(
+			"[green]Identical Files[/]",
+			$"[cyan]{result!.SameFiles.Count}[/]",
+			string.Join(", ", result.SameFiles.Take(3).Select(Path.GetFileName))
+		);
+
+		table.AddRow(
+			"[yellow]Modified Files[/]",
+			$"[cyan]{result.ModifiedFiles.Count}[/]",
+			string.Join(", ", result.ModifiedFiles.Take(3).Select(Path.GetFileName))
+		);
+
+		table.AddRow(
+			"[red]Only in First Directory[/]",
+			$"[cyan]{result.OnlyInDir1.Count}[/]",
+			string.Join(", ", result.OnlyInDir1.Take(3).Select(Path.GetFileName))
+		);
+
+		table.AddRow(
+			"[red]Only in Second Directory[/]",
+			$"[cyan]{result.OnlyInDir2.Count}[/]",
+			string.Join(", ", result.OnlyInDir2.Take(3).Select(Path.GetFileName))
+		);
+
+		AnsiConsole.Write(table);
+
+		// Show detailed differences for modified files if requested (outside status context)
+		if (result.ModifiedFiles.Count > 0 &&
+			AnsiConsole.Confirm("[cyan]Show detailed differences for modified files?[/]", false))
+		{
+			foreach (var file in result.ModifiedFiles.Take(5)) // Limit to first 5
+			{
+				var file1 = Path.Combine(dir1, file);
+				var file2 = Path.Combine(dir2, file);
+
+				AnsiConsole.WriteLine();
+				var rule = new Rule($"[bold]Differences: {file}[/]")
+				{
+					Style = Style.Parse("blue")
+				};
+				AnsiConsole.Write(rule);
+
+				ShowChangeSummary(file1, file2);
+			}
+		}
 	}
 
 	/// <summary>
@@ -701,44 +711,46 @@ public static class Program
 	/// <param name="file2">Second file path</param>
 	private static void CompareTwoFiles(string file1, string file2)
 	{
+		var areSame = false;
+
 		AnsiConsole.Status()
 			.Spinner(Spinner.Known.Star)
 			.Start("[yellow]Comparing files...[/]", ctx =>
 			{
-				var areSame = DiffPlexDiffer.AreFilesIdentical(file1, file2);
-
-				if (areSame)
-				{
-					AnsiConsole.MarkupLine("[green]✅ Files are identical![/]");
-					return;
-				}
-
-				AnsiConsole.MarkupLine("[yellow]📄 Files are different.[/]");
-
-				var diffFormat = AnsiConsole.Prompt(
-					new SelectionPrompt<string>()
-						.Title("[cyan]Choose diff format:[/]")
-						.AddChoices([
-							"📊 Change Summary (Added/Removed lines only)",
-							"🔧 Git-style Diff (Full context)",
-							"🎨 Colored Diff (Rich formatting)"
-						]));
-
-				AnsiConsole.WriteLine();
-
-				if (diffFormat.Contains("📊"))
-				{
-					ShowChangeSummary(file1, file2);
-				}
-				else if (diffFormat.Contains("🔧"))
-				{
-					ShowGitStyleDiff(file1, file2);
-				}
-				else if (diffFormat.Contains("🎨"))
-				{
-					ShowColoredDiff(file1, file2);
-				}
+				areSame = DiffPlexDiffer.AreFilesIdentical(file1, file2);
 			});
+
+		if (areSame)
+		{
+			AnsiConsole.MarkupLine("[green]✅ Files are identical![/]");
+			return;
+		}
+
+		AnsiConsole.MarkupLine("[yellow]📄 Files are different.[/]");
+
+		var diffFormat = AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("[cyan]Choose diff format:[/]")
+				.AddChoices([
+					"📊 Change Summary (Added/Removed lines only)",
+					"🔧 Git-style Diff (Full context)",
+					"🎨 Colored Diff (Rich formatting)"
+				]));
+
+		AnsiConsole.WriteLine();
+
+		if (diffFormat.Contains("📊"))
+		{
+			ShowChangeSummary(file1, file2);
+		}
+		else if (diffFormat.Contains("🔧"))
+		{
+			ShowGitStyleDiff(file1, file2);
+		}
+		else if (diffFormat.Contains("🎨"))
+		{
+			ShowColoredDiff(file1, file2);
+		}
 	}
 
 	/// <summary>
