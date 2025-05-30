@@ -29,6 +29,24 @@ public class FileGroup
 	public IReadOnlyCollection<string> FilePaths => filePaths.AsReadOnly();
 
 	/// <summary>
+	/// Initializes a new instance of the FileGroup class
+	/// </summary>
+	public FileGroup() { }
+
+	/// <summary>
+	/// Initializes a new instance of the FileGroup class with the specified file paths
+	/// </summary>
+	/// <param name="filePaths">The file paths to include in this group</param>
+	public FileGroup(IEnumerable<string> filePaths)
+	{
+		ArgumentNullException.ThrowIfNull(filePaths);
+		foreach (var filePath in filePaths)
+		{
+			this.filePaths.Add(filePath);
+		}
+	}
+
+	/// <summary>
 	/// Adds a file path to this group
 	/// </summary>
 	/// <param name="filePath">The file path to add</param>
@@ -231,42 +249,6 @@ public class MergeResult
 	/// Gets whether all conflicts were successfully resolved
 	/// </summary>
 	public bool IsFullyResolved => Conflicts.All(c => c.IsResolved);
-}
-
-/// <summary>
-/// Represents an iterative merge session for multiple file versions
-/// </summary>
-public class IterativeMergeSession(IEnumerable<string> filePaths)
-{
-	private readonly List<string> _filePaths = [.. filePaths];
-	private readonly List<string> _mergedContents = [];
-
-	/// <summary>
-	/// Gets the remaining files to be merged
-	/// </summary>
-	public IReadOnlyList<string> RemainingFiles => _filePaths.AsReadOnly();
-
-	/// <summary>
-	/// Gets the current merged content (if any)
-	/// </summary>
-	public IReadOnlyList<string> MergedContents => _mergedContents.AsReadOnly();
-
-	/// <summary>
-	/// Adds a merged result to the session
-	/// </summary>
-	/// <param name="mergedContent">The merged content to add</param>
-	public void AddMergedContent(string mergedContent) => _mergedContents.Add(mergedContent);
-
-	/// <summary>
-	/// Removes a file from the remaining files list
-	/// </summary>
-	/// <param name="filePath">The file path to remove</param>
-	public void RemoveFile(string filePath) => _filePaths.Remove(filePath);
-
-	/// <summary>
-	/// Gets whether the merge session is complete
-	/// </summary>
-	public bool IsComplete => _filePaths.Count <= 1 && _mergedContents.Count > 0;
 }
 
 /// <summary>
@@ -731,6 +713,13 @@ public static class FileDiffer
 			}
 		}
 	}
+
+	/// <summary>
+	/// Calculates a hash for string content
+	/// </summary>
+	/// <param name="content">The string content to hash</param>
+	/// <returns>The hash as a hex string</returns>
+	public static string CalculateFileHash(string content) => FileHasher.ComputeContentHash(content);
 
 	/// <summary>
 	/// Finds the two most similar files from a collection of unique file groups

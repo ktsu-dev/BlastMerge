@@ -37,4 +37,25 @@ public static class FileHasher
 
 		return hash.ToString("x16");
 	}
+
+	/// <summary>
+	/// Computes an FNV-1a hash for string content
+	/// </summary>
+	/// <param name="content">String content to hash</param>
+	/// <returns>The FNV-1a hash as a hex string</returns>
+	public static string ComputeContentHash(string content)
+	{
+		ArgumentNullException.ThrowIfNull(content);
+
+		var hash = FNV_OFFSET_BASIS_64;
+		var bytes = System.Text.Encoding.UTF8.GetBytes(content);
+
+		foreach (var b in bytes)
+		{
+			hash ^= b;
+			hash *= FNV_PRIME_64;
+		}
+
+		return hash.ToString("x16");
+	}
 }

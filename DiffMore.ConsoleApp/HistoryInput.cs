@@ -11,7 +11,7 @@ using System.Text.Json;
 using Spectre.Console;
 
 /// <summary>
-/// Handles user input with history functionality
+/// Handles user input with history functionality using arrow key navigation
 /// </summary>
 public static class HistoryInput
 {
@@ -27,7 +27,7 @@ public static class HistoryInput
 	static HistoryInput() => LoadHistory();
 
 	/// <summary>
-	/// Asks the user for input with history support
+	/// Asks the user for input with history support using arrow key navigation
 	/// </summary>
 	/// <param name="prompt">The prompt to show</param>
 	/// <param name="defaultValue">Default value if provided</param>
@@ -44,37 +44,234 @@ public static class HistoryInput
 			inputHistory[historyKey] = history;
 		}
 
-		var textPrompt = new TextPrompt<string>(prompt);
-
+		// Show the prompt
+		AnsiConsole.Markup(prompt);
 		if (!string.IsNullOrEmpty(defaultValue))
 		{
-			textPrompt.DefaultValue(defaultValue);
+			AnsiConsole.Markup($" [dim]({defaultValue})[/]");
 		}
-
 		if (history.Count > 0)
 		{
-			textPrompt.AddChoices(history);
-			textPrompt.ShowChoices(true);
+			AnsiConsole.Markup(" [dim](↑↓ for history)[/]");
+		}
+		AnsiConsole.Write(": ");
+
+		// Remember where the input starts
+		var inputStartColumn = Console.CursorLeft;
+		var inputStartRow = Console.CursorTop;
+
+		// Use most recent history as initial input, or default value, or empty
+		var initialInput = "";
+		if (history.Count > 0 && string.IsNullOrEmpty(defaultValue))
+		{
+			initialInput = history[0]; // Most recent input
+		}
+		else if (!string.IsNullOrEmpty(defaultValue))
+		{
+			initialInput = defaultValue;
 		}
 
-		var input = AnsiConsole.Prompt(textPrompt);
+		var input = ReadInputWithHistory(history, initialInput, inputStartColumn, inputStartRow);
 
-		// Add to history if not already present
+		// Use default value if input is empty and default is provided
+		if (string.IsNullOrEmpty(input) && !string.IsNullOrEmpty(defaultValue))
+		{
+			input = defaultValue;
+		}
+
+		// Use last history item if input is empty and no default is provided
+		if (string.IsNullOrEmpty(input) && history.Count > 0)
+		{
+			input = history[0]; // Most recent is at index 0
+			AnsiConsole.MarkupLine($"[dim]Using: {input}[/]");
+		}
+
+		// Add to history if not already present and not empty
 		if (!string.IsNullOrEmpty(input) && !history.Contains(input))
 		{
 			history.Insert(0, input);
 
-			// Keep only the last 10 entries
-			if (history.Count > 10)
+			// Keep only the last 20 entries
+			if (history.Count > 20)
 			{
 				history.RemoveAt(history.Count - 1);
 			}
 
 			SaveHistory();
 		}
+		else if (!string.IsNullOrEmpty(input) && history.Contains(input))
+		{
+			// Move existing item to the front
+			history.Remove(input);
+			history.Insert(0, input);
+			SaveHistory();
+		}
 
 		return input;
 	}
+
+	/// <summary>
+	/// Reads input with arrow key navigation through history
+	/// </summary>
+	/// <param name="history">The command history for this prompt</param>
+	/// <param name="initialInput">Initial input to display</param>
+	/// <param name="inputStartColumn">Column where input starts</param>
+	/// <param name="inputStartRow">Row where input starts</param>
+	/// <returns>The user input</returns>
+	private static string ReadInputWithHistory(List<string> history, string initialInput, int inputStartColumn, int inputStartRow)
+	{
+		var input = initialInput;
+		var cursorPos = input.Length;
+		var historyIndex = -1; // -1 means current input, 0+ means history items
+
+		// Display initial input
+		Console.Write(input);
+
+		while (true)
+		{
+			var keyInfo = Console.ReadKey(true);
+
+#pragma warning disable IDE0010 // Populate switch - we intentionally don't handle all ConsoleKey values
+			switch (keyInfo.Key)
+			{
+				case ConsoleKey.Enter:
+					AnsiConsole.WriteLine();
+					return input;
+
+				case ConsoleKey.UpArrow:
+					if (history.Count > 0)
+					{
+						if (historyIndex < history.Count - 1)
+						{
+							historyIndex++;
+							input = history[historyIndex];
+							cursorPos = input.Length;
+							RedrawInput(input, inputStartColumn, inputStartRow);
+						}
+					}
+					break;
+
+				case ConsoleKey.DownArrow:
+					if (historyIndex > 0)
+					{
+						historyIndex--;
+						input = history[historyIndex];
+						cursorPos = input.Length;
+						RedrawInput(input, inputStartColumn, inputStartRow);
+					}
+					else if (historyIndex == 0)
+					{
+						historyIndex = -1;
+						input = initialInput; // Go back to initial input
+						cursorPos = input.Length;
+						RedrawInput(input, inputStartColumn, inputStartRow);
+					}
+					break;
+
+				case ConsoleKey.LeftArrow:
+					if (cursorPos > 0)
+					{
+						cursorPos--;
+						SetCursorPosition(cursorPos, inputStartColumn, inputStartRow);
+					}
+					break;
+
+				case ConsoleKey.RightArrow:
+					if (cursorPos < input.Length)
+					{
+						cursorPos++;
+						SetCursorPosition(cursorPos, inputStartColumn, inputStartRow);
+					}
+					break;
+
+				case ConsoleKey.Home:
+					cursorPos = 0;
+					SetCursorPosition(cursorPos, inputStartColumn, inputStartRow);
+					break;
+
+				case ConsoleKey.End:
+					cursorPos = input.Length;
+					SetCursorPosition(cursorPos, inputStartColumn, inputStartRow);
+					break;
+
+				case ConsoleKey.Backspace:
+					if (cursorPos > 0)
+					{
+						input = input.Remove(cursorPos - 1, 1);
+						cursorPos--;
+						historyIndex = -1; // Reset history when editing
+						RedrawInput(input, inputStartColumn, inputStartRow);
+						SetCursorPosition(cursorPos, inputStartColumn, inputStartRow);
+					}
+					break;
+
+				case ConsoleKey.Delete:
+					if (cursorPos < input.Length)
+					{
+						input = input.Remove(cursorPos, 1);
+						historyIndex = -1; // Reset history when editing
+						RedrawInput(input, inputStartColumn, inputStartRow);
+						SetCursorPosition(cursorPos, inputStartColumn, inputStartRow);
+					}
+					break;
+
+				case ConsoleKey.Escape:
+					// Clear current input
+					input = "";
+					cursorPos = 0;
+					historyIndex = -1;
+					RedrawInput(input, inputStartColumn, inputStartRow);
+					break;
+
+				default:
+					// Handle regular character input
+					if (!char.IsControl(keyInfo.KeyChar))
+					{
+						input = input.Insert(cursorPos, keyInfo.KeyChar.ToString());
+						cursorPos++;
+						historyIndex = -1; // Reset history when typing
+						RedrawInput(input, inputStartColumn, inputStartRow);
+						SetCursorPosition(cursorPos, inputStartColumn, inputStartRow);
+					}
+					// Ignore other special keys
+					break;
+			}
+#pragma warning restore IDE0010
+		}
+	}
+
+	/// <summary>
+	/// Redraws only the input portion, preserving the prompt
+	/// </summary>
+	/// <param name="input">Current input text</param>
+	/// <param name="inputStartColumn">Column where input starts</param>
+	/// <param name="inputStartRow">Row where input starts</param>
+	private static void RedrawInput(string input, int inputStartColumn, int inputStartRow)
+	{
+		// Save current cursor position
+		var currentColumn = Console.CursorLeft;
+		var currentRow = Console.CursorTop;
+
+		// Go to input start position
+		Console.SetCursorPosition(inputStartColumn, inputStartRow);
+
+		// Clear from input start to end of line
+		var remainingWidth = Console.WindowWidth - inputStartColumn;
+		Console.Write(new string(' ', remainingWidth));
+
+		// Go back to input start and write the new input
+		Console.SetCursorPosition(inputStartColumn, inputStartRow);
+		Console.Write(input);
+	}
+
+	/// <summary>
+	/// Sets the cursor position within the input area
+	/// </summary>
+	/// <param name="cursorPos">Position within the input string</param>
+	/// <param name="inputStartColumn">Column where input starts</param>
+	/// <param name="inputStartRow">Row where input starts</param>
+	private static void SetCursorPosition(int cursorPos, int inputStartColumn, int inputStartRow) =>
+		Console.SetCursorPosition(inputStartColumn + cursorPos, inputStartRow);
 
 	/// <summary>
 	/// Loads input history from file

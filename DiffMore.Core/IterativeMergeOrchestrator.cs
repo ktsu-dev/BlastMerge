@@ -85,40 +85,14 @@ public static class IterativeMergeOrchestrator
 		ArgumentNullException.ThrowIfNull(statusCallback);
 		ArgumentNullException.ThrowIfNull(continuationCallback);
 
-		// Create a list of representative files (one from each group)
-		var filesToMerge = fileGroups.Select(g => g.FilePaths.First()).ToList();
-		var session = new IterativeMergeSession(filesToMerge);
-
+		// Create a working copy of file groups that we'll update as we merge
+		var remainingGroups = fileGroups.ToList();
 		var mergeCount = 1;
-		string? lastMergedContent = null;
-		string? mergedFilePath = null; // Track the file containing merged content
 
-		while (session.RemainingFiles.Count > 1)
+		while (remainingGroups.Count > 1)
 		{
-			FileSimilarity? similarity;
-
-			if (lastMergedContent != null && mergedFilePath != null)
-			{
-				// Find the most similar file to our current merged result
-				similarity = FindMostSimilarToMergedContent(session.RemainingFiles, lastMergedContent);
-
-				// Update the similarity to use the merged file path as file1
-				if (similarity != null)
-				{
-					similarity = new FileSimilarity
-					{
-						FilePath1 = mergedFilePath,
-						FilePath2 = similarity.FilePath2,
-						SimilarityScore = similarity.SimilarityScore
-					};
-				}
-			}
-			else
-			{
-				// Find the two most similar files from remaining files
-				var remainingGroups = fileGroups.Where(g => session.RemainingFiles.Contains(g.FilePaths.First())).ToList();
-				similarity = FileDiffer.FindMostSimilarFiles(remainingGroups);
-			}
+			// Find the two most similar groups among remaining groups
+			var similarity = FileDiffer.FindMostSimilarFiles(remainingGroups);
 
 			if (similarity == null)
 			{
@@ -135,14 +109,14 @@ public static class IterativeMergeOrchestrator
 			var status = new MergeSessionStatus
 			{
 				CurrentIteration = mergeCount,
-				RemainingFilesCount = session.RemainingFiles.Count,
-				CompletedMergesCount = session.MergedContents.Count,
+				RemainingFilesCount = remainingGroups.Sum(g => g.FilePaths.Count),
+				CompletedMergesCount = mergeCount - 1,
 				MostSimilarPair = similarity
 			};
 			statusCallback(status);
 
 			// Perform the merge
-			var mergeResult = mergeCallback(similarity.FilePath1, similarity.FilePath2, lastMergedContent);
+			var mergeResult = mergeCallback(similarity.FilePath1, similarity.FilePath2, null);
 
 			if (mergeResult == null)
 			{
@@ -155,40 +129,39 @@ public static class IterativeMergeOrchestrator
 				};
 			}
 
-			// Update session
-			lastMergedContent = string.Join(Environment.NewLine, mergeResult.MergedLines);
-			session.AddMergedContent(lastMergedContent);
+			// Update all files with the merged result
+			var mergedContent = string.Join(Environment.NewLine, mergeResult.MergedLines);
 
-			// Replace both input files with the merged output
 			try
 			{
-				// Choose which file to keep (use the first one as the target)
-				var targetFile = similarity.FilePath1;
-				var fileToDelete = similarity.FilePath2;
+				// Find the groups being merged
+				var group1 = remainingGroups.First(g => g.FilePaths.Contains(similarity.FilePath1));
+				var group2 = remainingGroups.First(g => g.FilePaths.Contains(similarity.FilePath2));
 
-				// Write merged content to the target file
-				File.WriteAllText(targetFile, lastMergedContent);
-
-				// Delete the second file
-				if (File.Exists(fileToDelete))
+				// Create a new merged group with all files from both groups
+				var mergedGroup = new FileGroup([.. group1.FilePaths, .. group2.FilePaths])
 				{
-					File.Delete(fileToDelete);
+					Hash = FileDiffer.CalculateFileHash(mergedContent)
+				};
+
+				// Update all files in both groups with the merged content
+				foreach (var filePath in mergedGroup.FilePaths)
+				{
+					File.WriteAllText(filePath, mergedContent);
 				}
 
-				// Update tracking
-				mergedFilePath = targetFile;
-				session.RemoveFile(fileToDelete);
-
-				// Keep the target file in the session for the next iteration
-				// (it will be automatically part of RemainingFiles since we only removed fileToDelete)
+				// Remove the original groups and add the merged group
+				remainingGroups.Remove(group1);
+				remainingGroups.Remove(group2);
+				remainingGroups.Add(mergedGroup);
 			}
 			catch (IOException ex)
 			{
 				return new MergeCompletionResult
 				{
 					IsSuccessful = false,
-					FinalMergedContent = lastMergedContent,
-					FinalLineCount = lastMergedContent?.Split(Environment.NewLine).Length ?? 0,
+					FinalMergedContent = mergedContent,
+					FinalLineCount = mergedContent.Split(Environment.NewLine).Length,
 					OriginalFileName = $"error: {ex.Message}"
 				};
 			}
@@ -197,37 +170,38 @@ public static class IterativeMergeOrchestrator
 				return new MergeCompletionResult
 				{
 					IsSuccessful = false,
-					FinalMergedContent = lastMergedContent,
-					FinalLineCount = lastMergedContent?.Split(Environment.NewLine).Length ?? 0,
+					FinalMergedContent = mergedContent,
+					FinalLineCount = mergedContent.Split(Environment.NewLine).Length,
 					OriginalFileName = $"access denied: {ex.Message}"
 				};
 			}
 
 			mergeCount++;
 
-			// Check if user wants to continue (if there are more files to merge)
-			if (session.RemainingFiles.Count > 1 && !continuationCallback())
+			// Check if user wants to continue (if there are more groups to merge)
+			if (remainingGroups.Count > 1 && !continuationCallback())
 			{
 				return new MergeCompletionResult
 				{
 					IsSuccessful = false,
-					FinalMergedContent = lastMergedContent,
-					FinalLineCount = lastMergedContent?.Split(Environment.NewLine).Length ?? 0,
+					FinalMergedContent = mergedContent,
+					FinalLineCount = mergedContent.Split(Environment.NewLine).Length,
 					OriginalFileName = "incomplete"
 				};
 			}
 		}
 
 		// Merge completed successfully
-		var finalLines = lastMergedContent?.Split(Environment.NewLine) ?? [];
-		var finalFilePath = mergedFilePath ?? (session.RemainingFiles.Count > 0 ? session.RemainingFiles[0] : "unknown");
+		var finalGroup = remainingGroups.First();
+		var finalContent = File.ReadAllText(finalGroup.FilePaths.First());
+		var finalLines = finalContent.Split(Environment.NewLine);
 
 		return new MergeCompletionResult
 		{
 			IsSuccessful = true,
-			FinalMergedContent = lastMergedContent,
+			FinalMergedContent = finalContent,
 			FinalLineCount = finalLines.Length,
-			OriginalFileName = Path.GetFileName(finalFilePath)
+			OriginalFileName = Path.GetFileName(finalGroup.FilePaths.First())
 		};
 	}
 
@@ -302,37 +276,5 @@ public static class IterativeMergeOrchestrator
 		}
 
 		return BlockMerger.PerformManualBlockSelection(lines1, lines2, blockChoiceCallback);
-	}
-
-	/// <summary>
-	/// Finds the file most similar to the current merged content
-	/// </summary>
-	/// <param name="remainingFiles">List of remaining files to consider</param>
-	/// <param name="mergedContent">The current merged content</param>
-	/// <returns>A FileSimilarity object with the most similar file</returns>
-	private static FileSimilarity? FindMostSimilarToMergedContent(IReadOnlyList<string> remainingFiles, string mergedContent)
-	{
-		var mergedLines = mergedContent.Split(Environment.NewLine);
-		FileSimilarity? mostSimilar = null;
-		var highestSimilarity = -1.0;
-
-		foreach (var file in remainingFiles)
-		{
-			var fileLines = File.ReadAllLines(file);
-			var similarity = FileDiffer.CalculateLineSimilarity(mergedLines, fileLines);
-
-			if (similarity > highestSimilarity)
-			{
-				highestSimilarity = similarity;
-				mostSimilar = new FileSimilarity
-				{
-					FilePath1 = "<merged_content>", // Placeholder - will be updated by caller
-					FilePath2 = file,
-					SimilarityScore = similarity
-				};
-			}
-		}
-
-		return mostSimilar;
 	}
 }

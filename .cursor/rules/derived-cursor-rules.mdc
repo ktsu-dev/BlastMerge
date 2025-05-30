@@ -66,7 +66,6 @@ globs: *
 -   'MakeConflictColumnLayout' has a cyclomatic complexity of '49'. Refactor the code to decrease its complexity.
 -   The console app must only contain code for input handling and display. All the work must be done in the core library in case we want to implement another type of UI in the future.
 -   The current side-by-side diff implementation is incomplete, and the sophisticated version of the `BuildVersionContent` method and supporting methods like `FindLineInFile`, `FindBestMatchingLine`, and `AddContextLinesWithComparison` are missing. These methods must be implemented to ensure proper side-by-side diff display.
--   When displaying diffs in a side-by-side format, ensure that the prologue (initial context lines) shows the correct context around the differences, and not hardcoded line numbers. When displaying diffs in a side-by-side format, calculate the correct starting line numbers for the context before the block by using the actual line numbers where the context begins. Ensure that the context shows the actual context around the differences, and not hardcoded line numbers.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -96,6 +95,8 @@ globs: *
 -   Display diffs in a side-by-side format with line numbers.
 -   Use red on darkred for deleted lines, green on darkgreen for inserted lines, and yellow on darkorange for modified lines.
 -   Handle ChangeType.Imaginary lines by ignoring them.
+-   When showing the differences put the file with the least number of changes on the left, and instead of calling them version 1, version 2 use the relative directory from the search path.
+-   When displaying diffs in a side-by-side format, ensure that the prologue (initial context lines) shows the correct context around the differences, and not hardcoded line numbers. When displaying diffs in a side-by-side format, calculate the correct starting line numbers for the context before the block by using the actual line numbers where the context begins. Ensure that the context shows the actual context around the differences, and not hardcoded line numbers.
 
 ## DEBUGGING
 
@@ -167,7 +168,7 @@ globs: *
     ```
 -   The application should have a TUI using Spectre.Console.
 -   Implement an iterative merge feature for multiple file versions, where the two most similar versions are found and a visual TUI is offered for resolving the merge. This process is repeated until all versions are merged.
--   During the iterative merge, at each step, replace both input files with the merged output.
+-   During the iterative merge, at each step replace both input files with the merged output.
 -   When adding package references, use `dotnet add package <package_name>`
 -   When adding project references, use `dotnet add reference <project_path>`
 -   The DiffMore CLI should have command history functionality, allowing users to use arrow keys or tab to navigate through previous inputs. History should be visible to the user.
@@ -183,3 +184,13 @@ globs: *
 ## USER INTERFACE
 
 -   When displaying diffs in a side-by-side format, ensure that the prologue (initial context lines) shows the correct context around the differences, and not hardcoded line numbers. When displaying diffs in a side-by-side format, calculate the correct starting line numbers for the context before the block by using the actual line numbers where the context begins. Ensure that the context shows the actual context around the differences, and not hardcoded line numbers.
+-   When showing the differences put the file with the least number of changes on the left, and instead of calling them version 1, version 2 use the relative directory from the search path.
+-   The DiffMore CLI should have command history functionality, allowing users to use arrow keys or tab to navigate through previous inputs. History should be visible to the user.
+-   The DiffMore CLI should provide the most recently used input for a prompt as a default value.
+-   When performing iterative merge, the message that says "Result will replace ProjectDirector (and delete DiffMore)" should just say the result will replace both files.
+-   During iterative merge, the message "Result will replace both files" should be displayed.
+-   During iterative merge, the message "Merged successfully! Files reduced by 1." should be updated to say "Merged successfully! Versions reduced by 1."
+-   During iterative merge, the confirmation prompt should be skipped, and the merge should continue automatically, displaying "Continuing to next merge step..."
+-   During iterative merge, the redundant save prompt should be removed and replaced with the message "Final merged result is saved in the remaining file.".
+-   During the iterative merge, the version search should be performed again between every iteration.
+-   During the iterative merge, when saving the result, the content of every file that has those versions should be replaced.

@@ -332,40 +332,89 @@ public static class Program
 					"🎨 Colored Diff (Rich formatting)"
 				]));
 
-		var group1 = fileGroups[0]; // Most common version
-		var file1 = group1.FilePaths.First();
-
-		for (var j = 1; j < fileGroups.Count; j++)
+		// Compare all pairs of file groups
+		for (var i = 0; i < fileGroups.Count; i++)
 		{
-			var group2 = fileGroups[j];
-			var file2 = group2.FilePaths.First();
-
-			var rule = new Rule($"[bold]Version 1 vs Version {j + 1}[/]")
+			for (var j = i + 1; j < fileGroups.Count; j++)
 			{
-				Style = Style.Parse("blue")
-			};
-			AnsiConsole.Write(rule);
+				var group1 = fileGroups[i];
+				var group2 = fileGroups[j];
+				var file1 = group1.FilePaths.First();
+				var file2 = group2.FilePaths.First();
 
-			AnsiConsole.MarkupLine($"[dim]Comparing:[/]");
-			AnsiConsole.MarkupLine($"[dim]  📁 {file1}[/]");
-			AnsiConsole.MarkupLine($"[dim]  📁 {file2}[/]");
-			AnsiConsole.WriteLine();
+				// Count changes to determine which file should be on the left (fewer changes)
+				var differences = FileDiffer.FindDifferences(file1, file2);
+				var changesInFile1 = differences.Count(d => d.LineNumber1.HasValue);  // Deletions and modifications
+				var changesInFile2 = differences.Count(d => d.LineNumber2.HasValue);  // Additions and modifications
 
-			if (diffFormat.Contains("📊"))
-			{
-				ShowChangeSummary(file1, file2);
+				// Get relative paths for display
+				var relativeFile1 = GetRelativeDirectoryName(file1);
+				var relativeFile2 = GetRelativeDirectoryName(file2);
+
+				// Determine order: put file with fewer changes on left
+				string leftFile, rightFile, leftLabel, rightLabel;
+				if (changesInFile1 <= changesInFile2)
+				{
+					leftFile = file1;
+					rightFile = file2;
+					leftLabel = relativeFile1;
+					rightLabel = relativeFile2;
+				}
+				else
+				{
+					leftFile = file2;
+					rightFile = file1;
+					leftLabel = relativeFile2;
+					rightLabel = relativeFile1;
+				}
+
+				var rule = new Rule($"[bold]{leftLabel} vs {rightLabel}[/]")
+				{
+					Style = Style.Parse("blue")
+				};
+				AnsiConsole.Write(rule);
+
+				AnsiConsole.MarkupLine($"[dim]Comparing:[/]");
+				AnsiConsole.MarkupLine($"[dim]  📁 {leftFile}[/]");
+				AnsiConsole.MarkupLine($"[dim]  📁 {rightFile}[/]");
+				AnsiConsole.WriteLine();
+
+				if (diffFormat.Contains("📊"))
+				{
+					ShowChangeSummary(leftFile, rightFile);
+				}
+				else if (diffFormat.Contains("🔧"))
+				{
+					ShowGitStyleDiff(leftFile, rightFile);
+				}
+				else if (diffFormat.Contains("🎨"))
+				{
+					ShowColoredDiff(leftFile, rightFile);
+				}
+
+				AnsiConsole.WriteLine();
 			}
-			else if (diffFormat.Contains("🔧"))
-			{
-				ShowGitStyleDiff(file1, file2);
-			}
-			else if (diffFormat.Contains("🎨"))
-			{
-				ShowColoredDiff(file1, file2);
-			}
-
-			AnsiConsole.WriteLine();
 		}
+	}
+
+	/// <summary>
+	/// Gets the relative directory name from a file path for display purposes
+	/// </summary>
+	/// <param name="filePath">The full file path</param>
+	/// <returns>The directory name relative to the parent directory</returns>
+	private static string GetRelativeDirectoryName(string filePath)
+	{
+		var directory = Path.GetDirectoryName(filePath);
+		if (string.IsNullOrEmpty(directory))
+		{
+			return Path.GetFileName(filePath);
+		}
+
+		// Get the directory name (e.g., "Version1", "subfolder", etc.)
+		var dirName = Path.GetFileName(directory);
+
+		// If it's empty or just a drive letter, use the full path
+		return string.IsNullOrEmpty(dirName) || dirName.Length <= 3 ? filePath : dirName;
 	}
 
 	/// <summary>
@@ -423,11 +472,15 @@ public static class Program
 		{
 			var sideBySideDiff = DiffPlexDiffer.GenerateSideBySideDiff(file1, file2);
 
+			// Use relative directory names for headers
+			var header1 = GetRelativeDirectoryName(file1);
+			var header2 = GetRelativeDirectoryName(file2);
+
 			var table = new Table()
 				.AddColumn(new TableColumn("[bold]Line[/]").Width(6))
-				.AddColumn(new TableColumn($"[bold]{Path.GetFileName(file1)}[/]").Width(50))
+				.AddColumn(new TableColumn($"[bold]{header1}[/]").Width(50))
 				.AddColumn(new TableColumn("[bold]Line[/]").Width(6))
-				.AddColumn(new TableColumn($"[bold]{Path.GetFileName(file2)}[/]").Width(50))
+				.AddColumn(new TableColumn($"[bold]{header2}[/]").Width(50))
 				.Border(TableBorder.Rounded)
 				.Expand();
 
@@ -561,25 +614,7 @@ public static class Program
 		{
 			AnsiConsole.MarkupLine("[green]✅ Merge completed successfully![/]");
 			AnsiConsole.MarkupLine($"[cyan]Final result has {result.FinalLineCount} lines.[/]");
-
-			if (AnsiConsole.Confirm("[cyan]Would you like to save the merged result to a file?[/]", true))
-			{
-				var outputPath = HistoryInput.AskWithHistory("[cyan]Enter output file path:[/]",
-					Path.Combine(directory, $"merged_{fileName}"));
-
-				try
-				{
-					if (result.FinalMergedContent != null)
-					{
-						File.WriteAllText(outputPath, result.FinalMergedContent);
-						AnsiConsole.MarkupLine($"[green]✅ Merged result saved to: {outputPath}[/]");
-					}
-				}
-				catch (IOException ex)
-				{
-					AnsiConsole.MarkupLine($"[red]❌ Error saving file: {ex.Message}[/]");
-				}
-			}
+			AnsiConsole.MarkupLine($"[cyan]💾 Final merged result is saved in the remaining file.[/]");
 		}
 		else
 		{
@@ -810,25 +845,55 @@ public static class Program
 	/// <returns>The merge result, or null if cancelled</returns>
 	private static MergeResult? PerformSingleMerge(string file1, string file2, string? existingMergedContent)
 	{
-		AnsiConsole.MarkupLine($"[yellow]🔀 Merging:[/]");
-		if (existingMergedContent != null)
+		// Determine which file should be on the left (fewer changes)
+		string leftFile, rightFile;
+		if (existingMergedContent == null)
 		{
-			AnsiConsole.MarkupLine($"[dim]  📋 <existing merged content> → {Path.GetFileName(file1)}[/]");
+			// For new merges, count changes to determine order
+			var differences = FileDiffer.FindDifferences(file1, file2);
+			var changesInFile1 = differences.Count(d => d.LineNumber1.HasValue);
+			var changesInFile2 = differences.Count(d => d.LineNumber2.HasValue);
+
+			if (changesInFile1 <= changesInFile2)
+			{
+				leftFile = file1;
+				rightFile = file2;
+			}
+			else
+			{
+				leftFile = file2;
+				rightFile = file1;
+			}
 		}
 		else
 		{
-			AnsiConsole.MarkupLine($"[dim]  📁 {Path.GetFileName(file1)}[/]");
+			// For merges with existing content, keep original order
+			leftFile = file1;
+			rightFile = file2;
 		}
-		AnsiConsole.MarkupLine($"[dim]  📁 {Path.GetFileName(file2)}[/]");
-		AnsiConsole.MarkupLine($"[green]  ➡️  Result will replace {Path.GetFileName(file1)} (and delete {Path.GetFileName(file2)})[/]");
+
+		var leftLabel = GetRelativeDirectoryName(leftFile);
+		var rightLabel = GetRelativeDirectoryName(rightFile);
+
+		AnsiConsole.MarkupLine($"[yellow]🔀 Merging:[/]");
+		if (existingMergedContent != null)
+		{
+			AnsiConsole.MarkupLine($"[dim]  📋 <existing merged content> → {leftLabel}[/]");
+		}
+		else
+		{
+			AnsiConsole.MarkupLine($"[dim]  📁 {leftLabel}[/]");
+		}
+		AnsiConsole.MarkupLine($"[dim]  📁 {rightLabel}[/]");
+		AnsiConsole.MarkupLine($"[green]  ➡️  Result will replace both files[/]");
 		AnsiConsole.WriteLine();
 
 		var result = IterativeMergeOrchestrator.PerformMergeWithConflictResolution(
-			file1, file2, existingMergedContent, GetBlockChoice);
+			leftFile, rightFile, existingMergedContent, (block, context, blockNumber) => GetBlockChoice(block, context, blockNumber, leftFile, rightFile));
 
 		if (result != null)
 		{
-			AnsiConsole.MarkupLine($"[green]✅ Merged successfully! Files reduced by 1.[/]");
+			AnsiConsole.MarkupLine($"[green]✅ Merged successfully! Versions reduced by 1.[/]");
 			AnsiConsole.WriteLine();
 		}
 
@@ -862,7 +927,11 @@ public static class Program
 	/// Confirms whether to continue with the merge process
 	/// </summary>
 	/// <returns>True to continue, false to stop</returns>
-	private static bool ConfirmContinuation() => AnsiConsole.Confirm("[cyan]Continue with the next merge step?[/]", true);
+	private static bool ConfirmContinuation()
+	{
+		AnsiConsole.MarkupLine("[cyan]Continuing to next merge step...[/]");
+		return true;
+	}
 
 	/// <summary>
 	/// Gets the user's choice for a merge block
@@ -870,20 +939,22 @@ public static class Program
 	/// <param name="block">The diff block to choose for</param>
 	/// <param name="context">The context around the block</param>
 	/// <param name="blockNumber">The block number being processed</param>
+	/// <param name="leftFile">The left file path</param>
+	/// <param name="rightFile">The right file path</param>
 	/// <returns>The user's choice for the block</returns>
-	private static BlockChoice GetBlockChoice(DiffBlock block, BlockContext context, int blockNumber)
+	private static BlockChoice GetBlockChoice(DiffBlock block, BlockContext context, int blockNumber, string leftFile, string rightFile)
 	{
 		AnsiConsole.MarkupLine($"[yellow]🔍 Block {blockNumber} ({block.Type})[/]");
 
 		// Show the block content with context
-		ShowBlockWithContext(block, context);
+		ShowBlockWithContext(block, context, leftFile, rightFile);
 
 		// Get user's choice based on block type
 		return block.Type switch
 		{
-			BlockType.Insert => GetInsertChoice(),
-			BlockType.Delete => GetDeleteChoice(),
-			BlockType.Replace => GetReplaceChoice(),
+			BlockType.Insert => GetInsertChoice(rightFile),
+			BlockType.Delete => GetDeleteChoice(leftFile),
+			BlockType.Replace => GetReplaceChoice(leftFile, rightFile),
 			_ => throw new InvalidOperationException($"Unknown block type: {block.Type}")
 		};
 	}
@@ -893,17 +964,22 @@ public static class Program
 	/// </summary>
 	/// <param name="block">The diff block to show</param>
 	/// <param name="context">The context around the block</param>
-	private static void ShowBlockWithContext(DiffBlock block, BlockContext context)
+	/// <param name="leftFile">The left file path</param>
+	/// <param name="rightFile">The right file path</param>
+	private static void ShowBlockWithContext(DiffBlock block, BlockContext context, string leftFile, string rightFile)
 	{
 		AnsiConsole.MarkupLine($"[yellow]Block Type: {block.Type}[/]");
 		AnsiConsole.WriteLine();
 
+		var leftLabel = GetRelativeDirectoryName(leftFile);
+		var rightLabel = GetRelativeDirectoryName(rightFile);
+
 		// Create a side-by-side diff visualization
 		var table = new Table()
 			.AddColumn(new TableColumn("[bold]Line[/]").Width(6))
-			.AddColumn(new TableColumn("[bold]Version 1[/]").Width(50))
+			.AddColumn(new TableColumn($"[bold]{leftLabel}[/]").Width(50))
 			.AddColumn(new TableColumn("[bold]Line[/]").Width(6))
-			.AddColumn(new TableColumn("[bold]Version 2[/]").Width(50))
+			.AddColumn(new TableColumn($"[bold]{rightLabel}[/]").Width(50))
 			.Border(TableBorder.Rounded)
 			.Expand();
 
@@ -1039,12 +1115,14 @@ public static class Program
 	/// <summary>
 	/// Gets user choice for insert blocks
 	/// </summary>
+	/// <param name="rightFile">The right file path</param>
 	/// <returns>User's choice</returns>
-	private static BlockChoice GetInsertChoice()
+	private static BlockChoice GetInsertChoice(string rightFile)
 	{
+		var rightLabel = GetRelativeDirectoryName(rightFile);
 		var choice = AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
-				.Title("[cyan]This content exists only in Version 2. What would you like to do?[/]")
+				.Title($"[cyan]This content exists only in {rightLabel}. What would you like to do?[/]")
 				.AddChoices([
 					"✅ Include the addition",
 					"❌ Skip the addition"
@@ -1056,12 +1134,14 @@ public static class Program
 	/// <summary>
 	/// Gets user choice for delete blocks
 	/// </summary>
+	/// <param name="leftFile">The left file path</param>
 	/// <returns>User's choice</returns>
-	private static BlockChoice GetDeleteChoice()
+	private static BlockChoice GetDeleteChoice(string leftFile)
 	{
+		var leftLabel = GetRelativeDirectoryName(leftFile);
 		var choice = AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
-				.Title("[cyan]This content exists only in Version 1. What would you like to do?[/]")
+				.Title($"[cyan]This content exists only in {leftLabel}. What would you like to do?[/]")
 				.AddChoices([
 					"✅ Keep the content",
 					"❌ Remove the content"
@@ -1073,23 +1153,27 @@ public static class Program
 	/// <summary>
 	/// Gets user choice for replace blocks
 	/// </summary>
+	/// <param name="leftFile">The left file path</param>
+	/// <param name="rightFile">The right file path</param>
 	/// <returns>User's choice</returns>
-	private static BlockChoice GetReplaceChoice()
+	private static BlockChoice GetReplaceChoice(string leftFile, string rightFile)
 	{
+		var leftLabel = GetRelativeDirectoryName(leftFile);
+		var rightLabel = GetRelativeDirectoryName(rightFile);
 		var choice = AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
 				.Title("[cyan]This content differs between versions. What would you like to do?[/]")
 				.AddChoices([
-					"1️⃣ Use Version 1",
-					"2️⃣ Use Version 2",
+					$"1️⃣ Use {leftLabel}",
+					$"2️⃣ Use {rightLabel}",
 					"🔄 Use Both Versions",
 					"❌ Skip Both"
 				]));
 
 		return choice switch
 		{
-			var s when s.Contains("Version 1") => BlockChoice.UseVersion1,
-			var s when s.Contains("Version 2") => BlockChoice.UseVersion2,
+			var s when s.Contains($"Use {leftLabel}") => BlockChoice.UseVersion1,
+			var s when s.Contains($"Use {rightLabel}") => BlockChoice.UseVersion2,
 			var s when s.Contains("Both") => BlockChoice.UseBoth,
 			_ => BlockChoice.Skip
 		};
