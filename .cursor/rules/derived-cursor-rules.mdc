@@ -130,6 +130,8 @@ globs: *
 -   Use MSTest framework for unit tests.
 -   When tests fail due to missing assembly references, add the necessary package references to the test project file (.csproj).
 -   If a test project references a namespace from another project, ensure to add a project reference to the corresponding project in the test project file (.csproj).
+-   Focus tests on the core library.
+-   Remove broken tests targeting the console app.
 
 ## WORKFLOW & RELEASE RULES
 
@@ -183,7 +185,7 @@ globs: *
 
 ## USER INTERFACE
 
--   When displaying diffs in a side-by-side format, ensure that the prologue (initial context lines) shows the correct context around the differences, and not hardcoded line numbers. When displaying diffs in a side-by-side format, calculate the correct starting line numbers for the context before the block by using the actual line numbers where the context begins. Ensure that the context shows the actual context around the differences, and not hardcoded line numbers.
+-   When displaying diffs in a side-by-side format, ensure that the prologue (initial context lines) shows the correct context around the differences, and not hardcoded line numbers. When displaying diffs in a side-by-side format, calculate the correct starting line numbers for the context before the block by using the actual line numbers. Ensure that the context shows the actual context around the differences, and not hardcoded line numbers.
 -   When showing the differences put the file with the least number of changes on the left, and instead of calling them version 1, version 2 use the relative directory from the search path.
 -   The DiffMore CLI should have command history functionality, allowing users to use arrow keys or tab to navigate through previous inputs. History should be visible to the user.
 -   The DiffMore CLI should provide the most recently used input for a prompt as a default value.

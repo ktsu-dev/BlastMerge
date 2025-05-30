@@ -51,7 +51,7 @@ public static class DiffPlexDiffer
 	/// </summary>
 	/// <param name="file1">First file path</param>
 	/// <param name="file2">Second file path</param>
-	/// <param name="contextLines">Number of context lines</param>
+	/// <param name="contextLines">Number of context lines around changes (default: 3)</param>
 	/// <returns>Unified diff as string</returns>
 	public static string GenerateUnifiedDiff(string file1, string file2, int contextLines = 3)
 	{
@@ -65,6 +65,12 @@ public static class DiffPlexDiffer
 
 		var content1 = File.ReadAllText(file1);
 		var content2 = File.ReadAllText(file2);
+
+		// If files are identical, return empty string
+		if (content1 == content2)
+		{
+			return string.Empty;
+		}
 
 		var diff = InlineDiffBuilder.BuildDiffModel(content1, content2);
 
@@ -255,63 +261,107 @@ public static class DiffPlexDiffer
 		var content1 = File.ReadAllText(file1);
 		var content2 = File.ReadAllText(file2);
 
-		var diff = InlineDiffBuilder.BuildDiffModel(content1, content2);
+		// Use side-by-side diff for better handling of modifications
+		var sideBySideDiff = SideBySideDiffBuilder.BuildDiffModel(content1, content2);
 		var differences = new List<LineDifference>();
 
-		var lineNumber1 = 0;
-		var lineNumber2 = 0;
+		var oldLines = sideBySideDiff.OldText.Lines;
+		var newLines = sideBySideDiff.NewText.Lines;
 
-		foreach (var line in diff.Lines)
+		var oldIndex = 0;
+		var newIndex = 0;
+
+		while (oldIndex < oldLines.Count || newIndex < newLines.Count)
 		{
-			switch (line.Type)
+			var oldLine = oldIndex < oldLines.Count ? oldLines[oldIndex] : null;
+			var newLine = newIndex < newLines.Count ? newLines[newIndex] : null;
+
+			if (oldLine != null && newLine != null)
 			{
-				case ChangeType.Deleted:
+				if (oldLine.Type == ChangeType.Deleted && newLine.Type == ChangeType.Inserted)
+				{
+					// This is a modification - both lines exist and are changed
 					differences.Add(new LineDifference
 					{
-						LineNumber1 = ++lineNumber1,
+						LineNumber1 = oldLine.Position.HasValue ? oldLine.Position.Value + 1 : oldIndex + 1,
+						LineNumber2 = newLine.Position.HasValue ? newLine.Position.Value + 1 : newIndex + 1,
+						Content1 = oldLine.Text,
+						Content2 = newLine.Text,
+						Type = LineDifferenceType.Modified
+					});
+					oldIndex++;
+					newIndex++;
+				}
+				else if (oldLine.Type == ChangeType.Unchanged && newLine.Type == ChangeType.Unchanged)
+				{
+					// Lines are the same, skip both
+					oldIndex++;
+					newIndex++;
+				}
+				else if (oldLine.Type == ChangeType.Deleted)
+				{
+					// Line was deleted from old file
+					differences.Add(new LineDifference
+					{
+						LineNumber1 = oldLine.Position.HasValue ? oldLine.Position.Value + 1 : oldIndex + 1,
 						LineNumber2 = null,
-						Content1 = line.Text,
+						Content1 = oldLine.Text,
 						Content2 = null,
 						Type = LineDifferenceType.Deleted
 					});
-					break;
-
-				case ChangeType.Inserted:
+					oldIndex++;
+				}
+				else if (newLine.Type == ChangeType.Inserted)
+				{
+					// Line was added to new file
 					differences.Add(new LineDifference
 					{
 						LineNumber1 = null,
-						LineNumber2 = ++lineNumber2,
+						LineNumber2 = newLine.Position.HasValue ? newLine.Position.Value + 1 : newIndex + 1,
 						Content1 = null,
-						Content2 = line.Text,
+						Content2 = newLine.Text,
 						Type = LineDifferenceType.Added
 					});
-					break;
-
-				case ChangeType.Modified:
+					newIndex++;
+				}
+				else
+				{
+					// Both lines exist but neither is a change (shouldn't happen)
+					oldIndex++;
+					newIndex++;
+				}
+			}
+			else if (oldLine != null)
+			{
+				// Only old line exists (deletion)
+				if (oldLine.Type == ChangeType.Deleted)
+				{
 					differences.Add(new LineDifference
 					{
-						LineNumber1 = ++lineNumber1,
-						LineNumber2 = ++lineNumber2,
-						Content1 = line.Text,
-						Content2 = line.Text, // Note: DiffPlex modified lines need special handling
-						Type = LineDifferenceType.Modified
+						LineNumber1 = oldLine.Position.HasValue ? oldLine.Position.Value + 1 : oldIndex + 1,
+						LineNumber2 = null,
+						Content1 = oldLine.Text,
+						Content2 = null,
+						Type = LineDifferenceType.Deleted
 					});
-					break;
-
-				case ChangeType.Unchanged:
-					lineNumber1++;
-					lineNumber2++;
-					break;
-
-				case ChangeType.Imaginary:
-					// Handle imaginary lines (used for padding)
-					break;
-
-				default:
-					// Handle any other change types
-					lineNumber1++;
-					lineNumber2++;
-					break;
+				}
+				oldIndex++;
+			}
+			else if (newLine != null)
+			{
+				// Only new line exists (addition)
+				if (newLine.Type == ChangeType.Inserted)
+				{
+					differences.Add(new LineDifference
+					{
+						LineNumber1 = null,
+						LineNumber2 = newLine.Position.HasValue ? newLine.Position.Value + 1 : newIndex + 1,
+						Content1 = null,
+						Content2 = newLine.Text,
+						Type = LineDifferenceType.Added
+					});
+				}
+				newIndex++;
 			}
 		}
 

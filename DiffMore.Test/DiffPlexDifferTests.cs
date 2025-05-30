@@ -109,14 +109,12 @@ public class DiffPlexDifferTests
 	/// Tests unified diff generation for identical files
 	/// </summary>
 	[TestMethod]
-	public void GenerateUnifiedDiff_IdenticalFiles_ReturnsHeaderOnly()
+	public void GenerateUnifiedDiff_IdenticalFiles_ReturnsEmptyString()
 	{
 		var diff = DiffPlexDiffer.GenerateUnifiedDiff(_file1, _identicalFile);
 
-		Assert.IsTrue(diff.Contains($"--- {_file1}"));
-		Assert.IsTrue(diff.Contains($"+++ {_identicalFile}"));
-		// Should not contain any change blocks for identical files
-		Assert.IsFalse(diff.Contains("@@"));
+		// For identical files, git returns empty string
+		Assert.AreEqual(string.Empty, diff, "Unified diff should be empty for identical files");
 	}
 
 	/// <summary>
