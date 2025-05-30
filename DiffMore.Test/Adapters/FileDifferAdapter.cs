@@ -136,6 +136,13 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 			throw new FileNotFoundException("Source file not found", sourcePath);
 		}
 
+		// Create destination directory if it doesn't exist
+		var destinationDirectory = _fileSystem.Path.GetDirectoryName(destinationPath);
+		if (!string.IsNullOrEmpty(destinationDirectory) && !_fileSystem.Directory.Exists(destinationDirectory))
+		{
+			_fileSystem.Directory.CreateDirectory(destinationDirectory);
+		}
+
 		var sourceContent = _fileSystem.File.ReadAllText(sourcePath);
 		_fileSystem.File.WriteAllText(destinationPath, sourceContent);
 	}

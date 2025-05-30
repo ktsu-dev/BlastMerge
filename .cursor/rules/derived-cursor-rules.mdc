@@ -134,7 +134,8 @@ globs: *
 -   When tests fail due to missing assembly references, add the necessary package references to the test project file (.csproj).
 -   If a test project references a namespace from another project, ensure to add a project reference to the corresponding project in the test project file (.csproj).
 -   Focus tests on the core library.
--   Remove broken tests targeting the console app.
+-   Remove failing tests until more test coverage is added.
+-   Use the `Testable.IO.Abstractions` libraries to enable testing file access properly.
 
 ## WORKFLOW & RELEASE RULES
 

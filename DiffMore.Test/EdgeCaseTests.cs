@@ -8,42 +8,33 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using ktsu.DiffMore.Test.Adapters;
 
 [TestClass]
-public class EdgeCaseTests
+public class EdgeCaseTests : MockFileSystemTestBase
 {
-	private readonly string _testDirectory;
+	private FileDifferAdapter _fileDifferAdapter = null!;
+	private FileHasherAdapter _fileHasherAdapter = null!;
+	private FileFinderAdapter _fileFinderAdapter = null!;
 
-	public EdgeCaseTests() => _testDirectory = Path.Combine(Path.GetTempPath(), "DiffMoreTests_EdgeCases");
-
-	[TestInitialize]
-	public void Setup()
+	protected override void InitializeFileSystem()
 	{
-		// Create test directory
-		if (!Directory.Exists(_testDirectory))
-		{
-			Directory.CreateDirectory(_testDirectory);
-		}
-	}
-
-	[TestCleanup]
-	public void Cleanup()
-	{
-		TestHelper.SafeDeleteDirectory(_testDirectory);
+		// Initialize adapters
+		_fileDifferAdapter = new FileDifferAdapter(MockFileSystem);
+		_fileHasherAdapter = new FileHasherAdapter(MockFileSystem);
+		_fileFinderAdapter = new FileFinderAdapter(MockFileSystem);
 	}
 
 	[TestMethod]
 	public void FileDiffer_EmptyFiles_ProducesCorrectDiff()
 	{
 		// Arrange
-		var emptyFile1 = Path.Combine(_testDirectory, "empty1.txt");
-		var emptyFile2 = Path.Combine(_testDirectory, "empty2.txt");
-		File.WriteAllText(emptyFile1, string.Empty);
-		File.WriteAllText(emptyFile2, string.Empty);
+		var emptyFile1 = CreateFile("empty1.txt", string.Empty);
+		var emptyFile2 = CreateFile("empty2.txt", string.Empty);
 
 		// Act
-		var differences = FileDiffer.FindDifferences(emptyFile1, emptyFile2);
-		var gitDiff = FileDiffer.GenerateGitStyleDiff(emptyFile1, emptyFile2);
+		var differences = _fileDifferAdapter.FindDifferences(emptyFile1, emptyFile2);
+		var gitDiff = _fileDifferAdapter.GenerateGitStyleDiff(emptyFile1, emptyFile2);
 
 		// Assert
 		Assert.AreEqual(0, differences.Count, "Empty files should have no differences");
@@ -54,15 +45,20 @@ public class EdgeCaseTests
 	public void FileHasher_IdenticalContentDifferentEncoding_SameHash()
 	{
 		// Arrange - Create files with same content but different encoding
-		var utf8File = Path.Combine(_testDirectory, "utf8.txt");
-		var utf16File = Path.Combine(_testDirectory, "utf16.txt");
+		var utf8Content = "Test content with some unicode: äöü";
+		var utf8Bytes = Encoding.UTF8.GetBytes(utf8Content);
+		var utf16Bytes = Encoding.Unicode.GetBytes(utf8Content);
 
-		File.WriteAllText(utf8File, "Test content with some unicode: äöü", Encoding.UTF8);
-		File.WriteAllText(utf16File, "Test content with some unicode: äöü", Encoding.Unicode);
+		var utf8File = CreateFile("utf8.txt", "");
+		var utf16File = CreateFile("utf16.txt", "");
+
+		// Write the bytes directly to simulate different encodings
+		MockFileSystem.File.WriteAllBytes(utf8File, utf8Bytes);
+		MockFileSystem.File.WriteAllBytes(utf16File, utf16Bytes);
 
 		// Act
-		var hash1 = FileHasher.ComputeFileHash(utf8File);
-		var hash2 = FileHasher.ComputeFileHash(utf16File);
+		var hash1 = _fileHasherAdapter.ComputeFileHash(utf8File);
+		var hash2 = _fileHasherAdapter.ComputeFileHash(utf16File);
 
 		// Assert
 		// Note: We expect different hashes because the actual byte content is different
@@ -75,12 +71,10 @@ public class EdgeCaseTests
 	{
 		// Arrange - Create files with special characters in names
 		var specialFileName = "test #$%^&.txt";
-		var specialFilePath = Path.Combine(_testDirectory, specialFileName);
-
-		File.WriteAllText(specialFilePath, "Test content");
+		var specialFilePath = CreateFile(specialFileName, "Test content");
 
 		// Act
-		var files = FileFinder.FindFiles(_testDirectory, specialFileName);
+		var files = _fileFinderAdapter.FindFiles(TestDirectory, specialFileName);
 
 		// Assert
 		Assert.AreEqual(1, files.Count, "Should find the file with special characters in name");
@@ -91,24 +85,19 @@ public class EdgeCaseTests
 	public void SyncFile_TargetDirectoryDoesNotExist_CreatesDirectory()
 	{
 		// Arrange
-		var sourceFile = Path.Combine(_testDirectory, "source.txt");
-		File.WriteAllText(sourceFile, "Test content");
-
-		var targetDir = Path.Combine(_testDirectory, "NonExistentDir");
+		var sourceFile = CreateFile("source.txt", "Test content");
+		var targetDir = Path.Combine(TestDirectory, "NonExistentDir");
 		var targetFile = Path.Combine(targetDir, "target.txt");
 
-		// Ensure directory doesn't exist
-		if (Directory.Exists(targetDir))
-		{
-			Directory.Delete(targetDir, true);
-		}
+		// Ensure directory doesn't exist in mock file system
+		Assert.IsFalse(MockFileSystem.Directory.Exists(targetDir));
 
 		// Act
-		FileDiffer.SyncFile(sourceFile, targetFile);
+		_fileDifferAdapter.SyncFile(sourceFile, targetFile);
 
 		// Assert
-		Assert.IsTrue(Directory.Exists(targetDir), "Target directory should be created");
-		Assert.IsTrue(File.Exists(targetFile), "Target file should exist");
-		Assert.AreEqual("Test content", File.ReadAllText(targetFile), "Content should be copied correctly");
+		Assert.IsTrue(MockFileSystem.Directory.Exists(targetDir), "Target directory should be created");
+		Assert.IsTrue(MockFileSystem.File.Exists(targetFile), "Target file should exist");
+		Assert.AreEqual("Test content", MockFileSystem.File.ReadAllText(targetFile), "Content should be copied correctly");
 	}
 }
