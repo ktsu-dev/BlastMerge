@@ -2,10 +2,10 @@
 // All rights reserved.
 // Licensed under the MIT license.
 
-namespace ktsu.DiffMore.Test;
+namespace ktsu.BlastMerge.Test;
 
 using System.IO;
-using ktsu.DiffMore.Test.Adapters;
+using ktsu.BlastMerge.Test.Adapters;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 [TestClass]

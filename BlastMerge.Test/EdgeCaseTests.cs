@@ -2,13 +2,13 @@
 // All rights reserved.
 // Licensed under the MIT license.
 
-namespace ktsu.DiffMore.Test;
+namespace ktsu.BlastMerge.Test;
 
 using System.IO;
 using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using ktsu.DiffMore.Test.Adapters;
+using ktsu.BlastMerge.Test.Adapters;
 
 [TestClass]
 public class EdgeCaseTests : MockFileSystemTestBase

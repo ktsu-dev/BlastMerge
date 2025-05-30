@@ -2,7 +2,7 @@
 // All rights reserved.
 // Licensed under the MIT license.
 
-namespace ktsu.DiffMore.Core;
+namespace ktsu.BlastMerge.Core;
 
 /// <summary>
 /// Computes hashes for files to identify unique versions

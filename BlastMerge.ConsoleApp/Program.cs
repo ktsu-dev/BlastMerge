@@ -2,13 +2,13 @@
 // All rights reserved.
 // Licensed under the MIT license.
 
-namespace ktsu.DiffMore.ConsoleApp;
+namespace ktsu.BlastMerge.ConsoleApp;
 
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using ktsu.DiffMore.Core;
+using ktsu.BlastMerge.Core;
 using Spectre.Console;
 using DiffPlex.DiffBuilder.Model;
 
@@ -66,7 +66,7 @@ public static class Program
 	/// </summary>
 	private static void ShowBanner()
 	{
-		var rule = new Rule("[bold yellow]DiffMore[/] - Cross-Repository File Synchronization")
+		var rule = new Rule("[bold yellow]BlastMerge[/] - Cross-Repository File Synchronization")
 		{
 			Style = Style.Parse("blue")
 		};
@@ -601,7 +601,7 @@ public static class Program
 	private static void ShowHelp()
 	{
 		var panel = new Panel("""
-		[bold]DiffMore - Cross-Repository File Synchronization Tool[/]
+		[bold]BlastMerge - Cross-Repository File Synchronization Tool[/]
 
 		[yellow]Primary Feature - Iterative File Synchronization:[/]
 		• [cyan][bold]Unify multiple file versions across repositories and directories[/bold][/]
@@ -617,7 +617,7 @@ public static class Program
 		• View differences in git-style, change summary, or rich colored formats
 
 		[yellow]Command Line Usage:[/]
-		DiffMore.ConsoleApp <directory> <filename>
+		BlastMerge.ConsoleApp <directory> <filename>
 
 		[yellow]Interactive Mode:[/]
 		Run without arguments for the full interactive TUI interface.

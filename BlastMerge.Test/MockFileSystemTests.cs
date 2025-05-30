@@ -2,7 +2,7 @@
 // All rights reserved.
 // Licensed under the MIT license.
 
-namespace ktsu.DiffMore.Test;
+namespace ktsu.BlastMerge.Test;
 
 using System;
 using System.Collections.Generic;

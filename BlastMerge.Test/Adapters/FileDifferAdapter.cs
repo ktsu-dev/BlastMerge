@@ -2,14 +2,14 @@
 // All rights reserved.
 // Licensed under the MIT license.
 
-namespace ktsu.DiffMore.Test.Adapters;
+namespace ktsu.BlastMerge.Test.Adapters;
 
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.IO.Abstractions;
-using ktsu.DiffMore.Core;
+using ktsu.BlastMerge.Core;
 
 /// <summary>
 /// Adapter for FileDiffer that works with a mock filesystem

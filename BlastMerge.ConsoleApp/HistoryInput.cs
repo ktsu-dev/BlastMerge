@@ -2,7 +2,7 @@
 // All rights reserved.
 // Licensed under the MIT license.
 
-namespace ktsu.DiffMore.ConsoleApp;
+namespace ktsu.BlastMerge.ConsoleApp;
 
 using System;
 using System.Collections.Generic;
@@ -17,7 +17,7 @@ public static class HistoryInput
 {
 	private static readonly string HistoryFile = Path.Combine(
 		Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-		"DiffMore",
+		"BlastMerge",
 		"input_history.json");
 
 	private static Dictionary<string, List<string>> inputHistory = [];

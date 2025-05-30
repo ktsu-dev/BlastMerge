@@ -140,6 +140,7 @@ globs: *
 -   Use the `Testable.IO.Abstractions` libraries to enable testing file access properly.
 -   When using `FileFinderAdapter` in tests, be aware that `Directory.GetFiles()` returns absolute paths. Ensure consistency in path handling by converting paths to relative paths, if necessary, especially in tests using a mock file system.
 -   If a test uses the real file system, it can cause problems with parallel test execution because multiple tests are trying to access the same real files simultaneously. Convert the test to use the mock file system.
+-   For performance tests, use unique temp directories per test instance to avoid conflicts during parallel execution while still testing real file I/O.
 
 ## WORKFLOW & RELEASE RULES
 
@@ -207,3 +208,13 @@ globs: *
 -   During iterative merge, the redundant save prompt should be removed and replaced with the message "Final merged result is saved in the remaining file.".
 -   During the iterative merge, the version search should be performed again between every iteration.
 -   During the iterative merge, when saving the result, the content of every file that has those versions should be replaced.
+
+## PROJECT RENAMING
+
+-   The project has been renamed from "DiffMore" to "BlastMerge". All references to "DiffMore" in the codebase, documentation, and project files must be updated to "BlastMerge".
+
+## NEW PRIMARY FEATURE
+
+- The primary feature of the application is now cross-repository file synchronization through intelligent iterative merging.
+
+- The application is now named BlastMerge

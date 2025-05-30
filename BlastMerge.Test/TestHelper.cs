@@ -2,7 +2,7 @@
 // All rights reserved.
 // Licensed under the MIT license.
 
-namespace ktsu.DiffMore.Test;
+namespace ktsu.BlastMerge.Test;
 
 using System;
 using System.IO;
@@ -127,7 +127,7 @@ internal static class TestHelper
 	{
 		// Find the solution directory
 		var currentDir = new DirectoryInfo(Directory.GetCurrentDirectory());
-		while (currentDir != null && !File.Exists(Path.Combine(currentDir.FullName, "DiffMore.sln")))
+		while (currentDir != null && !File.Exists(Path.Combine(currentDir.FullName, "BlastMerge.sln")))
 		{
 			currentDir = currentDir.Parent;
 		}
@@ -138,6 +138,6 @@ internal static class TestHelper
 		}
 
 		// Return the path to the test file
-		return Path.Combine(currentDir.FullName, "DiffMore.CLI", "TestFiles", relativeFilePath);
+		return Path.Combine(currentDir.FullName, "BlastMerge.CLI", "TestFiles", relativeFilePath);
 	}
 }

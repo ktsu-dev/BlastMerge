@@ -2,7 +2,7 @@
 // All rights reserved.
 // Licensed under the MIT license.
 
-namespace ktsu.DiffMore.Test.Adapters;
+namespace ktsu.BlastMerge.Test.Adapters;
 
 using System;
 using System.IO.Abstractions;

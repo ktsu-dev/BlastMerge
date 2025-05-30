@@ -7,7 +7,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DiffMore.Core\DiffMore.Core.csproj" />
-    <ProjectReference Include="..\DiffMore.ConsoleApp\DiffMore.ConsoleApp.csproj" />
+    <ProjectReference Include="..\BlastMerge.Core\BlastMerge.Core.csproj" />
+    <ProjectReference Include="..\BlastMerge.ConsoleApp\BlastMerge.ConsoleApp.csproj" />
   </ItemGroup>
 </Project>

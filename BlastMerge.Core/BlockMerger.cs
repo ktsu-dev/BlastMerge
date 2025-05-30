@@ -2,7 +2,7 @@
 // All rights reserved.
 // Licensed under the MIT license.
 
-namespace ktsu.DiffMore.Core;
+namespace ktsu.BlastMerge.Core;
 
 using System;
 using System.Collections.Generic;

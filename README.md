@@ -1,10 +1,10 @@
-# ktsu.DiffMore
+# ktsu.BlastMerge
 
 > Cross-repository file synchronization through intelligent iterative merging
 
 ## Overview
 
-DiffMore is a revolutionary file synchronization tool that uses **intelligent iterative merging** to unify multiple versions of files across repositories, directories, and codebases. Unlike traditional diff tools, DiffMore progressively merges file versions by finding the most similar pairs and resolving conflicts interactively, ultimately synchronizing entire file ecosystems into a single, unified version.
+BlastMerge is a revolutionary file synchronization tool that uses **intelligent iterative merging** to unify multiple versions of files across repositories, directories, and codebases. Unlike traditional diff tools, BlastMerge progressively merges file versions by finding the most similar pairs and resolving conflicts interactively, ultimately synchronizing entire file ecosystems into a single, unified version.
 
 ## 🚀 Primary Feature: Iterative File Synchronization
 
@@ -14,7 +14,7 @@ When working across multiple repositories, branches, or environments, the same f
 
 ### **The Solution: Iterative Merging**
 
-DiffMore solves this by:
+BlastMerge solves this by:
 
 1. **Smart Discovery**: Automatically finds all versions of a file across directories/repositories
 2. **Hash-Based Grouping**: Groups identical files and identifies unique versions
@@ -72,7 +72,7 @@ DiffMore solves this by:
 Add the NuGet package:
 
 ```bash
-dotnet add package ktsu.DiffMore
+dotnet add package ktsu.BlastMerge
 ```
 
 ## Usage
@@ -81,12 +81,12 @@ dotnet add package ktsu.DiffMore
 
 ```bash
 # Launch interactive mode for iterative merging
-DiffMore.ConsoleApp
+BlastMerge.ConsoleApp
 
 # Select "🔀 Iterative Merge Multiple Versions"
 # 1. Specify the directory containing your repositories/projects
 # 2. Enter the filename pattern (e.g., "README.md", "config.json", "*.yml")
-# 3. Watch as DiffMore finds all versions and merges them optimally
+# 3. Watch as BlastMerge finds all versions and merges them optimally
 # 4. Resolve conflicts interactively when needed
 # 5. All file locations are automatically updated with the unified result
 ```
@@ -95,7 +95,7 @@ DiffMore.ConsoleApp
 
 ```bash
 # Quick comparison for files with the same name across directories
-DiffMore.ConsoleApp <directory> <filename>
+BlastMerge.ConsoleApp <directory> <filename>
 ```
 
 ### Interactive Mode Options
@@ -118,7 +118,7 @@ DiffMore.ConsoleApp <directory> <filename>
 
 ## Why Iterative Merging?
 
-Traditional tools merge two files at a time, requiring manual orchestration for multiple versions. DiffMore's iterative approach:
+Traditional tools merge two files at a time, requiring manual orchestration for multiple versions. BlastMerge's iterative approach:
 
 -   **Minimizes Conflicts**: By merging similar versions first, later merges have fewer conflicts
 -   **Optimizes Decision Making**: Present easier decisions first, complex conflicts last
