@@ -5,64 +5,30 @@
 namespace ktsu.DiffMore.Test;
 
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using ktsu.DiffMore.Core;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using ktsu.DiffMore.Test.Adapters;
 
 [TestClass]
-public class FileDifferGroupingTests
+public class FileDifferGroupingTests : MockFileSystemTestBase
 {
-	private readonly string _testDirectory;
-	private readonly string _testFile1;
-	private readonly string _testFile2;
-	private readonly string _testFile3;
-	private readonly string _testFile4;
+	private string _testFile1 = null!;
+	private string _testFile2 = null!;
+	private string _testFile3 = null!;
+	private string _testFile4 = null!;
+	private FileDifferAdapter _fileDifferAdapter = null!;
 
-	public FileDifferGroupingTests()
+	protected override void InitializeFileSystem()
 	{
-		_testDirectory = Path.Combine(Path.GetTempPath(), "DiffMoreTests_Grouping");
-		_testFile1 = Path.Combine(_testDirectory, "file1.txt");
-		_testFile2 = Path.Combine(_testDirectory, "file2.txt");
-		_testFile3 = Path.Combine(_testDirectory, "file3.txt");
-		_testFile4 = Path.Combine(_testDirectory, "file4.txt");
-	}
-
-	[TestInitialize]
-	public void Setup()
-	{
-		// Create test directory
-		if (!Directory.Exists(_testDirectory))
-		{
-			Directory.CreateDirectory(_testDirectory);
-		}
+		// Initialize adapter
+		_fileDifferAdapter = new FileDifferAdapter(MockFileSystem);
 
 		// Create test files (file1 and file2 have identical content)
-		File.WriteAllText(_testFile1, "This is test content 1");
-		File.WriteAllText(_testFile2, "This is test content 1"); // Same as file1
-		File.WriteAllText(_testFile3, "This is test content 3"); // Different
-		File.WriteAllText(_testFile4, "This is test content 3"); // Same as file3
-	}
-
-	[TestCleanup]
-	public void Cleanup()
-	{
-		// Clean up test directory
-		if (Directory.Exists(_testDirectory))
-		{
-			try
-			{
-				Directory.Delete(_testDirectory, true);
-			}
-			catch (IOException)
-			{
-				// Ignore IO exceptions during cleanup
-			}
-			catch (UnauthorizedAccessException)
-			{
-				// Ignore access exceptions during cleanup
-			}
-		}
+		_testFile1 = CreateFile("file1.txt", "This is test content 1");
+		_testFile2 = CreateFile("file2.txt", "This is test content 1"); // Same as file1
+		_testFile3 = CreateFile("file3.txt", "This is test content 3"); // Different
+		_testFile4 = CreateFile("file4.txt", "This is test content 3"); // Same as file3
 	}
 
 	[TestMethod]
@@ -72,7 +38,7 @@ public class FileDifferGroupingTests
 		var files = new List<string> { _testFile1, _testFile2, _testFile3, _testFile4 };
 
 		// Act
-		var groups = FileDiffer.GroupFilesByHash(files);
+		var groups = _fileDifferAdapter.GroupFilesByHash(files);
 
 		// Assert
 		Assert.AreEqual(2, groups.Count, "Should create two groups for two unique file contents");
@@ -97,12 +63,11 @@ public class FileDifferGroupingTests
 	public void GroupFilesByHash_WithUniqueFiles_CreatesSeperateGroups()
 	{
 		// Arrange
-		var uniqueFile = Path.Combine(_testDirectory, "unique.txt");
-		File.WriteAllText(uniqueFile, "This is unique content");
+		var uniqueFile = CreateFile("unique.txt", "This is unique content");
 		var files = new List<string> { _testFile1, _testFile3, uniqueFile };
 
 		// Act
-		var groups = FileDiffer.GroupFilesByHash(files);
+		var groups = _fileDifferAdapter.GroupFilesByHash(files);
 
 		// Assert
 		Assert.AreEqual(3, groups.Count, "Should create three groups for three unique file contents");
@@ -116,14 +81,12 @@ public class FileDifferGroupingTests
 	public void GroupFilesByHash_WithEmptyFiles_GroupsCorrectly()
 	{
 		// Arrange
-		var emptyFile1 = Path.Combine(_testDirectory, "empty1.txt");
-		var emptyFile2 = Path.Combine(_testDirectory, "empty2.txt");
-		File.WriteAllText(emptyFile1, string.Empty);
-		File.WriteAllText(emptyFile2, string.Empty);
+		var emptyFile1 = CreateFile("empty1.txt", string.Empty);
+		var emptyFile2 = CreateFile("empty2.txt", string.Empty);
 		var files = new List<string> { emptyFile1, emptyFile2, _testFile1 };
 
 		// Act
-		var groups = FileDiffer.GroupFilesByHash(files);
+		var groups = _fileDifferAdapter.GroupFilesByHash(files);
 
 		// Assert
 		Assert.AreEqual(2, groups.Count, "Should create two groups (empty files and non-empty file)");
@@ -139,14 +102,14 @@ public class FileDifferGroupingTests
 	public void GroupFilesByHash_WithNullInput_ThrowsArgumentNullException()
 	{
 		// Act
-		FileDiffer.GroupFilesByHash(null!);
+		_fileDifferAdapter.GroupFilesByHash(null!);
 	}
 
 	[TestMethod]
 	public void GroupFilesByHash_WithEmptyList_ReturnsEmptyCollection()
 	{
 		// Act
-		var groups = FileDiffer.GroupFilesByHash([]);
+		var groups = _fileDifferAdapter.GroupFilesByHash([]);
 
 		// Assert
 		Assert.AreEqual(0, groups.Count, "Should return empty collection for empty input");

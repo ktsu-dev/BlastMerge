@@ -118,10 +118,35 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 			throw new FileNotFoundException("File not found", file2Path);
 		}
 
+		// Since FileDiffer.GenerateColoredDiff calls DiffPlexDiffer.GenerateColoredDiff which expects real file paths
+		// and reads from the actual filesystem, we need to create temporary files with the content from our mock filesystem
 		var lines1 = _fileSystem.File.ReadAllLines(file1Path);
 		var lines2 = _fileSystem.File.ReadAllLines(file2Path);
 
-		return FileDiffer.GenerateColoredDiff(file1Path, file2Path, lines1, lines2);
+		// Create temporary files
+		var tempFile1 = Path.GetTempFileName();
+		var tempFile2 = Path.GetTempFileName();
+
+		try
+		{
+			File.WriteAllLines(tempFile1, lines1);
+			File.WriteAllLines(tempFile2, lines2);
+
+			return FileDiffer.GenerateColoredDiff(tempFile1, tempFile2, lines1, lines2);
+		}
+		finally
+		{
+			// Clean up temporary files
+			if (File.Exists(tempFile1))
+			{
+				File.Delete(tempFile1);
+			}
+
+			if (File.Exists(tempFile2))
+			{
+				File.Delete(tempFile2);
+			}
+		}
 	}
 
 	/// <summary>
@@ -145,6 +170,34 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 
 		var sourceContent = _fileSystem.File.ReadAllText(sourcePath);
 		_fileSystem.File.WriteAllText(destinationPath, sourceContent);
+	}
+
+	/// <summary>
+	/// Groups files by their hash to identify unique versions
+	/// </summary>
+	/// <param name="filePaths">Collection of file paths to group</param>
+	/// <returns>A collection of file groups where each group contains identical files</returns>
+	public IReadOnlyCollection<FileGroup> GroupFilesByHash(IReadOnlyCollection<string> filePaths)
+	{
+		ArgumentNullException.ThrowIfNull(filePaths);
+
+		var groups = new Dictionary<string, FileGroup>();
+		var fileHasher = new FileHasherAdapter(_fileSystem);
+
+		foreach (var filePath in filePaths)
+		{
+			var hash = fileHasher.ComputeFileHash(filePath);
+
+			if (!groups.TryGetValue(hash, out var group))
+			{
+				group = new FileGroup { Hash = hash };
+				groups[hash] = group;
+			}
+
+			group.AddFilePath(filePath);
+		}
+
+		return [.. groups.Values];
 	}
 
 	/// <summary>

@@ -22,7 +22,7 @@ public class PerformanceTests
 
 	public PerformanceTests()
 	{
-		_testDirectory = Path.Combine(Path.GetTempPath(), "DiffMoreTests_Performance");
+		_testDirectory = Path.Combine(Path.GetTempPath(), $"DiffMoreTests_Performance_{Guid.NewGuid()}");
 		_largeFile1 = Path.Combine(_testDirectory, "large1.txt");
 		_largeFile2 = Path.Combine(_testDirectory, "large2.txt");
 		_mediumFile1 = Path.Combine(_testDirectory, "medium1.txt");

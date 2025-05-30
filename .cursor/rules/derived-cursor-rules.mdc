@@ -67,6 +67,7 @@ globs: *
 -   The console app must only contain code for input handling and display. All the work must be done in the core library in case we want to implement another type of UI in the future.
 -   The current side-by-side diff implementation is incomplete, and the sophisticated version of the `BuildVersionContent` method and supporting methods like `FindLineInFile`, `FindBestMatchingLine`, and `AddContextLinesWithComparison` are missing. These methods must be implemented to ensure proper side-by-side diff display.
 -   Post-process the results of `FindDifferences` to detect when a deletion is immediately followed by an insertion at adjacent positions and merge them into a modification.
+-   When using `Directory.GetFiles` in `FileFinderAdapter.FindFiles`, be aware that it returns absolute paths. Ensure consistency in path handling by converting paths to relative paths, if necessary, especially in tests using a mock file system.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -97,8 +98,9 @@ globs: *
 -   Use red on darkred for deleted lines, green on darkgreen for inserted lines, and yellow on darkorange for modified lines.
 -   Handle ChangeType.Imaginary lines by ignoring them.
 -   When showing the differences put the file with the least number of changes on the left, and instead of calling them version 1, version 2 use the relative directory from the search path.
--   When displaying diffs in a side-by-side format, ensure that the prologue (initial context lines) shows the correct context around the differences, and not hardcoded line numbers. When displaying diffs in a side-by-side format, calculate the correct starting line numbers for the context before the block by using the actual line numbers where the context begins. Ensure that the context shows the actual context around the differences, and not hardcoded line numbers.
+-   When displaying diffs in a side-by-side format, ensure that the prologue (initial context lines) shows the correct context around the differences, and not hardcoded line numbers. When displaying diffs in a side-by-side format, calculate the correct starting line numbers for the context before the block by using the actual line numbers. Ensure that the context shows the actual context around the differences, and not hardcoded line numbers.
 -   Post-process the results of `FindDifferences` to detect when a deletion is immediately followed by an insertion at adjacent positions and merge them into a modification.
+-   When using the `DiffPlexDiffer.GenerateColoredDiff` method, be aware that it uses the real file system (`File.Exists()`) instead of the mock file system. When using a mock file system in tests, ensure that `FileDifferAdapter.GenerateColoredDiff` creates temporary files from the mock file system content, similar to how `GenerateGitStyleDiff` handles it.
 
 ## DEBUGGING
 
@@ -136,6 +138,8 @@ globs: *
 -   Focus tests on the core library.
 -   Remove failing tests until more test coverage is added.
 -   Use the `Testable.IO.Abstractions` libraries to enable testing file access properly.
+-   When using `FileFinderAdapter` in tests, be aware that `Directory.GetFiles()` returns absolute paths. Ensure consistency in path handling by converting paths to relative paths, if necessary, especially in tests using a mock file system.
+-   If a test uses the real file system, it can cause problems with parallel test execution because multiple tests are trying to access the same real files simultaneously. Convert the test to use the mock file system.
 
 ## WORKFLOW & RELEASE RULES
 

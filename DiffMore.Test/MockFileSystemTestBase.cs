@@ -5,6 +5,7 @@
 namespace ktsu.DiffMore.Test;
 
 using System.Collections.Generic;
+using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -29,7 +30,7 @@ public abstract class MockFileSystemTestBase
 	[TestInitialize]
 	public virtual void SetUp()
 	{
-		TestDirectory = "/mock-test-dir";
+		TestDirectory = @"C:\mock-test-dir";
 		MockFileSystem = new MockFileSystem(new Dictionary<string, MockFileData>());
 		MockFileSystem.Directory.CreateDirectory(TestDirectory);
 
