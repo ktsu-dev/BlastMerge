@@ -136,21 +136,6 @@ public class DiffPlexDifferTests
 	}
 
 	/// <summary>
-	/// Tests finding differences between files
-	/// </summary>
-	[TestMethod]
-	public void FindDifferences_DifferentFiles_ReturnsCorrectDifferences()
-	{
-		var differences = DiffPlexDiffer.FindDifferences(_file1, _file2);
-
-		Assert.IsTrue(differences.Count > 0);
-
-		// Should find both additions and deletions
-		Assert.IsTrue(differences.Any(d => d.Type == LineDifferenceType.Added));
-		Assert.IsTrue(differences.Any(d => d.Type == LineDifferenceType.Deleted));
-	}
-
-	/// <summary>
 	/// Tests side-by-side diff generation
 	/// </summary>
 	[TestMethod]

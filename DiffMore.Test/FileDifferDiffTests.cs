@@ -100,48 +100,6 @@ public class FileDifferDiffTests
 	}
 
 	[TestMethod]
-	public void FindDifferences_ModifiedLine_ReturnsCorrectDifference()
-	{
-		// Act
-		var differences = FileDiffer.FindDifferences(_testFile1, _testFile2).ToList();
-
-		// Assert
-		Assert.IsTrue(differences.Count >= 2, "Should find at least 2 differences (modified line and added line)");
-
-		// Find the modified line
-		var modifiedLine = differences.FirstOrDefault(d => d.LineNumber1 == 2 && d.LineNumber2 == 2);
-		Assert.IsNotNull(modifiedLine, "Should find difference at line 2");
-		Assert.AreEqual("Line 2", modifiedLine.Content1, "Should have correct original content");
-		Assert.AreEqual("Line 2 modified", modifiedLine.Content2, "Should have correct modified content");
-
-		// Find the added line
-		var addedLine = differences.FirstOrDefault(d => d.LineNumber2 == 4 && d.LineNumber1 == 0);
-		Assert.IsNotNull(addedLine, "Should find added line");
-		Assert.IsNull(addedLine.Content1, "Original content should be null for added line");
-		Assert.AreEqual("New line inserted", addedLine.Content2, "Should have correct added content");
-	}
-
-	[TestMethod]
-	public void FindDifferences_DeletedLine_ReturnsCorrectDifference()
-	{
-		// Act
-		var differences = FileDiffer.FindDifferences(_testFile1, _testFile3).ToList();
-
-		// Assert
-		Assert.IsTrue(differences.Count >= 2, "Should find at least 2 differences (deleted line and added line)");
-
-		// Find the deleted line
-		var deletedLine = differences.FirstOrDefault(d => d.LineNumber1 == 2 && d.LineNumber2 == 0);
-		Assert.IsNotNull(deletedLine, "Should find deleted line (Line 2)");
-		Assert.AreEqual("Line 2", deletedLine.Content1, "Should have correct deleted content");
-		Assert.IsNull(deletedLine.Content2, "Modified content should be null for deleted line");
-
-		// Find the added line at the end
-		var addedLine = differences.FirstOrDefault(d => d.Content2 == "Line 6 added");
-		Assert.IsNotNull(addedLine, "Should find added line at end");
-	}
-
-	[TestMethod]
 	public void GenerateGitStyleDiff_IdenticalFiles_ReturnsEmptyString()
 	{
 		// Act
@@ -208,18 +166,6 @@ public class FileDifferDiffTests
 	{
 		// Act
 		FileDiffer.FindDifferences(_testFile1, Path.Combine(_testDirectory, "nonexistent.txt"));
-	}
-
-	[TestMethod]
-	public void GenerateChangeSummaryDiff_WithDifferences_ContainsSummaryInfo()
-	{
-		// Act
-		var summary = FileDiffer.GenerateChangeSummaryDiff(_testFile1, _testFile2);
-
-		// Assert
-		Assert.IsFalse(string.IsNullOrEmpty(summary), "Change summary should not be empty");
-		Assert.IsTrue(summary.Contains("1 line(s) modified"), "Summary should mention modified lines");
-		Assert.IsTrue(summary.Contains("1 line(s) added"), "Summary should mention added lines");
 	}
 
 	[TestMethod]

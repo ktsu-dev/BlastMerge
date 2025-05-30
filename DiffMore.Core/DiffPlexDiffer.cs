@@ -261,111 +261,122 @@ public static class DiffPlexDiffer
 		var content1 = File.ReadAllText(file1);
 		var content2 = File.ReadAllText(file2);
 
-		// Use side-by-side diff for better handling of modifications
-		var sideBySideDiff = SideBySideDiffBuilder.BuildDiffModel(content1, content2);
-		var differences = new List<LineDifference>();
+		// Use inline diff for simpler processing
+		var inlineDiff = InlineDiffBuilder.BuildDiffModel(content1, content2);
+		var rawDifferences = new List<LineDifference>();
 
-		var oldLines = sideBySideDiff.OldText.Lines;
-		var newLines = sideBySideDiff.NewText.Lines;
+		var line1Number = 1;
+		var line2Number = 1;
 
-		var oldIndex = 0;
-		var newIndex = 0;
-
-		while (oldIndex < oldLines.Count || newIndex < newLines.Count)
+		foreach (var line in inlineDiff.Lines)
 		{
-			var oldLine = oldIndex < oldLines.Count ? oldLines[oldIndex] : null;
-			var newLine = newIndex < newLines.Count ? newLines[newIndex] : null;
-
-			if (oldLine != null && newLine != null)
+			switch (line.Type)
 			{
-				if (oldLine.Type == ChangeType.Deleted && newLine.Type == ChangeType.Inserted)
-				{
-					// This is a modification - both lines exist and are changed
-					differences.Add(new LineDifference
+				case ChangeType.Deleted:
+					rawDifferences.Add(new LineDifference
 					{
-						LineNumber1 = oldLine.Position.HasValue ? oldLine.Position.Value + 1 : oldIndex + 1,
-						LineNumber2 = newLine.Position.HasValue ? newLine.Position.Value + 1 : newIndex + 1,
-						Content1 = oldLine.Text,
-						Content2 = newLine.Text,
+						LineNumber1 = line1Number,
+						LineNumber2 = null,
+						Content1 = line.Text,
+						Content2 = null,
+						Type = LineDifferenceType.Deleted
+					});
+					line1Number++;
+					break;
+
+				case ChangeType.Inserted:
+					rawDifferences.Add(new LineDifference
+					{
+						LineNumber1 = null,
+						LineNumber2 = line2Number,
+						Content1 = null,
+						Content2 = line.Text,
+						Type = LineDifferenceType.Added
+					});
+					line2Number++;
+					break;
+
+				case ChangeType.Modified:
+					rawDifferences.Add(new LineDifference
+					{
+						LineNumber1 = line1Number,
+						LineNumber2 = line2Number,
+						Content1 = line.Text, // Note: In inline diff, this might be the original text
+						Content2 = line.Text, // and this might be the modified text
 						Type = LineDifferenceType.Modified
 					});
-					oldIndex++;
-					newIndex++;
-				}
-				else if (oldLine.Type == ChangeType.Unchanged && newLine.Type == ChangeType.Unchanged)
-				{
-					// Lines are the same, skip both
-					oldIndex++;
-					newIndex++;
-				}
-				else if (oldLine.Type == ChangeType.Deleted)
-				{
-					// Line was deleted from old file
-					differences.Add(new LineDifference
-					{
-						LineNumber1 = oldLine.Position.HasValue ? oldLine.Position.Value + 1 : oldIndex + 1,
-						LineNumber2 = null,
-						Content1 = oldLine.Text,
-						Content2 = null,
-						Type = LineDifferenceType.Deleted
-					});
-					oldIndex++;
-				}
-				else if (newLine.Type == ChangeType.Inserted)
-				{
-					// Line was added to new file
-					differences.Add(new LineDifference
-					{
-						LineNumber1 = null,
-						LineNumber2 = newLine.Position.HasValue ? newLine.Position.Value + 1 : newIndex + 1,
-						Content1 = null,
-						Content2 = newLine.Text,
-						Type = LineDifferenceType.Added
-					});
-					newIndex++;
-				}
-				else
-				{
-					// Both lines exist but neither is a change (shouldn't happen)
-					oldIndex++;
-					newIndex++;
-				}
-			}
-			else if (oldLine != null)
-			{
-				// Only old line exists (deletion)
-				if (oldLine.Type == ChangeType.Deleted)
-				{
-					differences.Add(new LineDifference
-					{
-						LineNumber1 = oldLine.Position.HasValue ? oldLine.Position.Value + 1 : oldIndex + 1,
-						LineNumber2 = null,
-						Content1 = oldLine.Text,
-						Content2 = null,
-						Type = LineDifferenceType.Deleted
-					});
-				}
-				oldIndex++;
-			}
-			else if (newLine != null)
-			{
-				// Only new line exists (addition)
-				if (newLine.Type == ChangeType.Inserted)
-				{
-					differences.Add(new LineDifference
-					{
-						LineNumber1 = null,
-						LineNumber2 = newLine.Position.HasValue ? newLine.Position.Value + 1 : newIndex + 1,
-						Content1 = null,
-						Content2 = newLine.Text,
-						Type = LineDifferenceType.Added
-					});
-				}
-				newIndex++;
+					line1Number++;
+					line2Number++;
+					break;
+
+				case ChangeType.Unchanged:
+					// Skip unchanged lines but track line numbers
+					line1Number++;
+					line2Number++;
+					break;
+
+				case ChangeType.Imaginary:
+					// Imaginary lines are used for padding, skip them
+					break;
+
+				default:
+					// Unknown change type, skip but track line numbers
+					line1Number++;
+					line2Number++;
+					break;
 			}
 		}
 
-		return new ReadOnlyCollection<LineDifference>(differences);
+		// Post-process to detect modifications (deletions and additions at the same line positions)
+		var finalDifferences = new List<LineDifference>();
+		var deletions = rawDifferences.Where(d => d.Type == LineDifferenceType.Deleted).ToList();
+		var additions = rawDifferences.Where(d => d.Type == LineDifferenceType.Added).ToList();
+		var others = rawDifferences.Where(d => d.Type == LineDifferenceType.Modified).ToList();
+
+		// Try to pair deletions with additions at the same line numbers
+		var usedAdditions = new HashSet<int>();
+
+		foreach (var deletion in deletions)
+		{
+			// Look for an addition at the same line number
+			var matchingAddition = additions
+				.Select((addition, index) => new { addition, index })
+				.FirstOrDefault(a => !usedAdditions.Contains(a.index) &&
+								   a.addition.LineNumber2 == deletion.LineNumber1);
+
+			if (matchingAddition != null)
+			{
+				// Convert to modification
+				finalDifferences.Add(new LineDifference
+				{
+					LineNumber1 = deletion.LineNumber1,
+					LineNumber2 = matchingAddition.addition.LineNumber2,
+					Content1 = deletion.Content1,
+					Content2 = matchingAddition.addition.Content2,
+					Type = LineDifferenceType.Modified
+				});
+				usedAdditions.Add(matchingAddition.index);
+			}
+			else
+			{
+				// Keep as deletion
+				finalDifferences.Add(deletion);
+			}
+		}
+
+		// Add remaining additions that weren't paired
+		for (var i = 0; i < additions.Count; i++)
+		{
+			if (!usedAdditions.Contains(i))
+			{
+				finalDifferences.Add(additions[i]);
+			}
+		}
+
+		// Add other types (modifications that were already detected)
+		finalDifferences.AddRange(others);
+
+		return new ReadOnlyCollection<LineDifference>(finalDifferences);
 	}
 
 	/// <summary>

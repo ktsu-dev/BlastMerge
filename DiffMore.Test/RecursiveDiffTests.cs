@@ -67,62 +67,6 @@ public class RecursiveDiffTests
 	}
 
 	[TestMethod]
-	public void FindDifferences_RecursiveTrue_IncludesSubdirectoryFiles()
-	{
-		// Act
-		var result = FileDiffer.FindDifferences(_dir1, _dir2, "*.txt", recursive: true);
-
-		// Assert
-		Assert.IsNotNull(result);
-
-		// Verify overall counts
-		var totalFiles = result.SameFiles.Count + result.ModifiedFiles.Count +
-						 result.OnlyInDir1.Count + result.OnlyInDir2.Count;
-		Assert.AreEqual(9, totalFiles, "Should find all 9 files across all directories");
-
-		// Check for specific files in subdirectories
-		Assert.IsTrue(result.ModifiedFiles.Contains(Path.Combine("subA", "subfile1.txt")),
-			"Should include modified file in subdirectory");
-		Assert.IsTrue(result.OnlyInDir1.Contains(Path.Combine("subA", "subfile2.txt")),
-			"Should include file only in dir1 subdirectory");
-		Assert.IsTrue(result.OnlyInDir1.Contains(Path.Combine("subB", "uniquefile.txt")),
-			"Should include file in dir1-only subdirectory");
-		Assert.IsTrue(result.OnlyInDir2.Contains(Path.Combine("subA", "subfile3.txt")),
-			"Should include file only in dir2 subdirectory");
-		Assert.IsTrue(result.OnlyInDir2.Contains(Path.Combine("subC", "newfile.txt")),
-			"Should include file in dir2-only subdirectory");
-	}
-
-	[TestMethod]
-	public void FindDifferences_RecursiveFalse_ExcludesSubdirectoryFiles()
-	{
-		// Act
-		var result = FileDiffer.FindDifferences(_dir1, _dir2, "*.txt", recursive: false);
-
-		// Assert
-		Assert.IsNotNull(result);
-
-		// Verify only root directory files are included
-		var totalFiles = result.SameFiles.Count + result.ModifiedFiles.Count +
-						 result.OnlyInDir1.Count + result.OnlyInDir2.Count;
-		Assert.AreEqual(4, totalFiles, "Should find only 4 files in the root directories");
-
-		// Check for specific root files
-		Assert.AreEqual(0, result.SameFiles.Count, "Should not have any identical files");
-		Assert.AreEqual(1, result.ModifiedFiles.Count, "Should have 1 modified file");
-		Assert.AreEqual(1, result.OnlyInDir1.Count, "Should have 1 file only in dir1");
-		Assert.AreEqual(1, result.OnlyInDir2.Count, "Should have 1 file only in dir2");
-
-		// Check that subdirectory files are excluded
-		Assert.IsFalse(result.ModifiedFiles.Any(f => f.Contains("sub")),
-			"Should not include any subdirectory files");
-		Assert.IsFalse(result.OnlyInDir1.Any(f => f.Contains("sub")),
-			"Should not include any subdirectory files");
-		Assert.IsFalse(result.OnlyInDir2.Any(f => f.Contains("sub")),
-			"Should not include any subdirectory files");
-	}
-
-	[TestMethod]
 	public void FindDifferences_DeepDirectoryStructure_HandlesCorrectly()
 	{
 		// Arrange

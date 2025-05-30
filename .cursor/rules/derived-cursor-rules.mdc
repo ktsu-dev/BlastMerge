@@ -66,6 +66,7 @@ globs: *
 -   'MakeConflictColumnLayout' has a cyclomatic complexity of '49'. Refactor the code to decrease its complexity.
 -   The console app must only contain code for input handling and display. All the work must be done in the core library in case we want to implement another type of UI in the future.
 -   The current side-by-side diff implementation is incomplete, and the sophisticated version of the `BuildVersionContent` method and supporting methods like `FindLineInFile`, `FindBestMatchingLine`, and `AddContextLinesWithComparison` are missing. These methods must be implemented to ensure proper side-by-side diff display.
+-   Post-process the results of `FindDifferences` to detect when a deletion is immediately followed by an insertion at adjacent positions and merge them into a modification.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -97,12 +98,14 @@ globs: *
 -   Handle ChangeType.Imaginary lines by ignoring them.
 -   When showing the differences put the file with the least number of changes on the left, and instead of calling them version 1, version 2 use the relative directory from the search path.
 -   When displaying diffs in a side-by-side format, ensure that the prologue (initial context lines) shows the correct context around the differences, and not hardcoded line numbers. When displaying diffs in a side-by-side format, calculate the correct starting line numbers for the context before the block by using the actual line numbers where the context begins. Ensure that the context shows the actual context around the differences, and not hardcoded line numbers.
+-   Post-process the results of `FindDifferences` to detect when a deletion is immediately followed by an insertion at adjacent positions and merge them into a modification.
 
 ## DEBUGGING
 
 -   When an error occurs, log the error message and rethrow the exception for debugging purposes.
 -   When encountering build errors, check the error messages to identify missing package references, incorrect project references, or other dependency-related issues.
 -   When using Spectre.Console, avoid running interactive functions (e.g., prompts, progress displays) concurrently to prevent `System.InvalidOperationException`.
+-   When tests fail, analyze the test failures by exploring the codebase structure and examining the failing tests to understand what's going wrong.
 
 ## UNIT TESTING
 
@@ -174,6 +177,9 @@ globs: *
 -   When adding package references, use `dotnet add package <package_name>`
 -   When adding project references, use `dotnet add reference <project_path>`
 -   The DiffMore CLI should have command history functionality, allowing users to use arrow keys or tab to navigate through previous inputs. History should be visible to the user.
+-   Consider renaming the project to "BlastMerge" to better reflect the merging functionality and align with the existing "explosive" theme of related applications.
+-   Make cross repository file synchronization by iterative merging the primary feature of the app.
+-   Remove failing tests until more test coverage is added.
 
 ## DIRECTORY COMPARISON
 

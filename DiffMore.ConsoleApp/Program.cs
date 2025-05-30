@@ -66,7 +66,7 @@ public static class Program
 	/// </summary>
 	private static void ShowBanner()
 	{
-		var rule = new Rule("[bold yellow]DiffMore[/] - File Comparison Tool")
+		var rule = new Rule("[bold yellow]DiffMore[/] - Cross-Repository File Synchronization")
 		{
 			Style = Style.Parse("blue")
 		};
@@ -85,15 +85,19 @@ public static class Program
 				new SelectionPrompt<string>()
 					.Title("[green]What would you like to do?[/]")
 					.AddChoices([
+						"🔀 Iterative Merge Multiple Versions [bold cyan](PRIMARY FEATURE)[/]",
 						"🔍 Compare Files in Directory",
 						"📁 Compare Two Directories",
 						"📄 Compare Two Specific Files",
-						"🔀 Iterative Merge Multiple Versions",
 						"ℹ️  Show Help",
 						"❌ Exit"
 					]));
 
-			if (choice.Contains("Compare Files in Directory"))
+			if (choice.Contains("Iterative Merge Multiple Versions"))
+			{
+				RunIterativeMerge();
+			}
+			else if (choice.Contains("Compare Files in Directory"))
 			{
 				CompareFilesInDirectory();
 			}
@@ -104,10 +108,6 @@ public static class Program
 			else if (choice.Contains("Compare Two Specific Files"))
 			{
 				CompareTwoSpecificFiles();
-			}
-			else if (choice.Contains("Iterative Merge Multiple Versions"))
-			{
-				RunIterativeMerge();
 			}
 			else if (choice.Contains("Show Help"))
 			{
@@ -601,27 +601,34 @@ public static class Program
 	private static void ShowHelp()
 	{
 		var panel = new Panel("""
-		[bold]DiffMore - File Comparison Tool[/]
+		[bold]DiffMore - Cross-Repository File Synchronization Tool[/]
 
-		[yellow]Features:[/]
+		[yellow]Primary Feature - Iterative File Synchronization:[/]
+		• [cyan][bold]Unify multiple file versions across repositories and directories[/bold][/]
+		• [cyan]Smart discovery and hash-based grouping of file versions[/]
+		• [cyan]Optimal merge order based on similarity calculation[/]
+		• [cyan]Interactive conflict resolution with visual TUI[/]
+		• [cyan]Cross-repository updates - sync all locations with merged result[/]
+
+		[yellow]Supporting Features:[/]
 		• Compare files with the same name across directories
-		• Compare two directories with file patterns
-		• Compare two specific files
-		• [cyan]Iterative merge multiple file versions[/]
-		• View differences in multiple formats (git-style, change summary)
-		• Sync files to make them identical
+		• Compare two directories with file patterns and recursive search
+		• Compare two specific files with multiple diff formats
+		• View differences in git-style, change summary, or rich colored formats
 
 		[yellow]Command Line Usage:[/]
-		DiffMore.CLI <directory> <filename>
+		DiffMore.ConsoleApp <directory> <filename>
 
 		[yellow]Interactive Mode:[/]
-		Run without arguments to use the interactive TUI interface.
+		Run without arguments for the full interactive TUI interface.
+		The primary workflow is "[cyan]🔀 Iterative Merge Multiple Versions[/]"
 
-		[yellow]Iterative Merge:[/]
-		• Automatically finds the most similar files and merges them step by step
-		• Interactive conflict resolution with visual TUI
-		• Optimal merge order based on similarity calculation
-		• Save final merged result to a new file
+		[yellow]Real-World Use Cases:[/]
+		• Sync configuration files across microservices
+		• Merge scattered feature branch changes
+		• Unify deployment scripts across environments
+		• Consolidate similar files when merging codebases
+		• Align documentation across related projects
 		""")
 		{
 			Header = new PanelHeader("[bold blue]Help[/]"),

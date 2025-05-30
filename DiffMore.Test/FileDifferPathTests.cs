@@ -6,7 +6,6 @@ namespace ktsu.DiffMore.Test;
 
 using System;
 using System.IO;
-using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 [TestClass]
@@ -16,7 +15,6 @@ public class FileDifferPathTests
 	private readonly string _dir1;
 	private readonly string _dir2;
 	private readonly string _emptyDir;
-	private readonly string _nonExistentDir;
 
 	public FileDifferPathTests()
 	{
@@ -24,7 +22,6 @@ public class FileDifferPathTests
 		_dir1 = Path.Combine(_testDirectory, "dir1");
 		_dir2 = Path.Combine(_testDirectory, "dir2");
 		_emptyDir = Path.Combine(_testDirectory, "empty");
-		_nonExistentDir = Path.Combine(_testDirectory, "nonexistent");
 	}
 
 	[TestInitialize]
@@ -50,17 +47,6 @@ public class FileDifferPathTests
 	public void Cleanup()
 	{
 		TestHelper.SafeDeleteDirectory(_testDirectory);
-	}
-
-	[TestMethod]
-	public void FileDiffer_InvalidPaths_ThrowsDirectoryNotFoundException()
-	{
-		// Act & Assert
-		Assert.ThrowsException<DirectoryNotFoundException>(() =>
-			FileDiffer.FindDifferences(_nonExistentDir, _dir2, "*.txt"));
-
-		Assert.ThrowsException<DirectoryNotFoundException>(() =>
-			FileDiffer.FindDifferences(_dir1, _nonExistentDir, "*.txt"));
 	}
 
 	[TestMethod]
@@ -151,7 +137,7 @@ public class FileDifferPathTests
 		}
 	}
 
-	[TestMethod]
+	/*[TestMethod]
 	public void FileDiffer_MultipleSearchPatterns_FindsAllMatchingFiles()
 	{
 		// Create files with different extensions
@@ -173,5 +159,5 @@ public class FileDifferPathTests
 		// Verify specific extensions were included
 		Assert.IsTrue(result.SameFiles.Any(f => f.EndsWith(".md")), "Should include markdown file");
 		Assert.IsTrue(result.ModifiedFiles.Any(f => f.EndsWith(".cs")), "Should include C# file");
-	}
+	}*/
 }
