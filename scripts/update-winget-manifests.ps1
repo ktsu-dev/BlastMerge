@@ -106,9 +106,6 @@ $versionManifestPath = Join-Path $manifestDir "$packageId.yaml"
 Write-Host "Updating version manifest: $versionManifestPath" -ForegroundColor Yellow
 
 $versionContent = @"
-# Created with YamlCreate.ps1
-# yaml-language-server: `$schema=https://aka.ms/winget-manifest.version.1.6.0.schema.json
-
 PackageIdentifier: $packageId
 PackageVersion: $Version
 DefaultLocale: en-US
@@ -123,9 +120,6 @@ $localeManifestPath = Join-Path $manifestDir "$packageId.locale.en-US.yaml"
 Write-Host "Updating locale manifest: $localeManifestPath" -ForegroundColor Yellow
 
 $localeContent = @"
-# Created with YamlCreate.ps1
-# yaml-language-server: `$schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
-
 PackageIdentifier: $packageId
 PackageVersion: $Version
 PackageLocale: en-US
@@ -185,16 +179,12 @@ $installerManifestPath = Join-Path $manifestDir "$packageId.installer.yaml"
 Write-Host "Updating installer manifest: $installerManifestPath" -ForegroundColor Yellow
 
 $installerContent = @"
-# Created with YamlCreate.ps1
-# yaml-language-server: `$schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
-
 PackageIdentifier: $packageId
 PackageVersion: $Version
 Platform:
 - Windows.Desktop
 MinimumOSVersion: 10.0.17763.0
 InstallerType: zip
-Scope: user
 InstallModes:
 - interactive
 - silent
@@ -225,21 +215,21 @@ Installers:
   InstallerSha256: $($sha256Hashes['win-x64'])
   NestedInstallerType: portable
   NestedInstallerFiles:
-  - RelativeFilePath: BlastMerge.ConsoleApp.exe
+  - RelativeFilePath: ktsu.BlastMerge.ConsoleApp.exe
     PortableCommandAlias: blastmerge
 - Architecture: x86
   InstallerUrl: $downloadBaseUrl/BlastMerge.ConsoleApp-$Version-win-x86.zip
   InstallerSha256: $($sha256Hashes['win-x86'])
   NestedInstallerType: portable
   NestedInstallerFiles:
-  - RelativeFilePath: BlastMerge.ConsoleApp.exe
+  - RelativeFilePath: ktsu.BlastMerge.ConsoleApp.exe
     PortableCommandAlias: blastmerge
 - Architecture: arm64
   InstallerUrl: $downloadBaseUrl/BlastMerge.ConsoleApp-$Version-win-arm64.zip
   InstallerSha256: $($sha256Hashes['win-arm64'])
   NestedInstallerType: portable
   NestedInstallerFiles:
-  - RelativeFilePath: BlastMerge.ConsoleApp.exe
+  - RelativeFilePath: ktsu.BlastMerge.ConsoleApp.exe
     PortableCommandAlias: blastmerge
 ManifestType: installer
 ManifestVersion: 1.6.0

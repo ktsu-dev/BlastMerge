@@ -243,6 +243,7 @@ globs: *
 -   A comprehensive README (`winget/README.md`) should be created for the winget distribution setup.
 -   A quick-start guide (`docs/winget-quick-start.md`) should be created for the entire winget distribution process.
 -   The `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` should have only one `dotnet publish` step, consolidating the previous separate steps for general application and winget package publishing.
+-   The executable name in the winget manifest (`winget/ktsu.BlastMerge.installer.yaml`) should match the actual executable name in the build output directory (e.g., `ktsu.BlastMerge.ConsoleApp.exe`).
 
 ## CROSS PLATFORM SUPPORT
 
@@ -256,3 +257,9 @@ globs: *
 -   General application ZIP files should be created for all projects and architectures.
 -   SHA256 hashes should be generated for all published packages across all platforms.
 -   The staging directory should contain all the packages and the `hashes.txt` file.
+
+## WINGET INSTALLATION
+
+- The executable name in the winget manifest (`winget/ktsu.BlastMerge.installer.yaml`) should match the actual executable name in the build output directory (e.g., `ktsu.BlastMerge.ConsoleApp.exe`).
+- The `RelativeFilePath` entry in `winget/ktsu.BlastMerge.installer.yaml` must be `ktsu.BlastMerge.ConsoleApp.exe`, not `BlastMerge.ConsoleApp.exe`.
+- The `RelativeFilePath` entry in `scripts/update-winget-manifests.ps1` must be `ktsu.BlastMerge.ConsoleApp.exe`, not `BlastMerge.ConsoleApp.exe`.
