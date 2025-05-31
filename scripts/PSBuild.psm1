@@ -1586,11 +1586,6 @@ function Invoke-DotNetPublish {
         }
     }
 
-    # Create GitHub release
-    Write-StepHeader "Creating GitHub Release" -Tags "New-GitHubRelease"
-    Write-Information "Creating release for version $($BuildConfiguration.Version)..." -Tags "New-GitHubRelease"
-    New-GitHubRelease -BuildConfiguration $BuildConfiguration | Write-InformationStream -Tags "New-GitHubRelease"
-
     Write-StepHeader "Release Process Completed" -Tags "Invoke-ReleaseWorkflow"
     Write-Information "Release process completed successfully!" -Tags "Invoke-ReleaseWorkflow"
     return [PSCustomObject]@{
