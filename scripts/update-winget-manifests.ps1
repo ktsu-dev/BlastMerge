@@ -247,6 +247,8 @@ ManifestVersion: 1.6.0
 
 Set-Content -Path $installerManifestPath -Value $installerContent -Encoding UTF8
 
+gh release upload v$Version $versionManifestPath $localeManifestPath $installerManifestPath --repo ktsu-dev/BlastMerge
+
 Write-Host "`n✅ Winget manifests updated successfully!" -ForegroundColor Green
 Write-Host "Files updated:" -ForegroundColor Yellow
 Write-Host "  - $versionManifestPath" -ForegroundColor Cyan
