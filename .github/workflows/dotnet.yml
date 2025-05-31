@@ -121,6 +121,8 @@ jobs:
 
       - name: Update Winget Manifests
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           .\scripts\update-winget-manifests.ps1 -Version "${{ needs.build.outputs.version }}"
 
