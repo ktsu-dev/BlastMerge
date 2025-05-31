@@ -182,10 +182,13 @@ globs: *
 -   During the iterative merge, at each step replace both input files with the merged output.
 -   When adding package references, use `dotnet add package <package_name>`
 -   When adding project references, use `dotnet add reference <project_path>`
--   The DiffMore CLI should have command history functionality, allowing users to use arrow keys or tab to navigate through previous inputs. History should be visible to the user.
--   Consider renaming the project to "BlastMerge" to better reflect the merging functionality and align with the existing "explosive" theme of related applications.
+-   The BlastMerge CLI should have command history functionality, allowing users to use arrow keys or tab to navigate through previous inputs. History should be visible to the user.
+-   Consider renaming the project to "BlastMerge" to better reflect the merging functionality and align with the existing "explosive" theme of related applications. **NOTE:** This rule is superseded as the project has been renamed to BlastMerge. See "PROJECT RENAMING".
 -   Make cross repository file synchronization by iterative merging the primary feature of the app.
 -   Remove failing tests until more test coverage is added.
+-   Prepare the application for distribution via winget.
+-   Modify the existing `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` to integrate the winget package creation functionality. Remove the separate `New-WingetPackages` function and its call in the release workflow.
+-   Ensure that the `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` has only one `dotnet publish` step, consolidating the previous separate steps for general application and winget package publishing.
 
 ## DIRECTORY COMPARISON
 
@@ -199,8 +202,8 @@ globs: *
 
 -   When displaying diffs in a side-by-side format, ensure that the prologue (initial context lines) shows the correct context around the differences, and not hardcoded line numbers. When displaying diffs in a side-by-side format, calculate the correct starting line numbers for the context before the block by using the actual line numbers. Ensure that the context shows the actual context around the differences, and not hardcoded line numbers.
 -   When showing the differences put the file with the least number of changes on the left, and instead of calling them version 1, version 2 use the relative directory from the search path.
--   The DiffMore CLI should have command history functionality, allowing users to use arrow keys or tab to navigate through previous inputs. History should be visible to the user.
--   The DiffMore CLI should provide the most recently used input for a prompt as a default value.
+-   The BlastMerge CLI should have command history functionality, allowing users to use arrow keys or tab to navigate through previous inputs. History should be visible to the user.
+-   The BlastMerge CLI should provide the most recently used input for a prompt as a default value.
 -   When performing iterative merge, the message that says "Result will replace ProjectDirector (and delete DiffMore)" should just say the result will replace both files.
 -   During iterative merge, the message "Result will replace both files" should be displayed.
 -   During iterative merge, the message "Merged successfully! Files reduced by 1." should be updated to say "Merged successfully! Versions reduced by 1."
@@ -218,3 +221,38 @@ globs: *
 - The primary feature of the application is now cross-repository file synchronization through intelligent iterative merging.
 
 - The application is now named BlastMerge
+
+## WINGET DISTRIBUTION
+
+-   The application should be prepared for distribution via winget.
+-   The project configuration should be enhanced for publishing:
+    -   Set `PublishSingleFile` to `true`.
+    -   Set `PublishTrimmed` to `false` (temporarily, until trimming issues are resolved).
+    -   Set `EnableCompressionInSingleFile` to `true`.
+    -   Set `IncludeNativeLibrariesForSelfExtract` to `true`.
+    -   Set `DebugType` to `none`.
+    -   Set `DebugSymbols` to `false`.
+    -   The application icon (`icon.png`) should be converted to `.ico` format and the `<ApplicationIcon>` line in `BlastMerge.ConsoleApp.csproj` should be uncommented.
+-   A GitHub Actions workflow should be integrated with the existing build and release pipeline (PSBuild module in `dotnet.yml`) for building and releasing the application.
+    -   The workflow should build for `win-x64`, `win-x86`, and `win-arm64`.
+    -   The workflow should create GitHub releases with proper asset naming.
+    -   The workflow should generate SHA256 checksums.
+    -   The workflow can be triggered manually for testing.
+-   Winget manifest files should be created for the package.
+-   A PowerShell script (`scripts/update-winget-manifests.ps1`) should be created to automate the winget submission process.
+-   A comprehensive README (`winget/README.md`) should be created for the winget distribution setup.
+-   A quick-start guide (`docs/winget-quick-start.md`) should be created for the entire winget distribution process.
+-   The `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` should have only one `dotnet publish` step, consolidating the previous separate steps for general application and winget package publishing.
+
+## CROSS PLATFORM SUPPORT
+
+-   The application should publish portable zip files for Linux and macOS platforms in addition to Windows, even if they are not included in the winget manifest.
+
+## PUBLISHING RULES
+
+-   The `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` should have only one `dotnet publish` step, consolidating the previous separate steps for general application and winget package publishing.
+-   When publishing, all applications should be published with the same optimized settings (self-contained, single-file, etc.) whether they're for general use or winget packages.
+-   Every project should be published for all specified architectures (win-x64, win-x86, win-arm64, linux-x64, linux-arm64, osx-x64, osx-arm64) in a single pass.
+-   General application ZIP files should be created for all projects and architectures.
+-   SHA256 hashes should be generated for all published packages across all platforms.
+-   The staging directory should contain all the packages and the `hashes.txt` file.

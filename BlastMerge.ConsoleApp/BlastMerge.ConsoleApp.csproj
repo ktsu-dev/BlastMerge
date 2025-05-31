@@ -2,4 +2,8 @@
   <ItemGroup>
     <PackageReference Include="Spectre.Console" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../BlastMerge.Core/BlastMerge.Core.csproj" />
+  </ItemGroup>
 </Project>
