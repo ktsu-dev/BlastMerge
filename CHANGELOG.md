@@ -1,4 +1,4 @@
-## v1.0.3-pre.1
+## v1.0.3
 
 Initial release or repository with no prior history.
 
