@@ -110,7 +110,7 @@ PackageIdentifier: $packageId
 PackageVersion: $Version
 DefaultLocale: en-US
 ManifestType: version
-ManifestVersion: 1.6.0
+ManifestVersion: 1.10.0
 "@
 
 Set-Content -Path $versionManifestPath -Value $versionContent -Encoding UTF8
@@ -169,7 +169,7 @@ Documentations:
 - DocumentLabel: README
   DocumentUrl: https://github.com/$GitHubRepo/blob/main/README.md
 ManifestType: defaultLocale
-ManifestVersion: 1.6.0
+ManifestVersion: 1.10.0
 "@
 
 Set-Content -Path $localeManifestPath -Value $localeContent -Encoding UTF8
@@ -209,6 +209,9 @@ FileExtensions:
 - h
 - hpp
 ReleaseDate: $releaseDate
+Dependencies:
+  PackageDependencies:
+    - PackageIdentifier: Microsoft.DotNet.DesktopRuntime.9
 Installers:
 - Architecture: x64
   InstallerUrl: $downloadBaseUrl/BlastMerge.ConsoleApp-$Version-win-x64.zip
@@ -232,7 +235,7 @@ Installers:
   - RelativeFilePath: ktsu.BlastMerge.ConsoleApp.exe
     PortableCommandAlias: blastmerge
 ManifestType: installer
-ManifestVersion: 1.6.0
+ManifestVersion: 1.10.0
 "@
 
 Set-Content -Path $installerManifestPath -Value $installerContent -Encoding UTF8

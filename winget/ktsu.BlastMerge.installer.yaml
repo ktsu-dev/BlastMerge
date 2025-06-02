@@ -28,6 +28,9 @@ FileExtensions:
   - h
   - hpp
 ReleaseDate: 2024-01-01
+Dependencies:
+  PackageDependencies:
+    - PackageIdentifier: Microsoft.DotNet.DesktopRuntime.9
 Installers:
   - Architecture: x64
     InstallerUrl: https://github.com/ktsu-dev/BlastMerge/releases/download/v1.0.2/BlastMerge-1.0.2-win-x64-portable.zip
@@ -51,4 +54,4 @@ Installers:
       - RelativeFilePath: ktsu.BlastMerge.ConsoleApp.exe
         PortableCommandAlias: blastmerge
 ManifestType: installer
-ManifestVersion: 1.6.0
+ManifestVersion: 1.10.0
