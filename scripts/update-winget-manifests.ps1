@@ -121,7 +121,7 @@ $localeManifestPath = Join-Path $manifestDir "$packageId.locale.en-US.yaml"
 Write-Host "Updating locale manifest: $localeManifestPath" -ForegroundColor Yellow
 
 $localeContent = @"
-# yaml-language-server: `$schema=https://aka.ms/winget-manifest.locale.1.10.0.schema.json
+# yaml-language-server: `$schema=https://aka.ms/winget-manifest.defaultLocale.1.10.0.schema.json
 PackageIdentifier: $packageId
 PackageVersion: $Version
 PackageLocale: en-US
