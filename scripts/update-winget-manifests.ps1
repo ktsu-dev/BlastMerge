@@ -106,6 +106,7 @@ $versionManifestPath = Join-Path $manifestDir "$packageId.yaml"
 Write-Host "Updating version manifest: $versionManifestPath" -ForegroundColor Yellow
 
 $versionContent = @"
+# yaml-language-server: `$schema=https://aka.ms/winget-manifest.version.1.10.0.schema.json
 PackageIdentifier: $packageId
 PackageVersion: $Version
 DefaultLocale: en-US
@@ -120,6 +121,7 @@ $localeManifestPath = Join-Path $manifestDir "$packageId.locale.en-US.yaml"
 Write-Host "Updating locale manifest: $localeManifestPath" -ForegroundColor Yellow
 
 $localeContent = @"
+# yaml-language-server: `$schema=https://aka.ms/winget-manifest.locale.1.10.0.schema.json
 PackageIdentifier: $packageId
 PackageVersion: $Version
 PackageLocale: en-US
@@ -179,6 +181,7 @@ $installerManifestPath = Join-Path $manifestDir "$packageId.installer.yaml"
 Write-Host "Updating installer manifest: $installerManifestPath" -ForegroundColor Yellow
 
 $installerContent = @"
+# yaml-language-server: `$schema=https://aka.ms/winget-manifest.installer.1.10.0.schema.json
 PackageIdentifier: $packageId
 PackageVersion: $Version
 Platform:
