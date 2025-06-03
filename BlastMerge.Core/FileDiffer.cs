@@ -8,248 +8,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Text;
 using System.Linq;
-
-/// <summary>
-/// Represents a group of identical files by hash
-/// </summary>
-public class FileGroup
-{
-	private readonly Collection<string> filePaths = [];
-
-	/// <summary>
-	/// Gets the hash that identifies this group
-	/// </summary>
-	public required string Hash { get; init; }
-
-	/// <summary>
-	/// Gets the list of file paths in this group
-	/// </summary>
-	public IReadOnlyCollection<string> FilePaths => filePaths.AsReadOnly();
-
-	/// <summary>
-	/// Initializes a new instance of the FileGroup class
-	/// </summary>
-	public FileGroup() { }
-
-	/// <summary>
-	/// Initializes a new instance of the FileGroup class with the specified file paths
-	/// </summary>
-	/// <param name="filePaths">The file paths to include in this group</param>
-	public FileGroup(IEnumerable<string> filePaths)
-	{
-		ArgumentNullException.ThrowIfNull(filePaths);
-		foreach (var filePath in filePaths)
-		{
-			this.filePaths.Add(filePath);
-		}
-	}
-
-	/// <summary>
-	/// Adds a file path to this group
-	/// </summary>
-	/// <param name="filePath">The file path to add</param>
-	public void AddFilePath(string filePath) => filePaths.Add(filePath);
-}
-
-/// <summary>
-/// Represents a line difference between two files
-/// </summary>
-public class LineDifference
-{
-	/// <summary>
-	/// Gets or sets the line number in the first file
-	/// </summary>
-	public int? LineNumber1 { get; set; }
-
-	/// <summary>
-	/// Gets or sets the line number in the second file
-	/// </summary>
-	public int? LineNumber2 { get; set; }
-
-	/// <summary>
-	/// Gets or sets the content from the first file
-	/// </summary>
-	public string? Content1 { get; set; }
-
-	/// <summary>
-	/// Gets or sets the content from the second file
-	/// </summary>
-	public string? Content2 { get; set; }
-
-	/// <summary>
-	/// Gets or sets the type of difference
-	/// </summary>
-	public LineDifferenceType Type { get; set; }
-}
-
-/// <summary>
-/// Defines the types of line differences
-/// </summary>
-public enum LineDifferenceType
-{
-	/// <summary>
-	/// Line was added in the second file
-	/// </summary>
-	Added,
-
-	/// <summary>
-	/// Line was deleted from the first file
-	/// </summary>
-	Deleted,
-
-	/// <summary>
-	/// Line was modified between files
-	/// </summary>
-	Modified
-}
-
-/// <summary>
-/// Defines colors to use for different parts of the diff output
-/// </summary>
-public enum DiffColor
-{
-	/// <summary>
-	/// Default console color
-	/// </summary>
-	Default,
-
-	/// <summary>
-	/// Color for deleted lines
-	/// </summary>
-	Deletion,
-
-	/// <summary>
-	/// Color for added lines
-	/// </summary>
-	Addition,
-
-	/// <summary>
-	/// Color for chunk headers
-	/// </summary>
-	ChunkHeader,
-
-	/// <summary>
-	/// Color for file headers
-	/// </summary>
-	FileHeader
-}
-
-/// <summary>
-/// Represents a diffed line with formatting information
-/// </summary>
-public class ColoredDiffLine
-{
-	/// <summary>
-	/// Gets or sets the line content
-	/// </summary>
-	public required string Content { get; set; }
-
-	/// <summary>
-	/// Gets or sets the color for this line
-	/// </summary>
-	public DiffColor Color { get; set; }
-}
-
-/// <summary>
-/// Represents the result of a directory comparison
-/// </summary>
-public class DirectoryComparisonResult
-{
-	/// <summary>
-	/// Gets the collection of files that are identical in both directories
-	/// </summary>
-	public IReadOnlyCollection<string> SameFiles { get; init; } = [];
-
-	/// <summary>
-	/// Gets the collection of files that exist in both directories but have different content
-	/// </summary>
-	public IReadOnlyCollection<string> ModifiedFiles { get; init; } = [];
-
-	/// <summary>
-	/// Gets the collection of files that exist only in the first directory
-	/// </summary>
-	public IReadOnlyCollection<string> OnlyInDir1 { get; init; } = [];
-
-	/// <summary>
-	/// Gets the collection of files that exist only in the second directory
-	/// </summary>
-	public IReadOnlyCollection<string> OnlyInDir2 { get; init; } = [];
-}
-
-/// <summary>
-/// Represents the result of a file similarity calculation
-/// </summary>
-public class FileSimilarity
-{
-	/// <summary>
-	/// Gets the path to the first file
-	/// </summary>
-	public required string FilePath1 { get; init; }
-
-	/// <summary>
-	/// Gets the path to the second file
-	/// </summary>
-	public required string FilePath2 { get; init; }
-
-	/// <summary>
-	/// Gets the similarity score between 0.0 (completely different) and 1.0 (identical)
-	/// </summary>
-	public double SimilarityScore { get; init; }
-}
-
-/// <summary>
-/// Represents a merge conflict that needs resolution
-/// </summary>
-public class MergeConflict
-{
-	/// <summary>
-	/// Gets the line number where the conflict occurs
-	/// </summary>
-	public int LineNumber { get; init; }
-
-	/// <summary>
-	/// Gets the content from the first file
-	/// </summary>
-	public string? Content1 { get; init; }
-
-	/// <summary>
-	/// Gets the content from the second file
-	/// </summary>
-	public string? Content2 { get; init; }
-
-	/// <summary>
-	/// Gets or sets the resolved content chosen by the user
-	/// </summary>
-	public string? ResolvedContent { get; set; }
-
-	/// <summary>
-	/// Gets or sets whether this conflict has been resolved
-	/// </summary>
-	public bool IsResolved { get; set; }
-}
-
-/// <summary>
-/// Represents the result of a merge operation
-/// </summary>
-public class MergeResult
-{
-	/// <summary>
-	/// Gets the merged file content as lines
-	/// </summary>
-	public required IReadOnlyList<string> MergedLines { get; init; }
-
-	/// <summary>
-	/// Gets the conflicts that were encountered during merge
-	/// </summary>
-	public required IReadOnlyCollection<MergeConflict> Conflicts { get; init; }
-
-	/// <summary>
-	/// Gets whether all conflicts were successfully resolved
-	/// </summary>
-	public bool IsFullyResolved => Conflicts.All(c => c.IsResolved);
-}
+using System.Text;
 
 /// <summary>
 /// Compares file contents to find differences
@@ -540,14 +300,8 @@ public static class FileDiffer
 		var result = new Collection<ColoredDiffLine>
 		{
 			// Add header
-			new() {
-				Content = $"Change Summary: {Path.GetFileName(file1)} vs {Path.GetFileName(file2)}",
-				Color = DiffColor.FileHeader
-			},
-			new() {
-				Content = "----------------------------------------",
-				Color = DiffColor.Default
-			}
+			new($"Change Summary: {Path.GetFileName(file1)} vs {Path.GetFileName(file2)}", DiffColor.FileHeader),
+			new("----------------------------------------", DiffColor.Default)
 		};
 
 		// Use DiffPlex to get differences
@@ -574,44 +328,24 @@ public static class FileDiffer
 		// Output removed lines (in version 1 but not in version X)
 		if (removedLines.Count > 0)
 		{
-			result.Add(new ColoredDiffLine
-			{
-				Content = "REMOVED LINES (in version 1 but not in version X):",
-				Color = DiffColor.ChunkHeader
-			});
+			result.Add(new ColoredDiffLine("REMOVED LINES (in version 1 but not in version X):", DiffColor.ChunkHeader));
 
 			foreach (var (lineNum, content) in removedLines)
 			{
-				result.Add(new ColoredDiffLine
-				{
-					Content = $"- Line {lineNum}: {content}",
-					Color = DiffColor.Deletion
-				});
+				result.Add(new ColoredDiffLine($"- Line {lineNum}: {content}", DiffColor.Deletion));
 			}
 
-			result.Add(new ColoredDiffLine
-			{
-				Content = "",
-				Color = DiffColor.Default
-			});
+			result.Add(new ColoredDiffLine("", DiffColor.Default));
 		}
 
 		// Output added lines (in version X but not in version 1)
 		if (addedLines.Count > 0)
 		{
-			result.Add(new ColoredDiffLine
-			{
-				Content = "ADDED LINES (in version X but not in version 1):",
-				Color = DiffColor.ChunkHeader
-			});
+			result.Add(new ColoredDiffLine("ADDED LINES (in version X but not in version 1):", DiffColor.ChunkHeader));
 
 			foreach (var (lineNum, content) in addedLines)
 			{
-				result.Add(new ColoredDiffLine
-				{
-					Content = $"+ Line {lineNum}: {content}",
-					Color = DiffColor.Addition
-				});
+				result.Add(new ColoredDiffLine($"+ Line {lineNum}: {content}", DiffColor.Addition));
 			}
 		}
 
@@ -750,12 +484,7 @@ public static class FileDiffer
 				if (similarity > highestSimilarity)
 				{
 					highestSimilarity = similarity;
-					mostSimilar = new FileSimilarity
-					{
-						FilePath1 = file1,
-						FilePath2 = file2,
-						SimilarityScore = similarity
-					};
+					mostSimilar = new FileSimilarity(file1, file2, similarity);
 				}
 			}
 		}
@@ -821,13 +550,7 @@ public static class FileDiffer
 				if (diff.LineNumber1 > 0 && diff.LineNumber2 > 0)
 				{
 					// Both files have content at this line - this is a conflict
-					conflicts.Add(new MergeConflict
-					{
-						LineNumber = mergedLines.Count + 1,
-						Content1 = diff.Content1,
-						Content2 = diff.Content2,
-						IsResolved = false
-					});
+					conflicts.Add(new MergeConflict(mergedLines.Count + 1, diff.Content1, diff.Content2, null, false));
 
 					// For now, add a conflict marker
 					mergedLines.Add($"<<<<<<< Version 1");
@@ -839,13 +562,7 @@ public static class FileDiffer
 				else if (diff.LineNumber1 > 0)
 				{
 					// Line only in first file - treat as deletion, add a conflict
-					conflicts.Add(new MergeConflict
-					{
-						LineNumber = mergedLines.Count + 1,
-						Content1 = diff.Content1,
-						Content2 = null,
-						IsResolved = false
-					});
+					conflicts.Add(new MergeConflict(mergedLines.Count + 1, diff.Content1, null, null, false));
 
 					// Add conflict marker for deletion
 					mergedLines.Add($"<<<<<<< Version 1 (deleted)");
@@ -856,13 +573,7 @@ public static class FileDiffer
 				else if (diff.LineNumber2 > 0)
 				{
 					// Line only in second file - treat as addition, add a conflict
-					conflicts.Add(new MergeConflict
-					{
-						LineNumber = mergedLines.Count + 1,
-						Content1 = null,
-						Content2 = diff.Content2,
-						IsResolved = false
-					});
+					conflicts.Add(new MergeConflict(mergedLines.Count + 1, null, diff.Content2, null, false));
 
 					// Add conflict marker for addition
 					mergedLines.Add($"<<<<<<< Version 1 (not present)");
@@ -904,11 +615,7 @@ public static class FileDiffer
 				line2Index++;
 			}
 
-			return new MergeResult
-			{
-				MergedLines = mergedLines.AsReadOnly(),
-				Conflicts = conflicts.AsReadOnly()
-			};
+			return new MergeResult(mergedLines.AsReadOnly(), conflicts.AsReadOnly());
 		}
 		finally
 		{

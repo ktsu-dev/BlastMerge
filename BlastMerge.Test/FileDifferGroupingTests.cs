@@ -7,8 +7,8 @@ namespace ktsu.BlastMerge.Test;
 using System.Collections.Generic;
 using System.Linq;
 using ktsu.BlastMerge.Core;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ktsu.BlastMerge.Test.Adapters;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 [TestClass]
 public class FileDifferGroupingTests : MockFileSystemTestBase

@@ -10,9 +10,9 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using DiffPlex;
+using DiffPlex.Chunkers;
 using DiffPlex.DiffBuilder;
 using DiffPlex.DiffBuilder.Model;
-using DiffPlex.Chunkers;
 
 /// <summary>
 /// Provides diffing functionality using DiffPlex library
@@ -206,8 +206,8 @@ public static class DiffPlexDiffer
 		var diff = InlineDiffBuilder.BuildDiffModel(content1, content2);
 		var result = new Collection<ColoredDiffLine>
 		{
-			new() { Content = $"--- {file1}", Color = DiffColor.FileHeader },
-			new() { Content = $"+++ {file2}", Color = DiffColor.FileHeader }
+			new($"--- {file1}", DiffColor.FileHeader),
+			new($"+++ {file2}", DiffColor.FileHeader)
 		};
 
 		foreach (var line in diff.Lines)
@@ -232,11 +232,7 @@ public static class DiffPlexDiffer
 				_ => " "
 			};
 
-			result.Add(new ColoredDiffLine
-			{
-				Content = $"{prefix}{line.Text}",
-				Color = color
-			});
+			result.Add(new ColoredDiffLine($"{prefix}{line.Text}", color));
 		}
 
 		return result;
@@ -273,38 +269,17 @@ public static class DiffPlexDiffer
 			switch (line.Type)
 			{
 				case ChangeType.Deleted:
-					rawDifferences.Add(new LineDifference
-					{
-						LineNumber1 = line1Number,
-						LineNumber2 = null,
-						Content1 = line.Text,
-						Content2 = null,
-						Type = LineDifferenceType.Deleted
-					});
+					rawDifferences.Add(new LineDifference(line1Number, null, line.Text, null, LineDifferenceType.Deleted));
 					line1Number++;
 					break;
 
 				case ChangeType.Inserted:
-					rawDifferences.Add(new LineDifference
-					{
-						LineNumber1 = null,
-						LineNumber2 = line2Number,
-						Content1 = null,
-						Content2 = line.Text,
-						Type = LineDifferenceType.Added
-					});
+					rawDifferences.Add(new LineDifference(null, line2Number, null, line.Text, LineDifferenceType.Added));
 					line2Number++;
 					break;
 
 				case ChangeType.Modified:
-					rawDifferences.Add(new LineDifference
-					{
-						LineNumber1 = line1Number,
-						LineNumber2 = line2Number,
-						Content1 = line.Text, // Note: In inline diff, this might be the original text
-						Content2 = line.Text, // and this might be the modified text
-						Type = LineDifferenceType.Modified
-					});
+					rawDifferences.Add(new LineDifference(line1Number, line2Number, line.Text, line.Text, LineDifferenceType.Modified));
 					line1Number++;
 					line2Number++;
 					break;
@@ -347,14 +322,7 @@ public static class DiffPlexDiffer
 			if (matchingAddition != null)
 			{
 				// Convert to modification
-				finalDifferences.Add(new LineDifference
-				{
-					LineNumber1 = deletion.LineNumber1,
-					LineNumber2 = matchingAddition.addition.LineNumber2,
-					Content1 = deletion.Content1,
-					Content2 = matchingAddition.addition.Content2,
-					Type = LineDifferenceType.Modified
-				});
+				finalDifferences.Add(new LineDifference(deletion.LineNumber1, matchingAddition.addition.LineNumber2, deletion.Content1, matchingAddition.addition.Content2, LineDifferenceType.Modified));
 				usedAdditions.Add(matchingAddition.index);
 			}
 			else

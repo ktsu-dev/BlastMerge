@@ -1,6 +1,7 @@
 <Project Sdk="ktsu.Sdk.ConsoleApp">
   <ItemGroup>
     <PackageReference Include="Spectre.Console" />
+    <PackageReference Include="CommandLineParser" />
   </ItemGroup>
 
   <ItemGroup>
