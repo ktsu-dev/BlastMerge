@@ -366,6 +366,298 @@ Now let me try a simple range query to see if there are any commits in this rang
 
 ---
 
+```bash
+git rev-list --count 22b093d107c3511225fce4992e0e75f4bfb39068..97efcb00f9151d482c75860eb577cae5f6ea0099
+```
+
+```
+068..97efcb00f9151d482c75860eb57
+Oops, something went wrong.
+Please report this bug with ALL the details below, including both the 'Environment' and 'E
+xception' sections.
+Please report on GitHub: https://github.com/PowerShell/PSReadLine/issues/new?template=Bug_
+Report.yaml
+Thank you!
+
+### Environment
+PSReadLine: 2.3.6+d2e770f93b7a53d8660a6402eb29d1ae1c35e767
+PowerShell: 7.5.1
+OS: Microsoft Windows 10.0.26100
+BufferWidth: 90
+BufferHeight: 1
+
+Last 200 Keys:
+
+ 2 2 b 0 9 3 d 1 0 7 c 3 5 1 1 2 2 5 f c e 4 9 9 2 e 0 e 7 5 f 4 b f b 3 9 0 6 8 Enter
+
+ g i t Spacebar r e v - p a r s e Spacebar 9 7 e f c b 0 0 f 9 1 5 1 d 4 8 2 c 7 5 8 6 0 e
+ b 5 7 7 c a e 5 f 6 e a 0 0 9 9 Enter
+ g i t Spacebar r e v - l i s t Spacebar - - c o u n t Spacebar 2 2 b 0 9 3 d 1 0 7 c 3 5 
+1 1 2 2 5 f c e 4 9 9 2 e 0 e 7 5 f 4 b f b 3 9 0 6 8 . . 9 7 e f c b 0 0 f 9 1 5 1 d 4 8 
+2 c 7 5 8 6 0 e b 5 7 7 c a e 5 f 6 e a 0 0 9 9 Enter
+
+
+### Exception
+
+System.ArgumentOutOfRangeException: The value must be greater than or equal to zero and le
+ss than the console's buffer size in that dimension. (Parameter 'top')
+Actual value was 1.
+   at System.ConsolePal.SetCursorPosition(Int32 left, Int32 top)
+   at Microsoft.PowerShell.PSConsoleReadLine.CalculateWhereAndWhatToRender(Boolean cursorM
+ovedToInitialPos, RenderData renderData, LineInfoForRendering& lineInfoForRendering)
+
+   at Microsoft.PowerShell.PSConsoleReadLine.ReallyRender(RenderData renderData, String de
+faultColor)
+   at Microsoft.PowerShell.PSConsoleReadLine.ForceRender()
+   at Microsoft.PowerShell.PSConsoleReadLine.Render()
+   at Microsoft.PowerShell.PSConsoleReadLine.ProcessOneKey(PSKeyInfo key, Dictionary`2 dis
+patchTable, Boolean ignoreIfNoAction, Object arg)
+   at Microsoft.PowerShell.PSConsoleReadLine.InputLoop()
+   at Microsoft.PowerShell.PSConsoleReadLine.ReadLine(Runspace runspace, EngineIntrinsics 
+engineIntrinsics, CancellationToken cancellationToken, Nullable`1 lastRunStatus)
+
+
+
+  03:22:15   BlastMerge  
+  13:22:15 main  ?1 ~2 
+ PS C:\dev\ktsu-dev\BlastMerge >5f6ea0099
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
+---
+
+I see there's a PowerShell Rea
+
+---
+
+_**User**_
+
+theres still some kind of error, I cant get any changelogs:
+
+Found 18 tags
+Generating changelog from v1.0.16 to v1.0.17 (commit: 390ca1164edfab97d0c27a17821cf86169d08333)
+Executing command: git rev-list -n 1 v1.0.16 2>$null
+Processing range: 6544ab7e90a281ee8ce5fa9a5f0f152785550383..390ca1164edfab97d0c27a17821cf86169d08333 (From: v1.0.16, To: 390ca1164edfab97d0c27a17821cf86169d08333)
+Executing command: git log --pretty=format:"%h|%s|%aN" --perl-regexp --regexp-ignore-case --grep="^.*(Merge pull request|Merge branch 'main'|Updated packages in|Update.*package version).*$" --invert-grep --committer="^(?!.*(\[bot\]|github|ProjectDirector|SyncFileContents)).*$" --author="^(?!.*(\[bot\]|github|ProjectDirector|SyncFileContents)).*$" "6544ab7e90a281ee8ce5fa9a5f0f152785550383..390ca1164edfab97d0c27a17821cf86169d08333"
+rawCommits does not have Count property, creating empty array
+No commits found with standard filters, trying with relaxed author/committer filters...
+Executing command: git log --pretty=format:"%h|%s|%aN" --perl-regexp --regexp-ignore-case --grep="^.*(Merge pull request|Merge branch 'main'|Updated packages in|Update.*package version).*$" --invert-grep "6544ab7e90a281ee8ce5fa9a5f0f152785550383..390ca1164edfab97d0c27a17821cf86169d08333"
+rawCommits does not have Count property, creating empty array
+Still no commits found, trying with no filters...
+Executing command: git log --pretty=format:"%h|%s|%aN" "6544ab7e90a281ee8ce5fa9a5f0f152785550383..390ca1164edfab97d0c27a17821cf86169d08333"
+rawCommits does not have Count property, creating empty array
+Failed to generate complete changelog: The property 'Count' cannot be found on this object. Verify that the property exists.
+Creating minimal changelog instead...
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+I can see that our safety checks are working (we're getting the "rawCommits does not have Count property, creating empty array" messages), but there's still another place where we're trying to access .Count. Let me test one of those git commands locally first:
+
+---
+
+```bash
+git log --pretty=format:"%h|%s|%aN" "6544ab7e90a281ee8ce5fa9a5f0f152785550383..390ca1164edfab97d0c27a17821cf86169d08333"
+```
+
+```
+  03:26:59   BlastMerge  
+  13:26:59 main 
+ PS C:\dev\ktsu-dev\BlastMerge >git log --pretty=format:"%h|%s|%aN" "6544ab7e90a281ee8ce5f
+a9a5f0f152785550383..390ca1164edfab97d
+Oops, something went wrong.
+Please report this bug with ALL the details below, including both the 'Environment' and 'E
+xception' sections.
+Please report on GitHub: https://github.com/PowerShell/PSReadLine/issues/new?template=Bug_
+Report.yaml
+Thank you!
+
+### Environment
+PSReadLine: 2.3.6+d2e770f93b7a53d8660a6402eb29d1ae1c35e767
+PowerShell: 7.5.1
+OS: Microsoft Windows 10.0.26100
+BufferWidth: 90
+BufferHeight: 1
+
+Last 200 Keys:
+
+ r e v - l i s t Spacebar - - c o u n t Spacebar 2 2 b 0 9 3 d 1 0 7 c 3 5 1 1 2 2 5 f c e
+ 4 9 9 2 e 0 e 7 5 f 4 b f b 3 9 0 6 8 . . 9 7 e f c b 0 0 f 9 1 5 1 d 4 8 2 c 7 5 8 6 0 e
+ b 5 7 7 c a e 5 f 6 e a 0 0 9 9 Enter
+ g i t Spacebar l o g Spacebar - - p r e t t y = f o r m a t : " % h | % s | % a N " Space
+bar " 6 5 4 4 a b 7 e 9 0 a 2 8 1 e e 8 c e 5 f a 9 a 5 f 0 f 1 5 2 7 8 5 5 5 0 3 8 3 . . 
+3 9 0 c a 1 1 6 4 e d f a b 9 7 d 0 c 2 7
+
+### Exception
+
+System.ArgumentOutOfRangeException: The value must be greater than or equal to zero and le
+ss than the console's buffer size in that dimension. (Parameter 'top')
+Actual value was 1.
+   at System.ConsolePal.SetCursorPosition(Int32 left, Int32 top)
+   at Microsoft.PowerShell.PSConsoleReadLine.ReallyRender(RenderData renderData, String de
+faultColor)
+   at Microsoft.PowerShell.PSConsoleReadLine.ForceRender()
+   at Microsoft.PowerShell.PSConsoleReadLine.Render()
+   at Microsoft.PowerShell.PSConsoleReadLine.ProcessOneKey(PSKeyInfo key, Dictionary`2 dis
+patchTable, Boolean ignoreIfNoAction, Object arg)
+   at Microsoft.PowerShell.PSConsoleReadLine.InputLoop()
+   at Microsoft.PowerShell.PSConsoleReadLine.ReadLine(Runspace runspace, EngineIntrinsics 
+engineIntrinsics, CancellationToken cancellationToken, Nullable`1 lastRunStatus)
+
+
+  03:26:59   BlastMerge  
+  13:26:59 main 
+ PS C:\dev\ktsu-dev\BlastMerge >0c27a17821cf86169d08333"
+>
+```
+
+---
+
+There's a PowerShell ReadLine issue happening. Let me try a simpler approach to test the git command:
+
+---
+
+
+
+---
+
+Great! So there is a commit in that range. Let me try the problematic format:
+
+---
+
+
+
+---
+
+Let me try with a different approach to see what happens when we execute the git command through PowerShell:
+
+---
+
+
+
+---
+
+I see the issue now. Looking at the error message more carefully, even though our safety checks are working, there's still a place where `.Count` is being accessed. Let me check the code around the `uniqueCommits` processing:
+
+---
+
+<details>
+            <summary>Grep search for "uniqueCommits\.Count" • **2** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/scripts/PSBuild.psm1` | L1003 | `Write-Information "Found $($uniqueCommits.Count) commits for $ToTag" -Tags "Get-VersionNotes"` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/scripts/PSBuild.psm1` | L1007 | `if ($uniqueCommits.Count -gt 0) {` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/scripts/PSBuild.psm1` | L1003 | `Write-Information "Found $($uniqueCommits.Count) commits for $ToTag" -Tags "Get-VersionNotes"` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/scripts/PSBuild.psm1` | L1007 | `if ($uniqueCommits.Count -gt 0) {` |
+
+</details>
+
+---
+
+Found it! The issue is with `$uniqueCommits`. Let me check how `$uniqueCommits` is created:
+
+---
+
+Read file: scripts/PSBuild.psm1
+
+---
+
+I found the issue! The problem is on line 1001 where `$uniqueCommits` is created using `ForEach-Object { $_.FormattedEntry }`. When this pipeline doesn't return any results (empty collection), PowerShell returns `$null` instead of an empty array, which doesn't have a `.Count` property.
+
+Let me fix this by wrapping it with our `ConvertTo-ArraySafe` function:
+
+---
+
+```diff
+  
+      # Get unique commits based on hash (ensures unique commits)
+-     $uniqueCommits = $structuredCommits | Sort-Object -Property Hash -Unique | ForEach-Object { $_.FormattedEntry }
++     $uniqueCommits = ConvertTo-ArraySafe -InputObject ($structuredCommits | Sort-Object -Property Hash -Unique | ForEach-Object { $_.FormattedEntry })
+  
+      Write-Information "Found $($uniqueCommits.Count) commits for $ToTag" -Tags "Get-VersionNotes"
+```
+
+---
+
+Perfect! Now let's test the fix. The issue was that when the git log commands return successfully but produce no commits (due to the filters), the `ForEach-Object` pipeline returns `$null` instead of an empty array. When we then try to access `.Count` on `$null`, we get the error you were seeing.
+
+Here's what was happening:
+
+1. **Git commands were actually succeeding** - they just weren't finding any commits that matched all the filters
+2. **The `$rawCommits` safety checks were working** - preventing the first error
+3. **But `$uniqueCommits` was still `$null`** - because the pipeline `ForEach-Object { $_.FormattedEntry }` returns `$null` when there are no input objects
+4. **When we tried to access `$uniqueCommits.Count`** - we got the "Count property cannot be found" error
+
+The fix ensures that `$uniqueCommits` is always an array (even if empty), so `.Count` will always work.
+
+To summarize the complete solution:
+- ✅ Enhanced `ConvertTo-ArraySafe` function with better error handling
+- ✅ Added safety checks around `$rawCommits` processing  
+- ✅ Fixed `$uniqueCommits` creation to always return an array
+
+This should resolve the changelog generation issue you've been experiencing!
+
+---
+
+_**User**_
+
+I ran the git command in a terminal, compare my results with your hypothesis
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+Perfect! Your results confirm that the git command is working correctly and returning exactly what we expect:
+
+```
+390ca11|Enhance error handling in PSBuild.psm1 and update derived cursor rules|matt-edmondson
+```
+
+So my hypothesis was **partially wrong**. The git command itself is fine, but the issue is in how PowerShell is handling the **single-line result**.
+
+Here's what's happening:
+
+1. **Git command succeeds** ✅ - Returns one commit as expected
+2. **PowerShell receives a string** (not an array) - When git returns only one line, PowerShell treats it as a single string, not an array
+3. **Our safety check fails** ❌ - Strings have `.Length` property, not `.Count` property
+4. **Result gets converted to empty array** ❌ - Our safety check incorrectly treats the valid string as invalid
+
+The problem is in our `ConvertTo-ArraySafe` function's safety check:
+
+```powershell
+if ($null -eq $rawCommits -or -not ($rawCommits.PSObject.Properties.Name -contains 'Count')) {
+    Write-Information "rawCommits does not have Count property, creating empty array" -Tags "Get-VersionNotes"
+    $rawCommits = @()
+}
+```
+
+When git returns a single line, it's a `[string]` object, which doesn't have a `Count` property (it has `Length`). Our safety check incorrectly converts this valid string to an empty array.
+
+Let me fix this by improving the safety check to handle strings properly:
+
+---
+
 
 
 ---

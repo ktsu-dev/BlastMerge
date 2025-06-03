@@ -929,8 +929,8 @@ function Get-VersionNotes {
         $rawCommits = ConvertTo-ArraySafe -InputObject $rawCommitsResult
 
         # Additional safety check - ensure we have a valid array with Count property
-        if ($null -eq $rawCommits -or -not ($rawCommits.PSObject.Properties.Name -contains 'Count')) {
-            Write-Information "rawCommits does not have Count property, creating empty array" -Tags "Get-VersionNotes"
+        if ($null -eq $rawCommits -or (-not ($rawCommits -is [array]) -and -not ($rawCommits -is [string]))) {
+            Write-Information "rawCommits is not a valid array or string, creating empty array" -Tags "Get-VersionNotes"
             $rawCommits = @()
         }
 
@@ -943,8 +943,8 @@ function Get-VersionNotes {
             $rawCommits = ConvertTo-ArraySafe -InputObject $rawCommitsResult
 
             # Additional safety check
-            if ($null -eq $rawCommits -or -not ($rawCommits.PSObject.Properties.Name -contains 'Count')) {
-                Write-Information "rawCommits does not have Count property, creating empty array" -Tags "Get-VersionNotes"
+            if ($null -eq $rawCommits -or (-not ($rawCommits -is [array]) -and -not ($rawCommits -is [string]))) {
+                Write-Information "rawCommits is not a valid array or string, creating empty array" -Tags "Get-VersionNotes"
                 $rawCommits = @()
             }
         }
@@ -958,8 +958,8 @@ function Get-VersionNotes {
             $rawCommits = ConvertTo-ArraySafe -InputObject $rawCommitsResult
 
             # Additional safety check
-            if ($null -eq $rawCommits -or -not ($rawCommits.PSObject.Properties.Name -contains 'Count')) {
-                Write-Information "rawCommits does not have Count property, creating empty array" -Tags "Get-VersionNotes"
+            if ($null -eq $rawCommits -or (-not ($rawCommits -is [array]) -and -not ($rawCommits -is [string]))) {
+                Write-Information "rawCommits is not a valid array or string, creating empty array" -Tags "Get-VersionNotes"
                 $rawCommits = @()
             }
 
@@ -972,8 +972,8 @@ function Get-VersionNotes {
                 $rawCommits = ConvertTo-ArraySafe -InputObject $rawCommitsResult
 
                 # Additional safety check
-                if ($null -eq $rawCommits -or -not ($rawCommits.PSObject.Properties.Name -contains 'Count')) {
-                    Write-Information "rawCommits does not have Count property, creating empty array" -Tags "Get-VersionNotes"
+                if ($null -eq $rawCommits -or (-not ($rawCommits -is [array]) -and -not ($rawCommits -is [string]))) {
+                    Write-Information "rawCommits is not a valid array or string, creating empty array" -Tags "Get-VersionNotes"
                     $rawCommits = @()
                 }
             }
@@ -999,7 +999,7 @@ function Get-VersionNotes {
     }
 
     # Get unique commits based on hash (ensures unique commits)
-    $uniqueCommits = $structuredCommits | Sort-Object -Property Hash -Unique | ForEach-Object { $_.FormattedEntry }
+    $uniqueCommits = ConvertTo-ArraySafe -InputObject ($structuredCommits | Sort-Object -Property Hash -Unique | ForEach-Object { $_.FormattedEntry })
 
     Write-Information "Found $($uniqueCommits.Count) commits for $ToTag" -Tags "Get-VersionNotes"
 
