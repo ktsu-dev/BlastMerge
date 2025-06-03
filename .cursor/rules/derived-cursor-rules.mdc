@@ -73,6 +73,7 @@ globs: *
 -   When using records, ensure the constructors are unambiguous. Provide default values for parameters if necessary to avoid constructor conflicts.
 -   Use conditional expressions to simplify if-else-if-else chains for better readability.
 -   When converting classes to records, consider the potential breaking changes for consumers that rely on reference equality comparisons, inheritance patterns, or mutable object patterns.
+-   Reorder using statements to follow .NET conventions (project imports before framework imports).
 
 ## FILE & DIRECTORY HANDLING
 
@@ -198,6 +199,8 @@ globs: *
 -   Prepare the application for distribution via winget.
 -   Modify the existing `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` to integrate the winget package creation functionality. Remove the separate `New-WingetPackages` function and its call in the release workflow.
 -   Ensure that the `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` has only one `dotnet publish` step, consolidating the previous separate steps for general application and winget package publishing.
+-   The build script `PSBuild.psm1` must respect the "should release" flag and not push files to package repos from a branch build.
+-   The GitHub release creation in `Invoke-ReleaseWorkflow` must check the `ShouldRelease` flag and only create releases when `ShouldRelease` is true (main branch + not tagged + official repo).
 
 ## DIRECTORY COMPARISON
 

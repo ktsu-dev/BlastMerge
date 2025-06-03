@@ -1573,9 +1573,9 @@ function Invoke-DotNetPublish {
         Write-Information "No applications were published (projects may not be configured as executables)" -Tags "Invoke-DotNetPublish"
     }
 
-    # Publish packages if we have any and NuGet key is provided
+    # Publish packages if we have any and NuGet key is provided AND this is a release build
     $packages = @(Get-Item -Path $BuildConfiguration.PackagePattern -ErrorAction SilentlyContinue)
-    if ($packages.Count -gt 0 -and -not [string]::IsNullOrWhiteSpace($BuildConfiguration.NuGetApiKey)) {
+    if ($packages.Count -gt 0 -and -not [string]::IsNullOrWhiteSpace($BuildConfiguration.NuGetApiKey) -and $BuildConfiguration.ShouldRelease) {
         Write-StepHeader "Publishing NuGet Packages" -Tags "Invoke-NuGetPublish"
         try {
             Invoke-NuGetPublish -BuildConfiguration $BuildConfiguration | Write-InformationStream -Tags "Invoke-NuGetPublish"
@@ -1584,6 +1584,8 @@ function Invoke-DotNetPublish {
             Write-Information "NuGet package publishing failed: $_" -Tags "Invoke-NuGetPublish"
             Write-Information "Continuing with release process." -Tags "Invoke-NuGetPublish"
         }
+    } elseif ($packages.Count -gt 0 -and -not $BuildConfiguration.ShouldRelease) {
+        Write-Information "Packages found but skipping publication (not a release build: ShouldRelease=$($BuildConfiguration.ShouldRelease))" -Tags "Invoke-DotNetPublish"
     }
 
     Write-StepHeader "Release Process Completed" -Tags "Invoke-ReleaseWorkflow"
@@ -2129,9 +2131,9 @@ function Invoke-ReleaseWorkflow {
             Write-Information "Continuing with release process without application packages." -Tags "Invoke-DotNetPublish"
         }
 
-        # Publish packages if we have any and NuGet key is provided
+        # Publish packages if we have any and NuGet key is provided AND this is a release build
         $packages = @(Get-Item -Path $BuildConfiguration.PackagePattern -ErrorAction SilentlyContinue)
-        if ($packages.Count -gt 0 -and -not [string]::IsNullOrWhiteSpace($BuildConfiguration.NuGetApiKey)) {
+        if ($packages.Count -gt 0 -and -not [string]::IsNullOrWhiteSpace($BuildConfiguration.NuGetApiKey) -and $BuildConfiguration.ShouldRelease) {
             Write-StepHeader "Publishing NuGet Packages" -Tags "Invoke-NuGetPublish"
             try {
                 Invoke-NuGetPublish -BuildConfiguration $BuildConfiguration | Write-InformationStream -Tags "Invoke-NuGetPublish"
@@ -2140,12 +2142,18 @@ function Invoke-ReleaseWorkflow {
                 Write-Information "NuGet package publishing failed: $_" -Tags "Invoke-NuGetPublish"
                 Write-Information "Continuing with release process." -Tags "Invoke-NuGetPublish"
             }
+        } elseif ($packages.Count -gt 0 -and -not $BuildConfiguration.ShouldRelease) {
+            Write-Information "Packages found but skipping publication (not a release build: ShouldRelease=$($BuildConfiguration.ShouldRelease))" -Tags "Invoke-ReleaseWorkflow"
         }
 
-        # Create GitHub release
-        Write-StepHeader "Creating GitHub Release" -Tags "New-GitHubRelease"
-        Write-Information "Creating release for version $($BuildConfiguration.Version)..." -Tags "New-GitHubRelease"
-        New-GitHubRelease -BuildConfiguration $BuildConfiguration | Write-InformationStream -Tags "New-GitHubRelease"
+        # Create GitHub release only if this is a release build
+        if ($BuildConfiguration.ShouldRelease) {
+            Write-StepHeader "Creating GitHub Release" -Tags "New-GitHubRelease"
+            Write-Information "Creating release for version $($BuildConfiguration.Version)..." -Tags "New-GitHubRelease"
+            New-GitHubRelease -BuildConfiguration $BuildConfiguration | Write-InformationStream -Tags "New-GitHubRelease"
+        } else {
+            Write-Information "Skipping GitHub release creation (not a release build: ShouldRelease=$($BuildConfiguration.ShouldRelease))" -Tags "Invoke-ReleaseWorkflow"
+        }
 
         Write-StepHeader "Release Process Completed" -Tags "Invoke-ReleaseWorkflow"
         Write-Information "Release process completed successfully!" -Tags "Invoke-ReleaseWorkflow"
@@ -2323,9 +2331,6 @@ Export-ModuleMember -Function Assert-LastExitCode,
 Export-ModuleMember -Function Invoke-BuildWorkflow,
                              Invoke-ReleaseWorkflow,
                              Invoke-CIPipeline
-
-# Winget distribution functions
-Export-ModuleMember -Function New-WingetPackages
 
 #region Module Variables
 $script:DOTNET_VERSION = '9.0'
