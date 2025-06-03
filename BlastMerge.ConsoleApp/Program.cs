@@ -8,10 +8,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using CommandLine;
+using DiffPlex.DiffBuilder.Model;
 using ktsu.BlastMerge.Core;
 using Spectre.Console;
-using DiffPlex.DiffBuilder.Model;
-using CommandLine;
 
 /// <summary>
 /// Main program class for the BlastMerge TUI
@@ -38,7 +38,7 @@ public static class Program
 		var parseResult = parser.ParseArguments<CommandLineOptions>(args);
 
 		parseResult
-			.WithParsed<CommandLineOptions>(options =>
+			.WithParsed(options =>
 			{
 				// Handle version command for winget validation
 				if (options.ShowVersion)

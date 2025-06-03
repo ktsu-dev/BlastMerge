@@ -11,135 +11,6 @@ using System.IO;
 using System.Linq;
 
 /// <summary>
-/// Represents a block type for manual selection
-/// </summary>
-public enum BlockType
-{
-	/// <summary>
-	/// Content only exists in version 2 (insertion)
-	/// </summary>
-	Insert,
-
-	/// <summary>
-	/// Content only exists in version 1 (deletion)
-	/// </summary>
-	Delete,
-
-	/// <summary>
-	/// Content differs between versions (replacement)
-	/// </summary>
-	Replace
-}
-
-/// <summary>
-/// Represents a diff block for manual selection
-/// </summary>
-public class DiffBlock
-{
-	/// <summary>
-	/// Gets or sets the type of this block
-	/// </summary>
-	public BlockType Type { get; set; }
-
-	/// <summary>
-	/// Gets the lines from version 1
-	/// </summary>
-	public Collection<string> Lines1 { get; } = [];
-
-	/// <summary>
-	/// Gets the lines from version 2
-	/// </summary>
-	public Collection<string> Lines2 { get; } = [];
-
-	/// <summary>
-	/// Gets the line numbers from version 1
-	/// </summary>
-	public Collection<int> LineNumbers1 { get; } = [];
-
-	/// <summary>
-	/// Gets the line numbers from version 2
-	/// </summary>
-	public Collection<int> LineNumbers2 { get; } = [];
-
-	/// <summary>
-	/// Gets the last line number from version 1
-	/// </summary>
-	public int LastLineNumber1 => LineNumbers1.Count > 0 ? LineNumbers1.Last() : 0;
-
-	/// <summary>
-	/// Gets the last line number from version 2
-	/// </summary>
-	public int LastLineNumber2 => LineNumbers2.Count > 0 ? LineNumbers2.Last() : 0;
-}
-
-/// <summary>
-/// Represents context lines around a block
-/// </summary>
-public class BlockContext
-{
-	/// <summary>
-	/// Gets or sets the context lines before the block in version 1
-	/// </summary>
-	public IReadOnlyCollection<string> ContextBefore1 { get; set; } = [];
-
-	/// <summary>
-	/// Gets or sets the context lines after the block in version 1
-	/// </summary>
-	public IReadOnlyCollection<string> ContextAfter1 { get; set; } = [];
-
-	/// <summary>
-	/// Gets or sets the context lines before the block in version 2
-	/// </summary>
-	public IReadOnlyCollection<string> ContextBefore2 { get; set; } = [];
-
-	/// <summary>
-	/// Gets or sets the context lines after the block in version 2
-	/// </summary>
-	public IReadOnlyCollection<string> ContextAfter2 { get; set; } = [];
-}
-
-/// <summary>
-/// Represents the user's choice for a merge block
-/// </summary>
-public enum BlockChoice
-{
-	/// <summary>
-	/// Use content from version 1
-	/// </summary>
-	UseVersion1,
-
-	/// <summary>
-	/// Use content from version 2
-	/// </summary>
-	UseVersion2,
-
-	/// <summary>
-	/// Include content from both versions
-	/// </summary>
-	UseBoth,
-
-	/// <summary>
-	/// Skip this content entirely
-	/// </summary>
-	Skip,
-
-	/// <summary>
-	/// Include the addition
-	/// </summary>
-	Include,
-
-	/// <summary>
-	/// Keep the content (don't delete)
-	/// </summary>
-	Keep,
-
-	/// <summary>
-	/// Remove the content (confirm deletion)
-	/// </summary>
-	Remove
-}
-
-/// <summary>
 /// Provides block-based merging functionality
 /// </summary>
 public static class BlockMerger
@@ -209,11 +80,7 @@ public static class BlockMerger
 			// Add any remaining equal lines after the last block
 			AddRemainingEqualLines(lines1, lines2, lastProcessedLine1, lastProcessedLine2, mergedLines);
 
-			return new MergeResult
-			{
-				MergedLines = mergedLines.AsReadOnly(),
-				Conflicts = conflicts.AsReadOnly()
-			};
+			return new MergeResult(mergedLines.AsReadOnly(), conflicts.AsReadOnly());
 		}
 		finally
 		{

@@ -10,58 +10,6 @@ using System.IO;
 using System.Linq;
 
 /// <summary>
-/// Represents the status of an iterative merge process
-/// </summary>
-public class MergeSessionStatus
-{
-	/// <summary>
-	/// Gets the current iteration number
-	/// </summary>
-	public int CurrentIteration { get; init; }
-
-	/// <summary>
-	/// Gets the number of remaining files to merge
-	/// </summary>
-	public int RemainingFilesCount { get; init; }
-
-	/// <summary>
-	/// Gets the number of completed merges
-	/// </summary>
-	public int CompletedMergesCount { get; init; }
-
-	/// <summary>
-	/// Gets the most similar file pair for this iteration
-	/// </summary>
-	public FileSimilarity? MostSimilarPair { get; init; }
-}
-
-/// <summary>
-/// Represents the completion status of an iterative merge
-/// </summary>
-public class MergeCompletionResult
-{
-	/// <summary>
-	/// Gets whether the merge completed successfully
-	/// </summary>
-	public bool IsSuccessful { get; init; }
-
-	/// <summary>
-	/// Gets the final merged content
-	/// </summary>
-	public string? FinalMergedContent { get; init; }
-
-	/// <summary>
-	/// Gets the number of lines in the final result
-	/// </summary>
-	public int FinalLineCount { get; init; }
-
-	/// <summary>
-	/// Gets the original filename being merged
-	/// </summary>
-	public required string OriginalFileName { get; init; }
-}
-
-/// <summary>
 /// Orchestrates iterative merge processes for multiple file versions
 /// </summary>
 public static class IterativeMergeOrchestrator
@@ -96,23 +44,11 @@ public static class IterativeMergeOrchestrator
 
 			if (similarity == null)
 			{
-				return new MergeCompletionResult
-				{
-					IsSuccessful = false,
-					FinalMergedContent = null,
-					FinalLineCount = 0,
-					OriginalFileName = "unknown"
-				};
+				return new MergeCompletionResult(false, null, 0, "unknown");
 			}
 
 			// Report status to UI
-			var status = new MergeSessionStatus
-			{
-				CurrentIteration = mergeCount,
-				RemainingFilesCount = remainingGroups.Sum(g => g.FilePaths.Count),
-				CompletedMergesCount = mergeCount - 1,
-				MostSimilarPair = similarity
-			};
+			var status = new MergeSessionStatus(mergeCount, remainingGroups.Sum(g => g.FilePaths.Count), mergeCount - 1, similarity);
 			statusCallback(status);
 
 			// Perform the merge
@@ -120,13 +56,7 @@ public static class IterativeMergeOrchestrator
 
 			if (mergeResult == null)
 			{
-				return new MergeCompletionResult
-				{
-					IsSuccessful = false,
-					FinalMergedContent = null,
-					FinalLineCount = 0,
-					OriginalFileName = "cancelled"
-				};
+				return new MergeCompletionResult(false, null, 0, "cancelled");
 			}
 
 			// Update all files with the merged result
@@ -157,23 +87,11 @@ public static class IterativeMergeOrchestrator
 			}
 			catch (IOException ex)
 			{
-				return new MergeCompletionResult
-				{
-					IsSuccessful = false,
-					FinalMergedContent = mergedContent,
-					FinalLineCount = mergedContent.Split(Environment.NewLine).Length,
-					OriginalFileName = $"error: {ex.Message}"
-				};
+				return new MergeCompletionResult(false, mergedContent, mergedContent.Split(Environment.NewLine).Length, $"error: {ex.Message}");
 			}
 			catch (UnauthorizedAccessException ex)
 			{
-				return new MergeCompletionResult
-				{
-					IsSuccessful = false,
-					FinalMergedContent = mergedContent,
-					FinalLineCount = mergedContent.Split(Environment.NewLine).Length,
-					OriginalFileName = $"access denied: {ex.Message}"
-				};
+				return new MergeCompletionResult(false, mergedContent, mergedContent.Split(Environment.NewLine).Length, $"access denied: {ex.Message}");
 			}
 
 			mergeCount++;
@@ -181,13 +99,7 @@ public static class IterativeMergeOrchestrator
 			// Check if user wants to continue (if there are more groups to merge)
 			if (remainingGroups.Count > 1 && !continuationCallback())
 			{
-				return new MergeCompletionResult
-				{
-					IsSuccessful = false,
-					FinalMergedContent = mergedContent,
-					FinalLineCount = mergedContent.Split(Environment.NewLine).Length,
-					OriginalFileName = "incomplete"
-				};
+				return new MergeCompletionResult(false, mergedContent, mergedContent.Split(Environment.NewLine).Length, "incomplete");
 			}
 		}
 
@@ -196,13 +108,7 @@ public static class IterativeMergeOrchestrator
 		var finalContent = File.ReadAllText(finalGroup.FilePaths.First());
 		var finalLines = finalContent.Split(Environment.NewLine);
 
-		return new MergeCompletionResult
-		{
-			IsSuccessful = true,
-			FinalMergedContent = finalContent,
-			FinalLineCount = finalLines.Length,
-			OriginalFileName = Path.GetFileName(finalGroup.FilePaths.First())
-		};
+		return new MergeCompletionResult(true, finalContent, finalLines.Length, Path.GetFileName(finalGroup.FilePaths.First()));
 	}
 
 	/// <summary>
