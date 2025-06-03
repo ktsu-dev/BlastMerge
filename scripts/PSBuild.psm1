@@ -929,13 +929,16 @@ function Get-VersionNotes {
         $rawCommits = ConvertTo-ArraySafe -InputObject $rawCommitsResult
 
         # Additional safety check - ensure we have a valid array with Count property
-        if ($null -eq $rawCommits -or (-not ($rawCommits -is [array]) -and -not ($rawCommits -is [string]))) {
-            Write-Information "rawCommits is not a valid array or string, creating empty array" -Tags "Get-VersionNotes"
+        if ($null -eq $rawCommits) {
+            Write-Information "rawCommits is null, creating empty array" -Tags "Get-VersionNotes"
             $rawCommits = @()
         }
 
+        # Use @() subexpression to safely get count
+        $rawCommitsCount = @($rawCommits).Count
+
         # If no commits found, try with just PR exclusion but no author filtering
-        if ($rawCommits.Count -eq 0) {
+        if ($rawCommitsCount -eq 0) {
             Write-Information "No commits found with standard filters, trying with relaxed author/committer filters..." -Tags "Get-VersionNotes"
             $rawCommitsResult = "git log --pretty=format:`"$format`" --perl-regexp --regexp-ignore-case --grep=`"$EXCLUDE_PRS`" --invert-grep `"$range`"" | Invoke-ExpressionWithLogging -ErrorAction SilentlyContinue
 
@@ -943,14 +946,17 @@ function Get-VersionNotes {
             $rawCommits = ConvertTo-ArraySafe -InputObject $rawCommitsResult
 
             # Additional safety check
-            if ($null -eq $rawCommits -or (-not ($rawCommits -is [array]) -and -not ($rawCommits -is [string]))) {
-                Write-Information "rawCommits is not a valid array or string, creating empty array" -Tags "Get-VersionNotes"
+            if ($null -eq $rawCommits) {
+                Write-Information "rawCommits is null, creating empty array" -Tags "Get-VersionNotes"
                 $rawCommits = @()
             }
         }
 
+        # Use @() subexpression to safely get count
+        $rawCommitsCount = @($rawCommits).Count
+
         # If still no commits, try with no filtering at all - show everything in the range
-        if ($rawCommits.Count -eq 0) {
+        if ($rawCommitsCount -eq 0) {
             Write-Information "Still no commits found, trying with no filters..." -Tags "Get-VersionNotes"
             $rawCommitsResult = "git log --pretty=format:`"$format`" `"$range`"" | Invoke-ExpressionWithLogging -ErrorAction SilentlyContinue
 
@@ -958,13 +964,16 @@ function Get-VersionNotes {
             $rawCommits = ConvertTo-ArraySafe -InputObject $rawCommitsResult
 
             # Additional safety check
-            if ($null -eq $rawCommits -or (-not ($rawCommits -is [array]) -and -not ($rawCommits -is [string]))) {
-                Write-Information "rawCommits is not a valid array or string, creating empty array" -Tags "Get-VersionNotes"
+            if ($null -eq $rawCommits) {
+                Write-Information "rawCommits is null, creating empty array" -Tags "Get-VersionNotes"
                 $rawCommits = @()
             }
 
+            # Use @() subexpression to safely get count
+            $rawCommitsCount = @($rawCommits).Count
+
             # If it's a prerelease version, include also version update commits
-            if ($versionType -eq "prerelease" -and $rawCommits.Count -eq 0) {
+            if ($versionType -eq "prerelease" -and $rawCommitsCount -eq 0) {
                 Write-Information "Looking for version update commits for prerelease..." -Tags "Get-VersionNotes"
                 $rawCommitsResult = "git log --pretty=format:`"$format`" --grep=`"Update VERSION to`" `"$range`"" | Invoke-ExpressionWithLogging -ErrorAction SilentlyContinue
 
@@ -972,8 +981,8 @@ function Get-VersionNotes {
                 $rawCommits = ConvertTo-ArraySafe -InputObject $rawCommitsResult
 
                 # Additional safety check
-                if ($null -eq $rawCommits -or (-not ($rawCommits -is [array]) -and -not ($rawCommits -is [string]))) {
-                    Write-Information "rawCommits is not a valid array or string, creating empty array" -Tags "Get-VersionNotes"
+                if ($null -eq $rawCommits) {
+                    Write-Information "rawCommits is null, creating empty array" -Tags "Get-VersionNotes"
                     $rawCommits = @()
                 }
             }
@@ -988,7 +997,8 @@ function Get-VersionNotes {
     $structuredCommits = @()
     foreach ($commit in $rawCommits) {
         $parts = $commit -split '\|'
-        if ($parts.Count -ge 3) {
+        # Use @() subexpression to safely get count
+        if (@($parts).Count -ge 3) {
             $structuredCommits += [PSCustomObject]@{
                 Hash = $parts[0]
                 Subject = $parts[1]
@@ -1001,11 +1011,13 @@ function Get-VersionNotes {
     # Get unique commits based on hash (ensures unique commits)
     $uniqueCommits = ConvertTo-ArraySafe -InputObject ($structuredCommits | Sort-Object -Property Hash -Unique | ForEach-Object { $_.FormattedEntry })
 
-    Write-Information "Found $($uniqueCommits.Count) commits for $ToTag" -Tags "Get-VersionNotes"
+    # Use @() subexpression to safely get count
+    $uniqueCommitsCount = @($uniqueCommits).Count
+    Write-Information "Found $uniqueCommitsCount commits for $ToTag" -Tags "Get-VersionNotes"
 
     # Format changelog entry
     $versionChangelog = ""
-    if ($uniqueCommits.Count -gt 0) {
+    if ($uniqueCommitsCount -gt 0) {
         $versionChangelog = "## $ToTag"
         if ($versionType -ne "unknown") {
             $versionChangelog += " ($versionType)"
@@ -2009,45 +2021,41 @@ function ConvertTo-ArraySafe {
         [object]$InputObject
     )
 
-    begin {
-        $outputArray = @()
+    # Handle null or empty input
+    if ($null -eq $InputObject -or [string]::IsNullOrEmpty($InputObject)) {
+        return ,[object[]]@()
     }
 
-    process {
-        # Handle null or empty input
-        if ($null -eq $InputObject -or [string]::IsNullOrEmpty($InputObject)) {
-            return @()
-        }
-
-        # Handle error objects - return empty array for safety
-        if ($InputObject -is [System.Management.Automation.ErrorRecord]) {
-            Write-Information "ConvertTo-ArraySafe: Received error object, returning empty array" -Tags "ConvertTo-ArraySafe"
-            return @()
-        }
-
-        # Handle empty strings
-        if ($InputObject -is [string] -and [string]::IsNullOrWhiteSpace($InputObject)) {
-            return @()
-        }
-
-        try {
-            if ($InputObject -is [array]) {
-                # Force array context to handle single-item arrays
-                $outputArray = @($InputObject)
-            }
-            else {
-                # Single item, make it an array
-                $outputArray = @($InputObject)
-            }
-        }
-        catch {
-            Write-Information "ConvertTo-ArraySafe: Error converting object to array: $_" -Tags "ConvertTo-ArraySafe"
-            return @()
-        }
+    # Handle error objects - return empty array for safety
+    if ($InputObject -is [System.Management.Automation.ErrorRecord]) {
+        Write-Information "ConvertTo-ArraySafe: Received error object, returning empty array" -Tags "ConvertTo-ArraySafe"
+        return ,[object[]]@()
     }
 
-    end {
-        return $outputArray
+    # Handle empty strings
+    if ($InputObject -is [string] -and [string]::IsNullOrWhiteSpace($InputObject)) {
+        return ,[object[]]@()
+    }
+
+    try {
+        # Always force array context using the comma operator and explicit array subexpression
+        if ($InputObject -is [array]) {
+            # Ensure we return a proper array even if it's a single-item array
+            return ,[object[]]@($InputObject)
+        }
+        elseif ($InputObject -is [string] -and $InputObject.Contains("`n")) {
+            # Handle multi-line strings by splitting them
+            $lines = $InputObject -split "`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+            return ,[object[]]@($lines)
+        }
+        else {
+            # Single item, make it an array using explicit array operators
+            return ,[object[]]@($InputObject)
+        }
+    }
+    catch {
+        Write-Information "ConvertTo-ArraySafe: Error converting object to array: $_" -Tags "ConvertTo-ArraySafe"
+        return ,[object[]]@()
     }
 }
 
