@@ -116,6 +116,7 @@ globs: *
 -   When encountering build errors, check the error messages to identify missing package references, incorrect project references, or other dependency-related issues.
 -   When using Spectre.Console, avoid running interactive functions (e.g., prompts, progress displays) concurrently to prevent `System.InvalidOperationException`.
 -   When tests fail, analyze the test failures by exploring the codebase structure and examining the failing tests to understand what's going wrong.
+-   In `PSBuild.psm1`, when the `git log` command fails or returns an error, ensure the `$rawCommits` variable handles the error object appropriately, especially when accessing its `.Count` property. Improve error handling and the `ConvertTo-ArraySafe` function to handle these edge cases.
 
 ## UNIT TESTING
 
@@ -271,6 +272,8 @@ globs: *
 -   General application ZIP files should be created for all projects and architectures.
 -   SHA256 hashes should be generated for all published packages across all platforms.
 -   The staging directory should contain all the packages and the `hashes.txt` file.
+-   The build script `PSBuild.psm1` must respect the "should release" flag and not push files to package repos from a branch build.
+-   The GitHub release creation in `Invoke-ReleaseWorkflow` must check the `ShouldRelease` flag and only create releases when `ShouldRelease` is true (main branch + not tagged + official repo).
 
 ## WINGET INSTALLATION
 
@@ -292,3 +295,7 @@ globs: *
 
 ## HISTORY INPUT
 - The `HistoryInput.cs` file must handle cases where it cannot create a directory in `ApplicationData`, and should fall back to a temporary directory or the current directory.
+
+## CHANGELOG GENERATION
+
+- In `PSBuild.psm1`, when the `git log` command fails or returns an error during changelog generation, ensure the `$rawCommits` variable handles the error object appropriately, especially when accessing its `.Count` property. Improve error handling and the `ConvertTo-ArraySafe` function to handle these edge cases. The `ConvertTo-ArraySafe` function should handle `null`, empty inputs, PowerShell error objects, empty strings, and whitespace-only strings. Add try-catch protection around array conversion. After calling `ConvertTo-ArraySafe`, explicitly check that the result has a `Count` property before using it, and create an empty array if it does not.

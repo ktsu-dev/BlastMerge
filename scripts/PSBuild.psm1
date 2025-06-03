@@ -923,35 +923,59 @@ function Get-VersionNotes {
         $format = '%h|%s|%aN'
 
         # First try with standard filters
-        $rawCommits = "git log --pretty=format:`"$format`" --perl-regexp --regexp-ignore-case --grep=`"$EXCLUDE_PRS`" --invert-grep --committer=`"$EXCLUDE_BOTS`" --author=`"$EXCLUDE_BOTS`" `"$range`"" | Invoke-ExpressionWithLogging -ErrorAction SilentlyContinue
+        $rawCommitsResult = "git log --pretty=format:`"$format`" --perl-regexp --regexp-ignore-case --grep=`"$EXCLUDE_PRS`" --invert-grep --committer=`"$EXCLUDE_BOTS`" --author=`"$EXCLUDE_BOTS`" `"$range`"" | Invoke-ExpressionWithLogging -ErrorAction SilentlyContinue
 
-        # Ensure $rawCommits is an array
-        $rawCommits = ConvertTo-ArraySafe -InputObject $rawCommits
+        # Safely convert to array and handle any errors
+        $rawCommits = ConvertTo-ArraySafe -InputObject $rawCommitsResult
+
+        # Additional safety check - ensure we have a valid array with Count property
+        if ($null -eq $rawCommits -or -not ($rawCommits.PSObject.Properties.Name -contains 'Count')) {
+            Write-Information "rawCommits does not have Count property, creating empty array" -Tags "Get-VersionNotes"
+            $rawCommits = @()
+        }
 
         # If no commits found, try with just PR exclusion but no author filtering
         if ($rawCommits.Count -eq 0) {
             Write-Information "No commits found with standard filters, trying with relaxed author/committer filters..." -Tags "Get-VersionNotes"
-            $rawCommits = "git log --pretty=format:`"$format`" --perl-regexp --regexp-ignore-case --grep=`"$EXCLUDE_PRS`" --invert-grep `"$range`"" | Invoke-ExpressionWithLogging -ErrorAction SilentlyContinue
+            $rawCommitsResult = "git log --pretty=format:`"$format`" --perl-regexp --regexp-ignore-case --grep=`"$EXCLUDE_PRS`" --invert-grep `"$range`"" | Invoke-ExpressionWithLogging -ErrorAction SilentlyContinue
 
-            # Ensure $rawCommits is an array
-            $rawCommits = ConvertTo-ArraySafe -InputObject $rawCommits
+            # Safely convert to array and handle any errors
+            $rawCommits = ConvertTo-ArraySafe -InputObject $rawCommitsResult
+
+            # Additional safety check
+            if ($null -eq $rawCommits -or -not ($rawCommits.PSObject.Properties.Name -contains 'Count')) {
+                Write-Information "rawCommits does not have Count property, creating empty array" -Tags "Get-VersionNotes"
+                $rawCommits = @()
+            }
         }
 
         # If still no commits, try with no filtering at all - show everything in the range
         if ($rawCommits.Count -eq 0) {
             Write-Information "Still no commits found, trying with no filters..." -Tags "Get-VersionNotes"
-            $rawCommits = "git log --pretty=format:`"$format`" `"$range`"" | Invoke-ExpressionWithLogging -ErrorAction SilentlyContinue
+            $rawCommitsResult = "git log --pretty=format:`"$format`" `"$range`"" | Invoke-ExpressionWithLogging -ErrorAction SilentlyContinue
 
-            # Ensure $rawCommits is an array
-            $rawCommits = ConvertTo-ArraySafe -InputObject $rawCommits
+            # Safely convert to array and handle any errors
+            $rawCommits = ConvertTo-ArraySafe -InputObject $rawCommitsResult
+
+            # Additional safety check
+            if ($null -eq $rawCommits -or -not ($rawCommits.PSObject.Properties.Name -contains 'Count')) {
+                Write-Information "rawCommits does not have Count property, creating empty array" -Tags "Get-VersionNotes"
+                $rawCommits = @()
+            }
 
             # If it's a prerelease version, include also version update commits
             if ($versionType -eq "prerelease" -and $rawCommits.Count -eq 0) {
                 Write-Information "Looking for version update commits for prerelease..." -Tags "Get-VersionNotes"
-                $rawCommits = "git log --pretty=format:`"$format`" --grep=`"Update VERSION to`" `"$range`"" | Invoke-ExpressionWithLogging -ErrorAction SilentlyContinue
+                $rawCommitsResult = "git log --pretty=format:`"$format`" --grep=`"Update VERSION to`" `"$range`"" | Invoke-ExpressionWithLogging -ErrorAction SilentlyContinue
 
-                # Ensure $rawCommits is an array
-                $rawCommits = ConvertTo-ArraySafe -InputObject $rawCommits
+                # Safely convert to array and handle any errors
+                $rawCommits = ConvertTo-ArraySafe -InputObject $rawCommitsResult
+
+                # Additional safety check
+                if ($null -eq $rawCommits -or -not ($rawCommits.PSObject.Properties.Name -contains 'Count')) {
+                    Write-Information "rawCommits does not have Count property, creating empty array" -Tags "Get-VersionNotes"
+                    $rawCommits = @()
+                }
             }
         }
     }
@@ -1971,7 +1995,7 @@ function ConvertTo-ArraySafe {
         Safely converts an object to an array, even if it's already an array, a single item, or null.
     .DESCRIPTION
         Ensures that the returned object is always an array, handling PowerShell's behavior
-        where single item arrays are automatically unwrapped.
+        where single item arrays are automatically unwrapped. Also handles error objects and other edge cases.
     .PARAMETER InputObject
         The object to convert to an array.
     .OUTPUTS
@@ -1981,6 +2005,7 @@ function ConvertTo-ArraySafe {
     [OutputType([object[]])]
     param (
         [Parameter(ValueFromPipeline=$true)]
+        [AllowNull()]
         [object]$InputObject
     )
 
@@ -1989,17 +2014,35 @@ function ConvertTo-ArraySafe {
     }
 
     process {
-        if ($null -eq $InputObject) {
+        # Handle null or empty input
+        if ($null -eq $InputObject -or [string]::IsNullOrEmpty($InputObject)) {
             return @()
         }
 
-        if ($InputObject -is [array]) {
-            # Force array context to handle single-item arrays
-            $outputArray = @($InputObject)
+        # Handle error objects - return empty array for safety
+        if ($InputObject -is [System.Management.Automation.ErrorRecord]) {
+            Write-Information "ConvertTo-ArraySafe: Received error object, returning empty array" -Tags "ConvertTo-ArraySafe"
+            return @()
         }
-        else {
-            # Single item, make it an array
-            $outputArray = @($InputObject)
+
+        # Handle empty strings
+        if ($InputObject -is [string] -and [string]::IsNullOrWhiteSpace($InputObject)) {
+            return @()
+        }
+
+        try {
+            if ($InputObject -is [array]) {
+                # Force array context to handle single-item arrays
+                $outputArray = @($InputObject)
+            }
+            else {
+                # Single item, make it an array
+                $outputArray = @($InputObject)
+            }
+        }
+        catch {
+            Write-Information "ConvertTo-ArraySafe: Error converting object to array: $_" -Tags "ConvertTo-ArraySafe"
+            return @()
         }
     }
 
