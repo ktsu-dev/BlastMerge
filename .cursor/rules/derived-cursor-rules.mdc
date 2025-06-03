@@ -72,6 +72,7 @@ globs: *
 -   Use the CommandLineParser library for CLI handling.
 -   When using records, ensure the constructors are unambiguous. Provide default values for parameters if necessary to avoid constructor conflicts.
 -   Use conditional expressions to simplify if-else-if-else chains for better readability.
+-   When converting classes to records, consider the potential breaking changes for consumers that rely on reference equality comparisons, inheritance patterns, or mutable object patterns.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -147,6 +148,9 @@ globs: *
 -   When using `FileFinderAdapter` in tests, be aware that `Directory.GetFiles()` returns absolute paths. Ensure consistency in path handling by converting paths to relative paths, if necessary, especially in tests using a mock file system.
 -   If a test uses the real file system, it can cause problems with parallel test execution because multiple tests are trying to access the same real files simultaneously. Convert the test to use the mock file system.
 -   For performance tests, use unique temp directories per test instance to avoid conflicts during parallel execution while still testing real file I/O.
+-   Update tests to work with new record structures.
+-   Reorder import statements in test files for consistency (project imports before framework imports).
+-   Update test adapter classes to use new record constructors.
 
 ## WORKFLOW & RELEASE RULES
 
@@ -189,7 +193,6 @@ globs: *
 -   When adding package references, use `dotnet add package <package_name>`
 -   When adding project references, use `dotnet add reference <project_path>`
 -   The BlastMerge CLI should have command history functionality, allowing users to use arrow keys or tab to navigate through previous inputs. History should be visible to the user.
--   Consider renaming the project to "BlastMerge" to better reflect the merging functionality and align with the existing "explosive" theme of related applications. **NOTE:** This rule is superseded as the project has been renamed to BlastMerge. See "PROJECT RENAMING".
 -   Make cross repository file synchronization by iterative merging the primary feature of the app.
 -   Remove failing tests until more test coverage is added.
 -   Prepare the application for distribution via winget.
