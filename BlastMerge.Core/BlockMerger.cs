@@ -113,37 +113,46 @@ public static class BlockMerger
 			return blocks;
 		}
 
-		var currentBlock = new DiffBlock();
-		var isFirstDifference = true;
+		DiffBlock? currentBlock = null;
 
 		foreach (var diff in sortedDifferences)
 		{
-			// If this is the first difference or it's contiguous with the previous one
-			if (isFirstDifference || IsContiguousDifference(currentBlock, diff))
-			{
-				AddDifferenceToBlock(currentBlock, diff);
-				isFirstDifference = false;
-			}
-			else
+			// If this is the first difference or it's not contiguous with the previous one
+			if (currentBlock == null || !IsContiguousDifference(currentBlock, diff))
 			{
 				// Finalize the current block and start a new one
-				if (currentBlock.Lines1.Count > 0 || currentBlock.Lines2.Count > 0)
+				if (currentBlock != null && (currentBlock.Lines1.Count > 0 || currentBlock.Lines2.Count > 0))
 				{
 					blocks.Add(currentBlock);
 				}
 
-				currentBlock = new DiffBlock();
-				AddDifferenceToBlock(currentBlock, diff);
+				// Determine block type based on the difference
+				var blockType = DetermineBlockType(diff);
+				currentBlock = new DiffBlock(blockType);
 			}
+
+			AddDifferenceToBlock(currentBlock, diff);
 		}
 
 		// Add the final block
-		if (currentBlock.Lines1.Count > 0 || currentBlock.Lines2.Count > 0)
+		if (currentBlock != null && (currentBlock.Lines1.Count > 0 || currentBlock.Lines2.Count > 0))
 		{
 			blocks.Add(currentBlock);
 		}
 
 		return blocks;
+	}
+
+	/// <summary>
+	/// Determines the block type based on a line difference
+	/// </summary>
+	/// <param name="diff">The line difference to analyze</param>
+	/// <returns>The appropriate block type</returns>
+	private static BlockType DetermineBlockType(LineDifference diff)
+	{
+		return diff.LineNumber1.HasValue && diff.LineNumber2.HasValue ? BlockType.Replace :
+			   diff.LineNumber1.HasValue ? BlockType.Delete :
+			   BlockType.Insert;
 	}
 
 	/// <summary>
@@ -287,20 +296,6 @@ public static class BlockMerger
 		{
 			currentBlock.Lines2.Add(diff.Content2);
 			currentBlock.LineNumbers2.Add(diff.LineNumber2.Value);
-		}
-
-		// Determine block type
-		if (currentBlock.Lines1.Count > 0 && currentBlock.Lines2.Count > 0)
-		{
-			currentBlock.Type = BlockType.Replace;
-		}
-		else if (currentBlock.Lines1.Count > 0)
-		{
-			currentBlock.Type = BlockType.Delete;
-		}
-		else if (currentBlock.Lines2.Count > 0)
-		{
-			currentBlock.Type = BlockType.Insert;
 		}
 	}
 

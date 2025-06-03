@@ -206,8 +206,8 @@ public static class DiffPlexDiffer
 		var diff = InlineDiffBuilder.BuildDiffModel(content1, content2);
 		var result = new Collection<ColoredDiffLine>
 		{
-			new() { Content = $"--- {file1}", Color = DiffColor.FileHeader },
-			new() { Content = $"+++ {file2}", Color = DiffColor.FileHeader }
+			new($"--- {file1}", DiffColor.FileHeader),
+			new($"+++ {file2}", DiffColor.FileHeader)
 		};
 
 		foreach (var line in diff.Lines)

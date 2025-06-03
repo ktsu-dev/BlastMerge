@@ -70,6 +70,8 @@ globs: *
 -   Post-process the results of `FindDifferences` to detect when a deletion is immediately followed by an insertion at adjacent positions and merge them into a modification.
 -   When using `Directory.GetFiles` in `FileFinderAdapter.FindFiles`, be aware that it returns absolute paths. Ensure consistency in path handling by converting paths to relative paths, if necessary, especially in tests using a mock file system.
 -   Use the CommandLineParser library for CLI handling.
+-   When using records, ensure the constructors are unambiguous. Provide default values for parameters if necessary to avoid constructor conflicts.
+-   Use conditional expressions to simplify if-else-if-else chains for better readability.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -103,6 +105,8 @@ globs: *
 -   When displaying diffs in a side-by-side format, ensure that the prologue (initial context lines) shows the correct context around the differences, and not hardcoded line numbers. When displaying diffs in a side-by-side format, calculate the correct starting line numbers for the context before the block by using the actual line numbers. Ensure that the context shows the actual context around the differences, and not hardcoded line numbers.
 -   Post-process the results of `FindDifferences` to detect when a deletion is immediately followed by an insertion at adjacent positions and merge them into a modification.
 -   When using the `DiffPlexDiffer.GenerateColoredDiff` method, be aware that it uses the real file system (`File.Exists()`) instead of the mock file system. When using a mock file system in tests, ensure that `FileDifferAdapter.GenerateColoredDiff` creates temporary files from the mock file system content, similar to how `GenerateGitStyleDiff` handles it.
+-   When creating `DiffBlock` instances, ensure the `BlockType` parameter is correctly specified.
+-   When using records with init-only properties, create new instances with the correct values instead of modifying the property after creation.
 
 ## DEBUGGING
 

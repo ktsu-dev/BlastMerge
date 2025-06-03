@@ -12,7 +12,7 @@ using System.Collections.ObjectModel;
 /// Represents a group of identical files by hash
 /// </summary>
 /// <param name="Hash"> Gets the hash that identifies this group </param>
-public record FileGroup(string Hash)
+public record FileGroup(string Hash = "")
 {
 	private readonly Collection<string> filePaths = [];
 
@@ -22,15 +22,10 @@ public record FileGroup(string Hash)
 	public IReadOnlyCollection<string> FilePaths => filePaths.AsReadOnly();
 
 	/// <summary>
-	/// Initializes a new instance of the FileGroup class
-	/// </summary>
-	public FileGroup() : this(default) { }
-
-	/// <summary>
 	/// Initializes a new instance of the FileGroup class with the specified file paths
 	/// </summary>
 	/// <param name="filePaths">The file paths to include in this group</param>
-	public FileGroup(IEnumerable<string> filePaths) : this(default)
+	public FileGroup(IEnumerable<string> filePaths) : this("")
 	{
 		ArgumentNullException.ThrowIfNull(filePaths);
 		foreach (var filePath in filePaths)

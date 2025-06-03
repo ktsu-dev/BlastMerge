@@ -300,14 +300,8 @@ public static class FileDiffer
 		var result = new Collection<ColoredDiffLine>
 		{
 			// Add header
-			new() {
-				Content = $"Change Summary: {Path.GetFileName(file1)} vs {Path.GetFileName(file2)}",
-				Color = DiffColor.FileHeader
-			},
-			new() {
-				Content = "----------------------------------------",
-				Color = DiffColor.Default
-			}
+			new($"Change Summary: {Path.GetFileName(file1)} vs {Path.GetFileName(file2)}", DiffColor.FileHeader),
+			new("----------------------------------------", DiffColor.Default)
 		};
 
 		// Use DiffPlex to get differences
