@@ -11,9 +11,10 @@ using System.Linq;
 using ktsu.BlastMerge.Core;
 using Spectre.Console;
 using DiffPlex.DiffBuilder.Model;
+using CommandLine;
 
 /// <summary>
-/// Main program class for the DiffMore TUI
+/// Main program class for the BlastMerge TUI
 /// </summary>
 public static class Program
 {
@@ -27,38 +28,80 @@ public static class Program
 
 		Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-		try
+		// Parse command line arguments using CommandLineParser
+		using var parser = new Parser(with =>
 		{
-			ShowBanner();
+			with.HelpWriter = null; // We'll handle help output ourselves
+			with.CaseSensitive = false;
+		});
 
-			// If args are provided, try to use them directly
-			if (args.Length >= 2)
+		var parseResult = parser.ParseArguments<CommandLineOptions>(args);
+
+		parseResult
+			.WithParsed<CommandLineOptions>(options =>
 			{
-				var directory = args[0];
-				var fileName = args[1];
-
-				if (Directory.Exists(directory))
+				// Handle version command for winget validation
+				if (options.ShowVersion)
 				{
-					ProcessFiles(directory, fileName);
+					ShowVersion();
 					return;
 				}
-			}
 
-			// Interactive TUI mode
-			RunInteractiveMode();
-		}
-		catch (IOException ex)
-		{
-			AnsiConsole.WriteException(ex);
-		}
-		catch (UnauthorizedAccessException ex)
-		{
-			AnsiConsole.WriteException(ex);
-		}
-		catch (ArgumentException ex)
-		{
-			AnsiConsole.WriteException(ex);
-		}
+				// Handle help command
+				if (options.ShowHelp)
+				{
+					ShowCommandLineHelp();
+					return;
+				}
+
+				try
+				{
+					ShowBanner();
+
+					// If directory and filename are provided, try to use them directly
+					if (!string.IsNullOrEmpty(options.Directory) && !string.IsNullOrEmpty(options.FileName))
+					{
+						if (Directory.Exists(options.Directory))
+						{
+							ProcessFiles(options.Directory, options.FileName);
+							return;
+						}
+						else
+						{
+							AnsiConsole.MarkupLine($"[red]Error: Directory '{options.Directory}' does not exist![/]");
+							return;
+						}
+					}
+
+					// Interactive TUI mode
+					RunInteractiveMode();
+				}
+				catch (IOException ex)
+				{
+					AnsiConsole.WriteException(ex);
+				}
+				catch (UnauthorizedAccessException ex)
+				{
+					AnsiConsole.WriteException(ex);
+				}
+				catch (ArgumentException ex)
+				{
+					AnsiConsole.WriteException(ex);
+				}
+			})
+			.WithNotParsed(errors =>
+			{
+				// Check if it's just a help or version request that failed parsing
+				if (errors.Any(e => e.Tag is ErrorType.HelpRequestedError or ErrorType.VersionRequestedError))
+				{
+					ShowCommandLineHelp();
+					return;
+				}
+
+				// For other parsing errors, show help
+				AnsiConsole.MarkupLine("[red]Invalid command line arguments.[/]");
+				ShowCommandLineHelp();
+			});
 	}
 
 	/// <summary>
@@ -1196,5 +1239,74 @@ public static class Program
 			var s when s.Contains("Both") => BlockChoice.UseBoth,
 			_ => BlockChoice.Skip
 		};
+	}
+
+	/// <summary>
+	/// Shows the application version
+	/// </summary>
+	private static void ShowVersion()
+	{
+		try
+		{
+			// Try to read version from VERSION.md file
+			var versionFile = Path.Combine(AppContext.BaseDirectory, "VERSION.md");
+			if (File.Exists(versionFile))
+			{
+				var version = File.ReadAllText(versionFile).Trim();
+				Console.WriteLine(version);
+				return;
+			}
+
+			// Fallback to assembly version
+			var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+			var version2 = assembly.GetName().Version?.ToString() ?? "1.0.0";
+			Console.WriteLine(version2);
+		}
+		catch (IOException)
+		{
+			// Fallback version if file reading fails
+			Console.WriteLine("1.0.14");
+		}
+		catch (UnauthorizedAccessException)
+		{
+			// Fallback version if access denied
+			Console.WriteLine("1.0.14");
+		}
+		catch (System.Security.SecurityException)
+		{
+			// Fallback version if security exception
+			Console.WriteLine("1.0.14");
+		}
+	}
+
+	/// <summary>
+	/// Shows command line help
+	/// </summary>
+	private static void ShowCommandLineHelp()
+	{
+		Console.WriteLine("BlastMerge - Cross-Repository File Synchronization");
+		Console.WriteLine();
+		Console.WriteLine("USAGE:");
+		Console.WriteLine("  BlastMerge.exe [options] [directory] [filename]");
+		Console.WriteLine();
+		Console.WriteLine("OPTIONS:");
+		Console.WriteLine("  -v, --version         Display version information and exit");
+		Console.WriteLine("  -h, --help            Display this help screen and exit");
+		Console.WriteLine();
+		Console.WriteLine("ARGUMENTS:");
+		Console.WriteLine("  directory             Directory path to search for files");
+		Console.WriteLine("  filename              Filename to search for in the directory");
+		Console.WriteLine();
+		Console.WriteLine("EXAMPLES:");
+		Console.WriteLine("  BlastMerge.exe                           Start interactive mode");
+		Console.WriteLine("  BlastMerge.exe C:\\Projects README.md      Process files directly");
+		Console.WriteLine("  BlastMerge.exe --version                 Show version");
+		Console.WriteLine("  BlastMerge.exe --help                    Show this help");
+		Console.WriteLine();
+		Console.WriteLine("INTERACTIVE MODE FEATURES:");
+		Console.WriteLine("  🔀 Iterative Merge Multiple Versions (PRIMARY FEATURE)");
+		Console.WriteLine("  🔍 Compare Files in Directory");
+		Console.WriteLine("  📁 Compare Two Directories");
+		Console.WriteLine("  📄 Compare Two Specific Files");
 	}
 }
