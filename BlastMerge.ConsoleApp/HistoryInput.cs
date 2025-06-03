@@ -15,16 +15,53 @@ using Spectre.Console;
 /// </summary>
 public static class HistoryInput
 {
-	private static readonly string HistoryFile = Path.Combine(
-		Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-		"BlastMerge",
-		"input_history.json");
+	private static readonly string HistoryFile = GetHistoryFilePath();
 
 	private static Dictionary<string, List<string>> inputHistory = [];
 
 	private static readonly JsonSerializerOptions jsonOptions = new() { WriteIndented = true };
 
 	static HistoryInput() => LoadHistory();
+
+	/// <summary>
+	/// Gets the history file path, with fallback to temp directory if ApplicationData is not accessible
+	/// </summary>
+	/// <returns>Path to history file</returns>
+	private static string GetHistoryFilePath()
+	{
+		try
+		{
+			var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+			if (!string.IsNullOrEmpty(appDataPath))
+			{
+				return Path.Combine(appDataPath, "BlastMerge", "input_history.json");
+			}
+		}
+		catch (System.Security.SecurityException)
+		{
+			// Fall through to temp directory
+		}
+		catch (PlatformNotSupportedException)
+		{
+			// Fall through to temp directory
+		}
+
+		try
+		{
+			var tempPath = Path.GetTempPath();
+			return Path.Combine(tempPath, "BlastMerge", "input_history.json");
+		}
+		catch (System.Security.SecurityException)
+		{
+			// Final fallback - use current directory
+		}
+		catch (PlatformNotSupportedException)
+		{
+			// Final fallback - use current directory
+		}
+
+		return Path.Combine(".", "blastmerge_history.json");
+	}
 
 	/// <summary>
 	/// Asks the user for input with history support using arrow key navigation
@@ -280,10 +317,13 @@ public static class HistoryInput
 	{
 		try
 		{
-			if (File.Exists(HistoryFile))
+			if (!string.IsNullOrEmpty(HistoryFile) && File.Exists(HistoryFile))
 			{
 				var json = File.ReadAllText(HistoryFile);
-				inputHistory = JsonSerializer.Deserialize<Dictionary<string, List<string>>>(json) ?? [];
+				if (!string.IsNullOrWhiteSpace(json))
+				{
+					inputHistory = JsonSerializer.Deserialize<Dictionary<string, List<string>>>(json) ?? [];
+				}
 			}
 		}
 		catch (JsonException)
@@ -301,6 +341,14 @@ public static class HistoryInput
 			// If access denied, start with empty history
 			inputHistory = [];
 		}
+		catch (System.Security.SecurityException)
+		{
+			// If security exception, start with empty history
+			inputHistory = [];
+		}
+
+		// Ensure inputHistory is never null
+		inputHistory ??= [];
 	}
 
 	/// <summary>
@@ -310,6 +358,11 @@ public static class HistoryInput
 	{
 		try
 		{
+			if (string.IsNullOrEmpty(HistoryFile))
+			{
+				return; // Can't save if we don't have a valid path
+			}
+
 			var directory = Path.GetDirectoryName(HistoryFile);
 			if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
 			{
@@ -321,15 +374,19 @@ public static class HistoryInput
 		}
 		catch (IOException)
 		{
-			// Ignore file I/O failures
+			// Ignore file I/O failures - history is not critical
 		}
 		catch (UnauthorizedAccessException)
 		{
-			// Ignore access denied failures
+			// Ignore access denied failures - history is not critical
 		}
 		catch (JsonException)
 		{
-			// Ignore JSON serialization failures
+			// Ignore JSON serialization failures - history is not critical
+		}
+		catch (System.Security.SecurityException)
+		{
+			// Ignore security exceptions - history is not critical
 		}
 	}
 }

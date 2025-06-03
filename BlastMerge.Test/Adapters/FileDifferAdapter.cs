@@ -220,7 +220,7 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 
 			if (line1 != line2)
 			{
-				differences.Add(new LineDifference
+				differences.Add(new LineDifference(null, null, null, null, default)
 				{
 					LineNumber1 = line1 != null ? i + 1 : 0,
 					LineNumber2 = line2 != null ? i + 1 : 0,

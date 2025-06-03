@@ -31,6 +31,7 @@ globs: *
 -   Spectre.Console.Cli
 -   System.Text.Json
 -   DiffPlex Version="1.7.2"
+-   CommandLineParser Version="2.9.1"
 
 ## PROJECT DOCUMENTATION & CONTEXT SYSTEM
 
@@ -68,6 +69,11 @@ globs: *
 -   The current side-by-side diff implementation is incomplete, and the sophisticated version of the `BuildVersionContent` method and supporting methods like `FindLineInFile`, `FindBestMatchingLine`, and `AddContextLinesWithComparison` are missing. These methods must be implemented to ensure proper side-by-side diff display.
 -   Post-process the results of `FindDifferences` to detect when a deletion is immediately followed by an insertion at adjacent positions and merge them into a modification.
 -   When using `Directory.GetFiles` in `FileFinderAdapter.FindFiles`, be aware that it returns absolute paths. Ensure consistency in path handling by converting paths to relative paths, if necessary, especially in tests using a mock file system.
+-   Use the CommandLineParser library for CLI handling.
+-   When using records, ensure the constructors are unambiguous. Provide default values for parameters if necessary to avoid constructor conflicts.
+-   Use conditional expressions to simplify if-else-if-else chains for better readability.
+-   When converting classes to records, consider the potential breaking changes for consumers that rely on reference equality comparisons, inheritance patterns, or mutable object patterns.
+-   Reorder using statements to follow .NET conventions (project imports before framework imports).
 
 ## FILE & DIRECTORY HANDLING
 
@@ -101,6 +107,8 @@ globs: *
 -   When displaying diffs in a side-by-side format, ensure that the prologue (initial context lines) shows the correct context around the differences, and not hardcoded line numbers. When displaying diffs in a side-by-side format, calculate the correct starting line numbers for the context before the block by using the actual line numbers. Ensure that the context shows the actual context around the differences, and not hardcoded line numbers.
 -   Post-process the results of `FindDifferences` to detect when a deletion is immediately followed by an insertion at adjacent positions and merge them into a modification.
 -   When using the `DiffPlexDiffer.GenerateColoredDiff` method, be aware that it uses the real file system (`File.Exists()`) instead of the mock file system. When using a mock file system in tests, ensure that `FileDifferAdapter.GenerateColoredDiff` creates temporary files from the mock file system content, similar to how `GenerateGitStyleDiff` handles it.
+-   When creating `DiffBlock` instances, ensure the `BlockType` parameter is correctly specified.
+-   When using records with init-only properties, create new instances with the correct values instead of modifying the property after creation.
 
 ## DEBUGGING
 
@@ -141,6 +149,9 @@ globs: *
 -   When using `FileFinderAdapter` in tests, be aware that `Directory.GetFiles()` returns absolute paths. Ensure consistency in path handling by converting paths to relative paths, if necessary, especially in tests using a mock file system.
 -   If a test uses the real file system, it can cause problems with parallel test execution because multiple tests are trying to access the same real files simultaneously. Convert the test to use the mock file system.
 -   For performance tests, use unique temp directories per test instance to avoid conflicts during parallel execution while still testing real file I/O.
+-   Update tests to work with new record structures.
+-   Reorder import statements in test files for consistency (project imports before framework imports).
+-   Update test adapter classes to use new record constructors.
 
 ## WORKFLOW & RELEASE RULES
 
@@ -183,12 +194,13 @@ globs: *
 -   When adding package references, use `dotnet add package <package_name>`
 -   When adding project references, use `dotnet add reference <project_path>`
 -   The BlastMerge CLI should have command history functionality, allowing users to use arrow keys or tab to navigate through previous inputs. History should be visible to the user.
--   Consider renaming the project to "BlastMerge" to better reflect the merging functionality and align with the existing "explosive" theme of related applications. **NOTE:** This rule is superseded as the project has been renamed to BlastMerge. See "PROJECT RENAMING".
 -   Make cross repository file synchronization by iterative merging the primary feature of the app.
 -   Remove failing tests until more test coverage is added.
 -   Prepare the application for distribution via winget.
 -   Modify the existing `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` to integrate the winget package creation functionality. Remove the separate `New-WingetPackages` function and its call in the release workflow.
 -   Ensure that the `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` has only one `dotnet publish` step, consolidating the previous separate steps for general application and winget package publishing.
+-   The build script `PSBuild.psm1` must respect the "should release" flag and not push files to package repos from a branch build.
+-   The GitHub release creation in `Invoke-ReleaseWorkflow` must check the `ShouldRelease` flag and only create releases when `ShouldRelease` is true (main branch + not tagged + official repo).
 
 ## DIRECTORY COMPARISON
 
@@ -244,6 +256,8 @@ globs: *
 -   A quick-start guide (`docs/winget-quick-start.md`) should be created for the entire winget distribution process.
 -   The `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` should have only one `dotnet publish` step, consolidating the previous separate steps for general application and winget package publishing.
 -   The executable name in the winget manifest (`winget/ktsu.BlastMerge.installer.yaml`) should match the actual executable name in the build output directory (e.g., `ktsu.BlastMerge.ConsoleApp.exe`).
+- Add a `--version` command-line argument that winget validation requires. When winget calls `blastmerge.exe --version`, it should display the application's version.
+- The `HistoryInput.cs` file must handle cases where it cannot create a directory in `ApplicationData`, and should fall back to a temporary directory or the current directory.
 
 ## CROSS PLATFORM SUPPORT
 
@@ -263,3 +277,18 @@ globs: *
 - The executable name in the winget manifest (`winget/ktsu.BlastMerge.installer.yaml`) should match the actual executable name in the build output directory (e.g., `ktsu.BlastMerge.ConsoleApp.exe`).
 - The `RelativeFilePath` entry in `winget/ktsu.BlastMerge.installer.yaml` must be `ktsu.BlastMerge.ConsoleApp.exe`, not `BlastMerge.ConsoleApp.exe`.
 - The `RelativeFilePath` entry in `scripts/update-winget-manifests.ps1` must be `ktsu.BlastMerge.ConsoleApp.exe`, not `BlastMerge.ConsoleApp.exe`.
+
+## WINGET VALIDATION
+- The application must handle the `--version` command-line argument, as required by winget validation.
+
+## COMMAND LINE PARSING
+
+- Use the CommandLineParser library for handling command-line arguments.
+- Create a `CommandLineOptions` class to define the available options.
+- Use the `[Option]` attribute to define options with short and long names, and help text.
+- Use the `[Value]` attribute to define positional arguments.
+- Handle parsing errors gracefully and display help information when necessary.
+- Use `using var parser = new Parser(...)` to ensure proper disposal of the parser object.
+
+## HISTORY INPUT
+- The `HistoryInput.cs` file must handle cases where it cannot create a directory in `ApplicationData`, and should fall back to a temporary directory or the current directory.
