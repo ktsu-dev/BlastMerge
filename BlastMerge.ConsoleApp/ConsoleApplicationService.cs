@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using DiffPlex.DiffBuilder.Model;
+using ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 using ktsu.BlastMerge.Core.Models;
 using ktsu.BlastMerge.Core.Services;
 using Spectre.Console;
@@ -30,8 +31,6 @@ public class ConsoleApplicationService : ApplicationService
 	private const string NameColumnName = "Name";
 	private const string DescriptionColumnName = "Description";
 	private const string PatternsColumnName = "Patterns";
-	private const string KeyColumnName = "Key";
-	private const string ActionColumnName = "Action";
 
 	// Menu display text to command mappings
 	private static readonly Dictionary<string, MenuChoice> MainMenuChoices = new()
@@ -131,16 +130,16 @@ public class ConsoleApplicationService : ApplicationService
 			switch (choice)
 			{
 				case ProcessFileActionChoice.ViewDetailedFileList:
-					ShowDetailedFileList(fileGroups);
+					FileDisplayService.ShowDetailedFileList(fileGroups);
 					break;
 				case ProcessFileActionChoice.ShowDifferences:
-					ShowDifferences(fileGroups);
+					FileDisplayService.ShowDifferences(fileGroups);
 					break;
 				case ProcessFileActionChoice.RunIterativeMergeOnDuplicates:
-					RunIterativeMerge(directory, fileName);
+					InteractiveMergeService.PerformIterativeMerge(fileGroups);
 					break;
 				case ProcessFileActionChoice.SyncFiles:
-					OfferSyncOptions(fileGroups);
+					SyncOperationsService.OfferSyncOptions(fileGroups);
 					break;
 				case ProcessFileActionChoice.ReturnToMainMenu:
 					// Default action - do nothing
@@ -149,375 +148,6 @@ public class ConsoleApplicationService : ApplicationService
 					// Unknown choice - do nothing
 					break;
 			}
-		}
-	}
-
-	/// <summary>
-	/// Shows differences between file groups.
-	/// </summary>
-	/// <param name="fileGroups">The file groups to show differences for.</param>
-	private void ShowDifferences(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
-	{
-		// Convert to FileGroup objects for easier handling
-		List<FileGroup> groups = [.. fileGroups.Select(g => new FileGroup(g.Value))];
-
-		// Filter to groups with multiple files
-		List<FileGroup> groupsWithMultipleFiles = [.. groups.Where(g => g.FilePaths.Count > 1)];
-
-		if (groupsWithMultipleFiles.Count == 0)
-		{
-			AnsiConsole.MarkupLine("[yellow]No groups with multiple files to compare.[/]");
-			return;
-		}
-
-		foreach (FileGroup group in groupsWithMultipleFiles)
-		{
-			AnsiConsole.WriteLine();
-			Rule rule = new($"[bold]Group with {group.FilePaths.Count} files[/]")
-			{
-				Style = Style.Parse("blue")
-			};
-			AnsiConsole.Write(rule);
-
-			// Show all files in the group
-			foreach (string file in group.FilePaths)
-			{
-				AnsiConsole.MarkupLine($"[dim]📁 {file}[/]");
-			}
-
-			// Compare first two files in the group
-			if (group.FilePaths.Count >= 2)
-			{
-				string file1 = group.FilePaths.First();
-				string file2 = group.FilePaths.Skip(1).First();
-
-				AnsiConsole.WriteLine();
-				AnsiConsole.MarkupLine($"[yellow]Comparing first two files:[/]");
-
-				string diffFormat = AnsiConsole.Prompt(
-					new SelectionPrompt<string>()
-						.Title("[cyan]Choose diff format:[/]")
-						.AddChoices([
-							"📊 Change Summary (Added/Removed lines only)",
-							"🔧 Git-style Diff (Full context)",
-							"🎨 Side-by-Side Diff (Rich formatting)",
-							"⏭️ Skip this group"
-						]));
-
-				if (diffFormat.Contains("📊"))
-				{
-					ShowChangeSummary(file1, file2);
-				}
-				else if (diffFormat.Contains("🔧"))
-				{
-					ShowGitStyleDiff(file1, file2);
-				}
-				else if (diffFormat.Contains("🎨"))
-				{
-					ShowSideBySideDiff(file1, file2);
-				}
-			}
-		}
-	}
-
-	/// <summary>
-	/// Offers sync options for file groups.
-	/// </summary>
-	/// <param name="fileGroups">The file groups to offer sync options for.</param>
-	private void OfferSyncOptions(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
-	{
-		// Convert to FileGroup objects for easier handling
-		List<FileGroup> groups = [.. fileGroups.Select(g => new FileGroup(g.Value))];
-
-		// Filter to groups with multiple files
-		List<FileGroup> groupsWithMultipleFiles = [.. groups.Where(g => g.FilePaths.Count > 1)];
-
-		if (groupsWithMultipleFiles.Count == 0)
-		{
-			AnsiConsole.MarkupLine("[yellow]All files are already unique (no duplicates to sync).[/]");
-			return;
-		}
-
-		if (!AnsiConsole.Confirm("[cyan]Would you like to sync files to make them identical?[/]", false))
-		{
-			return;
-		}
-
-		// Let user choose which version to use as the source
-		List<string> choices = [];
-		for (int i = 0; i < groupsWithMultipleFiles.Count; i++)
-		{
-			FileGroup group = groupsWithMultipleFiles[i];
-			choices.Add($"Version {i + 1} ({group.FilePaths.Count} files) - {group.FilePaths.First()}");
-		}
-
-		string selectedVersion = AnsiConsole.Prompt(
-			new SelectionPrompt<string>()
-				.Title("[cyan]Which version should be used as the source for syncing?[/]")
-				.AddChoices(choices));
-
-		int sourceIndex = choices.IndexOf(selectedVersion);
-		FileGroup sourceGroup = groupsWithMultipleFiles[sourceIndex];
-		string sourceFile = sourceGroup.FilePaths.First();
-
-		// Collect all target files (files that are different from the source)
-		List<string> targetFiles = [];
-		for (int i = 0; i < groupsWithMultipleFiles.Count; i++)
-		{
-			if (i != sourceIndex)
-			{
-				targetFiles.AddRange(groupsWithMultipleFiles[i].FilePaths);
-			}
-		}
-
-		if (targetFiles.Count == 0)
-		{
-			AnsiConsole.MarkupLine("[green]No files need to be synced.[/]");
-			return;
-		}
-
-		AnsiConsole.MarkupLine($"[yellow]This will copy content from:[/]");
-		AnsiConsole.MarkupLine($"[cyan]  📁 {sourceFile}[/]");
-		AnsiConsole.MarkupLine($"[yellow]To {targetFiles.Count} different files.[/]");
-
-		if (!AnsiConsole.Confirm("[red]⚠️ This will overwrite the target files. Continue?[/]", false))
-		{
-			return;
-		}
-
-		// Perform the sync
-		int successCount = 0;
-		int failureCount = 0;
-
-		AnsiConsole.Progress()
-			.Start(ctx =>
-			{
-				ProgressTask task = ctx.AddTask("[green]Syncing files...[/]");
-				task.MaxValue = targetFiles.Count;
-
-				foreach (string targetFile in targetFiles)
-				{
-					try
-					{
-						File.Copy(sourceFile, targetFile, overwrite: true);
-						successCount++;
-					}
-					catch (IOException)
-					{
-						failureCount++;
-					}
-					catch (UnauthorizedAccessException)
-					{
-						failureCount++;
-					}
-
-					task.Increment(1);
-				}
-			});
-
-		AnsiConsole.MarkupLine($"[green]✅ Successfully synced {successCount} files.[/]");
-		if (failureCount > 0)
-		{
-			AnsiConsole.MarkupLine($"[red]❌ Failed to sync {failureCount} files.[/]");
-		}
-	}
-
-	/// <summary>
-	/// Shows a change summary between two files.
-	/// </summary>
-	/// <param name="file1">First file path.</param>
-	/// <param name="file2">Second file path.</param>
-	private static void ShowChangeSummary(string file1, string file2)
-	{
-		IReadOnlyCollection<LineDifference> differences = FileDiffer.FindDifferences(file1, file2);
-
-		if (differences.Count == 0)
-		{
-			AnsiConsole.MarkupLine("[green]Files are identical![/]");
-			return;
-		}
-
-		Panel panel = new(
-			$"[yellow]Found {differences.Count} differences[/]\n" +
-			$"[green]+ Additions: {differences.Count(d => d.Type == LineDifferenceType.Added)}[/]\n" +
-			$"[red]- Deletions: {differences.Count(d => d.Type == LineDifferenceType.Deleted)}[/]\n" +
-			$"[yellow]~ Modifications: {differences.Count(d => d.Type == LineDifferenceType.Modified)}[/]")
-		{
-			Header = new PanelHeader("[bold]Change Summary[/]"),
-			Border = BoxBorder.Rounded
-		};
-
-		AnsiConsole.Write(panel);
-	}
-
-	/// <summary>
-	/// Shows a git-style diff between two files.
-	/// </summary>
-	/// <param name="file1">First file path.</param>
-	/// <param name="file2">Second file path.</param>
-	private static void ShowGitStyleDiff(string file1, string file2)
-	{
-		string[] lines1 = File.ReadAllLines(file1);
-		string[] lines2 = File.ReadAllLines(file2);
-		System.Collections.ObjectModel.Collection<ColoredDiffLine> coloredDiff = FileDiffer.GenerateColoredDiff(file1, file2, lines1, lines2);
-
-		Panel panel = new(RenderColoredDiff(coloredDiff))
-		{
-			Header = new PanelHeader("[bold]Git-style Diff[/]"),
-			Border = BoxBorder.Rounded
-		};
-
-		AnsiConsole.Write(panel);
-	}
-
-	/// <summary>
-	/// Shows a side-by-side diff between two files.
-	/// </summary>
-	/// <param name="file1">First file path.</param>
-	/// <param name="file2">Second file path.</param>
-	private static void ShowSideBySideDiff(string file1, string file2)
-	{
-		try
-		{
-			SideBySideDiffModel sideBySideDiff = DiffPlexDiffer.GenerateSideBySideDiff(file1, file2);
-
-			// Use relative directory names for headers
-			string header1 = GetRelativeDirectoryName(file1);
-			string header2 = GetRelativeDirectoryName(file2);
-
-			Table table = new Table()
-				.AddColumn(new TableColumn("[bold]Line[/]").Width(6))
-				.AddColumn(new TableColumn($"[bold]{header1}[/]").Width(50))
-				.AddColumn(new TableColumn("[bold]Line[/]").Width(6))
-				.AddColumn(new TableColumn($"[bold]{header2}[/]").Width(50))
-				.Border(TableBorder.Rounded)
-				.Expand();
-
-			int maxLines = Math.Max(sideBySideDiff.OldText.Lines.Count, sideBySideDiff.NewText.Lines.Count);
-			int displayedLines = 0;
-			const int maxDisplayLines = 100; // Limit for TUI performance
-
-			for (int i = 0; i < maxLines && displayedLines < maxDisplayLines; i++)
-			{
-				DiffPiece? oldLine = i < sideBySideDiff.OldText.Lines.Count ? sideBySideDiff.OldText.Lines[i] : null;
-				DiffPiece? newLine = i < sideBySideDiff.NewText.Lines.Count ? sideBySideDiff.NewText.Lines[i] : null;
-
-				string? lineNum1 = "";
-				string content1 = "";
-				string? lineNum2 = "";
-				string content2 = "";
-
-				if (oldLine != null)
-				{
-					lineNum1 = (oldLine.Position + 1).ToString();
-					content1 = FormatDiffLine(oldLine);
-				}
-
-				if (newLine != null)
-				{
-					lineNum2 = (newLine.Position + 1).ToString();
-					content2 = FormatDiffLine(newLine);
-				}
-
-				table.AddRow(lineNum1 ?? "", content1 ?? "", lineNum2 ?? "", content2 ?? "");
-				displayedLines++;
-			}
-
-			if (maxLines > maxDisplayLines)
-			{
-				table.AddRow("[dim]...[/]", "[dim]...[/]", "[dim]...[/]", $"[dim]... and {maxLines - maxDisplayLines} more lines[/]");
-			}
-
-			AnsiConsole.Write(table);
-		}
-		catch (FileNotFoundException ex)
-		{
-			AnsiConsole.MarkupLine($"[red]File not found: {ex.Message}[/]");
-		}
-		catch (IOException ex)
-		{
-			AnsiConsole.MarkupLine($"[red]IO error generating side-by-side diff: {ex.Message}[/]");
-		}
-		catch (UnauthorizedAccessException ex)
-		{
-			AnsiConsole.MarkupLine($"[red]Access denied: {ex.Message}[/]");
-		}
-	}
-
-	/// <summary>
-	/// Formats a diff line with appropriate color and prefix.
-	/// </summary>
-	/// <param name="line">The diff line to format.</param>
-	/// <returns>Formatted line with color markup.</returns>
-	private static string FormatDiffLine(DiffPiece line)
-	{
-		string text = line.Text?.EscapeMarkup() ?? "";
-
-		return line.Type switch
-		{
-			ChangeType.Deleted => $"[red on darkred]- {text}[/]",
-			ChangeType.Inserted => $"[green on darkgreen]+ {text}[/]",
-			ChangeType.Modified => $"[yellow on darkorange]~ {text}[/]",
-			ChangeType.Imaginary => "[dim]   [/]",
-			ChangeType.Unchanged => $"  {text}",
-			_ => $"  {text}"
-		};
-	}
-
-	/// <summary>
-	/// Renders colored diff for display in panels.
-	/// </summary>
-	/// <param name="coloredDiff">The colored diff lines.</param>
-	/// <returns>Rendered markup string.</returns>
-	private static string RenderColoredDiff(IEnumerable<ColoredDiffLine> coloredDiff)
-	{
-		IEnumerable<string> lines = coloredDiff.Take(50).Select(line => line.Color switch
-		{
-			DiffColor.Addition => $"[green]{line.Content.EscapeMarkup()}[/]",
-			DiffColor.Deletion => $"[red]{line.Content.EscapeMarkup()}[/]",
-			DiffColor.ChunkHeader => $"[cyan]{line.Content.EscapeMarkup()}[/]",
-			DiffColor.FileHeader => $"[bold blue]{line.Content.EscapeMarkup()}[/]",
-			DiffColor.Default => line.Content.EscapeMarkup(),
-			_ => line.Content.EscapeMarkup()
-		});
-
-		return string.Join("\n", lines);
-	}
-
-	/// <summary>
-	/// Gets the relative directory name from a file path.
-	/// </summary>
-	/// <param name="filePath">The file path.</param>
-	/// <returns>The relative directory name.</returns>
-	private static string GetRelativeDirectoryName(string filePath)
-	{
-		try
-		{
-			string? directory = Path.GetDirectoryName(filePath);
-			if (string.IsNullOrEmpty(directory))
-			{
-				return Path.GetFileName(filePath);
-			}
-
-			string[] parts = directory.Split(Path.DirectorySeparatorChar);
-			if (parts.Length >= 2)
-			{
-				// Return last two directory parts + filename
-				return Path.Combine(parts[^2], parts[^1], Path.GetFileName(filePath));
-			}
-			else if (parts.Length == 1)
-			{
-				// Return last directory part + filename
-				return Path.Combine(parts[^1], Path.GetFileName(filePath));
-			}
-			else
-			{
-				return Path.GetFileName(filePath);
-			}
-		}
-		catch (ArgumentException)
-		{
-			return Path.GetFileName(filePath);
 		}
 	}
 
@@ -1158,9 +788,9 @@ public class ConsoleApplicationService : ApplicationService
 				{
 					Style = Style.Parse("blue")
 				};
-				AnsiConsole.Write(rule);
+							AnsiConsole.Write(rule);
 
-				ShowChangeSummary(file1, file2);
+			FileDisplayService.ShowChangeSummary(file1, file2);
 			}
 		}
 	}
@@ -1198,20 +828,20 @@ public class ConsoleApplicationService : ApplicationService
 					"🎨 Side-by-Side Diff (Rich formatting)"
 				]));
 
-		AnsiConsole.WriteLine();
+			AnsiConsole.WriteLine();
 
-		if (diffFormat.Contains("📊"))
-		{
-			ShowChangeSummary(file1, file2);
-		}
-		else if (diffFormat.Contains("🔧"))
-		{
-			ShowGitStyleDiff(file1, file2);
-		}
-		else if (diffFormat.Contains("🎨"))
-		{
-			ShowSideBySideDiff(file1, file2);
-		}
+	if (diffFormat.Contains("📊"))
+	{
+		FileDisplayService.ShowChangeSummary(file1, file2);
+	}
+	else if (diffFormat.Contains("🔧"))
+	{
+		FileDisplayService.ShowGitStyleDiff(file1, file2);
+	}
+	else if (diffFormat.Contains("🎨"))
+	{
+		FileDisplayService.ShowSideBySideDiff(file1, file2);
+	}
 	}
 
 	/// <summary>
@@ -1344,24 +974,8 @@ public class ConsoleApplicationService : ApplicationService
 	private void HandleSettings()
 	{
 		AnsiConsole.Clear();
-		AnsiConsole.MarkupLine("[bold cyan]Configuration & Settings[/]");
-		AnsiConsole.WriteLine();
-
-		Panel panel = new Panel(
-			new Markup("[yellow]Settings functionality will be implemented in a future version.[/]\n\n" +
-					  "Planned features:\n" +
-					  "• Configure default directories\n" +
-					  "• Set merge preferences\n" +
-					  "• Manage batch configurations\n" +
-					  "• Export/import settings"))
-			.Header("Coming Soon")
-			.Border(BoxBorder.Rounded)
-			.BorderColor(Color.Yellow);
-
-		AnsiConsole.Write(panel);
-
-		AnsiConsole.WriteLine(PressAnyKeyMessage);
-		Console.ReadKey();
+		SettingsMenuHandler settingsHandler = new(this);
+		settingsHandler.Handle();
 	}
 
 	/// <summary>
@@ -1370,133 +984,8 @@ public class ConsoleApplicationService : ApplicationService
 	private void HandleHelp()
 	{
 		AnsiConsole.Clear();
-		AnsiConsole.MarkupLine("[bold cyan]Help & Information[/]");
-		AnsiConsole.WriteLine();
-
-		Dictionary<string, HelpMenuChoice> helpMenuChoices = new()
-		{
-			["📖 Application Overview"] = HelpMenuChoice.ApplicationOverview,
-			["🎯 Feature Guide"] = HelpMenuChoice.FeatureGuide,
-			["⌨️ Keyboard Shortcuts"] = HelpMenuChoice.KeyboardShortcuts,
-			["⬅️ Back to Main Menu"] = HelpMenuChoice.BackToMainMenu
-		};
-
-		string selection = AnsiConsole.Prompt(
-			new SelectionPrompt<string>()
-				.Title("Select help topic:")
-				.AddChoices(helpMenuChoices.Keys));
-
-		if (helpMenuChoices.TryGetValue(selection, out HelpMenuChoice choice))
-		{
-			switch (choice)
-			{
-				case HelpMenuChoice.ApplicationOverview:
-					ShowApplicationOverview();
-					break;
-				case HelpMenuChoice.FeatureGuide:
-					ShowFeatureGuide();
-					break;
-				case HelpMenuChoice.KeyboardShortcuts:
-					ShowKeyboardShortcuts();
-					break;
-				case HelpMenuChoice.BackToMainMenu:
-					// Default action - do nothing
-					break;
-				default:
-					// Unknown choice - do nothing
-					break;
-			}
-		}
-	}
-
-	/// <summary>
-	/// Shows application overview information.
-	/// </summary>
-	private void ShowApplicationOverview()
-	{
-		AnsiConsole.Clear();
-		AnsiConsole.MarkupLine("[bold cyan]Application Overview[/]");
-		AnsiConsole.WriteLine();
-
-		Panel panel = new Panel(
-			new Markup("[bold]BlastMerge[/] is a cross-repository file synchronization tool designed to:\n\n" +
-					  "• [green]Find and process files[/] across directory structures\n" +
-					  "• [green]Compare files[/] and identify duplicates or differences\n" +
-					  "• [green]Perform iterative merging[/] of similar files\n" +
-					  "• [green]Execute batch operations[/] for automation\n\n" +
-					  "[dim]Perfect for maintaining consistency across multiple code repositories, " +
-					  "documentation projects, and configuration management.[/]"))
-			.Header("What is BlastMerge?")
-			.Border(BoxBorder.Rounded)
-			.BorderColor(Color.Green);
-
-		AnsiConsole.Write(panel);
-
-		AnsiConsole.WriteLine(PressAnyKeyMessage);
-		Console.ReadKey();
-	}
-
-	/// <summary>
-	/// Shows feature guide information.
-	/// </summary>
-	private void ShowFeatureGuide()
-	{
-		AnsiConsole.Clear();
-		AnsiConsole.MarkupLine("[bold cyan]Feature Guide[/]");
-		AnsiConsole.WriteLine();
-
-		Tree tree = new("[bold]Available Features[/]");
-
-		TreeNode findNode = tree.AddNode("[cyan]🔍 Find & Process Files[/]");
-		findNode.AddNode("Search for files matching specific patterns");
-		findNode.AddNode("View file information and statistics");
-
-		TreeNode mergeNode = tree.AddNode("[cyan]🔄 Run Iterative Merge[/]");
-		mergeNode.AddNode("Intelligently merge similar files");
-		mergeNode.AddNode("Interactive conflict resolution");
-		mergeNode.AddNode("Preserve the best parts of each file");
-
-		TreeNode compareNode = tree.AddNode("[cyan]📊 Compare Files[/]");
-		compareNode.AddNode("Group files by content similarity");
-		compareNode.AddNode("Identify exact duplicates");
-		compareNode.AddNode("Hash-based comparison");
-
-		TreeNode batchNode = tree.AddNode("[cyan]📦 Batch Operations[/]");
-		batchNode.AddNode("Run predefined batch configurations");
-		batchNode.AddNode("Process multiple file patterns");
-		batchNode.AddNode("Automate repetitive tasks");
-
-		AnsiConsole.Write(tree);
-
-		AnsiConsole.WriteLine(PressAnyKeyMessage);
-		Console.ReadKey();
-	}
-
-	/// <summary>
-	/// Shows keyboard shortcuts information.
-	/// </summary>
-	private void ShowKeyboardShortcuts()
-	{
-		AnsiConsole.Clear();
-		AnsiConsole.MarkupLine("[bold cyan]Keyboard Shortcuts[/]");
-		AnsiConsole.WriteLine();
-
-		Table table = new Table()
-			.Border(TableBorder.Rounded)
-			.BorderColor(Color.Blue)
-			.AddColumn(KeyColumnName)
-			.AddColumn(ActionColumnName);
-
-		table.AddRow("[yellow]↑↓ Arrow Keys[/]", "Navigate menu options");
-		table.AddRow("[yellow]Enter[/]", "Select current option");
-		table.AddRow("[yellow]Ctrl+C[/]", "Exit application");
-		table.AddRow("[yellow]↑↓ (Input)[/]", "Browse input history");
-		table.AddRow("[yellow]Esc[/]", "Cancel current operation");
-
-		AnsiConsole.Write(table);
-
-		AnsiConsole.WriteLine(PressAnyKeyMessage);
-		Console.ReadKey();
+		HelpMenuHandler helpHandler = new(this);
+		helpHandler.Handle();
 	}
 
 	/// <summary>
@@ -1656,8 +1145,8 @@ public class ConsoleApplicationService : ApplicationService
 			rightFile = file2;
 		}
 
-		string leftLabel = GetRelativeDirectoryName(leftFile);
-		string rightLabel = GetRelativeDirectoryName(rightFile);
+		string leftLabel = FileDisplayService.GetRelativeDirectoryName(leftFile);
+		string rightLabel = FileDisplayService.GetRelativeDirectoryName(rightFile);
 
 		AnsiConsole.MarkupLine($"[yellow]🔀 Merging:[/]");
 		if (existingContent != null)
@@ -1777,8 +1266,8 @@ public class ConsoleApplicationService : ApplicationService
 		AnsiConsole.MarkupLine($"[yellow]Block Type: {block.Type}[/]");
 		AnsiConsole.WriteLine();
 
-		string leftLabel = GetRelativeDirectoryName(leftFile);
-		string rightLabel = GetRelativeDirectoryName(rightFile);
+		string leftLabel = FileDisplayService.GetRelativeDirectoryName(leftFile);
+		string rightLabel = FileDisplayService.GetRelativeDirectoryName(rightFile);
 
 		// Create a side-by-side diff visualization
 		Table table = new Table()

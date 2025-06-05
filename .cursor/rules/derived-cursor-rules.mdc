@@ -97,6 +97,9 @@ globs: *
 -   Look for opportunities to use enums in place of strings where they're used for determination and not display purposes.
 -   When checking files, ensure the functionality from before we added the batching is present, and that additions, enhancements, and improvements we've been working on are also present.
 -   Break down large classes into smaller, more manageable classes, following the Single Responsibility Principle. Each menu should be its own class, potentially inheriting from a common menu prototype.
+-   Refactor the `ConsoleApplicationService` class to decrease its class coupling below '96' (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1506).
+-   Ensure that business logic is all in the core library, and the console app is only responsible for input and display responsibilities.
+-   Do not replace `Path.GetTempFileName()` with `Path.GetRandomFileName()` for temporary file handling. `GetTempFileName()` creates a file and returns a full path in the system temp directory, while `GetRandomFileName()` only returns a random filename string without creating a file or providing a path.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -397,15 +400,4 @@ globs: *
 - Choice text strings that are used in switch statements should be constants.
 - Use dictionaries for menus that display a string and translate it to a command to avoid string repetitions.
 - Look for opportunities to use switch expressions instead of switch statements.
-- Look for opportunities to use enums in place of strings where they're used for determination and not display purposes.
-- When checking files, ensure the functionality from before we added the batching is present, and that additions, enhancements, and improvements we've been working on are also present.
-- Break down large classes into smaller, more manageable classes, following the Single Responsibility Principle. Each menu should be its own class, potentially inheriting from a common menu prototype.
-
-## ENUMS
-
-- Replace strings used for determination logic with enums, especially for control flow and state management.
-- Use enums for menu choice identifiers.
-
-## MENU CHOICE IDENTIFIERS
-
-- The menu choice constants in `ConsoleApplication
+- Look for opportunities

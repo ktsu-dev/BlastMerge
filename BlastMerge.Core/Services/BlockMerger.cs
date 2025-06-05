@@ -31,8 +31,8 @@ public static class BlockMerger
 		ArgumentNullException.ThrowIfNull(blockChoiceCallback);
 
 		// Create temporary files to use with FileDiffer
-		string tempFile1 = Path.GetRandomFileName();
-		string tempFile2 = Path.GetRandomFileName();
+		string tempFile1 = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+		string tempFile2 = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
 		try
 		{
@@ -331,15 +331,10 @@ public static class BlockMerger
 				// Don't add anything
 				break;
 			case BlockChoice.UseVersion1:
-				break;
 			case BlockChoice.UseVersion2:
-				break;
 			case BlockChoice.UseBoth:
-				break;
 			case BlockChoice.Keep:
-				break;
 			case BlockChoice.Remove:
-				break;
 			default:
 				throw new InvalidOperationException($"Invalid choice {choice} for insertion block");
 		}
