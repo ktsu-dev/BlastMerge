@@ -74,6 +74,7 @@ globs: *
 -   Use conditional expressions to simplify if-else-if-else chains for better readability.
 -   When converting classes to records, consider the potential breaking changes for consumers that rely on reference equality comparisons, inheritance patterns, or mutable object patterns.
 -   Reorder using statements to follow .NET conventions (project imports before framework imports).
+-   **Address Class Coupling and Cyclomatic Complexity**: Refactor code to minimize class coupling and cyclomatic complexity, ensuring the console app primarily handles input and display, while business logic resides in the core library.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -86,6 +87,7 @@ globs: *
 
 -   Use FNV-1a (64-bit version) as the hashing algorithm for file identification.
 -   Handle files with different encodings.
+-   Hashes are compared per filename pattern. BlastMerge will NOT compare `a.json` vs `b.json`.
 
 ## DIFFING
 
@@ -298,6 +300,39 @@ globs: *
 
 ## CHANGELOG GENERATION
 
-- In `PSBuild.psm1`, when the `git log` command fails or returns an error during changelog generation, ensure the `$rawCommits` variable handles the error object appropriately, especially when accessing its `.Count` property. Improve error handling and the `ConvertTo-ArraySafe` function to handle these edge cases. The `ConvertTo-ArraySafe` function should handle `null`, empty inputs, PowerShell error objects, empty strings, and whitespace-only strings. Add try-catch protection around array conversion. After calling `ConvertTo-ArraySafe`, explicitly check that the result has a `Count` property before using it, and create an empty array if it does not.
+- In `PSBuild.psm1`, when the `git log` command fails or returns an error during changelog generation, ensure the `$rawCommits` variable handles the error object appropriately, especially when accessing its `.Count` property. Improve error handling and the `ConvertTo-ArraySafe` function to handle these edge cases. The `ConvertTo-ArraySafe` function should handle `null`, empty inputs, PowerShell error objects, empty strings, and whitespace-only strings. Add try-catch protection around array conversion. After calling `ConvertTo-ArraySafe`, explicitly check that the result has a `Count` property before using it.
 - In `PSBuild.psm1`, the `$uniqueCommits` variable must be created using `ConvertTo-ArraySafe -InputObject ($structuredCommits | Sort-Object -Property Hash -Unique | ForEach-Object { $_.FormattedEntry })` to ensure it is always an array, even when the pipeline returns no results.
-- In `PSBuild.psm1`, when the `git log` command fails or returns an error, ensure the `$rawCommits` variable handles the error object appropriately, especially when accessing its `.Count` property. Improve error handling and the `ConvertTo-ArraySafe` function to handle these edge cases. The `ConvertTo-ArraySafe` function should handle `null`, empty inputs, PowerShell error objects, empty strings, and whitespace-only strings. Add try-catch protection around array conversion. After calling `ConvertTo-ArraySafe`, explicitly check that the result has a `Count` property before using it, and create an empty array if it does not. After calling `ConvertTo-ArraySafe`, explicitly check that the result has a `Count` property before using it, and create an empty array if it does not.
+- In `PSBuild.psm1`, when the `git log` command fails or returns an error, ensure the `$rawCommits` variable handles the error object appropriately, especially when accessing its `.Count` property. Improve error handling and the `ConvertTo-ArraySafe` function to handle `null`, empty inputs, PowerShell error objects, empty strings, and whitespace-only strings. Add try-catch protection around array conversion. After calling `ConvertTo-ArraySafe`, explicitly check that the result has a `Count` property before using it, and create an empty array if it does not. After calling `ConvertTo-ArraySafe`, explicitly check that the result has a `Count` property before using it, and create an empty array if it does not.
+
+## FILE FINDING
+
+- BlastMerge supports glob patterns through the .NET `Directory.GetFiles()` method, which accepts wildcard patterns.
+  - Uses `Directory.GetFiles(rootDirectory, fileName, SearchOption.TopDirectoryOnly)` where `fileName` can be a glob pattern
+  - Common patterns supported:
+    - `*.txt` - all text files
+    - `*.cs` - all C# files
+    - `*.*` - all files
+    - `README.*` - README files with any extension
+    - `config.json` - specific filename
+- BlastMerge automatically finds and processes multiple files.
+  - The `FileFinder.FindFiles()` method recursively searches directories and returns a collection of all matching files.
+  - Supports patterns like `*.txt`, `*.cs`, etc.
+  - Can search recursively through subdirectories.
+- When finding files, skip git submodules. Git submodules are identified by the presence of a `.git` file (not directory) in the subdirectory, which contains a reference to the actual git directory.
+- In `FileFinder.cs`, add a method `IsGitSubmodule` to determine if a directory is a git submodule. This method should check for the existence of a `.git` file (not directory) in the given directory path.
+- The `IsGitSubmodule` method should handle potential exceptions like `UnauthorizedAccessException`, `DirectoryNotFoundException`, `IOException`, `ArgumentException`, and `PathTooLongException` by returning `false`.
+- BlastMerge does not support submitting multiple file patterns in a single operation. Run the iterative merge process separately for each file pattern.
+
+## BATCH CONFIGURATION
+
+- Add a `BatchConfiguration` class to `BlastMerge.Core` to represent a batch configuration for processing multiple file patterns.
+- The `BatchConfiguration` class should have the following properties:
+    - `Name` (string, required): The name of the batch configuration.
+    - `Description` (string): The description of the batch configuration.
+    - `FilePatterns` (List<string>, required): The list of file patterns to process.
+    - `CreatedDate` (DateTime): The created date.
+    - `LastModified` (DateTime): The last modified date.
+    - `SkipEmptyPatterns` (bool): Whether to skip patterns that don't find any files (default: true).
+    - `PromptBeforeEachPattern` (bool): Whether to prompt before processing each pattern (default: false).
+- Add a `CreateDefault()` method to the `BatchConfiguration` class that returns a default batch configuration for common repository files (e.g., `.gitignore`, `.gitattributes`, `.editorconfig`, `*.yml`, `*.yaml`, `.mailmap`, `LICENSE`, `LICENSE.md`, `LICENSE.txt`).
+- Add an `IsValid()` method to the `BatchConfiguration` class that validates the batch configuration.
