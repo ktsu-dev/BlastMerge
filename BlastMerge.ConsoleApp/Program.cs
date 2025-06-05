@@ -5,6 +5,7 @@
 namespace ktsu.BlastMerge.ConsoleApp;
 
 using System;
+using System.Text;
 using ktsu.BlastMerge.ConsoleApp.Services;
 
 /// <summary>
@@ -20,6 +21,9 @@ public static class Program
 	/// <returns>Exit code - 0 for success, 1 for error.</returns>
 	public static int Main(string[] args)
 	{
+		Console.OutputEncoding = Encoding.UTF8;
+		Console.InputEncoding = Encoding.UTF8;
+
 		try
 		{
 			// Create services with proper dependency injection pattern
