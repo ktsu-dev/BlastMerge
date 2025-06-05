@@ -183,6 +183,13 @@ globs: *
 -   In `PopulateTableWithDiffLines` method, the side-by-side diff implementation was updated to correctly pair lines based on the DiffPlex model, rather than assuming a one-to-one mapping by array index. The previous implementation incorrectly treated DiffPlex's side-by-side model as having corresponding lines at the same array indices. The corrected implementation tracks indices and line numbers separately for left and right sides and handles different change types appropriately (Unchanged, Deleted+Inserted, Standalone Deletions/Insertions, Modified, Imaginary).
 -   In `PopulateTableWithDiffLines` method, the side-by-side diff implementation was updated again to simplify and take a more straightforward approach that ensures **every line gets displayed**.
 -   The `ShowSideBySideDiff` method should use the core DiffPlex API directly, specifically `Differ.Instance.CreateLineDiffs()` to get a `DiffResult` with `DiffBlocks`. The method should then manually create a side-by-side display by processing each `DiffBlock`, ensuring proper alignment, context handling, and padding logic. This approach involves processing `PiecesOld` and `PiecesNew` independently to generate the side-by-side view.
+-   The `ShowSideBySideDiff` method should implement the strategy from ProjectDirector. Use `DiffBlocks` to determine which sections to display, showing specific sections around changes with context, rather than processing every single line.
+-   The `ShowSideBySideDiff` method should:
+    -   Show only context around changes (3 lines before and after) rather than the entire file.
+    -   Show context lines as unchanged with proper line numbers on both sides.
+    -   Show deleted lines (red) only on the left with their correct line numbers.
+    -   Show inserted lines (green) only on the right with their correct line numbers.
+    -   Add visual separators between different diff blocks.
 
 ## DEBUGGING
 
@@ -352,13 +359,4 @@ globs: *
 
 -   The `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` should have only one `dotnet publish` step, consolidating the previous separate steps for general application and winget package publishing.
 -   When publishing, all applications should be published with the same optimized settings (self-contained, single-file, etc.) whether they're for general use or winget packages.
--   Every project should be published for all specified architectures (win-x64, win-x86, win-arm64, linux-x64, linux-arm64, osx-x64, osx-arm64) in a single pass.
--   General application ZIP files should be created for all projects and architectures.
--   SHA256 hashes should be generated for all published packages across all platforms.
--   The staging directory should contain all the packages and the `hashes.txt` file.
--   The build script `PSBuild.psm1` must respect the "should release" flag and not push files to package repos from a branch build.
--   The GitHub release creation in `Invoke-ReleaseWorkflow` must check the `ShouldRelease` flag and only create releases when `ShouldRelease` is true (main branch + not tagged + official repo).
-
-## WINGET INSTALLATION
-
-- The executable name in the
+-   Every project should be published for all specified architectures (win-x64, win-x86, win-arm64, linux-x64, linux-arm64, osx-x64, osx-arm64

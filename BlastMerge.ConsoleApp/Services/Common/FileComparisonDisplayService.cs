@@ -249,86 +249,71 @@ public static class FileComparisonDisplayService
 		string[] linesA = [.. diffResult.PiecesOld];
 		string[] linesB = [.. diffResult.PiecesNew];
 
-		const int contextLines = 3; // Show 3 lines of context around changes
+		if (diffResult.DiffBlocks.Count == 0)
+		{
+			// Files are identical, just show a few lines
+			int linesToShow = Math.Min(10, Math.Min(linesA.Length, linesB.Length));
+			for (int i = 0; i < linesToShow; i++)
+			{
+				table.AddRow((i + 1).ToString(), $"  {linesA[i].EscapeMarkup()}", (i + 1).ToString(), $"  {linesB[i].EscapeMarkup()}");
+			}
+			return;
+		}
 
+		// Simple approach: show a window around each diff block
 		foreach (DiffPlex.Model.DiffBlock block in diffResult.DiffBlocks)
 		{
-			// Calculate context range
-			int startA = Math.Max(0, block.DeleteStartA - contextLines);
-			int endA = Math.Min(linesA.Length - 1, block.DeleteStartA + block.DeleteCountA + contextLines - 1);
+			const int contextSize = 3;
 
-			int startB = Math.Max(0, block.InsertStartB - contextLines);
-			int endB = Math.Min(linesB.Length - 1, block.InsertStartB + block.InsertCountB + contextLines - 1);
+			// Determine the range to show
+			int startLineA = Math.Max(0, block.DeleteStartA - contextSize);
+			int endLineA = Math.Min(linesA.Length - 1, block.DeleteStartA + block.DeleteCountA + contextSize - 1);
 
-			// Show context before changes
-			int contextStart = Math.Min(startA, startB);
-			int preContextLines = Math.Min(contextLines, Math.Min(block.DeleteStartA, block.InsertStartB));
+			int startLineB = Math.Max(0, block.InsertStartB - contextSize);
+			int endLineB = Math.Min(linesB.Length - 1, block.InsertStartB + block.InsertCountB + contextSize - 1);
 
-			for (int i = 0; i < preContextLines; i++)
+			// Show lines in parallel, handling mismatched ranges
+			int minStart = Math.Min(startLineA, startLineB);
+			int maxEnd = Math.Max(endLineA, endLineB);
+
+			for (int offset = 0; offset <= (maxEnd - minStart); offset++)
 			{
-				int lineA = block.DeleteStartA - preContextLines + i;
-				int lineB = block.InsertStartB - preContextLines + i;
+				int lineA = startLineA + offset;
+				int lineB = startLineB + offset;
 
-				if (lineA >= 0 && lineA < linesA.Length && lineB >= 0 && lineB < linesB.Length)
-				{
-					string leftContent = $"  {linesA[lineA].EscapeMarkup()}";
-					string rightContent = $"  {linesB[lineB].EscapeMarkup()}";
-					table.AddRow((lineA + 1).ToString(), leftContent, (lineB + 1).ToString(), rightContent);
-				}
-			}
-
-			// Show the actual changes
-			int maxChanges = Math.Max(block.DeleteCountA, block.InsertCountB);
-
-			for (int i = 0; i < maxChanges; i++)
-			{
 				string leftLineNum = "";
 				string leftContent = "";
 				string rightLineNum = "";
 				string rightContent = "";
 
-				// Handle deleted lines (left side)
-				if (i < block.DeleteCountA)
+				// Handle left side
+				if (lineA >= 0 && lineA < linesA.Length)
 				{
-					int lineIndex = block.DeleteStartA + i;
-					leftLineNum = (lineIndex + 1).ToString();
-					leftContent = $"[red on darkred]- {linesA[lineIndex].EscapeMarkup()}[/]";
+					leftLineNum = (lineA + 1).ToString();
+
+					// Check if this line is in the delete range
+					leftContent = lineA >= block.DeleteStartA && lineA < block.DeleteStartA + block.DeleteCountA
+						? $"[red on darkred]- {linesA[lineA].EscapeMarkup()}[/]"
+						: $"  {linesA[lineA].EscapeMarkup()}";
 				}
 
-				// Handle inserted lines (right side)
-				if (i < block.InsertCountB)
+				// Handle right side
+				if (lineB >= 0 && lineB < linesB.Length)
 				{
-					int lineIndex = block.InsertStartB + i;
-					rightLineNum = (lineIndex + 1).ToString();
-					rightContent = $"[green on darkgreen]+ {linesB[lineIndex].EscapeMarkup()}[/]";
+					rightLineNum = (lineB + 1).ToString();
+
+					// Check if this line is in the insert range
+					rightContent = lineB >= block.InsertStartB && lineB < block.InsertStartB + block.InsertCountB
+						? $"[green on darkgreen]+ {linesB[lineB].EscapeMarkup()}[/]"
+						: $"  {linesB[lineB].EscapeMarkup()}";
 				}
 
 				table.AddRow(leftLineNum, leftContent, rightLineNum, rightContent);
 			}
 
-			// Show context after changes
-			int postContextLines = contextLines;
-			int leftPostStart = block.DeleteStartA + block.DeleteCountA;
-			int rightPostStart = block.InsertStartB + block.InsertCountB;
-
-			for (int i = 0; i < postContextLines; i++)
-			{
-				int lineA = leftPostStart + i;
-				int lineB = rightPostStart + i;
-
-				if (lineA < linesA.Length && lineB < linesB.Length)
-				{
-					string leftContent = $"  {linesA[lineA].EscapeMarkup()}";
-					string rightContent = $"  {linesB[lineB].EscapeMarkup()}";
-					table.AddRow((lineA + 1).ToString(), leftContent, (lineB + 1).ToString(), rightContent);
-				}
-			}
-
-			// Add separator between blocks if there are more blocks
+			// Add separator between blocks
 			if (block != diffResult.DiffBlocks.Last())
 			{
-				table.AddEmptyRow();
-				table.AddRow("[dim]...[/]", "[dim]...[/]", "[dim]...[/]", "[dim]...[/]");
 				table.AddEmptyRow();
 			}
 		}
