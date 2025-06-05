@@ -30,36 +30,36 @@ public static class BlockMerger
 		ArgumentNullException.ThrowIfNull(blockChoiceCallback);
 
 		// Create temporary files to use with FileDiffer
-		var tempFile1 = Path.GetTempFileName();
-		var tempFile2 = Path.GetTempFileName();
+		string tempFile1 = Path.GetTempFileName();
+		string tempFile2 = Path.GetTempFileName();
 
 		try
 		{
 			File.WriteAllLines(tempFile1, lines1);
 			File.WriteAllLines(tempFile2, lines2);
 
-			var differences = FileDiffer.FindDifferences(tempFile1, tempFile2);
-			var mergedLines = new List<string>();
-			var conflicts = new List<MergeConflict>();
+			IReadOnlyCollection<LineDifference> differences = FileDiffer.FindDifferences(tempFile1, tempFile2);
+			List<string> mergedLines = [];
+			List<MergeConflict> conflicts = [];
 
-			var blockNumber = 1;
-			var lastProcessedLine1 = 0;
-			var lastProcessedLine2 = 0;
+			int blockNumber = 1;
+			int lastProcessedLine1 = 0;
+			int lastProcessedLine2 = 0;
 
 			// Convert differences to our custom block format
-			var blocks = ConvertDifferencesToBlocks(differences);
+			Collection<DiffBlock> blocks = ConvertDifferencesToBlocks(differences);
 
-			foreach (var block in blocks)
+			foreach (DiffBlock block in blocks)
 			{
 				// Add unchanged lines between blocks (equal content)
 				AddEqualLinesBetweenBlocks(lines1, lines2, ref lastProcessedLine1, ref lastProcessedLine2,
 					block, mergedLines);
 
 				// Get context for this block
-				var context = GetContextLines(lines1, lines2, block, 3);
+				BlockContext context = GetContextLines(lines1, lines2, block, 3);
 
 				// Get user's choice for this block
-				var choice = blockChoiceCallback(block, context, blockNumber);
+				BlockChoice choice = blockChoiceCallback(block, context, blockNumber);
 
 				// Apply the user's choice
 				ApplyBlockChoice(block, choice, mergedLines);
@@ -105,8 +105,8 @@ public static class BlockMerger
 	{
 		ArgumentNullException.ThrowIfNull(differences);
 
-		var blocks = new Collection<DiffBlock>();
-		var sortedDifferences = differences.OrderBy(d => Math.Max(d.LineNumber1 ?? 0, d.LineNumber2 ?? 0)).ToList();
+		Collection<DiffBlock> blocks = [];
+		List<LineDifference> sortedDifferences = [.. differences.OrderBy(d => Math.Max(d.LineNumber1 ?? 0, d.LineNumber2 ?? 0))];
 
 		if (sortedDifferences.Count == 0)
 		{
@@ -115,7 +115,7 @@ public static class BlockMerger
 
 		DiffBlock? currentBlock = null;
 
-		foreach (var diff in sortedDifferences)
+		foreach (LineDifference? diff in sortedDifferences)
 		{
 			// If this is the first difference or it's not contiguous with the previous one
 			if (currentBlock == null || !IsContiguousDifference(currentBlock, diff))
@@ -127,7 +127,7 @@ public static class BlockMerger
 				}
 
 				// Determine block type based on the difference
-				var blockType = DetermineBlockType(diff);
+				BlockType blockType = DetermineBlockType(diff);
 				currentBlock = new DiffBlock(blockType);
 			}
 
@@ -169,17 +169,17 @@ public static class BlockMerger
 		ArgumentNullException.ThrowIfNull(lines2);
 		ArgumentNullException.ThrowIfNull(block);
 
-		var startLine1 = block.LineNumbers1.Count > 0 ? block.LineNumbers1.Min() - 1 : 0;
-		var endLine1 = block.LineNumbers1.Count > 0 ? block.LineNumbers1.Max() - 1 : 0;
-		var startLine2 = block.LineNumbers2.Count > 0 ? block.LineNumbers2.Min() - 1 : 0;
-		var endLine2 = block.LineNumbers2.Count > 0 ? block.LineNumbers2.Max() - 1 : 0;
+		int startLine1 = block.LineNumbers1.Count > 0 ? block.LineNumbers1.Min() - 1 : 0;
+		int endLine1 = block.LineNumbers1.Count > 0 ? block.LineNumbers1.Max() - 1 : 0;
+		int startLine2 = block.LineNumbers2.Count > 0 ? block.LineNumbers2.Min() - 1 : 0;
+		int endLine2 = block.LineNumbers2.Count > 0 ? block.LineNumbers2.Max() - 1 : 0;
 
 		// Context before
-		var contextBefore1 = GetLinesInRange(lines1, Math.Max(0, startLine1 - contextSize), startLine1);
-		var contextAfter1 = GetLinesInRange(lines1, endLine1 + 1, Math.Min(lines1.Length, endLine1 + 1 + contextSize));
+		string[] contextBefore1 = GetLinesInRange(lines1, Math.Max(0, startLine1 - contextSize), startLine1);
+		string[] contextAfter1 = GetLinesInRange(lines1, endLine1 + 1, Math.Min(lines1.Length, endLine1 + 1 + contextSize));
 
-		var contextBefore2 = GetLinesInRange(lines2, Math.Max(0, startLine2 - contextSize), startLine2);
-		var contextAfter2 = GetLinesInRange(lines2, endLine2 + 1, Math.Min(lines2.Length, endLine2 + 1 + contextSize));
+		string[] contextBefore2 = GetLinesInRange(lines2, Math.Max(0, startLine2 - contextSize), startLine2);
+		string[] contextAfter2 = GetLinesInRange(lines2, endLine2 + 1, Math.Min(lines2.Length, endLine2 + 1 + contextSize));
 
 		return new BlockContext
 		{
@@ -206,9 +206,9 @@ public static class BlockMerger
 			return [];
 		}
 
-		var actualStart = Math.Max(0, start);
-		var actualEnd = Math.Min(lines.Length, end);
-		var result = new string[actualEnd - actualStart];
+		int actualStart = Math.Max(0, start);
+		int actualEnd = Math.Min(lines.Length, end);
+		string[] result = new string[actualEnd - actualStart];
 
 		Array.Copy(lines, actualStart, result, 0, actualEnd - actualStart);
 		return result;
@@ -220,14 +220,14 @@ public static class BlockMerger
 	private static void AddEqualLinesBetweenBlocks(string[] lines1, string[] lines2, ref int lastProcessedLine1,
 		ref int lastProcessedLine2, DiffBlock block, List<string> mergedLines)
 	{
-		var nextLine1 = block.LineNumbers1.Count > 0 ? block.LineNumbers1.Min() : lines1.Length + 1;
-		var nextLine2 = block.LineNumbers2.Count > 0 ? block.LineNumbers2.Min() : lines2.Length + 1;
+		int nextLine1 = block.LineNumbers1.Count > 0 ? block.LineNumbers1.Min() : lines1.Length + 1;
+		int nextLine2 = block.LineNumbers2.Count > 0 ? block.LineNumbers2.Min() : lines2.Length + 1;
 
 		// Add equal lines from the last processed line to the current block
-		var equalLinesEnd1 = Math.Min(nextLine1 - 1, lines1.Length);
-		var equalLinesEnd2 = Math.Min(nextLine2 - 1, lines2.Length);
+		int equalLinesEnd1 = Math.Min(nextLine1 - 1, lines1.Length);
+		int equalLinesEnd2 = Math.Min(nextLine2 - 1, lines2.Length);
 
-		for (var i = lastProcessedLine1; i < equalLinesEnd1 && i < equalLinesEnd2; i++)
+		for (int i = lastProcessedLine1; i < equalLinesEnd1 && i < equalLinesEnd2; i++)
 		{
 			if (i < lines1.Length && i < lines2.Length && lines1[i] == lines2[i])
 			{
@@ -245,12 +245,12 @@ public static class BlockMerger
 	private static void AddRemainingEqualLines(string[] lines1, string[] lines2, int lastProcessedLine1,
 		int lastProcessedLine2, List<string> mergedLines)
 	{
-		var remainingLines = Math.Min(lines1.Length - lastProcessedLine1, lines2.Length - lastProcessedLine2);
+		int remainingLines = Math.Min(lines1.Length - lastProcessedLine1, lines2.Length - lastProcessedLine2);
 
-		for (var i = 0; i < remainingLines; i++)
+		for (int i = 0; i < remainingLines; i++)
 		{
-			var line1Index = lastProcessedLine1 + i;
-			var line2Index = lastProcessedLine2 + i;
+			int line1Index = lastProcessedLine1 + i;
+			int line2Index = lastProcessedLine2 + i;
 
 			if (line1Index < lines1.Length && line2Index < lines2.Length &&
 				lines1[line1Index] == lines2[line2Index])
@@ -271,12 +271,12 @@ public static class BlockMerger
 		}
 
 		// Get the last line numbers from the current block
-		var lastLine1 = currentBlock.LastLineNumber1;
-		var lastLine2 = currentBlock.LastLineNumber2;
+		int lastLine1 = currentBlock.LastLineNumber1;
+		int lastLine2 = currentBlock.LastLineNumber2;
 
 		// Consider differences contiguous if they're within 1 line of each other
-		var isContiguous1 = !diff.LineNumber1.HasValue || lastLine1 <= 0 || Math.Abs((diff.LineNumber1 ?? 0) - lastLine1) <= 1;
-		var isContiguous2 = !diff.LineNumber2.HasValue || lastLine2 <= 0 || Math.Abs((diff.LineNumber2 ?? 0) - lastLine2) <= 1;
+		bool isContiguous1 = !diff.LineNumber1.HasValue || lastLine1 <= 0 || Math.Abs((diff.LineNumber1 ?? 0) - lastLine1) <= 1;
+		bool isContiguous2 = !diff.LineNumber2.HasValue || lastLine2 <= 0 || Math.Abs((diff.LineNumber2 ?? 0) - lastLine2) <= 1;
 
 		return isContiguous1 && isContiguous2;
 	}

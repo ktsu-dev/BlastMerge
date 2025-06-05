@@ -61,8 +61,8 @@ public class PerformanceTests
 
 	private static void CreateTestFile(string path, int lines, int percentDifferent)
 	{
-		using var writer = new StreamWriter(path);
-		for (var i = 0; i < lines; i++)
+		using StreamWriter writer = new(path);
+		for (int i = 0; i < lines; i++)
 		{
 			// Add some differences based on the percentDifferent parameter
 			if (percentDifferent > 0 && i % (100 / percentDifferent) == 0)
@@ -81,11 +81,11 @@ public class PerformanceTests
 	public void FileHasher_LargeFile_PerformanceTest()
 	{
 		// Arrange
-		var stopwatch = new Stopwatch();
+		Stopwatch stopwatch = new();
 
 		// Act
 		stopwatch.Start();
-		var hash = FileHasher.ComputeFileHash(_largeFile1);
+		string hash = FileHasher.ComputeFileHash(_largeFile1);
 		stopwatch.Stop();
 
 		// Assert
@@ -99,11 +99,11 @@ public class PerformanceTests
 	public void FileDiffer_SmallFiles_PerformanceTest()
 	{
 		// Arrange
-		var stopwatch = new Stopwatch();
+		Stopwatch stopwatch = new();
 
 		// Act
 		stopwatch.Start();
-		var differences = FileDiffer.FindDifferences(_smallFile1, _smallFile2);
+		IReadOnlyCollection<LineDifference> differences = FileDiffer.FindDifferences(_smallFile1, _smallFile2);
 		stopwatch.Stop();
 
 		// Assert
@@ -117,11 +117,11 @@ public class PerformanceTests
 	public void FileDiffer_MediumFiles_PerformanceTest()
 	{
 		// Arrange
-		var stopwatch = new Stopwatch();
+		Stopwatch stopwatch = new();
 
 		// Act
 		stopwatch.Start();
-		var differences = FileDiffer.FindDifferences(_mediumFile1, _mediumFile2);
+		IReadOnlyCollection<LineDifference> differences = FileDiffer.FindDifferences(_mediumFile1, _mediumFile2);
 		stopwatch.Stop();
 
 		// Assert
@@ -135,11 +135,11 @@ public class PerformanceTests
 	public void FileDiffer_LargeFiles_PerformanceTest()
 	{
 		// Arrange
-		var stopwatch = new Stopwatch();
+		Stopwatch stopwatch = new();
 
 		// Act
 		stopwatch.Start();
-		var differences = FileDiffer.FindDifferences(_largeFile1, _largeFile2);
+		IReadOnlyCollection<LineDifference> differences = FileDiffer.FindDifferences(_largeFile1, _largeFile2);
 		stopwatch.Stop();
 
 		// Assert
@@ -153,23 +153,23 @@ public class PerformanceTests
 	public void FileFinder_LargeDirectory_PerformanceTest()
 	{
 		// Arrange
-		var largeDir = Path.Combine(_testDirectory, "LargeDir");
+		string largeDir = Path.Combine(_testDirectory, "LargeDir");
 		if (!Directory.Exists(largeDir))
 		{
 			Directory.CreateDirectory(largeDir);
 		}
 
 		// Create 100 files
-		for (var i = 0; i < 100; i++)
+		for (int i = 0; i < 100; i++)
 		{
 			File.WriteAllText(Path.Combine(largeDir, $"file{i}.txt"), $"Content for file {i}");
 		}
 
-		var stopwatch = new Stopwatch();
+		Stopwatch stopwatch = new();
 
 		// Act
 		stopwatch.Start();
-		var files = FileFinder.FindFiles(largeDir, "*.txt");
+		IReadOnlyCollection<string> files = FileFinder.FindFiles(largeDir, "*.txt");
 		stopwatch.Stop();
 
 		// Assert
@@ -184,11 +184,11 @@ public class PerformanceTests
 	public void FileDiffer_GitStyleDiffPerformance_Test()
 	{
 		// Arrange
-		var stopwatch = new Stopwatch();
+		Stopwatch stopwatch = new();
 
 		// Act
 		stopwatch.Start();
-		var gitDiff = FileDiffer.GenerateGitStyleDiff(_mediumFile1, _mediumFile2);
+		string gitDiff = FileDiffer.GenerateGitStyleDiff(_mediumFile1, _mediumFile2);
 		stopwatch.Stop();
 
 		// Assert

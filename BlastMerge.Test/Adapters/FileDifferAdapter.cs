@@ -43,8 +43,8 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 		// Since FileDiffer.FindDifferences expects file paths and uses File.ReadAllLines internally,
 		// we need to create temporary files or use a different approach for mock filesystem
 		// For now, let's create a simple implementation that works with our mock filesystem
-		var lines1 = _fileSystem.File.ReadAllLines(file1Path);
-		var lines2 = _fileSystem.File.ReadAllLines(file2Path);
+		string[] lines1 = _fileSystem.File.ReadAllLines(file1Path);
+		string[] lines2 = _fileSystem.File.ReadAllLines(file2Path);
 
 		// We'll need to implement our own diff logic here since FileDiffer.FindDifferences
 		// uses the real file system internally
@@ -71,12 +71,12 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 
 		// Since FileDiffer.GenerateGitStyleDiff expects real file paths and reads from the actual filesystem,
 		// we need to create temporary files with the content from our mock filesystem
-		var lines1 = _fileSystem.File.ReadAllLines(file1Path);
-		var lines2 = _fileSystem.File.ReadAllLines(file2Path);
+		string[] lines1 = _fileSystem.File.ReadAllLines(file1Path);
+		string[] lines2 = _fileSystem.File.ReadAllLines(file2Path);
 
 		// Create temporary files
-		var tempFile1 = Path.GetTempFileName();
-		var tempFile2 = Path.GetTempFileName();
+		string tempFile1 = Path.GetTempFileName();
+		string tempFile2 = Path.GetTempFileName();
 
 		try
 		{
@@ -120,12 +120,12 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 
 		// Since FileDiffer.GenerateColoredDiff calls DiffPlexDiffer.GenerateColoredDiff which expects real file paths
 		// and reads from the actual filesystem, we need to create temporary files with the content from our mock filesystem
-		var lines1 = _fileSystem.File.ReadAllLines(file1Path);
-		var lines2 = _fileSystem.File.ReadAllLines(file2Path);
+		string[] lines1 = _fileSystem.File.ReadAllLines(file1Path);
+		string[] lines2 = _fileSystem.File.ReadAllLines(file2Path);
 
 		// Create temporary files
-		var tempFile1 = Path.GetTempFileName();
-		var tempFile2 = Path.GetTempFileName();
+		string tempFile1 = Path.GetTempFileName();
+		string tempFile2 = Path.GetTempFileName();
 
 		try
 		{
@@ -162,13 +162,13 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 		}
 
 		// Create destination directory if it doesn't exist
-		var destinationDirectory = _fileSystem.Path.GetDirectoryName(destinationPath);
+		string? destinationDirectory = _fileSystem.Path.GetDirectoryName(destinationPath);
 		if (!string.IsNullOrEmpty(destinationDirectory) && !_fileSystem.Directory.Exists(destinationDirectory))
 		{
 			_fileSystem.Directory.CreateDirectory(destinationDirectory);
 		}
 
-		var sourceContent = _fileSystem.File.ReadAllText(sourcePath);
+		string sourceContent = _fileSystem.File.ReadAllText(sourcePath);
 		_fileSystem.File.WriteAllText(destinationPath, sourceContent);
 	}
 
@@ -181,14 +181,14 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 	{
 		ArgumentNullException.ThrowIfNull(filePaths);
 
-		var groups = new Dictionary<string, FileGroup>();
-		var fileHasher = new FileHasherAdapter(_fileSystem);
+		Dictionary<string, FileGroup> groups = [];
+		FileHasherAdapter fileHasher = new(_fileSystem);
 
-		foreach (var filePath in filePaths)
+		foreach (string filePath in filePaths)
 		{
-			var hash = fileHasher.ComputeFileHash(filePath);
+			string hash = fileHasher.ComputeFileHash(filePath);
 
-			if (!groups.TryGetValue(hash, out var group))
+			if (!groups.TryGetValue(hash, out FileGroup? group))
 			{
 				group = new FileGroup { Hash = hash };
 				groups[hash] = group;
@@ -208,15 +208,15 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 	/// <returns>Collection of line differences</returns>
 	private static ReadOnlyCollection<LineDifference> FindDifferencesInternal(string[] lines1, string[] lines2)
 	{
-		var differences = new List<LineDifference>();
+		List<LineDifference> differences = [];
 
 		// Simple line-by-line comparison for testing purposes
-		var maxLines = Math.Max(lines1.Length, lines2.Length);
+		int maxLines = Math.Max(lines1.Length, lines2.Length);
 
-		for (var i = 0; i < maxLines; i++)
+		for (int i = 0; i < maxLines; i++)
 		{
-			var line1 = i < lines1.Length ? lines1[i] : null;
-			var line2 = i < lines2.Length ? lines2[i] : null;
+			string? line1 = i < lines1.Length ? lines1[i] : null;
+			string? line2 = i < lines2.Length ? lines2[i] : null;
 
 			if (line1 != line2)
 			{

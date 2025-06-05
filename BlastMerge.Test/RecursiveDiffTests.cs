@@ -40,17 +40,17 @@ public class RecursiveDiffTests : MockFileSystemTestBase
 	{
 		// Arrange
 		// Create a deeper directory structure
-		var deepDir1 = CreateDirectory("dir1/subA/deep/deeper/deepest");
-		var deepDir2 = CreateDirectory("dir2/subA/deep/deeper/deepest");
+		string deepDir1 = CreateDirectory("dir1/subA/deep/deeper/deepest");
+		string deepDir2 = CreateDirectory("dir2/subA/deep/deeper/deepest");
 
 		CreateFile("dir1/subA/deep/deeper/deepest/deepfile.txt", "Deep Content");
 		CreateFile("dir2/subA/deep/deeper/deepest/deepfile.txt", "Deep Content Modified");
 
 		// Act - Test individual file comparison since we don't have recursive directory comparison yet
-		var deepFile1 = Path.Combine(deepDir1, "deepfile.txt");
-		var deepFile2 = Path.Combine(deepDir2, "deepfile.txt");
+		string deepFile1 = Path.Combine(deepDir1, "deepfile.txt");
+		string deepFile2 = Path.Combine(deepDir2, "deepfile.txt");
 
-		var differences = _fileDifferAdapter.FindDifferences(deepFile1, deepFile2);
+		IReadOnlyCollection<LineDifference> differences = _fileDifferAdapter.FindDifferences(deepFile1, deepFile2);
 
 		// Assert
 		Assert.IsNotNull(differences);
@@ -64,18 +64,18 @@ public class RecursiveDiffTests : MockFileSystemTestBase
 		// Let's test regular file operations instead
 
 		// Create test files that simulate what would be behind symbolic links
-		var linkTarget1 = CreateDirectory("linktarget1");
-		var linkTarget2 = CreateDirectory("linktarget2");
+		string linkTarget1 = CreateDirectory("linktarget1");
+		string linkTarget2 = CreateDirectory("linktarget2");
 
 		// Create files in the link targets
 		CreateFile("linktarget1/targetfile.txt", "Target Content 1");
 		CreateFile("linktarget2/targetfile.txt", "Target Content 2");
 
 		// Test direct file comparison
-		var targetFile1 = Path.Combine(linkTarget1, "targetfile.txt");
-		var targetFile2 = Path.Combine(linkTarget2, "targetfile.txt");
+		string targetFile1 = Path.Combine(linkTarget1, "targetfile.txt");
+		string targetFile2 = Path.Combine(linkTarget2, "targetfile.txt");
 
-		var differences = _fileDifferAdapter.FindDifferences(targetFile1, targetFile2);
+		IReadOnlyCollection<LineDifference> differences = _fileDifferAdapter.FindDifferences(targetFile1, targetFile2);
 
 		// Assert
 		Assert.IsNotNull(differences);
@@ -86,39 +86,39 @@ public class RecursiveDiffTests : MockFileSystemTestBase
 	public void FindDifferences_WithLargeDirectoryStructure_CompletesInReasonableTime()
 	{
 		// Create a smaller structure for mock file system testing
-		var largeDir1 = CreateDirectory("large1");
-		var largeDir2 = CreateDirectory("large2");
+		string largeDir1 = CreateDirectory("large1");
+		string largeDir2 = CreateDirectory("large2");
 
 		// Create a directory structure with some files
-		for (var i = 0; i < 3; i++) // Reduced from 10 to 3 for faster testing
+		for (int i = 0; i < 3; i++) // Reduced from 10 to 3 for faster testing
 		{
-			var subdir1 = CreateDirectory($"large1/sub{i}");
-			var subdir2 = CreateDirectory($"large2/sub{i}");
+			string subdir1 = CreateDirectory($"large1/sub{i}");
+			string subdir2 = CreateDirectory($"large2/sub{i}");
 
-			for (var j = 0; j < 3; j++) // Reduced from 10 to 3 for faster testing
+			for (int j = 0; j < 3; j++) // Reduced from 10 to 3 for faster testing
 			{
 				CreateFile($"large1/sub{i}/file{j}.txt", $"Content {i}-{j}");
 				// Make half the files different
-				var content = j % 2 == 0 ? $"Content {i}-{j}" : $"Modified {i}-{j}";
+				string content = j % 2 == 0 ? $"Content {i}-{j}" : $"Modified {i}-{j}";
 				CreateFile($"large2/sub{i}/file{j}.txt", content);
 			}
 		}
 
 		// Act with timeout check - test a few individual files
-		var timeout = TimeSpan.FromSeconds(5);
-		var watch = System.Diagnostics.Stopwatch.StartNew();
+		TimeSpan timeout = TimeSpan.FromSeconds(5);
+		System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
 
 		// Test some file comparisons
-		for (var i = 0; i < 3; i++)
+		for (int i = 0; i < 3; i++)
 		{
-			for (var j = 0; j < 3; j++)
+			for (int j = 0; j < 3; j++)
 			{
-				var file1 = Path.Combine(largeDir1, $"sub{i}", $"file{j}.txt");
-				var file2 = Path.Combine(largeDir2, $"sub{i}", $"file{j}.txt");
+				string file1 = Path.Combine(largeDir1, $"sub{i}", $"file{j}.txt");
+				string file2 = Path.Combine(largeDir2, $"sub{i}", $"file{j}.txt");
 
 				if (MockFileSystem.File.Exists(file1) && MockFileSystem.File.Exists(file2))
 				{
-					var differences = _fileDifferAdapter.FindDifferences(file1, file2);
+					IReadOnlyCollection<LineDifference> differences = _fileDifferAdapter.FindDifferences(file1, file2);
 					// Just ensure the comparison works
 					Assert.IsNotNull(differences);
 				}

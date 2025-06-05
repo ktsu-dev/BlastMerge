@@ -31,7 +31,7 @@ public static class HistoryInput
 	{
 		try
 		{
-			var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+			string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 			if (!string.IsNullOrEmpty(appDataPath))
 			{
 				return Path.Combine(appDataPath, "BlastMerge", "input_history.json");
@@ -48,7 +48,7 @@ public static class HistoryInput
 
 		try
 		{
-			var tempPath = Path.GetTempPath();
+			string tempPath = Path.GetTempPath();
 			return Path.Combine(tempPath, "BlastMerge", "input_history.json");
 		}
 		catch (System.Security.SecurityException)
@@ -73,9 +73,9 @@ public static class HistoryInput
 	{
 		ArgumentNullException.ThrowIfNull(prompt);
 
-		var historyKey = prompt.Replace("[cyan]", "").Replace("[/]", "").Replace(":", "").Trim();
+		string historyKey = prompt.Replace("[cyan]", "").Replace("[/]", "").Replace(":", "").Trim();
 
-		if (!inputHistory.TryGetValue(historyKey, out var history))
+		if (!inputHistory.TryGetValue(historyKey, out List<string>? history))
 		{
 			history = [];
 			inputHistory[historyKey] = history;
@@ -94,11 +94,11 @@ public static class HistoryInput
 		AnsiConsole.Write(": ");
 
 		// Remember where the input starts
-		var inputStartColumn = Console.CursorLeft;
-		var inputStartRow = Console.CursorTop;
+		int inputStartColumn = Console.CursorLeft;
+		int inputStartRow = Console.CursorTop;
 
 		// Use most recent history as initial input, or default value, or empty
-		var initialInput = "";
+		string initialInput = "";
 		if (history.Count > 0 && string.IsNullOrEmpty(defaultValue))
 		{
 			initialInput = history[0]; // Most recent input
@@ -108,7 +108,7 @@ public static class HistoryInput
 			initialInput = defaultValue;
 		}
 
-		var input = ReadInputWithHistory(history, initialInput, inputStartColumn, inputStartRow);
+		string input = ReadInputWithHistory(history, initialInput, inputStartColumn, inputStartRow);
 
 		// Use default value if input is empty and default is provided
 		if (string.IsNullOrEmpty(input) && !string.IsNullOrEmpty(defaultValue))
@@ -157,16 +157,16 @@ public static class HistoryInput
 	/// <returns>The user input</returns>
 	private static string ReadInputWithHistory(List<string> history, string initialInput, int inputStartColumn, int inputStartRow)
 	{
-		var input = initialInput;
-		var cursorPos = input.Length;
-		var historyIndex = -1; // -1 means current input, 0+ means history items
+		string input = initialInput;
+		int cursorPos = input.Length;
+		int historyIndex = -1; // -1 means current input, 0+ means history items
 
 		// Display initial input
 		Console.Write(input);
 
 		while (true)
 		{
-			var keyInfo = Console.ReadKey(true);
+			ConsoleKeyInfo keyInfo = Console.ReadKey(true);
 
 #pragma warning disable IDE0010 // Populate switch - we intentionally don't handle all ConsoleKey values
 			switch (keyInfo.Key)
@@ -286,14 +286,14 @@ public static class HistoryInput
 	private static void RedrawInput(string input, int inputStartColumn, int inputStartRow)
 	{
 		// Save current cursor position
-		var currentColumn = Console.CursorLeft;
-		var currentRow = Console.CursorTop;
+		int currentColumn = Console.CursorLeft;
+		int currentRow = Console.CursorTop;
 
 		// Go to input start position
 		Console.SetCursorPosition(inputStartColumn, inputStartRow);
 
 		// Clear from input start to end of line
-		var remainingWidth = Console.WindowWidth - inputStartColumn;
+		int remainingWidth = Console.WindowWidth - inputStartColumn;
 		Console.Write(new string(' ', remainingWidth));
 
 		// Go back to input start and write the new input
@@ -319,7 +319,7 @@ public static class HistoryInput
 		{
 			if (!string.IsNullOrEmpty(HistoryFile) && File.Exists(HistoryFile))
 			{
-				var json = File.ReadAllText(HistoryFile);
+				string json = File.ReadAllText(HistoryFile);
 				if (!string.IsNullOrWhiteSpace(json))
 				{
 					inputHistory = JsonSerializer.Deserialize<Dictionary<string, List<string>>>(json) ?? [];
@@ -363,13 +363,13 @@ public static class HistoryInput
 				return; // Can't save if we don't have a valid path
 			}
 
-			var directory = Path.GetDirectoryName(HistoryFile);
+			string? directory = Path.GetDirectoryName(HistoryFile);
 			if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
 			{
 				Directory.CreateDirectory(directory);
 			}
 
-			var json = JsonSerializer.Serialize(inputHistory, jsonOptions);
+			string json = JsonSerializer.Serialize(inputHistory, jsonOptions);
 			File.WriteAllText(HistoryFile, json);
 		}
 		catch (IOException)

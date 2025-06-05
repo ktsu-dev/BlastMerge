@@ -34,13 +34,13 @@ public static class IterativeMergeOrchestrator
 		ArgumentNullException.ThrowIfNull(continuationCallback);
 
 		// Create a working copy of file groups that we'll update as we merge
-		var remainingGroups = fileGroups.ToList();
-		var mergeCount = 1;
+		List<FileGroup> remainingGroups = [.. fileGroups];
+		int mergeCount = 1;
 
 		while (remainingGroups.Count > 1)
 		{
 			// Find the two most similar groups among remaining groups
-			var similarity = FileDiffer.FindMostSimilarFiles(remainingGroups);
+			FileSimilarity? similarity = FileDiffer.FindMostSimilarFiles(remainingGroups);
 
 			if (similarity == null)
 			{
@@ -48,11 +48,11 @@ public static class IterativeMergeOrchestrator
 			}
 
 			// Report status to UI
-			var status = new MergeSessionStatus(mergeCount, remainingGroups.Sum(g => g.FilePaths.Count), mergeCount - 1, similarity);
+			MergeSessionStatus status = new(mergeCount, remainingGroups.Sum(g => g.FilePaths.Count), mergeCount - 1, similarity);
 			statusCallback(status);
 
 			// Perform the merge
-			var mergeResult = mergeCallback(similarity.FilePath1, similarity.FilePath2, null);
+			MergeResult? mergeResult = mergeCallback(similarity.FilePath1, similarity.FilePath2, null);
 
 			if (mergeResult == null)
 			{
@@ -60,22 +60,22 @@ public static class IterativeMergeOrchestrator
 			}
 
 			// Update all files with the merged result
-			var mergedContent = string.Join(Environment.NewLine, mergeResult.MergedLines);
+			string mergedContent = string.Join(Environment.NewLine, mergeResult.MergedLines);
 
 			try
 			{
 				// Find the groups being merged
-				var group1 = remainingGroups.First(g => g.FilePaths.Contains(similarity.FilePath1));
-				var group2 = remainingGroups.First(g => g.FilePaths.Contains(similarity.FilePath2));
+				FileGroup group1 = remainingGroups.First(g => g.FilePaths.Contains(similarity.FilePath1));
+				FileGroup group2 = remainingGroups.First(g => g.FilePaths.Contains(similarity.FilePath2));
 
 				// Create a new merged group with all files from both groups
-				var mergedGroup = new FileGroup([.. group1.FilePaths, .. group2.FilePaths])
+				FileGroup mergedGroup = new([.. group1.FilePaths, .. group2.FilePaths])
 				{
 					Hash = FileDiffer.CalculateFileHash(mergedContent)
 				};
 
 				// Update all files in both groups with the merged content
-				foreach (var filePath in mergedGroup.FilePaths)
+				foreach (string filePath in mergedGroup.FilePaths)
 				{
 					File.WriteAllText(filePath, mergedContent);
 				}
@@ -104,9 +104,9 @@ public static class IterativeMergeOrchestrator
 		}
 
 		// Merge completed successfully
-		var finalGroup = remainingGroups.First();
-		var finalContent = File.ReadAllText(finalGroup.FilePaths.First());
-		var finalLines = finalContent.Split(Environment.NewLine);
+		FileGroup finalGroup = remainingGroups.First();
+		string finalContent = File.ReadAllText(finalGroup.FilePaths.First());
+		string[] finalLines = finalContent.Split(Environment.NewLine);
 
 		return new MergeCompletionResult(true, finalContent, finalLines.Length, Path.GetFileName(finalGroup.FilePaths.First()));
 	}
@@ -127,8 +127,8 @@ public static class IterativeMergeOrchestrator
 			return null;
 		}
 
-		var files = FileFinder.FindFiles(directory, fileName);
-		var filesList = files.ToList();
+		IReadOnlyCollection<string> files = FileFinder.FindFiles(directory, fileName);
+		List<string> filesList = [.. files];
 
 		if (filesList.Count < 2)
 		{
@@ -136,8 +136,8 @@ public static class IterativeMergeOrchestrator
 		}
 
 		// Group files by hash to find unique versions
-		var fileGroups = FileDiffer.GroupFilesByHash(files);
-		var uniqueGroups = fileGroups.Where(g => g.FilePaths.Count >= 1).ToList();
+		IReadOnlyCollection<FileGroup> fileGroups = FileDiffer.GroupFilesByHash(files);
+		List<FileGroup> uniqueGroups = [.. fileGroups.Where(g => g.FilePaths.Count >= 1)];
 
 		if (uniqueGroups.Count < 2)
 		{

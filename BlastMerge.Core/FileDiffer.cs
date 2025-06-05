@@ -25,13 +25,13 @@ public static class FileDiffer
 	{
 		ArgumentNullException.ThrowIfNull(filePaths);
 
-		var groups = new Dictionary<string, FileGroup>();
+		Dictionary<string, FileGroup> groups = [];
 
-		foreach (var filePath in filePaths)
+		foreach (string filePath in filePaths)
 		{
-			var hash = FileHasher.ComputeFileHash(filePath);
+			string hash = FileHasher.ComputeFileHash(filePath);
 
-			if (!groups.TryGetValue(hash, out var group))
+			if (!groups.TryGetValue(hash, out FileGroup? group))
 			{
 				group = new FileGroup { Hash = hash };
 				groups[hash] = group;
@@ -67,33 +67,29 @@ public static class FileDiffer
 		ArgumentNullException.ThrowIfNull(dir2);
 		ArgumentNullException.ThrowIfNull(searchPattern);
 
-		var searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+		SearchOption searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
 
 		// Get all files from both directories
-		var files1 = Directory.Exists(dir1)
-			? Directory.GetFiles(dir1, searchPattern, searchOption)
-				.Select(f => Path.GetRelativePath(dir1, f))
-				.ToHashSet()
+		HashSet<string> files1 = Directory.Exists(dir1)
+			? [.. Directory.GetFiles(dir1, searchPattern, searchOption).Select(f => Path.GetRelativePath(dir1, f))]
 			: [];
 
-		var files2 = Directory.Exists(dir2)
-			? Directory.GetFiles(dir2, searchPattern, searchOption)
-				.Select(f => Path.GetRelativePath(dir2, f))
-				.ToHashSet()
+		HashSet<string> files2 = Directory.Exists(dir2)
+			? [.. Directory.GetFiles(dir2, searchPattern, searchOption).Select(f => Path.GetRelativePath(dir2, f))]
 			: [];
 
-		var sameFiles = new List<string>();
-		var modifiedFiles = new List<string>();
-		var onlyInDir1 = new List<string>();
-		var onlyInDir2 = new List<string>();
+		List<string> sameFiles = [];
+		List<string> modifiedFiles = [];
+		List<string> onlyInDir1 = [];
+		List<string> onlyInDir2 = [];
 
 		// Find files that exist in both directories
-		var commonFiles = files1.Intersect(files2).ToList();
+		List<string> commonFiles = [.. files1.Intersect(files2)];
 
-		foreach (var relativePath in commonFiles)
+		foreach (string? relativePath in commonFiles)
 		{
-			var file1Path = Path.Combine(dir1, relativePath);
-			var file2Path = Path.Combine(dir2, relativePath);
+			string file1Path = Path.Combine(dir1, relativePath);
+			string file2Path = Path.Combine(dir2, relativePath);
 
 			try
 			{
@@ -150,7 +146,7 @@ public static class FileDiffer
 		ArgumentNullException.ThrowIfNull(file2);
 
 		// Use DiffPlex for git-style diff generation
-		var gitDiff = DiffPlexDiffer.GenerateUnifiedDiff(file1, file2);
+		string gitDiff = DiffPlexDiffer.GenerateUnifiedDiff(file1, file2);
 
 		if (!useColor || string.IsNullOrEmpty(gitDiff))
 		{
@@ -158,10 +154,10 @@ public static class FileDiffer
 		}
 
 		// Add color escape sequences for terminal if requested
-		var coloredDiff = DiffPlexDiffer.GenerateColoredDiff(file1, file2);
-		var sb = new StringBuilder();
+		Collection<ColoredDiffLine> coloredDiff = DiffPlexDiffer.GenerateColoredDiff(file1, file2);
+		StringBuilder sb = new();
 
-		foreach (var line in coloredDiff)
+		foreach (ColoredDiffLine line in coloredDiff)
 		{
 			// Add color escape sequences for terminal
 			switch (line.Color)
@@ -200,12 +196,8 @@ public static class FileDiffer
 	public static Collection<ColoredDiffLine> GenerateColoredDiff(string file1, string file2, string[] lines1, string[] lines2)
 	{
 		// Use DiffPlex implementation
-		var diffLines = DiffPlexDiffer.GenerateColoredDiff(file1, file2);
-		var result = new Collection<ColoredDiffLine>();
-		foreach (var line in diffLines)
-		{
-			result.Add(line);
-		}
+		Collection<ColoredDiffLine> diffLines = DiffPlexDiffer.GenerateColoredDiff(file1, file2);
+		Collection<ColoredDiffLine> result = [.. diffLines];
 		return result;
 	}
 
@@ -222,16 +214,16 @@ public static class FileDiffer
 		ArgumentNullException.ThrowIfNull(file2);
 
 		// Get the differences using DiffPlex
-		var differences = FindDifferences(file1, file2);
+		IReadOnlyCollection<LineDifference> differences = FindDifferences(file1, file2);
 
-		var sb = new StringBuilder();
+		StringBuilder sb = new();
 		sb.AppendLine($"Change Summary: {Path.GetFileName(file1)} vs {Path.GetFileName(file2)}");
 		sb.AppendLine("----------------------------------------");
 
 		// Count different types of changes
-		var modifications = differences.Count(d => d.LineNumber1.HasValue && d.LineNumber2.HasValue);
-		var additions = differences.Count(d => !d.LineNumber1.HasValue && d.LineNumber2.HasValue);
-		var deletions = differences.Count(d => d.LineNumber1.HasValue && !d.LineNumber2.HasValue);
+		int modifications = differences.Count(d => d.LineNumber1.HasValue && d.LineNumber2.HasValue);
+		int additions = differences.Count(d => !d.LineNumber1.HasValue && d.LineNumber2.HasValue);
+		int deletions = differences.Count(d => d.LineNumber1.HasValue && !d.LineNumber2.HasValue);
 
 		// Add summary statistics
 		if (modifications > 0)
@@ -258,27 +250,27 @@ public static class FileDiffer
 		sb.AppendLine();
 
 		// Show details of changes
-		foreach (var diff in differences)
+		foreach (LineDifference diff in differences)
 		{
 			if (diff.LineNumber1.HasValue && diff.LineNumber2.HasValue)
 			{
 				// Modified line
-				var prefix = useColor ? "\u001b[33m" : "";
-				var suffix = useColor ? "\u001b[0m" : "";
+				string prefix = useColor ? "\u001b[33m" : "";
+				string suffix = useColor ? "\u001b[0m" : "";
 				sb.AppendLine($"{prefix}Modified line {diff.LineNumber1}: {diff.Content1} → {diff.Content2}{suffix}");
 			}
 			else if (!diff.LineNumber1.HasValue && diff.LineNumber2.HasValue)
 			{
 				// Added line
-				var prefix = useColor ? "\u001b[32m" : "";
-				var suffix = useColor ? "\u001b[0m" : "";
+				string prefix = useColor ? "\u001b[32m" : "";
+				string suffix = useColor ? "\u001b[0m" : "";
 				sb.AppendLine($"{prefix}Added line {diff.LineNumber2}: {diff.Content2}{suffix}");
 			}
 			else if (diff.LineNumber1.HasValue && !diff.LineNumber2.HasValue)
 			{
 				// Deleted line
-				var prefix = useColor ? "\u001b[31m" : "";
-				var suffix = useColor ? "\u001b[0m" : "";
+				string prefix = useColor ? "\u001b[31m" : "";
+				string suffix = useColor ? "\u001b[0m" : "";
 				sb.AppendLine($"{prefix}Deleted line {diff.LineNumber1}: {diff.Content1}{suffix}");
 			}
 		}
@@ -297,21 +289,21 @@ public static class FileDiffer
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		var result = new Collection<ColoredDiffLine>
-		{
+		Collection<ColoredDiffLine> result =
+		[
 			// Add header
 			new($"Change Summary: {Path.GetFileName(file1)} vs {Path.GetFileName(file2)}", DiffColor.FileHeader),
 			new("----------------------------------------", DiffColor.Default)
-		};
+		];
 
 		// Use DiffPlex to get differences
-		var differences = FindDifferences(file1, file2);
+		IReadOnlyCollection<LineDifference> differences = FindDifferences(file1, file2);
 
 		// Track added and removed lines
-		var addedLines = new List<(int, string)>();
-		var removedLines = new List<(int, string)>();
+		List<(int, string)> addedLines = [];
+		List<(int, string)> removedLines = [];
 
-		foreach (var diff in differences)
+		foreach (LineDifference diff in differences)
 		{
 			if (diff.LineNumber1.HasValue && !diff.LineNumber2.HasValue)
 			{
@@ -330,7 +322,7 @@ public static class FileDiffer
 		{
 			result.Add(new ColoredDiffLine("REMOVED LINES (in version 1 but not in version X):", DiffColor.ChunkHeader));
 
-			foreach (var (lineNum, content) in removedLines)
+			foreach ((int lineNum, string content) in removedLines)
 			{
 				result.Add(new ColoredDiffLine($"- Line {lineNum}: {content}", DiffColor.Deletion));
 			}
@@ -343,7 +335,7 @@ public static class FileDiffer
 		{
 			result.Add(new ColoredDiffLine("ADDED LINES (in version X but not in version 1):", DiffColor.ChunkHeader));
 
-			foreach (var (lineNum, content) in addedLines)
+			foreach ((int lineNum, string content) in addedLines)
 			{
 				result.Add(new ColoredDiffLine($"+ Line {lineNum}: {content}", DiffColor.Addition));
 			}
@@ -362,7 +354,7 @@ public static class FileDiffer
 		ArgumentNullException.ThrowIfNull(sourceFile);
 		ArgumentNullException.ThrowIfNull(targetFile);
 
-		var targetDir = Path.GetDirectoryName(targetFile);
+		string? targetDir = Path.GetDirectoryName(targetFile);
 		if (!string.IsNullOrEmpty(targetDir))
 		{
 			Directory.CreateDirectory(targetDir);
@@ -382,8 +374,8 @@ public static class FileDiffer
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		var lines1 = File.ReadAllLines(file1);
-		var lines2 = File.ReadAllLines(file2);
+		string[] lines1 = File.ReadAllLines(file1);
+		string[] lines2 = File.ReadAllLines(file2);
 
 		return CalculateLineSimilarity(lines1, lines2);
 	}
@@ -410,8 +402,8 @@ public static class FileDiffer
 		}
 
 		// Create temporary files to use DiffPlex for similarity calculation
-		var tempFile1 = Path.GetTempFileName();
-		var tempFile2 = Path.GetTempFileName();
+		string tempFile1 = Path.GetTempFileName();
+		string tempFile2 = Path.GetTempFileName();
 
 		try
 		{
@@ -419,11 +411,11 @@ public static class FileDiffer
 			File.WriteAllLines(tempFile2, lines2);
 
 			// Use DiffPlex to get differences
-			var differences = DiffPlexDiffer.FindDifferences(tempFile1, tempFile2);
+			IReadOnlyCollection<LineDifference> differences = DiffPlexDiffer.FindDifferences(tempFile1, tempFile2);
 
 			// Calculate similarity based on unchanged lines
-			var totalOperations = differences.Count;
-			var maxLines = Math.Max(lines1.Length, lines2.Length);
+			int totalOperations = differences.Count;
+			int maxLines = Math.Max(lines1.Length, lines2.Length);
 
 			if (totalOperations == 0)
 			{
@@ -431,7 +423,7 @@ public static class FileDiffer
 			}
 
 			// Simple similarity calculation: 1 - (differences / max_lines)
-			var similarityRatio = Math.Max(0.0, 1.0 - ((double)totalOperations / maxLines));
+			double similarityRatio = Math.Max(0.0, 1.0 - ((double)totalOperations / maxLines));
 			return similarityRatio;
 		}
 		finally
@@ -469,17 +461,17 @@ public static class FileDiffer
 			return null;
 		}
 
-		var groups = fileGroups.ToList();
+		List<FileGroup> groups = [.. fileGroups];
 		FileSimilarity? mostSimilar = null;
-		var highestSimilarity = -1.0;
+		double highestSimilarity = -1.0;
 
-		for (var i = 0; i < groups.Count; i++)
+		for (int i = 0; i < groups.Count; i++)
 		{
-			for (var j = i + 1; j < groups.Count; j++)
+			for (int j = i + 1; j < groups.Count; j++)
 			{
-				var file1 = groups[i].FilePaths.First();
-				var file2 = groups[j].FilePaths.First();
-				var similarity = CalculateFileSimilarity(file1, file2);
+				string file1 = groups[i].FilePaths.First();
+				string file2 = groups[j].FilePaths.First();
+				double similarity = CalculateFileSimilarity(file1, file2);
 
 				if (similarity > highestSimilarity)
 				{
@@ -503,8 +495,8 @@ public static class FileDiffer
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		var lines1 = File.ReadAllLines(file1);
-		var lines2 = File.ReadAllLines(file2);
+		string[] lines1 = File.ReadAllLines(file1);
+		string[] lines2 = File.ReadAllLines(file2);
 
 		return MergeLines(lines1, lines2);
 	}
@@ -521,22 +513,22 @@ public static class FileDiffer
 		ArgumentNullException.ThrowIfNull(lines2);
 
 		// Create temporary files to use DiffPlex
-		var tempFile1 = Path.GetTempFileName();
-		var tempFile2 = Path.GetTempFileName();
+		string tempFile1 = Path.GetTempFileName();
+		string tempFile2 = Path.GetTempFileName();
 
 		try
 		{
 			File.WriteAllLines(tempFile1, lines1);
 			File.WriteAllLines(tempFile2, lines2);
 
-			var differences = DiffPlexDiffer.FindDifferences(tempFile1, tempFile2);
-			var mergedLines = new List<string>();
-			var conflicts = new List<MergeConflict>();
+			IReadOnlyCollection<LineDifference> differences = DiffPlexDiffer.FindDifferences(tempFile1, tempFile2);
+			List<string> mergedLines = [];
+			List<MergeConflict> conflicts = [];
 
-			var line1Index = 0;
-			var line2Index = 0;
+			int line1Index = 0;
+			int line2Index = 0;
 
-			foreach (var diff in differences)
+			foreach (LineDifference diff in differences)
 			{
 				// Add unchanged lines before this difference
 				while (line1Index < diff.LineNumber1 - 1 && line2Index < diff.LineNumber2 - 1)

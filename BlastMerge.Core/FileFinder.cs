@@ -21,20 +21,26 @@ public static class FileFinder
 	/// <returns>A list of full file paths</returns>
 	public static IReadOnlyCollection<string> FindFiles(string rootDirectory, string fileName)
 	{
-		var result = new List<string>();
+		List<string> result = [];
 
 		try
 		{
 			// Search in current directory
-			var filesInCurrentDir = Directory.GetFiles(rootDirectory, fileName, SearchOption.TopDirectoryOnly);
+			string[] filesInCurrentDir = Directory.GetFiles(rootDirectory, fileName, SearchOption.TopDirectoryOnly);
 			result.AddRange(filesInCurrentDir);
 
 			// Search in subdirectories
-			foreach (var directory in Directory.GetDirectories(rootDirectory))
+			foreach (string directory in Directory.GetDirectories(rootDirectory))
 			{
 				try
 				{
-					var filesInSubDir = FindFiles(directory, fileName);
+					// Skip git submodules
+					if (IsGitSubmodule(directory))
+					{
+						continue;
+					}
+
+					IReadOnlyCollection<string> filesInSubDir = FindFiles(directory, fileName);
 					result.AddRange(filesInSubDir);
 				}
 				catch (UnauthorizedAccessException)
@@ -53,5 +59,31 @@ public static class FileFinder
 		}
 
 		return result.AsReadOnly();
+	}
+
+	/// <summary>
+	/// Determines if a directory is a git submodule
+	/// </summary>
+	/// <param name="directoryPath">The directory path to check</param>
+	/// <returns>True if the directory is a git submodule, false otherwise</returns>
+	private static bool IsGitSubmodule(string directoryPath)
+	{
+		try
+		{
+			string gitPath = Path.Combine(directoryPath, ".git");
+
+			// Git submodules have a .git file (not directory) that contains a reference
+			// to the actual git directory location
+			return File.Exists(gitPath) && !Directory.Exists(gitPath);
+		}
+		catch (Exception ex) when (ex is UnauthorizedAccessException
+								or DirectoryNotFoundException
+								or IOException
+								or ArgumentException
+								or PathTooLongException)
+		{
+			// If we can't access the directory or path is invalid, assume it's not a submodule
+			return false;
+		}
 	}
 }

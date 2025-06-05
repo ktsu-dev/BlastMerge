@@ -28,7 +28,7 @@ public record FileGroup(string Hash = "")
 	public FileGroup(IEnumerable<string> filePaths) : this("")
 	{
 		ArgumentNullException.ThrowIfNull(filePaths);
-		foreach (var filePath in filePaths)
+		foreach (string filePath in filePaths)
 		{
 			this.filePaths.Add(filePath);
 		}

@@ -29,12 +29,12 @@ public class EdgeCaseTests : MockFileSystemTestBase
 	public void FileDiffer_EmptyFiles_ProducesCorrectDiff()
 	{
 		// Arrange
-		var emptyFile1 = CreateFile("empty1.txt", string.Empty);
-		var emptyFile2 = CreateFile("empty2.txt", string.Empty);
+		string emptyFile1 = CreateFile("empty1.txt", string.Empty);
+		string emptyFile2 = CreateFile("empty2.txt", string.Empty);
 
 		// Act
-		var differences = _fileDifferAdapter.FindDifferences(emptyFile1, emptyFile2);
-		var gitDiff = _fileDifferAdapter.GenerateGitStyleDiff(emptyFile1, emptyFile2);
+		IReadOnlyCollection<LineDifference> differences = _fileDifferAdapter.FindDifferences(emptyFile1, emptyFile2);
+		string gitDiff = _fileDifferAdapter.GenerateGitStyleDiff(emptyFile1, emptyFile2);
 
 		// Assert
 		Assert.AreEqual(0, differences.Count, "Empty files should have no differences");
@@ -45,20 +45,20 @@ public class EdgeCaseTests : MockFileSystemTestBase
 	public void FileHasher_IdenticalContentDifferentEncoding_SameHash()
 	{
 		// Arrange - Create files with same content but different encoding
-		var utf8Content = "Test content with some unicode: äöü";
-		var utf8Bytes = Encoding.UTF8.GetBytes(utf8Content);
-		var utf16Bytes = Encoding.Unicode.GetBytes(utf8Content);
+		string utf8Content = "Test content with some unicode: äöü";
+		byte[] utf8Bytes = Encoding.UTF8.GetBytes(utf8Content);
+		byte[] utf16Bytes = Encoding.Unicode.GetBytes(utf8Content);
 
-		var utf8File = CreateFile("utf8.txt", "");
-		var utf16File = CreateFile("utf16.txt", "");
+		string utf8File = CreateFile("utf8.txt", "");
+		string utf16File = CreateFile("utf16.txt", "");
 
 		// Write the bytes directly to simulate different encodings
 		MockFileSystem.File.WriteAllBytes(utf8File, utf8Bytes);
 		MockFileSystem.File.WriteAllBytes(utf16File, utf16Bytes);
 
 		// Act
-		var hash1 = _fileHasherAdapter.ComputeFileHash(utf8File);
-		var hash2 = _fileHasherAdapter.ComputeFileHash(utf16File);
+		string hash1 = _fileHasherAdapter.ComputeFileHash(utf8File);
+		string hash2 = _fileHasherAdapter.ComputeFileHash(utf16File);
 
 		// Assert
 		// Note: We expect different hashes because the actual byte content is different
@@ -70,11 +70,11 @@ public class EdgeCaseTests : MockFileSystemTestBase
 	public void FileFinder_SpecialCharactersInFilename_FindsCorrectly()
 	{
 		// Arrange - Create files with special characters in names
-		var specialFileName = "test #$%^&.txt";
-		var specialFilePath = CreateFile(specialFileName, "Test content");
+		string specialFileName = "test #$%^&.txt";
+		string specialFilePath = CreateFile(specialFileName, "Test content");
 
 		// Act
-		var files = _fileFinderAdapter.FindFiles(TestDirectory, specialFileName);
+		IReadOnlyCollection<string> files = _fileFinderAdapter.FindFiles(TestDirectory, specialFileName);
 
 		// Assert
 		Assert.AreEqual(1, files.Count, "Should find the file with special characters in name");
@@ -85,9 +85,9 @@ public class EdgeCaseTests : MockFileSystemTestBase
 	public void SyncFile_TargetDirectoryDoesNotExist_CreatesDirectory()
 	{
 		// Arrange
-		var sourceFile = CreateFile("source.txt", "Test content");
-		var targetDir = Path.Combine(TestDirectory, "NonExistentDir");
-		var targetFile = Path.Combine(targetDir, "target.txt");
+		string sourceFile = CreateFile("source.txt", "Test content");
+		string targetDir = Path.Combine(TestDirectory, "NonExistentDir");
+		string targetFile = Path.Combine(targetDir, "target.txt");
 
 		// Ensure directory doesn't exist in mock file system
 		Assert.IsFalse(MockFileSystem.Directory.Exists(targetDir));

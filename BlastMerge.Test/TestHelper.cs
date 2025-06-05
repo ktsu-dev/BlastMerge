@@ -20,7 +20,7 @@ internal static class TestHelper
 	/// <returns>The path to the created temporary file</returns>
 	public static string CreateTempFile(string content, string extension = ".txt")
 	{
-		var tempFile = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}{extension}");
+		string tempFile = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}{extension}");
 		File.WriteAllText(tempFile, content);
 		return tempFile;
 	}
@@ -33,7 +33,7 @@ internal static class TestHelper
 	/// <returns>The path to the created temporary file</returns>
 	public static string CreateTempFile(string[] lines, string extension = ".txt")
 	{
-		var tempFile = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}{extension}");
+		string tempFile = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}{extension}");
 		File.WriteAllLines(tempFile, lines);
 		return tempFile;
 	}
@@ -44,7 +44,7 @@ internal static class TestHelper
 	/// <returns>The path to the created temporary directory</returns>
 	public static string CreateTempDirectory()
 	{
-		var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+		string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
 		Directory.CreateDirectory(tempDir);
 		return tempDir;
 	}
@@ -126,7 +126,7 @@ internal static class TestHelper
 	public static string GetTestFilePath(string relativeFilePath)
 	{
 		// Find the solution directory
-		var currentDir = new DirectoryInfo(Directory.GetCurrentDirectory());
+		DirectoryInfo? currentDir = new(Directory.GetCurrentDirectory());
 		while (currentDir != null && !File.Exists(Path.Combine(currentDir.FullName, "BlastMerge.sln")))
 		{
 			currentDir = currentDir.Parent;

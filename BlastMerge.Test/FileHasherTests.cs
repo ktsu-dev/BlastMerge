@@ -30,8 +30,8 @@ public class FileHasherTests : MockFileSystemTestBase
 	public void ComputeFileHash_SameContent_ReturnsSameHash()
 	{
 		// Act
-		var hash1 = _fileHasherAdapter.ComputeFileHash(_testFilePath1);
-		var hash2 = _fileHasherAdapter.ComputeFileHash(_testFilePath2);
+		string hash1 = _fileHasherAdapter.ComputeFileHash(_testFilePath1);
+		string hash2 = _fileHasherAdapter.ComputeFileHash(_testFilePath2);
 
 		// Assert
 		Assert.AreEqual(hash1, hash2, "Files with identical content should have the same hash");
@@ -41,8 +41,8 @@ public class FileHasherTests : MockFileSystemTestBase
 	public void ComputeFileHash_DifferentContent_ReturnsDifferentHash()
 	{
 		// Act
-		var hash1 = _fileHasherAdapter.ComputeFileHash(_testFilePath1);
-		var hash3 = _fileHasherAdapter.ComputeFileHash(_testFilePath3);
+		string hash1 = _fileHasherAdapter.ComputeFileHash(_testFilePath1);
+		string hash3 = _fileHasherAdapter.ComputeFileHash(_testFilePath3);
 
 		// Assert
 		Assert.AreNotEqual(hash1, hash3, "Files with different content should have different hashes");
@@ -52,10 +52,10 @@ public class FileHasherTests : MockFileSystemTestBase
 	public void ComputeFileHash_EmptyFile_ReturnsValidHash()
 	{
 		// Arrange
-		var emptyFilePath = CreateFile("empty.txt", string.Empty);
+		string emptyFilePath = CreateFile("empty.txt", string.Empty);
 
 		// Act
-		var hash = _fileHasherAdapter.ComputeFileHash(emptyFilePath);
+		string hash = _fileHasherAdapter.ComputeFileHash(emptyFilePath);
 
 		// Assert
 		Assert.IsNotNull(hash);

@@ -54,7 +54,7 @@ public class FileDifferDiffTests : MockFileSystemTestBase
 	public void FindDifferences_IdenticalFiles_ReturnsEmptyCollection()
 	{
 		// Act
-		var differences = _fileDifferAdapter.FindDifferences(_testFile1, _identicalFile);
+		IReadOnlyCollection<LineDifference> differences = _fileDifferAdapter.FindDifferences(_testFile1, _identicalFile);
 
 		// Assert
 		Assert.AreEqual(0, differences.Count, "Should return no differences for identical files");
@@ -64,7 +64,7 @@ public class FileDifferDiffTests : MockFileSystemTestBase
 	public void GenerateGitStyleDiff_IdenticalFiles_ReturnsEmptyString()
 	{
 		// Act
-		var diff = _fileDifferAdapter.GenerateGitStyleDiff(_testFile1, _identicalFile);
+		string diff = _fileDifferAdapter.GenerateGitStyleDiff(_testFile1, _identicalFile);
 
 		// Assert
 		Assert.AreEqual(string.Empty, diff, "Git style diff should be empty for identical files");
@@ -74,7 +74,7 @@ public class FileDifferDiffTests : MockFileSystemTestBase
 	public void GenerateGitStyleDiff_WithDifferences_ReturnsNonEmptyString()
 	{
 		// Act
-		var diff = _fileDifferAdapter.GenerateGitStyleDiff(_testFile1, _testFile2);
+		string diff = _fileDifferAdapter.GenerateGitStyleDiff(_testFile1, _testFile2);
 
 		// Assert
 		Assert.IsFalse(string.IsNullOrEmpty(diff), "Git style diff should not be empty when files differ");
@@ -87,7 +87,7 @@ public class FileDifferDiffTests : MockFileSystemTestBase
 	public void GenerateColoredDiff_IdenticalFiles_OnlyContainsDefaultColorLines()
 	{
 		// Act
-		var coloredDiff = _fileDifferAdapter.GenerateColoredDiff(_testFile1, _identicalFile);
+		System.Collections.ObjectModel.Collection<ColoredDiffLine> coloredDiff = _fileDifferAdapter.GenerateColoredDiff(_testFile1, _identicalFile);
 
 		// Assert
 		Assert.IsTrue(coloredDiff.All(l => l.Color is DiffColor.Default or DiffColor.FileHeader),
@@ -98,7 +98,7 @@ public class FileDifferDiffTests : MockFileSystemTestBase
 	public void GenerateColoredDiff_WithDifferences_ContainsColoredLines()
 	{
 		// Act
-		var coloredDiff = _fileDifferAdapter.GenerateColoredDiff(_testFile1, _testFile2);
+		System.Collections.ObjectModel.Collection<ColoredDiffLine> coloredDiff = _fileDifferAdapter.GenerateColoredDiff(_testFile1, _testFile2);
 
 		// Assert
 		Assert.IsTrue(coloredDiff.Any(l => l.Color == DiffColor.Addition),
@@ -125,14 +125,14 @@ public class FileDifferDiffTests : MockFileSystemTestBase
 	public void SyncFile_CopiesContent()
 	{
 		// Arrange
-		var targetFile = CreateFile("target.txt", "Original content");
+		string targetFile = CreateFile("target.txt", "Original content");
 
 		// Act
 		_fileDifferAdapter.SyncFile(_testFile1, targetFile);
 
 		// Assert
-		var sourceContent = MockFileSystem.File.ReadAllText(_testFile1);
-		var targetContent = MockFileSystem.File.ReadAllText(targetFile);
+		string sourceContent = MockFileSystem.File.ReadAllText(_testFile1);
+		string targetContent = MockFileSystem.File.ReadAllText(targetFile);
 		Assert.AreEqual(sourceContent, targetContent, "Target file should have the same content as source");
 	}
 }

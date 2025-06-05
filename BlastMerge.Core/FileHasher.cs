@@ -20,15 +20,15 @@ public static class FileHasher
 	/// <returns>The FNV-1a hash as a hex string</returns>
 	public static string ComputeFileHash(string filePath)
 	{
-		var hash = FNV_OFFSET_BASIS_64;
+		ulong hash = FNV_OFFSET_BASIS_64;
 
-		using var fileStream = File.OpenRead(filePath);
-		var buffer = new byte[4096];
+		using FileStream fileStream = File.OpenRead(filePath);
+		byte[] buffer = new byte[4096];
 		int bytesRead;
 
 		while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) > 0)
 		{
-			for (var i = 0; i < bytesRead; i++)
+			for (int i = 0; i < bytesRead; i++)
 			{
 				hash ^= buffer[i];
 				hash *= FNV_PRIME_64;
@@ -47,10 +47,10 @@ public static class FileHasher
 	{
 		ArgumentNullException.ThrowIfNull(content);
 
-		var hash = FNV_OFFSET_BASIS_64;
-		var bytes = System.Text.Encoding.UTF8.GetBytes(content);
+		ulong hash = FNV_OFFSET_BASIS_64;
+		byte[] bytes = System.Text.Encoding.UTF8.GetBytes(content);
 
-		foreach (var b in bytes)
+		foreach (byte b in bytes)
 		{
 			hash ^= b;
 			hash *= FNV_PRIME_64;

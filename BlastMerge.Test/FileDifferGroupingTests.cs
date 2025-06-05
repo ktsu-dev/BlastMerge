@@ -35,22 +35,22 @@ public class FileDifferGroupingTests : MockFileSystemTestBase
 	public void GroupFilesByHash_WithIdenticalFiles_GroupsCorrectly()
 	{
 		// Arrange
-		var files = new List<string> { _testFile1, _testFile2, _testFile3, _testFile4 };
+		List<string> files = [_testFile1, _testFile2, _testFile3, _testFile4];
 
 		// Act
-		var groups = _fileDifferAdapter.GroupFilesByHash(files);
+		IReadOnlyCollection<FileGroup> groups = _fileDifferAdapter.GroupFilesByHash(files);
 
 		// Assert
 		Assert.AreEqual(2, groups.Count, "Should create two groups for two unique file contents");
 
 		// Find group containing file1/file2
-		var group1 = groups.First(g => g.FilePaths.Contains(_testFile1));
+		FileGroup group1 = groups.First(g => g.FilePaths.Contains(_testFile1));
 		Assert.AreEqual(2, group1.FilePaths.Count, "First group should contain 2 files");
 		Assert.IsTrue(group1.FilePaths.Contains(_testFile1), "First group should contain file1");
 		Assert.IsTrue(group1.FilePaths.Contains(_testFile2), "First group should contain file2");
 
 		// Find group containing file3/file4
-		var group2 = groups.First(g => g.FilePaths.Contains(_testFile3));
+		FileGroup group2 = groups.First(g => g.FilePaths.Contains(_testFile3));
 		Assert.AreEqual(2, group2.FilePaths.Count, "Second group should contain 2 files");
 		Assert.IsTrue(group2.FilePaths.Contains(_testFile3), "Second group should contain file3");
 		Assert.IsTrue(group2.FilePaths.Contains(_testFile4), "Second group should contain file4");
@@ -63,17 +63,17 @@ public class FileDifferGroupingTests : MockFileSystemTestBase
 	public void GroupFilesByHash_WithUniqueFiles_CreatesSeperateGroups()
 	{
 		// Arrange
-		var uniqueFile = CreateFile("unique.txt", "This is unique content");
-		var files = new List<string> { _testFile1, _testFile3, uniqueFile };
+		string uniqueFile = CreateFile("unique.txt", "This is unique content");
+		List<string> files = [_testFile1, _testFile3, uniqueFile];
 
 		// Act
-		var groups = _fileDifferAdapter.GroupFilesByHash(files);
+		IReadOnlyCollection<FileGroup> groups = _fileDifferAdapter.GroupFilesByHash(files);
 
 		// Assert
 		Assert.AreEqual(3, groups.Count, "Should create three groups for three unique file contents");
 
 		// Check each group has only one file
-		var uniqueFileGroup = groups.First(g => g.FilePaths.Contains(uniqueFile));
+		FileGroup uniqueFileGroup = groups.First(g => g.FilePaths.Contains(uniqueFile));
 		Assert.AreEqual(1, uniqueFileGroup.FilePaths.Count, "Unique file should be in its own group");
 	}
 
@@ -81,18 +81,18 @@ public class FileDifferGroupingTests : MockFileSystemTestBase
 	public void GroupFilesByHash_WithEmptyFiles_GroupsCorrectly()
 	{
 		// Arrange
-		var emptyFile1 = CreateFile("empty1.txt", string.Empty);
-		var emptyFile2 = CreateFile("empty2.txt", string.Empty);
-		var files = new List<string> { emptyFile1, emptyFile2, _testFile1 };
+		string emptyFile1 = CreateFile("empty1.txt", string.Empty);
+		string emptyFile2 = CreateFile("empty2.txt", string.Empty);
+		List<string> files = [emptyFile1, emptyFile2, _testFile1];
 
 		// Act
-		var groups = _fileDifferAdapter.GroupFilesByHash(files);
+		IReadOnlyCollection<FileGroup> groups = _fileDifferAdapter.GroupFilesByHash(files);
 
 		// Assert
 		Assert.AreEqual(2, groups.Count, "Should create two groups (empty files and non-empty file)");
 
 		// Find empty file group
-		var emptyGroup = groups.First(g => g.FilePaths.Contains(emptyFile1));
+		FileGroup emptyGroup = groups.First(g => g.FilePaths.Contains(emptyFile1));
 		Assert.AreEqual(2, emptyGroup.FilePaths.Count, "Empty file group should contain 2 files");
 		Assert.IsTrue(emptyGroup.FilePaths.Contains(emptyFile2), "Empty file group should contain both empty files");
 	}
@@ -109,7 +109,7 @@ public class FileDifferGroupingTests : MockFileSystemTestBase
 	public void GroupFilesByHash_WithEmptyList_ReturnsEmptyCollection()
 	{
 		// Act
-		var groups = _fileDifferAdapter.GroupFilesByHash([]);
+		IReadOnlyCollection<FileGroup> groups = _fileDifferAdapter.GroupFilesByHash([]);
 
 		// Assert
 		Assert.AreEqual(0, groups.Count, "Should return empty collection for empty input");
@@ -119,8 +119,9 @@ public class FileDifferGroupingTests : MockFileSystemTestBase
 	public void FileGroup_AddFilePath_AddsCorrectly()
 	{
 		// Arrange
-		var group = new FileGroup { Hash = "test-hash" };
-		var filePath = "test/path.txt";
+		FileGroup group = new()
+		{ Hash = "test-hash" };
+		string filePath = "test/path.txt";
 
 		// Act
 		group.AddFilePath(filePath);

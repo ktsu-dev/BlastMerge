@@ -53,8 +53,8 @@ public abstract class MockFileSystemTestBase
 	/// <returns>Full path to the created file</returns>
 	protected string CreateFile(string relativePath, string content)
 	{
-		var fullPath = Path.Combine(TestDirectory, relativePath);
-		var directory = Path.GetDirectoryName(fullPath);
+		string fullPath = Path.Combine(TestDirectory, relativePath);
+		string? directory = Path.GetDirectoryName(fullPath);
 
 		if (!string.IsNullOrEmpty(directory) && !MockFileSystem.Directory.Exists(directory))
 		{
@@ -72,7 +72,7 @@ public abstract class MockFileSystemTestBase
 	/// <returns>Full path to the created directory</returns>
 	protected string CreateDirectory(string relativePath)
 	{
-		var fullPath = Path.Combine(TestDirectory, relativePath);
+		string fullPath = Path.Combine(TestDirectory, relativePath);
 		MockFileSystem.Directory.CreateDirectory(fullPath);
 		return fullPath;
 	}

@@ -30,7 +30,7 @@ public class MockFileSystemTests
 		_testDir1 = Path.Combine(_testDir, "dir1");
 		_testDir2 = Path.Combine(_testDir, "dir2");
 
-		var fileDict = new Dictionary<string, MockFileData>
+		Dictionary<string, MockFileData> fileDict = new()
 		{
 			{ Path.Combine(_testDir1, "file1.txt"), new MockFileData("File 1 Content Version 1") },
 			{ Path.Combine(_testDir1, "file2.txt"), new MockFileData("File 2 Content") },
@@ -49,7 +49,7 @@ public class MockFileSystemTests
 	public void FileFinder_WithMockedFileSystem_FindsFilesCorrectly()
 	{
 		// Arrange
-		var mockFileFinder = new Mock<IFileFinder>();
+		Mock<IFileFinder> mockFileFinder = new();
 		mockFileFinder.Setup(f => f.FindFiles(_testDir1, "*.txt"))
 			.Returns(new ReadOnlyCollection<string>([
 				Path.Combine(_testDir1, "file1.txt"),
@@ -58,7 +58,7 @@ public class MockFileSystemTests
 			]));
 
 		// Act
-		var files = mockFileFinder.Object.FindFiles(_testDir1, "*.txt");
+		ReadOnlyCollection<string> files = mockFileFinder.Object.FindFiles(_testDir1, "*.txt");
 
 		// Assert
 		Assert.AreEqual(3, files.Count, "Should find 3 files");
@@ -71,20 +71,20 @@ public class MockFileSystemTests
 	public void FileHasher_WithMockedFileSystem_ComputesHashCorrectly()
 	{
 		// Arrange
-		var mockFileSystem = new Mock<IFileSystem>();
-		var mockFile = new Mock<IFile>();
+		Mock<IFileSystem> mockFileSystem = new();
+		Mock<IFile> mockFile = new();
 
 		mockFile.Setup(f => f.ReadAllBytes(It.Is<string>(s => s == Path.Combine(_testDir1, "file1.txt"))))
 			.Returns(Encoding.UTF8.GetBytes("File 1 Content Version 1"));
 
 		mockFileSystem.Setup(fs => fs.File).Returns(mockFile.Object);
 
-		var mockFileHasher = new Mock<IFileHasher>();
+		Mock<IFileHasher> mockFileHasher = new();
 		mockFileHasher.Setup(h => h.ComputeFileHash(It.Is<string>(s => s == Path.Combine(_testDir1, "file1.txt"))))
 			.Returns("mock-hash-1");
 
 		// Act
-		var hash = mockFileHasher.Object.ComputeFileHash(Path.Combine(_testDir1, "file1.txt"));
+		string hash = mockFileHasher.Object.ComputeFileHash(Path.Combine(_testDir1, "file1.txt"));
 
 		// Assert
 		Assert.AreEqual("mock-hash-1", hash, "Should return the mocked hash value");
@@ -94,15 +94,15 @@ public class MockFileSystemTests
 	public void FileDiffer_WithMockedFileSystem_FindsDifferencesCorrectly()
 	{
 		// Arrange
-		var file1Path = Path.Combine(_testDir1, "file1.txt");
-		var file2Path = Path.Combine(_testDir2, "file1.txt");
+		string file1Path = Path.Combine(_testDir1, "file1.txt");
+		string file2Path = Path.Combine(_testDir2, "file1.txt");
 
-		var mockFileDiffer = new Mock<IFileDiffer>();
+		Mock<IFileDiffer> mockFileDiffer = new();
 		mockFileDiffer.Setup(d => d.FindDifferences(file1Path, file2Path))
 			.Returns(new ReadOnlyCollection<string>(["- File 1 Content Version 1", "+ File 1 Content Version 2"]));
 
 		// Act
-		var differences = mockFileDiffer.Object.FindDifferences(file1Path, file2Path);
+		ReadOnlyCollection<string> differences = mockFileDiffer.Object.FindDifferences(file1Path, file2Path);
 
 		// Assert
 		Assert.AreEqual(2, differences.Count, "Should find 2 difference lines");
@@ -114,10 +114,10 @@ public class MockFileSystemTests
 	public void FileDiffer_WithMockFileSystem_HandlesMissingFile()
 	{
 		// Arrange
-		var file1Path = Path.Combine(_testDir1, "file1.txt");
-		var missingFilePath = Path.Combine(_testDir1, "missing.txt");
+		string file1Path = Path.Combine(_testDir1, "file1.txt");
+		string missingFilePath = Path.Combine(_testDir1, "missing.txt");
 
-		var mockFileDiffer = new Mock<IFileDiffer>();
+		Mock<IFileDiffer> mockFileDiffer = new();
 		mockFileDiffer.Setup(d => d.FindDifferences(file1Path, missingFilePath))
 			.Throws(new FileNotFoundException("File not found", missingFilePath));
 
@@ -130,10 +130,10 @@ public class MockFileSystemTests
 	public void FileDiffer_WithMockFileSystem_HandlesAccessDenied()
 	{
 		// Arrange
-		var file1Path = Path.Combine(_testDir1, "file1.txt");
-		var restrictedFilePath = Path.Combine(_testDir1, "restricted.txt");
+		string file1Path = Path.Combine(_testDir1, "file1.txt");
+		string restrictedFilePath = Path.Combine(_testDir1, "restricted.txt");
 
-		var mockFileDiffer = new Mock<IFileDiffer>();
+		Mock<IFileDiffer> mockFileDiffer = new();
 		mockFileDiffer.Setup(d => d.FindDifferences(file1Path, restrictedFilePath))
 			.Throws(new UnauthorizedAccessException("Access denied"));
 

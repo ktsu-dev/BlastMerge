@@ -39,10 +39,10 @@ public static class DiffPlexDiffer
 			return false;
 		}
 
-		var content1 = File.ReadAllText(file1);
-		var content2 = File.ReadAllText(file2);
+		string content1 = File.ReadAllText(file1);
+		string content2 = File.ReadAllText(file2);
 
-		var diff = Differ.CreateDiffs(content1, content2, true, false, new LineChunker());
+		DiffPlex.Model.DiffResult diff = Differ.CreateDiffs(content1, content2, true, false, new LineChunker());
 		return !diff.DiffBlocks.Any();
 	}
 
@@ -63,8 +63,8 @@ public static class DiffPlexDiffer
 			throw new FileNotFoundException("One or both files do not exist");
 		}
 
-		var content1 = File.ReadAllText(file1);
-		var content2 = File.ReadAllText(file2);
+		string content1 = File.ReadAllText(file1);
+		string content2 = File.ReadAllText(file2);
 
 		// If files are identical, return empty string
 		if (content1 == content2)
@@ -72,20 +72,20 @@ public static class DiffPlexDiffer
 			return string.Empty;
 		}
 
-		var diff = InlineDiffBuilder.BuildDiffModel(content1, content2);
+		DiffPaneModel diff = InlineDiffBuilder.BuildDiffModel(content1, content2);
 
-		var result = new List<string>
-		{
+		List<string> result =
+		[
 			$"--- {file1}",
 			$"+++ {file2}"
-		};
+		];
 
-		var currentLine1 = 1;
-		var currentLine2 = 1;
-		var pendingLines = new List<string>();
-		var contextBuffer = new List<string>();
+		int currentLine1 = 1;
+		int currentLine2 = 1;
+		List<string> pendingLines = [];
+		List<string> contextBuffer = [];
 
-		foreach (var line in diff.Lines)
+		foreach (DiffPiece? line in diff.Lines)
 		{
 			switch (line.Type)
 			{
@@ -103,7 +103,7 @@ public static class DiffPlexDiffer
 					if (pendingLines.Count == 0)
 					{
 						// Add context before changes
-						var contextStart = Math.Max(0, contextBuffer.Count - contextLines);
+						int contextStart = Math.Max(0, contextBuffer.Count - contextLines);
 						pendingLines.AddRange(contextBuffer.Skip(contextStart));
 					}
 					pendingLines.Add($"-{line.Text}");
@@ -114,7 +114,7 @@ public static class DiffPlexDiffer
 					if (pendingLines.Count == 0)
 					{
 						// Add context before changes
-						var contextStart = Math.Max(0, contextBuffer.Count - contextLines);
+						int contextStart = Math.Max(0, contextBuffer.Count - contextLines);
 						pendingLines.AddRange(contextBuffer.Skip(contextStart));
 					}
 					pendingLines.Add($"+{line.Text}");
@@ -125,7 +125,7 @@ public static class DiffPlexDiffer
 					// Handle modified lines as deletion + insertion
 					if (pendingLines.Count == 0)
 					{
-						var contextStart = Math.Max(0, contextBuffer.Count - contextLines);
+						int contextStart = Math.Max(0, contextBuffer.Count - contextLines);
 						pendingLines.AddRange(contextBuffer.Skip(contextStart));
 					}
 					pendingLines.Add($"-{line.Text}");
@@ -149,16 +149,16 @@ public static class DiffPlexDiffer
 			if (line.Type == ChangeType.Unchanged && pendingLines.Count > 0)
 			{
 				// Add context after changes
-				var contextAfter = contextBuffer.Take(Math.Min(contextLines, contextBuffer.Count)).ToList();
+				List<string> contextAfter = [.. contextBuffer.Take(Math.Min(contextLines, contextBuffer.Count))];
 				pendingLines.AddRange(contextAfter);
 
 				// Add chunk header
-				var deletedCount = pendingLines.Count(l => l.StartsWith('-'));
-				var addedCount = pendingLines.Count(l => l.StartsWith('+'));
-				var contextCount = pendingLines.Count - deletedCount - addedCount;
+				int deletedCount = pendingLines.Count(l => l.StartsWith('-'));
+				int addedCount = pendingLines.Count(l => l.StartsWith('+'));
+				int contextCount = pendingLines.Count - deletedCount - addedCount;
 
-				var startLine1 = currentLine1 - deletedCount - (contextCount / 2);
-				var startLine2 = currentLine2 - addedCount - (contextCount / 2);
+				int startLine1 = currentLine1 - deletedCount - (contextCount / 2);
+				int startLine2 = currentLine2 - addedCount - (contextCount / 2);
 
 				result.Add($"@@ -{startLine1},{deletedCount + (contextCount / 2)} +{startLine2},{addedCount + (contextCount / 2)} @@");
 				result.AddRange(pendingLines);
@@ -170,12 +170,12 @@ public static class DiffPlexDiffer
 		// Handle any remaining pending changes
 		if (pendingLines.Count > 0)
 		{
-			var deletedCount = pendingLines.Count(l => l.StartsWith('-'));
-			var addedCount = pendingLines.Count(l => l.StartsWith('+'));
-			var contextCount = pendingLines.Count - deletedCount - addedCount;
+			int deletedCount = pendingLines.Count(l => l.StartsWith('-'));
+			int addedCount = pendingLines.Count(l => l.StartsWith('+'));
+			int contextCount = pendingLines.Count - deletedCount - addedCount;
 
-			var startLine1 = currentLine1 - deletedCount - contextCount;
-			var startLine2 = currentLine2 - addedCount - contextCount;
+			int startLine1 = currentLine1 - deletedCount - contextCount;
+			int startLine2 = currentLine2 - addedCount - contextCount;
 
 			result.Add($"@@ -{startLine1},{deletedCount + contextCount} +{startLine2},{addedCount + contextCount} @@");
 			result.AddRange(pendingLines);
@@ -200,19 +200,19 @@ public static class DiffPlexDiffer
 			throw new FileNotFoundException("One or both files do not exist");
 		}
 
-		var content1 = File.ReadAllText(file1);
-		var content2 = File.ReadAllText(file2);
+		string content1 = File.ReadAllText(file1);
+		string content2 = File.ReadAllText(file2);
 
-		var diff = InlineDiffBuilder.BuildDiffModel(content1, content2);
-		var result = new Collection<ColoredDiffLine>
-		{
+		DiffPaneModel diff = InlineDiffBuilder.BuildDiffModel(content1, content2);
+		Collection<ColoredDiffLine> result =
+		[
 			new($"--- {file1}", DiffColor.FileHeader),
 			new($"+++ {file2}", DiffColor.FileHeader)
-		};
+		];
 
-		foreach (var line in diff.Lines)
+		foreach (DiffPiece? line in diff.Lines)
 		{
-			var color = line.Type switch
+			DiffColor color = line.Type switch
 			{
 				ChangeType.Deleted => DiffColor.Deletion,
 				ChangeType.Inserted => DiffColor.Addition,
@@ -222,7 +222,7 @@ public static class DiffPlexDiffer
 				_ => DiffColor.Default
 			};
 
-			var prefix = line.Type switch
+			string prefix = line.Type switch
 			{
 				ChangeType.Deleted => "-",
 				ChangeType.Inserted => "+",
@@ -254,17 +254,17 @@ public static class DiffPlexDiffer
 			throw new FileNotFoundException("One or both files do not exist");
 		}
 
-		var content1 = File.ReadAllText(file1);
-		var content2 = File.ReadAllText(file2);
+		string content1 = File.ReadAllText(file1);
+		string content2 = File.ReadAllText(file2);
 
 		// Use inline diff for simpler processing
-		var inlineDiff = InlineDiffBuilder.BuildDiffModel(content1, content2);
-		var rawDifferences = new List<LineDifference>();
+		DiffPaneModel inlineDiff = InlineDiffBuilder.BuildDiffModel(content1, content2);
+		List<LineDifference> rawDifferences = [];
 
-		var line1Number = 1;
-		var line2Number = 1;
+		int line1Number = 1;
+		int line2Number = 1;
 
-		foreach (var line in inlineDiff.Lines)
+		foreach (DiffPiece? line in inlineDiff.Lines)
 		{
 			switch (line.Type)
 			{
@@ -303,15 +303,15 @@ public static class DiffPlexDiffer
 		}
 
 		// Post-process to detect modifications (deletions and additions at the same line positions)
-		var finalDifferences = new List<LineDifference>();
-		var deletions = rawDifferences.Where(d => d.Type == LineDifferenceType.Deleted).ToList();
-		var additions = rawDifferences.Where(d => d.Type == LineDifferenceType.Added).ToList();
-		var others = rawDifferences.Where(d => d.Type == LineDifferenceType.Modified).ToList();
+		List<LineDifference> finalDifferences = [];
+		List<LineDifference> deletions = [.. rawDifferences.Where(d => d.Type == LineDifferenceType.Deleted)];
+		List<LineDifference> additions = [.. rawDifferences.Where(d => d.Type == LineDifferenceType.Added)];
+		List<LineDifference> others = [.. rawDifferences.Where(d => d.Type == LineDifferenceType.Modified)];
 
 		// Try to pair deletions with additions at the same line numbers
-		var usedAdditions = new HashSet<int>();
+		HashSet<int> usedAdditions = [];
 
-		foreach (var deletion in deletions)
+		foreach (LineDifference? deletion in deletions)
 		{
 			// Look for an addition at the same line number
 			var matchingAddition = additions
@@ -333,7 +333,7 @@ public static class DiffPlexDiffer
 		}
 
 		// Add remaining additions that weren't paired
-		for (var i = 0; i < additions.Count; i++)
+		for (int i = 0; i < additions.Count; i++)
 		{
 			if (!usedAdditions.Contains(i))
 			{
@@ -363,8 +363,8 @@ public static class DiffPlexDiffer
 			throw new FileNotFoundException("One or both files do not exist");
 		}
 
-		var content1 = File.ReadAllText(file1);
-		var content2 = File.ReadAllText(file2);
+		string content1 = File.ReadAllText(file1);
+		string content2 = File.ReadAllText(file2);
 
 		return SideBySideDiffBuilder.BuildDiffModel(content1, content2);
 	}
@@ -380,18 +380,12 @@ public static class DiffPlexDiffer
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		var coloredDiff = GenerateColoredDiff(file1, file2);
+		Collection<ColoredDiffLine> coloredDiff = GenerateColoredDiff(file1, file2);
 
 		// Filter to only show additions, deletions, and headers
-		var filteredLines = coloredDiff
-			.Where(line => line.Color != DiffColor.Default)
-			.ToList();
+		List<ColoredDiffLine> filteredLines = [.. coloredDiff.Where(line => line.Color != DiffColor.Default)];
 
-		var result = new Collection<ColoredDiffLine>();
-		foreach (var line in filteredLines)
-		{
-			result.Add(line);
-		}
+		Collection<ColoredDiffLine> result = [.. filteredLines];
 
 		return result;
 	}

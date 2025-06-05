@@ -29,15 +29,15 @@ public class FileHasherAdapter(IFileSystem fileSystem)
 	/// <returns>The FNV-1a hash as a hex string</returns>
 	public string ComputeFileHash(string filePath)
 	{
-		var hash = FNV_OFFSET_BASIS_64;
+		ulong hash = FNV_OFFSET_BASIS_64;
 
-		using var fileStream = _fileSystem.File.OpenRead(filePath);
-		var buffer = new byte[4096];
+		using FileSystemStream fileStream = _fileSystem.File.OpenRead(filePath);
+		byte[] buffer = new byte[4096];
 		int bytesRead;
 
 		while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) > 0)
 		{
-			for (var i = 0; i < bytesRead; i++)
+			for (int i = 0; i < bytesRead; i++)
 			{
 				hash ^= buffer[i];
 				hash *= FNV_PRIME_64;
