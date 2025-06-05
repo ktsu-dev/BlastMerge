@@ -127,6 +127,7 @@ globs: *
 -   When catching exceptions in `HandleExportBatches()` and `HandleImportBatches()`, catch specific exception types instead of general `Exception` to adhere to CA1031.
 -   When refactoring, follow the Single Responsibility Principle by breaking down large methods into smaller, focused methods, each with a single, well-defined purpose.
 -   When displaying file paths during iterative merge, and files have the same relative path in different repositories, show the unique parts of the path to distinguish between the files.
+-   In `PopulateTableWithDiffLines` method, ensure that the side-by-side diff implementation correctly pairs lines based on the DiffPlex model, rather than assuming a one-to-one mapping by array index.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -171,6 +172,7 @@ globs: *
 -   Refactor the `GenerateUnifiedDiff` method to reduce its cognitive complexity to below 15.
 -   Refactor the `ShowSideBySideDiff` method to reduce its cognitive complexity to below 15.
 -   Refactor the `GenerateChangeSummaryDiff` method to reduce its cognitive complexity to below 15.
+-   In `PopulateTableWithDiffLines` method, ensure that the side-by-side diff implementation correctly pairs lines based on the DiffPlex model, rather than assuming a one-to-one mapping by array index.
 
 ## DEBUGGING
 
@@ -371,5 +373,4 @@ globs: *
 ## CHANGELOG GENERATION
 
 - In `PSBuild.psm1`, when the `git log` command fails or returns an error during changelog generation, ensure the `$rawCommits` variable handles the error object appropriately, especially when accessing its `.Count` property. Improve error handling and the `ConvertTo-ArraySafe` function to handle these edge cases. The `ConvertTo-ArraySafe` function should handle `null`, empty inputs, PowerShell error objects, empty strings, and whitespace-only strings. Add try-catch protection around array conversion. After calling `ConvertTo-ArraySafe`, explicitly check that the result has a `Count` property before using it, and create an empty array if it does not.
-- In `PSBuild.psm1`, the `$uniqueCommits` variable must be created using `ConvertTo-ArraySafe -InputObject ($structuredCommits | Sort-Object -Property Hash -Unique | ForEach-Object { $_.FormattedEntry })` to ensure it is always an array, even when the pipeline returns no results.
-- In `PSBuild.psm1`, when the `git log` command fails or returns an error, ensure the `$rawCommits` variable
+- In `PS

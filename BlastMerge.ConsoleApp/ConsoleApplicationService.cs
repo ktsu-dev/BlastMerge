@@ -735,8 +735,8 @@ public class ConsoleApplicationService : ApplicationService
 		// Get user's choice based on block type
 		return block.Type switch
 		{
-			BlockType.Insert => GetInsertChoice(rightFile),
-			BlockType.Delete => GetDeleteChoice(leftFile),
+			BlockType.Insert => GetInsertChoice(rightFile, leftFile),
+			BlockType.Delete => GetDeleteChoice(leftFile, rightFile),
 			BlockType.Replace => GetReplaceChoice(leftFile, rightFile),
 			_ => throw new InvalidOperationException($"Unknown block type: {block.Type}")
 		};
@@ -898,10 +898,11 @@ public class ConsoleApplicationService : ApplicationService
 	/// Gets user choice for insert blocks
 	/// </summary>
 	/// <param name="rightFile">The right file path</param>
+	/// <param name="leftFile">The left file path (for context in distinguishing labels)</param>
 	/// <returns>User's choice</returns>
-	private static BlockChoice GetInsertChoice(string rightFile)
+	private static BlockChoice GetInsertChoice(string rightFile, string leftFile)
 	{
-		string rightLabel = FileDisplayService.GetRelativeDirectoryName(rightFile);
+		(_, string rightLabel) = FileDisplayService.GetDistinguishingLabels(leftFile, rightFile);
 		string choice = UserInteractionService.ShowSelectionPrompt(
 			$"[cyan]This content exists only in {rightLabel}. What would you like to do?[/]",
 			[
@@ -916,10 +917,11 @@ public class ConsoleApplicationService : ApplicationService
 	/// Gets user choice for delete blocks
 	/// </summary>
 	/// <param name="leftFile">The left file path</param>
+	/// <param name="rightFile">The right file path (for context in distinguishing labels)</param>
 	/// <returns>User's choice</returns>
-	private static BlockChoice GetDeleteChoice(string leftFile)
+	private static BlockChoice GetDeleteChoice(string leftFile, string rightFile)
 	{
-		string leftLabel = FileDisplayService.GetRelativeDirectoryName(leftFile);
+		(string leftLabel, _) = FileDisplayService.GetDistinguishingLabels(leftFile, rightFile);
 		string choice = UserInteractionService.ShowSelectionPrompt(
 			$"[cyan]This content exists only in {leftLabel}. What would you like to do?[/]",
 			[

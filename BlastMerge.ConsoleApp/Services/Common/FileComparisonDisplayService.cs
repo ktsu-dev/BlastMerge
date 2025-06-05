@@ -244,22 +244,119 @@ public static class FileComparisonDisplayService
 	/// <param name="sideBySideDiff">The side-by-side diff model.</param>
 	private static void PopulateTableWithDiffLines(Table table, SideBySideDiffModel sideBySideDiff)
 	{
-		int lineNum1 = 1;
-		int lineNum2 = 1;
-		int maxLines = Math.Max(sideBySideDiff.OldText.Lines.Count, sideBySideDiff.NewText.Lines.Count);
+		int leftIndex = 0;
+		int rightIndex = 0;
+		int leftLineNum = 1;
+		int rightLineNum = 1;
 
-		for (int i = 0; i < maxLines; i++)
+		List<DiffPiece> leftLines = sideBySideDiff.OldText.Lines;
+		List<DiffPiece> rightLines = sideBySideDiff.NewText.Lines;
+
+		while (leftIndex < leftLines.Count || rightIndex < rightLines.Count)
 		{
-			DiffPiece? leftLine = i < sideBySideDiff.OldText.Lines.Count ? sideBySideDiff.OldText.Lines[i] : null;
-			DiffPiece? rightLine = i < sideBySideDiff.NewText.Lines.Count ? sideBySideDiff.NewText.Lines[i] : null;
+			DiffPiece? leftPiece = leftIndex < leftLines.Count ? leftLines[leftIndex] : null;
+			DiffPiece? rightPiece = rightIndex < rightLines.Count ? rightLines[rightIndex] : null;
 
-			(string leftLineNum, string leftContent, int newLineNum1) = ProcessLeftSide(leftLine, lineNum1);
-			(string rightLineNum, string rightContent, int newLineNum2) = ProcessRightSide(rightLine, lineNum2);
+			// If we've exhausted one side, just show the remaining from the other side
+			if (leftPiece == null)
+			{
+				(string rightLineNum2, string rightContent2, int newRightLineNum) = ProcessRightSide(rightPiece, rightLineNum);
+				table.AddRow("", "", rightLineNum2, rightContent2);
+				rightLineNum = newRightLineNum;
+				rightIndex++;
+				continue;
+			}
 
-			lineNum1 = newLineNum1;
-			lineNum2 = newLineNum2;
+			if (rightPiece == null)
+			{
+				(string leftLineNum2, string leftContent2, int newLeftLineNum) = ProcessLeftSide(leftPiece, leftLineNum);
+				table.AddRow(leftLineNum2, leftContent2, "", "");
+				leftLineNum = newLeftLineNum;
+				leftIndex++;
+				continue;
+			}
 
-			table.AddRow(leftLineNum, leftContent, rightLineNum, rightContent);
+			// Both sides have content - determine how to pair them
+			if (leftPiece.Type == ChangeType.Unchanged && rightPiece.Type == ChangeType.Unchanged)
+			{
+				// Both unchanged - they should be the same line
+				(string leftLineNum3, string leftContent3, int newLeftLineNum2) = ProcessLeftSide(leftPiece, leftLineNum);
+				(string rightLineNum3, string rightContent3, int newRightLineNum2) = ProcessRightSide(rightPiece, rightLineNum);
+
+				table.AddRow(leftLineNum3, leftContent3, rightLineNum3, rightContent3);
+
+				leftLineNum = newLeftLineNum2;
+				rightLineNum = newRightLineNum2;
+				leftIndex++;
+				rightIndex++;
+			}
+			else if (leftPiece.Type == ChangeType.Deleted && rightPiece.Type == ChangeType.Inserted)
+			{
+				// Deletion paired with insertion (likely a modification)
+				(string leftLineNum4, string leftContent4, int newLeftLineNum3) = ProcessLeftSide(leftPiece, leftLineNum);
+				(string rightLineNum4, string rightContent4, int newRightLineNum3) = ProcessRightSide(rightPiece, rightLineNum);
+
+				table.AddRow(leftLineNum4, leftContent4, rightLineNum4, rightContent4);
+
+				leftLineNum = newLeftLineNum3;
+				rightLineNum = newRightLineNum3;
+				leftIndex++;
+				rightIndex++;
+			}
+			else if (leftPiece.Type == ChangeType.Deleted)
+			{
+				// Deletion on left, show with placeholder on right
+				(string leftLineNum5, string leftContent5, int newLeftLineNum4) = ProcessLeftSide(leftPiece, leftLineNum);
+				table.AddRow(leftLineNum5, leftContent5, "", "[dim]...[/]");
+
+				leftLineNum = newLeftLineNum4;
+				leftIndex++;
+			}
+			else if (rightPiece.Type == ChangeType.Inserted)
+			{
+				// Insertion on right, show with placeholder on left
+				(string rightLineNum6, string rightContent6, int newRightLineNum4) = ProcessRightSide(rightPiece, rightLineNum);
+				table.AddRow("", "[dim]...[/]", rightLineNum6, rightContent6);
+
+				rightLineNum = newRightLineNum4;
+				rightIndex++;
+			}
+			else if (leftPiece.Type == ChangeType.Modified && rightPiece.Type == ChangeType.Modified)
+			{
+				// Both modified - pair them together
+				(string leftLineNum7, string leftContent7, int newLeftLineNum5) = ProcessLeftSide(leftPiece, leftLineNum);
+				(string rightLineNum7, string rightContent7, int newRightLineNum5) = ProcessRightSide(rightPiece, rightLineNum);
+
+				table.AddRow(leftLineNum7, leftContent7, rightLineNum7, rightContent7);
+
+				leftLineNum = newLeftLineNum5;
+				rightLineNum = newRightLineNum5;
+				leftIndex++;
+				rightIndex++;
+			}
+			else if (leftPiece.Type == ChangeType.Imaginary)
+			{
+				// Skip imaginary lines on left
+				leftIndex++;
+			}
+			else if (rightPiece.Type == ChangeType.Imaginary)
+			{
+				// Skip imaginary lines on right
+				rightIndex++;
+			}
+			else
+			{
+				// Fallback: process both sides independently
+				(string leftLineNum8, string leftContent8, int newLeftLineNum6) = ProcessLeftSide(leftPiece, leftLineNum);
+				(string rightLineNum8, string rightContent8, int newRightLineNum6) = ProcessRightSide(rightPiece, rightLineNum);
+
+				table.AddRow(leftLineNum8, leftContent8, rightLineNum8, rightContent8);
+
+				leftLineNum = newLeftLineNum6;
+				rightLineNum = newRightLineNum6;
+				leftIndex++;
+				rightIndex++;
+			}
 		}
 	}
 
