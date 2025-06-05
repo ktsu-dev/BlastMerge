@@ -417,3 +417,79 @@ _**Assistant**_
 
 ---
 
+You're absolutely right to question this! Let me examine how the interactive iterative merge actually works versus the batch mode I just fixed.
+
+---
+
+<details>
+            <summary>Searched codebase "ConsoleMergeCallback interactive merge user choice" • **14** results</summary>
+        
+| File | Lines |
+|------|-------|
+| `BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L888-922 |
+| `BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L824-888 |
+| `BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L922-976 |
+| `BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L976-1023 |
+| `BlastMerge.ConsoleApp/Services/InteractiveMergeService.cs` | L143-194 |
+| `BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L278-321 |
+| `BlastMerge.ConsoleApp/Services/UserInteractionService.cs` | L1-60 |
+| `BlastMerge.ConsoleApp/Services/InteractiveMergeService.cs` | L91-143 |
+| `BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L368-418 |
+| `BlastMerge.ConsoleApp/BatchActionChoice.cs` | L1-27 |
+| `BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L44-90 |
+| `BlastMerge.Core/Services/BlockMerger.cs` | L49-98 |
+| `BlastMerge.ConsoleApp/Services/InteractiveMergeService.cs` | L1-45 |
+| `BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L90-141 |
+
+</details>
+
+---
+
+Perfect! Now I can see the key difference. You're absolutely correct - the **interactive** iterative merge does NOT use conflict markers. It uses a **guided manual approach** where the user makes choices for each conflict block. Let me examine the `ConsoleMergeCallback` method more closely:
+
+---
+
+Read file: BlastMerge.ConsoleApp/ConsoleApplicationService.cs
+
+---
+
+You're absolutely right! Looking at the code, there are **two completely different approaches**:
+
+## **Interactive Mode** (ConsoleMergeCallback)
+The interactive iterative merge uses a **guided manual approach** where:
+
+1. **Block-by-block conflict resolution**: For each difference, it shows the user a visual diff and asks them to choose:
+   - For **inserts**: "✅ Include the addition" or "❌ Skip the addition"
+   - For **deletes**: "✅ Keep the content" or "❌ Remove the content" 
+   - For **replacements**: "Use [file1]", "Use [file2]", "🔄 Use Both Versions", or "❌ Skip Both"
+
+2. **No conflict markers**: The user makes explicit choices for each conflict block, and the system builds a clean merged file based on those choices.
+
+3. **Real-time user interaction**: Each conflict is resolved immediately with user input through the Spectre.Console selection prompts.
+
+## **Batch Mode** (BatchMergeCallback) 
+My fix for batch mode uses **automatic conflict resolution with conflict markers**:
+
+1. **Automatic processing**: No user interaction during the merge
+2. **Conflict markers**: Creates `<<<<<<< ======= >>>>>>>` style markers to preserve both versions
+3. **Post-processing**: Users can later search for and manually resolve the conflict markers
+
+## The Problem You Had
+Your original issue was that the **batch** mode was being too conservative (only merging identical files), but the **interactive** mode was working fine with its guided manual approach. My fix was specifically for the batch mode to make it use conflict markers instead of skipping files with differences.
+
+So to answer your question: **No, the interactive iterative merge does NOT use conflict markers** - it uses a sophisticated guided manual approach where the user makes explicit choices for each difference block. The conflict markers are only used in the improved batch mode for automatic processing.
+
+---
+
+_**User**_
+
+I want the batch mode to use the same manual approach, its only automated in as far as it has a preset list of files to check
+
+---
+
+_**Assistant**_
+
+
+
+---
+

@@ -14,20 +14,20 @@ public class BlockContext
 	/// <summary>
 	/// Gets or sets the context lines before the block in version 1
 	/// </summary>
-	public ReadOnlyCollection<string> ContextBefore1 { get; set; } = null!;
+	public ReadOnlyCollection<string> ContextBefore1 { get; set; } = new ReadOnlyCollection<string>([]);
 
 	/// <summary>
 	/// Gets or sets the context lines after the block in version 1
 	/// </summary>
-	public ReadOnlyCollection<string> ContextAfter1 { get; set; } = null!;
+	public ReadOnlyCollection<string> ContextAfter1 { get; set; } = new ReadOnlyCollection<string>([]);
 
 	/// <summary>
 	/// Gets or sets the context lines before the block in version 2
 	/// </summary>
-	public ReadOnlyCollection<string> ContextBefore2 { get; set; } = null!;
+	public ReadOnlyCollection<string> ContextBefore2 { get; set; } = new ReadOnlyCollection<string>([]);
 
 	/// <summary>
 	/// Gets or sets the context lines after the block in version 2
 	/// </summary>
-	public ReadOnlyCollection<string> ContextAfter2 { get; set; } = null!;
+	public ReadOnlyCollection<string> ContextAfter2 { get; set; } = new ReadOnlyCollection<string>([]);
 }

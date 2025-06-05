@@ -320,21 +320,23 @@ public class ConsoleApplicationService : ApplicationService
 	}
 
 	/// <summary>
-	/// Runs iterative merge for batch processing without user interaction prompts.
+	/// Runs iterative merge for batch processing with the same manual conflict resolution as interactive mode.
+	/// The "batch" aspect refers to automatically processing a preset list of file patterns,
+	/// but conflict resolution still requires user interaction for each merge decision.
 	/// </summary>
-	/// <param name="directory">The directory to search.</param>
-	/// <param name="fileName">The file name pattern to match.</param>
+	/// <param name="directory">The directory to process.</param>
+	/// <param name="fileName">The filename pattern to process.</param>
 	private void RunBatchIterativeMerge(string directory, string fileName) =>
-		RunIterativeMergeWithCallbacks(directory, fileName, BatchMergeCallback, ConsoleStatusCallback, BatchContinueCallback);
+		RunIterativeMergeWithCallbacks(directory, fileName, ConsoleMergeCallback, ConsoleStatusCallback, ConsoleContinueCallback);
 
 	/// <summary>
-	/// Runs iterative merge with custom callbacks - shared implementation for both interactive and batch modes.
+	/// Runs iterative merge with the specified callbacks.
 	/// </summary>
 	/// <param name="directory">The directory to search.</param>
 	/// <param name="fileName">The file name pattern to match.</param>
-	/// <param name="mergeCallback">Callback for handling merge conflicts.</param>
-	/// <param name="statusCallback">Callback for status updates.</param>
-	/// <param name="continueCallback">Callback for continuation decisions.</param>
+	/// <param name="mergeCallback">Callback for handling merge operations.</param>
+	/// <param name="statusCallback">Callback for reporting merge status.</param>
+	/// <param name="continueCallback">Callback for asking whether to continue.</param>
 	private void RunIterativeMergeWithCallbacks(
 		string directory,
 		string fileName,
@@ -378,59 +380,6 @@ public class ConsoleApplicationService : ApplicationService
 		// Handle result
 		ProgressReportingService.ReportCompletionResult(result);
 	}
-
-	/// <summary>
-	/// Batch-specific merge callback that handles conflicts automatically without user interaction.
-	/// </summary>
-	/// <param name="file1">First file path.</param>
-	/// <param name="file2">Second file path.</param>
-	/// <param name="existingContent">Existing merged content.</param>
-	/// <returns>Merge result using safe automatic conflict resolution.</returns>
-	private static MergeResult? BatchMergeCallback(string file1, string file2, string? existingContent)
-	{
-		// Batch processing strategy for merge conflicts:
-		// 1. Perform the same merge operation as interactive mode
-		// 2. If files are identical, they merge cleanly without conflicts
-		// 3. If files have differences, create a merged file with conflict markers
-		//    (e.g., <<<<<<< Version 1, =======, >>>>>>> Version 2)
-		// 4. This preserves both versions of conflicting content for later manual review
-		// 5. Users can then search for conflict markers and resolve them as needed
-		//
-		// This approach is safer than the previous version which skipped all files
-		// with differences, because it still performs the merge but leaves conflicts
-		// clearly marked for human review.
-		try
-		{
-			// Use the same merge logic as interactive mode but create conflict markers
-			// instead of prompting the user for choices
-			MergeResult mergeResult = FileDiffer.MergeFiles(file1, file2);
-
-			// Return the merge result even if it has conflicts - the conflict markers
-			// will preserve both versions of conflicting content for later review
-			return mergeResult;
-		}
-		catch (IOException)
-		{
-			// If there's any IO error reading files, skip merging for safety
-			return null;
-		}
-		catch (UnauthorizedAccessException)
-		{
-			// If there's any access error reading files, skip merging for safety
-			return null;
-		}
-		catch (ArgumentException)
-		{
-			// If there's any argument error with file paths, skip merging for safety
-			return null;
-		}
-	}
-
-	/// <summary>
-	/// Batch-specific callback that automatically continues merging without user prompts.
-	/// </summary>
-	/// <returns>Always true to continue automatically in batch mode.</returns>
-	private static bool BatchContinueCallback() => true;
 
 	/// <summary>
 	/// Handles skipping the current pattern.

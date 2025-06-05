@@ -52,6 +52,7 @@ globs: *
 -   Collection initialization can be simplified.
 -   When logging or handling exceptions, catch specific exception types (e.g., `IOException`, `UnauthorizedAccessException`) rather than a general `Exception` to provide more targeted error handling.
 -   Use `ArgumentNullException.ThrowIfNull` instead of explicitly throwing a new exception instance.
+-   Use `ArgumentNullException.ThrowIfNull` for parameter validation.
 -   Use pattern matching.
 -   Follow the .editorconfig file.
 -   Private member 'FileHasher.FNV_PRIME_32' is unused (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0051)
@@ -339,5 +340,4 @@ globs: *
 -   During the iterative merge, when saving the result, the content of every file that has those versions should be replaced.
 -   Improve the interactive mode with a TUI menu for accessing the features.
 -   Use `UIHelper` class for common UI operations and standardized display methods.
--   Implement a navigation stack so that users can go back to where they were instead of back to the main menu.
--   When the navigation stack is:
+-   Implement a navigation stack so that users can go back to where they were instead of
