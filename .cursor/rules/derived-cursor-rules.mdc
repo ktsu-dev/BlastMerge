@@ -77,6 +77,8 @@ globs: *
 -   Reorder using statements to follow .NET conventions (project imports before framework imports).
 -   **Address Class Coupling and Cyclomatic Complexity**: Refactor code to minimize class coupling and cyclomatic complexity, ensuring the console app primarily handles input and display, while business logic resides in the core library.
 -   Use `dotnet format` to automatically fix formatting and style issues. Be aware that `dotnet format` may not be able to fix all issues, such as catching general exceptions or performance improvement suggestions.
+-   Prefer comparing 'Count' to 0 rather than using 'Any()', both for clarity and for performance (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1860)
+-   Member 'HandleListBatches' does not access instance data and can be marked as static (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822)
 
 ## FILE & DIRECTORY HANDLING
 
@@ -228,6 +230,7 @@ globs: *
 -   During iterative merge, the redundant save prompt should be removed and replaced with the message "Final merged result is saved in the remaining file.".
 -   During the iterative merge, the version search should be performed again between every iteration.
 -   During the iterative merge, when saving the result, the content of every file that has those versions should be replaced.
+-   Improve the interactive mode with a TUI menu for accessing the features.
 
 ## PROJECT RENAMING
 
@@ -348,3 +351,11 @@ globs: *
     - Domain models such as `BatchRequest` and `ProcessingRequest` should reside in the Core library.
     - UI-specific elements like `ICommandLineHandler`, `CommandLineHandler`, and `CommandLineOptions` should stay in the ConsoleApp.
 - The Contracts, Models, and Services should be in the core library, and all the files should be organized in their respective folders.
+
+## STUBS
+
+- The `ProcessFiles` and `ProcessBatch` methods should be fully implemented to correctly process files and batch configurations.
+
+## EXCEPTION HANDLING
+
+- In `ShowDetailedFileList` method, replace the general `catch (Exception)` block with more specific exception types like `IOException`, `UnauthorizedAccessException`, `ArgumentException`, and `PathTooLongException`.

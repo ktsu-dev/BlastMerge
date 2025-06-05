@@ -4,7 +4,6 @@
 
 namespace ktsu.BlastMerge.Core.Models;
 using System.Collections.ObjectModel;
-using System.Linq;
 
 /// <summary>
 /// Represents a diff block for manual selection
@@ -35,10 +34,10 @@ public record DiffBlock(BlockType Type)
 	/// <summary>
 	/// Gets the last line number from version 1
 	/// </summary>
-	public int LastLineNumber1 => LineNumbers1.Count > 0 ? LineNumbers1.Last() : 0;
+	public int LastLineNumber1 => LineNumbers1.Count > 0 ? LineNumbers1[^1] : 0;
 
 	/// <summary>
 	/// Gets the last line number from version 2
 	/// </summary>
-	public int LastLineNumber2 => LineNumbers2.Count > 0 ? LineNumbers2.Last() : 0;
+	public int LastLineNumber2 => LineNumbers2.Count > 0 ? LineNumbers2[^1] : 0;
 }

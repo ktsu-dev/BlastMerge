@@ -31,8 +31,8 @@ public static class BlockMerger
 		ArgumentNullException.ThrowIfNull(blockChoiceCallback);
 
 		// Create temporary files to use with FileDiffer
-		string tempFile1 = Path.GetTempFileName();
-		string tempFile2 = Path.GetTempFileName();
+		string tempFile1 = Path.GetRandomFileName();
+		string tempFile2 = Path.GetRandomFileName();
 
 		try
 		{
@@ -151,9 +151,11 @@ public static class BlockMerger
 	/// <returns>The appropriate block type</returns>
 	private static BlockType DetermineBlockType(LineDifference diff)
 	{
-		return diff.LineNumber1.HasValue && diff.LineNumber2.HasValue ? BlockType.Replace :
-			   diff.LineNumber1.HasValue ? BlockType.Delete :
-			   BlockType.Insert;
+		return diff.LineNumber1.HasValue && diff.LineNumber2.HasValue
+			? BlockType.Replace
+			: diff.LineNumber1.HasValue
+			? BlockType.Delete
+			: BlockType.Insert;
 	}
 
 	/// <summary>

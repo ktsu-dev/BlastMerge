@@ -105,7 +105,7 @@ public static class IterativeMergeOrchestrator
 		}
 
 		// Merge completed successfully
-		FileGroup finalGroup = remainingGroups.First();
+		FileGroup finalGroup = remainingGroups[0];
 		string finalContent = File.ReadAllText(finalGroup.FilePaths.First());
 		string[] finalLines = finalContent.Split(Environment.NewLine);
 
