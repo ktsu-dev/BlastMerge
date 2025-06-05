@@ -4,6 +4,7 @@
 
 namespace ktsu.BlastMerge.Test;
 
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -193,5 +194,53 @@ public class EdgeCaseTests : MockFileSystemTestBase
 		{
 			Assert.AreEqual(1, group.FilePaths.Count, "Each group should contain exactly one file");
 		}
+	}
+
+	[TestMethod]
+	public void FindMostSimilarFiles_WithDifferentFilenames_ShouldNotCompare()
+	{
+		// Arrange: Create files with different names but similar content
+		string content1 = "line1\nline2\nline3";
+		string content2 = "line1\nline2\nline4"; // Only last line differs
+
+		string file1 = CreateFile("update-readme.yml", content1);
+		string file2 = CreateFile("dotnet-sdk.yml", content2);
+
+		List<string> allFiles = [file1, file2];
+
+		// Act: Group files and find most similar
+		IReadOnlyCollection<FileGroup> fileGroups = _fileDifferAdapter.GroupFilesByFilenameAndHash(allFiles);
+		FileSimilarity? similarity = _fileDifferAdapter.FindMostSimilarFiles(fileGroups);
+
+		// Assert: Should not find any similar files (different filenames)
+		Assert.IsNull(similarity, "FindMostSimilarFiles should return null when files have different names");
+		Assert.AreEqual(2, fileGroups.Count, "Should have 2 separate groups for different filenames");
+	}
+
+	[TestMethod]
+	public void FindMostSimilarFiles_WithSameFilenames_ShouldCompare()
+	{
+		// Arrange: Create files with same names and similar content
+		string content1 = "line1\nline2\nline3";
+		string content2 = "line1\nline2\nline4"; // Only last line differs
+
+		string file1 = CreateFile("dir1/config.yml", content1);
+		string file2 = CreateFile("dir2/config.yml", content2);
+
+		List<string> allFiles = [file1, file2];
+
+		// Act: Group files and find most similar
+		IReadOnlyCollection<FileGroup> fileGroups = _fileDifferAdapter.GroupFilesByFilenameAndHash(allFiles);
+		FileSimilarity? similarity = _fileDifferAdapter.FindMostSimilarFiles(fileGroups);
+
+		// Assert: Should find similarity between files with same names
+		Assert.IsNotNull(similarity, "FindMostSimilarFiles should find similar files with same names");
+		Assert.IsTrue(similarity.SimilarityScore > 0, "Similarity score should be greater than 0");
+
+		// Verify both files have the same filename
+		string filename1 = Path.GetFileName(similarity.FilePath1);
+		string filename2 = Path.GetFileName(similarity.FilePath2);
+		Assert.AreEqual("config.yml", filename1);
+		Assert.AreEqual("config.yml", filename2);
 	}
 }

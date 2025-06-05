@@ -35,7 +35,7 @@ public static class SyncOperationsService
 			return;
 		}
 
-		AnsiConsole.MarkupLine($"[cyan]Found {groupsWithMultipleFiles.Count} groups with multiple versions.[/]");
+		AnsiConsole.MarkupLine($"[cyan]Found {groupsWithMultipleFiles.Count} groups with multiple identical copies.[/]");
 		AnsiConsole.WriteLine();
 
 		Dictionary<string, SyncChoice> syncChoices = new()

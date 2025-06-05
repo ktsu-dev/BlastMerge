@@ -26,6 +26,8 @@ public class ConsoleApplicationService : ApplicationService
 	private const string GroupColumnName = "Group";
 	private const string FilesColumnName = "Files";
 	private const string StatusColumnName = "Status";
+	private const string FilenameColumnName = "Filename";
+	private const string HashColumnName = "Hash";
 
 	// Menu display text to command mappings
 	private static readonly Dictionary<string, MenuChoice> MainMenuChoices = new()
@@ -74,36 +76,16 @@ public class ConsoleApplicationService : ApplicationService
 			return;
 		}
 
-		AnsiConsole.MarkupLine($"[green]Found {filePaths.Count} files in {fileGroups.Count} groups:[/]");
-		AnsiConsole.WriteLine();
-
-		Table table = new Table()
-			.Border(TableBorder.Rounded)
-			.BorderColor(Color.Blue)
-			.AddColumn(GroupColumnName)
-			.AddColumn(FilesColumnName)
-			.AddColumn(StatusColumnName);
-
-		foreach ((KeyValuePair<string, IReadOnlyCollection<string>> group, int groupIndex) in fileGroups.Select((group, index) => (group, index + 1)))
-		{
-			string status = group.Value.Count > 1 ? "[yellow]Multiple versions[/]" : "[green]Unique[/]";
-			table.AddRow(
-				$"[cyan]{groupIndex}[/]",
-				$"[dim]{group.Value.Count}[/]",
-				status);
-		}
-
-		AnsiConsole.Write(table);
-		AnsiConsole.WriteLine();
+		ShowFileGroupSummaryTable(fileGroups, directory, filePaths.Count);
 
 		// Ask user what to do with the files
 		Dictionary<string, ProcessFileActionChoice> processFileActionChoices = new()
 		{
-			["View detailed file list"] = ProcessFileActionChoice.ViewDetailedFileList,
-			["Show differences between versions"] = ProcessFileActionChoice.ShowDifferences,
-			["Run iterative merge on duplicates"] = ProcessFileActionChoice.RunIterativeMergeOnDuplicates,
-			["Sync files to make them identical"] = ProcessFileActionChoice.SyncFiles,
-			["Return to main menu"] = ProcessFileActionChoice.ReturnToMainMenu
+			["📋 View detailed file list"] = ProcessFileActionChoice.ViewDetailedFileList,
+			["🔍 Show differences between versions"] = ProcessFileActionChoice.ShowDifferences,
+			["🔄 Run iterative merge on duplicates"] = ProcessFileActionChoice.RunIterativeMergeOnDuplicates,
+			["🔁 Sync files to make them identical"] = ProcessFileActionChoice.SyncFiles,
+			["🏠 Return to main menu"] = ProcessFileActionChoice.ReturnToMainMenu
 		};
 
 		string selection = AnsiConsole.Prompt(
@@ -272,7 +254,7 @@ public class ConsoleApplicationService : ApplicationService
 	}
 
 	/// <summary>
-	/// Handles patterns that have multiple versions requiring user action.
+	/// Handles patterns that have multiple identical copies requiring user action.
 	/// </summary>
 	/// <param name="directory">The directory being processed.</param>
 	/// <param name="pattern">The file pattern.</param>
@@ -288,43 +270,39 @@ public class ConsoleApplicationService : ApplicationService
 			return new BatchActionResult { ShouldStop = false };
 		}
 
-		AnsiConsole.MarkupLine($"[yellow]Found {groupsWithMultipleFiles} groups with multiple versions that could be merged.[/]");
+		AnsiConsole.MarkupLine($"[yellow]Found {groupsWithMultipleFiles} groups with multiple identical copies that could be merged.[/]");
 		return GetUserActionForPattern(directory, pattern);
 	}
 
 	/// <summary>
-	/// Gets the user's action choice for a pattern with multiple versions.
+	/// Gets the user's action choice for a pattern with multiple identical copies.
 	/// </summary>
 	/// <param name="directory">The directory being processed.</param>
 	/// <param name="pattern">The file pattern.</param>
-	/// <returns>The result of the user action.</returns>
+	/// <returns>The user's action choice result.</returns>
 	private BatchActionResult GetUserActionForPattern(string directory, string pattern)
 	{
-		Dictionary<string, BatchActionChoice> batchActionChoices = new()
+		Dictionary<string, BatchActionChoice> choices = new()
 		{
-			["Run iterative merge"] = BatchActionChoice.RunIterativeMerge,
-			["Skip this pattern"] = BatchActionChoice.SkipPattern,
-			["Stop batch processing"] = BatchActionChoice.StopBatchProcessing
+			["🔄 Run iterative merge"] = BatchActionChoice.RunIterativeMerge,
+			["⏭️  Skip this pattern"] = BatchActionChoice.SkipPattern,
+			["🛑 Stop processing remaining patterns"] = BatchActionChoice.StopBatchProcessing
 		};
 
 		string selection = AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
-				.Title($"Multiple versions found for pattern '{pattern}'. What would you like to do?")
-				.AddChoices(batchActionChoices.Keys));
+				.Title($"Multiple identical copies found for pattern '{pattern}'. What would you like to do?")
+				.AddChoices(choices.Keys));
 
-		if (!batchActionChoices.TryGetValue(selection, out BatchActionChoice choice))
-		{
-			AnsiConsole.MarkupLine("[yellow]Unknown choice, skipping pattern.[/]");
-			return new BatchActionResult { ShouldStop = false };
-		}
-
-		return choice switch
-		{
-			BatchActionChoice.RunIterativeMerge => ExecuteIterativeMerge(directory, pattern),
-			BatchActionChoice.SkipPattern => HandleSkipPattern(),
-			BatchActionChoice.StopBatchProcessing => HandleStopProcessing(),
-			_ => new BatchActionResult { ShouldStop = false }
-		};
+		return choices.TryGetValue(selection, out BatchActionChoice choice)
+			? choice switch
+			{
+				BatchActionChoice.RunIterativeMerge => ExecuteIterativeMerge(directory, pattern),
+				BatchActionChoice.SkipPattern => HandleSkipPattern(),
+				BatchActionChoice.StopBatchProcessing => HandleStopProcessing(),
+				_ => new BatchActionResult { ShouldStop = false }
+			}
+			: new BatchActionResult { ShouldStop = false };
 	}
 
 	/// <summary>
@@ -400,24 +378,36 @@ public class ConsoleApplicationService : ApplicationService
 	}
 
 	/// <summary>
-	/// Runs the iterative merge process on files in a directory.
+	/// Runs iterative merge on files in a directory.
 	/// </summary>
-	/// <param name="directory">The directory containing files to merge.</param>
-	/// <param name="fileName">The filename pattern to search for.</param>
+	/// <param name="directory">The directory to search.</param>
+	/// <param name="fileName">The file name pattern to match.</param>
 	public override void RunIterativeMerge(string directory, string fileName)
 	{
-		ArgumentNullException.ThrowIfNull(directory);
-		ArgumentNullException.ThrowIfNull(fileName);
-
 		if (!Directory.Exists(directory))
 		{
 			throw new DirectoryNotFoundException($"Directory '{directory}' does not exist.");
 		}
 
-		// Prepare file groups for merging
-		IReadOnlyCollection<FileGroup>? fileGroups = IterativeMergeOrchestrator.PrepareFileGroupsForMerging(directory, fileName);
+		// First get all files for the table display
+		IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups = CompareFiles(directory, fileName);
+		int totalFiles = fileGroups.Sum(g => g.Value.Count);
 
-		if (fileGroups == null)
+		// Show the improved table summary first
+		ShowFileGroupSummaryTable(fileGroups, directory, totalFiles);
+
+		// Check if there are any groups with multiple files that can be merged
+		int groupsWithMultipleFiles = fileGroups.Count(g => g.Value.Count > 1);
+		if (groupsWithMultipleFiles == 0)
+		{
+			// Table already showed this information, so just return
+			return;
+		}
+
+		// Prepare file groups for merging using the Core library
+		IReadOnlyCollection<FileGroup>? coreFileGroups = IterativeMergeOrchestrator.PrepareFileGroupsForMerging(directory, fileName);
+
+		if (coreFileGroups == null)
 		{
 			AnsiConsole.MarkupLine("[yellow]No files found or insufficient unique versions to merge.[/]");
 			return;
@@ -425,7 +415,7 @@ public class ConsoleApplicationService : ApplicationService
 
 		// Start iterative merge process with console callbacks
 		MergeCompletionResult result = IterativeMergeOrchestrator.StartIterativeMergeProcess(
-			fileGroups,
+			coreFileGroups,
 			ConsoleMergeCallback,
 			ConsoleStatusCallback,
 			ConsoleContinueCallback);
@@ -652,8 +642,64 @@ public class ConsoleApplicationService : ApplicationService
 	}
 
 	/// <summary>
-	/// Shows a detailed list of files grouped by hash.
+	/// Creates and displays a summary table of file groups with improved formatting.
 	/// </summary>
+	/// <param name="fileGroups">The file groups to display.</param>
+	/// <param name="directory">The base directory for relative path calculation.</param>
+	/// <param name="totalFiles">Total number of files found.</param>
+	private static void ShowFileGroupSummaryTable(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups, string directory, int totalFiles)
+	{
+		ArgumentNullException.ThrowIfNull(fileGroups);
+		ArgumentNullException.ThrowIfNull(directory);
+
+		AnsiConsole.MarkupLine($"[green]Found {totalFiles} files in {fileGroups.Count} groups:[/]");
+		AnsiConsole.WriteLine();
+
+		// Sort fileGroups by the first filename in each group for better organization
+		List<KeyValuePair<string, IReadOnlyCollection<string>>> sortedFileGroups = [.. fileGroups
+			.OrderBy(g => Path.GetFileName(g.Value.First()))];
+
+		Table table = new Table()
+			.Border(TableBorder.Rounded)
+			.BorderColor(Color.Blue)
+			.AddColumn(GroupColumnName)
+			.AddColumn(FilesColumnName)
+			.AddColumn(StatusColumnName)
+			.AddColumn(FilenameColumnName)
+			.AddColumn(HashColumnName);
+
+		foreach ((KeyValuePair<string, IReadOnlyCollection<string>> group, int groupIndex) in sortedFileGroups.Select((group, index) => (group, index + 1)))
+		{
+			string status = group.Value.Count > 1 ? "[yellow]Multiple identical copies[/]" : "[green]Unique[/]";
+
+			// Get unique filenames in this group
+			IEnumerable<string> uniqueFilenames = group.Value
+				.Select(Path.GetFileName)
+				.OfType<string>()
+				.Where(f => !string.IsNullOrEmpty(f))
+				.Distinct()
+				.OrderBy(f => f);
+
+			string filenamesDisplay = string.Join("; ", uniqueFilenames);
+			if (filenamesDisplay.Length > 50)
+			{
+				filenamesDisplay = filenamesDisplay[..47] + "...";
+			}
+
+			// Show first 8 characters of hash
+			string shortHash = group.Key.Length > 8 ? group.Key[..8] + "..." : group.Key;
+
+			table.AddRow(
+				$"[cyan]{groupIndex}[/]",
+				$"[dim]{group.Value.Count}[/]",
+				status,
+				$"[dim]{filenamesDisplay}[/]",
+				$"[dim]{shortHash}[/]");
+		}
+
+		AnsiConsole.Write(table);
+		AnsiConsole.WriteLine();
+	}
 
 	/// <summary>
 	/// Console-specific callback to perform merge operation between two files.

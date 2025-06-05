@@ -5,12 +5,12 @@
 namespace ktsu.BlastMerge.ConsoleApp;
 
 /// <summary>
-/// Represents the available choices when multiple versions are found for a batch pattern
+/// Represents the available choices when multiple identical copies are found for a batch pattern
 /// </summary>
 public enum BatchActionChoice
 {
 	/// <summary>
-	/// Run iterative merge on the multiple versions
+	/// Run iterative merge on the multiple identical copies
 	/// </summary>
 	RunIterativeMerge,
 

@@ -40,6 +40,7 @@ globs: *
 ## PROJECT DOCUMENTATION & CONTEXT SYSTEM
 
 -   Use SpecStory to generate markdown files documenting user requests and assistant responses.
+-   Ensure the documentation is up to date.
 
 ## CODING STANDARDS
 
@@ -137,6 +138,7 @@ globs: *
 -   Trailing whitespace should be highlighted with a red background.
 -   A legend explaining the whitespace symbols should be displayed.
 -   When using glob patterns, ensure that files of different names are not compared with each other.
+-   The `FindMostSimilarFiles` method must only compare files with the same filename.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -201,6 +203,8 @@ globs: *
 -   Whitespace characters must be visualized in diffs, including spaces (·), tabs (→), returns (↵), and newlines (¶).
 -   Trailing whitespace should be highlighted with a red background.
 -   A legend explaining the whitespace symbols should be displayed.
+-   The `GroupFilesByHash` method has been updated to prevent files with different names from being compared/merged together when using glob patterns. Previously, a glob pattern like "*.config" could match files such as "app.config", "web.config", and "database.config", and the system would attempt to merge these unrelated files if they had different content hashes. The fix ensures that files are first grouped by filename (basename without path), then by content hash within each filename group. This prevents unrelated files that happen to match the same glob pattern from being incorrectly grouped for comparison or merging.
+-   The `FindMostSimilarFiles` method must only compare files with the same filename.
 
 ## DEBUGGING
 
@@ -333,6 +337,19 @@ globs: *
 -   Trailing whitespace should be highlighted with a red background.
 -   A legend explaining the whitespace symbols should be displayed.
 -   Custom ASCII art should be clean, compact, and compatible with the Spectre.Console layout.
+-   In this case it might be nice to show the summary of each file found
+-   When displaying the file comparison results, the table should:
+    -   Show the relative file path and hash.
+    -   Be sorted by filename so that similar files are proximal.
+    -   Replace the phrase "Multiple versions" with "Multiple identical copies" when the files are identical.
+-   All menus presenting choices should have nice emoji icons for each menu item.
+-   When displaying the file comparison results, the table should show the filename and hash, and be sorted by filename so that similar files are proximal.
+-   Where there is a prompt requesting input, pressing escape should back out of the current operation to the previous menu.
+-   When iterative merge is run, the table showing the file comparison results should be displayed before beginning merges. The table should:
+    -   Show the filename.
+    -   Show the hash.
+    -   Be sorted by filename so that similar files are proximal.
+    -   Replace the phrase "Multiple versions" with "Multiple identical copies" when the files are identical.
 
 ## PROJECT RENAMING
 
@@ -340,28 +357,9 @@ globs: *
 
 ## NEW PRIMARY FEATURE
 
-- The primary feature of the application is now cross-repository file synchronization through intelligent iterative merging.
+- The primary feature of the
 
-- The application is now named BlastMerge
+## FILE COMPARISON TABLE
 
-## WINGET DISTRIBUTION
-
--   The application should be prepared for distribution via winget.
--   The project configuration should be enhanced for publishing:
-    -   Set `PublishSingleFile` to `true`.
-    -   Set `PublishTrimmed` to `false` (temporarily, until trimming issues are resolved).
-    -   Set `EnableCompressionInSingleFile` to `true`.
-    -   Set `IncludeNativeLibrariesForSelfExtract` to `true`.
-    -   Set `DebugType` to `none`.
-    -   Set `DebugSymbols` to `false`.
-    -   The application icon (`icon.png`) should be converted to `.ico` format and the `<ApplicationIcon>` line in `BlastMerge.ConsoleApp.csproj` should be uncommented.
--   A GitHub Actions workflow should be integrated with the existing build and release pipeline (PSBuild module in `dotnet.yml`) for building and releasing the application.
-    -   The workflow should build for `win-x64`, `win-x86`, and `win-arm64`.
-    -   The workflow should create GitHub releases with proper asset naming.
-    -   The workflow should generate SHA256 checksums.
-    -   The workflow can be triggered manually for testing.
--   Winget manifest files should be created for the package.
--   A PowerShell script (`scripts/update-winget-manifests.ps1`) should be created to automate the winget submission process.
--   A comprehensive README (`winget/README.md`) should be created for the winget distribution setup.
--   A quick-start guide (`docs/winget-quick-start.md`) should be created for the entire winget distribution process.
--   The `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` should have only one `dotnet publish` step, consolidating the
+-   When displaying the file comparison results, the table should:
+    -

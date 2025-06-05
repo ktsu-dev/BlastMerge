@@ -69,17 +69,27 @@ public class CompareFilesMenuHandler(ApplicationService applicationService) : Ba
 	{
 		ShowMenuTitle("Compare Files in Directory");
 
-		string directory = HistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
-		if (string.IsNullOrWhiteSpace(directory))
-		{
-			UIHelper.ShowWarning("Operation cancelled.");
-			return;
-		}
+		string directory;
+		string fileName;
 
-		string fileName = HistoryInput.AskWithHistory("[cyan]Enter filename pattern[/]");
-		if (string.IsNullOrWhiteSpace(fileName))
+		try
 		{
-			UIHelper.ShowWarning("Operation cancelled.");
+			directory = HistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
+			if (string.IsNullOrWhiteSpace(directory))
+			{
+				UIHelper.ShowWarning("Operation cancelled.");
+				return;
+			}
+
+			fileName = HistoryInput.AskWithHistory("[cyan]Enter filename pattern[/]");
+			if (string.IsNullOrWhiteSpace(fileName))
+			{
+				UIHelper.ShowWarning("Operation cancelled.");
+				return;
+			}
+		}
+		catch (InputCancelledException)
+		{
 			return;
 		}
 

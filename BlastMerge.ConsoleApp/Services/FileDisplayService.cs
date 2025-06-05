@@ -31,7 +31,7 @@ public static class FileDisplayService
 		int groupIndex = 1;
 		foreach (KeyValuePair<string, IReadOnlyCollection<string>> group in fileGroups)
 		{
-			string groupStatus = group.Value.Count > 1 ? "[yellow]Multiple versions[/]" : "[green]Unique[/]";
+			string groupStatus = group.Value.Count > 1 ? "[yellow]Multiple identical copies[/]" : "[green]Unique[/]";
 			TreeNode groupNode = tree.AddNode($"[cyan]Group {groupIndex}[/] - {groupStatus} ({group.Value.Count} files)");
 			groupNode.AddNode($"[dim]Hash: {group.Key[..Math.Min(8, group.Key.Length)]}...[/]");
 

@@ -11,6 +11,30 @@ using System.Text.Json;
 using Spectre.Console;
 
 /// <summary>
+/// Exception thrown when user cancels input with escape key
+/// </summary>
+public class InputCancelledException : Exception
+{
+	/// <summary>
+	/// Initializes a new instance of the InputCancelledException class.
+	/// </summary>
+	public InputCancelledException() : base("Input was cancelled by user") { }
+
+	/// <summary>
+	/// Initializes a new instance of the InputCancelledException class with a specified error message.
+	/// </summary>
+	/// <param name="message">The message that describes the error.</param>
+	public InputCancelledException(string message) : base(message) { }
+
+	/// <summary>
+	/// Initializes a new instance of the InputCancelledException class with a specified error message and a reference to the inner exception.
+	/// </summary>
+	/// <param name="message">The message that describes the error.</param>
+	/// <param name="innerException">The exception that is the cause of the current exception.</param>
+	public InputCancelledException(string message, Exception innerException) : base(message, innerException) { }
+}
+
+/// <summary>
 /// Handles user input with history functionality using arrow key navigation
 /// </summary>
 public static class HistoryInput
@@ -51,6 +75,7 @@ public static class HistoryInput
 	/// <param name="prompt">The prompt to show</param>
 	/// <param name="defaultValue">Default value if provided</param>
 	/// <returns>User input</returns>
+	/// <exception cref="InputCancelledException">Thrown when user presses escape to cancel</exception>
 	public static string AskWithHistory(string prompt, string defaultValue = "")
 	{
 		ArgumentNullException.ThrowIfNull(prompt);
@@ -101,7 +126,11 @@ public static class HistoryInput
 		}
 		if (history.Count > 0)
 		{
-			AnsiConsole.Markup(" [dim](↑↓ for history)[/]");
+			AnsiConsole.Markup(" [dim](↑↓ for history, Esc to back)[/]");
+		}
+		else
+		{
+			AnsiConsole.Markup(" [dim](Esc to back)[/]");
 		}
 		AnsiConsole.Write(": ");
 	}
@@ -242,8 +271,7 @@ public static class HistoryInput
 				break;
 
 			case ConsoleKey.Escape:
-				HandleEscape(state, inputStartColumn, inputStartRow);
-				break;
+				throw new InputCancelledException();
 
 			default:
 				HandleCharacterInput(keyInfo, state, inputStartColumn, inputStartRow);
@@ -337,17 +365,6 @@ public static class HistoryInput
 			RedrawInput(state.Input, inputStartColumn, inputStartRow);
 			SetCursorPosition(state.CursorPos, inputStartColumn, inputStartRow);
 		}
-	}
-
-	/// <summary>
-	/// Handles escape key (clear input)
-	/// </summary>
-	private static void HandleEscape(InputState state, int inputStartColumn, int inputStartRow)
-	{
-		state.Input = "";
-		state.CursorPos = 0;
-		state.HistoryIndex = -1;
-		RedrawInput(state.Input, inputStartColumn, inputStartRow);
 	}
 
 	/// <summary>

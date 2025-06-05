@@ -45,7 +45,9 @@ public static class IterativeMergeOrchestrator
 
 			if (similarity == null)
 			{
-				return new MergeCompletionResult(false, null, 0, "unknown");
+				// No similar files found - this happens when files have different names and our safety check prevents merging
+				// This is the intended safe behavior, not an error
+				return new MergeCompletionResult(true, null, 0, "All files preserved safely - no merging needed.\n\nSafety rule: Only files with identical names can be merged together.\nAll files have different names, so they remain separate as intended.");
 			}
 
 			// Report status to UI

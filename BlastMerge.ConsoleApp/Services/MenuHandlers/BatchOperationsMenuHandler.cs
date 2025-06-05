@@ -178,11 +178,19 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	{
 		ShowMenuTitle("Create New Batch Configuration");
 
-		// Get batch name
-		string batchName = HistoryInput.AskWithHistory("[cyan]Enter batch name[/]");
-		if (string.IsNullOrWhiteSpace(batchName))
+		string batchName;
+		try
 		{
-			ShowWarning(OperationCancelledMessage);
+			// Get batch name
+			batchName = HistoryInput.AskWithHistory("[cyan]Enter batch name[/]");
+			if (string.IsNullOrWhiteSpace(batchName))
+			{
+				ShowWarning(OperationCancelledMessage);
+				return;
+			}
+		}
+		catch (InputCancelledException)
+		{
 			return;
 		}
 
@@ -199,21 +207,30 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		}
 
 		// Get description
-		string description = HistoryInput.AskWithHistory("[cyan]Enter description (optional)[/]");
-
-		// Get file patterns
-		AnsiConsole.MarkupLine("[cyan]Enter file patterns (one per line, empty line to finish):[/]");
-		AnsiConsole.MarkupLine("[dim]Examples: *.txt, .gitignore, README.md, **/*.cs[/]");
-
+		string description;
 		List<string> patterns = [];
-		while (true)
+
+		try
 		{
-			string pattern = HistoryInput.AskWithHistory($"[cyan]Pattern {patterns.Count + 1}[/]");
-			if (string.IsNullOrWhiteSpace(pattern))
+			description = HistoryInput.AskWithHistory("[cyan]Enter description (optional)[/]");
+
+			// Get file patterns
+			AnsiConsole.MarkupLine("[cyan]Enter file patterns (one per line, empty line to finish):[/]");
+			AnsiConsole.MarkupLine("[dim]Examples: *.txt, .gitignore, README.md, **/*.cs[/]");
+
+			while (true)
 			{
-				break;
+				string pattern = HistoryInput.AskWithHistory($"[cyan]Pattern {patterns.Count + 1}[/]");
+				if (string.IsNullOrWhiteSpace(pattern))
+				{
+					break;
+				}
+				patterns.Add(pattern.Trim());
 			}
-			patterns.Add(pattern.Trim());
+		}
+		catch (InputCancelledException)
+		{
+			return;
 		}
 
 		if (patterns.Count == 0)
@@ -281,10 +298,18 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 				.Title("Select batch configuration:")
 				.AddChoices(allBatches.Select(b => b.Name)));
 
-		string directory = HistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
-		if (string.IsNullOrWhiteSpace(directory))
+		string directory;
+		try
 		{
-			ShowWarning(OperationCancelledMessage);
+			directory = HistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
+			if (string.IsNullOrWhiteSpace(directory))
+			{
+				ShowWarning(OperationCancelledMessage);
+				return;
+			}
+		}
+		catch (InputCancelledException)
+		{
 			return;
 		}
 
@@ -363,39 +388,48 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 
 		ShowMenuTitle($"Edit Batch: {batch.Name}");
 
-		// For simplicity, we'll recreate the batch with new values
-		string description = HistoryInput.AskWithHistory($"[cyan]Enter description[/] (current: {batch.Description ?? ""})", batch.Description ?? "");
-
-		// Show current patterns
-		AnsiConsole.MarkupLine($"\n[cyan]Current patterns ({batch.FilePatterns.Count}):[/]");
-		for (int i = 0; i < batch.FilePatterns.Count; i++)
-		{
-			AnsiConsole.MarkupLine($"  {i + 1}. [yellow]{batch.FilePatterns[i]}[/]");
-		}
-
-		bool modifyPatterns = AnsiConsole.Confirm("[cyan]Modify file patterns?[/]");
+		string description;
 		List<string> patterns = [.. batch.FilePatterns];
 
-		if (modifyPatterns)
+		try
 		{
-			patterns.Clear();
-			AnsiConsole.MarkupLine("[cyan]Enter new file patterns (one per line, empty line to finish):[/]");
+			// For simplicity, we'll recreate the batch with new values
+			description = HistoryInput.AskWithHistory($"[cyan]Enter description[/] (current: {batch.Description ?? ""})", batch.Description ?? "");
 
-			while (true)
+			// Show current patterns
+			AnsiConsole.MarkupLine($"\n[cyan]Current patterns ({batch.FilePatterns.Count}):[/]");
+			for (int i = 0; i < batch.FilePatterns.Count; i++)
 			{
-				string pattern = HistoryInput.AskWithHistory($"[cyan]Pattern {patterns.Count + 1}[/]");
-				if (string.IsNullOrWhiteSpace(pattern))
+				AnsiConsole.MarkupLine($"  {i + 1}. [yellow]{batch.FilePatterns[i]}[/]");
+			}
+
+			bool modifyPatterns = AnsiConsole.Confirm("[cyan]Modify file patterns?[/]");
+
+			if (modifyPatterns)
+			{
+				patterns.Clear();
+				AnsiConsole.MarkupLine("[cyan]Enter new file patterns (one per line, empty line to finish):[/]");
+
+				while (true)
 				{
-					break;
+					string pattern = HistoryInput.AskWithHistory($"[cyan]Pattern {patterns.Count + 1}[/]");
+					if (string.IsNullOrWhiteSpace(pattern))
+					{
+						break;
+					}
+					patterns.Add(pattern.Trim());
 				}
-				patterns.Add(pattern.Trim());
-			}
 
-			if (patterns.Count == 0)
-			{
-				ShowWarning("At least one file pattern is required. Keeping original patterns.");
-				patterns = [.. batch.FilePatterns];
+				if (patterns.Count == 0)
+				{
+					ShowWarning("At least one file pattern is required. Keeping original patterns.");
+					patterns = [.. batch.FilePatterns];
+				}
 			}
+		}
+		catch (InputCancelledException)
+		{
+			return;
 		}
 
 		bool skipEmpty = AnsiConsole.Confirm($"[cyan]Skip patterns that don't find any files?[/] (current: {batch.SkipEmptyPatterns})", batch.SkipEmptyPatterns);
@@ -437,10 +471,18 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			return;
 		}
 
-		string newName = HistoryInput.AskWithHistory($"[cyan]Enter new name for duplicate[/] (original: {sourceBatch.Name})");
-		if (string.IsNullOrWhiteSpace(newName))
+		string newName;
+		try
 		{
-			ShowWarning(OperationCancelledMessage);
+			newName = HistoryInput.AskWithHistory($"[cyan]Enter new name for duplicate[/] (original: {sourceBatch.Name})");
+			if (string.IsNullOrWhiteSpace(newName))
+			{
+				ShowWarning(OperationCancelledMessage);
+				return;
+			}
+		}
+		catch (InputCancelledException)
+		{
 			return;
 		}
 
@@ -536,10 +578,18 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		}
 
 		string defaultFileName = $"BlastMerge_Batches_{DateTime.Now:yyyyMMdd_HHmmss}.json";
-		string exportPath = HistoryInput.AskWithHistory($"[cyan]Enter export file path[/] (default: {defaultFileName})");
-		if (string.IsNullOrWhiteSpace(exportPath))
+		string exportPath;
+		try
 		{
-			exportPath = defaultFileName;
+			exportPath = HistoryInput.AskWithHistory($"[cyan]Enter export file path[/] (default: {defaultFileName})");
+			if (string.IsNullOrWhiteSpace(exportPath))
+			{
+				exportPath = defaultFileName;
+			}
+		}
+		catch (InputCancelledException)
+		{
+			return;
 		}
 
 		try
@@ -575,10 +625,19 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	{
 		ShowMenuTitle("Import Batch Configurations");
 
-		string importPath = HistoryInput.AskWithHistory("[cyan]Enter import file path[/]");
-		if (string.IsNullOrWhiteSpace(importPath))
+		string importPath;
+		try
 		{
-			ShowWarning(OperationCancelledMessage);
+			importPath = HistoryInput.AskWithHistory("[cyan]Enter import file path[/]");
+			if (string.IsNullOrWhiteSpace(importPath))
+			{
+				ShowWarning(OperationCancelledMessage);
+				WaitForKeyPress();
+				return;
+			}
+		}
+		catch (InputCancelledException)
+		{
 			WaitForKeyPress();
 			return;
 		}

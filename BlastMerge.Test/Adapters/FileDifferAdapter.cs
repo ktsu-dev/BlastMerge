@@ -280,6 +280,70 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 	}
 
 	/// <summary>
+	/// Finds the two most similar files from a collection of unique file groups.
+	/// Only compares files with the same filename to prevent merging unrelated files.
+	/// </summary>
+	/// <param name="fileGroups">Collection of file groups with different content</param>
+	/// <returns>A FileSimilarity object with the most similar pair, or null if less than 2 groups</returns>
+	public FileSimilarity? FindMostSimilarFiles(IReadOnlyCollection<FileGroup> fileGroups)
+	{
+		ArgumentNullException.ThrowIfNull(fileGroups);
+
+		if (fileGroups.Count < 2)
+		{
+			return null;
+		}
+
+		List<FileGroup> groups = [.. fileGroups];
+		FileSimilarity? mostSimilar = null;
+		double highestSimilarity = -1.0;
+
+		for (int i = 0; i < groups.Count; i++)
+		{
+			for (int j = i + 1; j < groups.Count; j++)
+			{
+				string file1 = groups[i].FilePaths.First();
+				string file2 = groups[j].FilePaths.First();
+
+				// CRITICAL SAFETY CHECK: Only compare files with the same filename
+				// This prevents merging unrelated files like update-readme.yml with dotnet-sdk.yml
+				string filename1 = _fileSystem.Path.GetFileName(file1);
+				string filename2 = _fileSystem.Path.GetFileName(file2);
+
+				if (!string.Equals(filename1, filename2, StringComparison.OrdinalIgnoreCase))
+				{
+					continue; // Skip comparison of files with different names
+				}
+
+				double similarity = CalculateFileSimilarity(file1, file2);
+
+				if (similarity > highestSimilarity)
+				{
+					highestSimilarity = similarity;
+					mostSimilar = new FileSimilarity(file1, file2, similarity);
+				}
+			}
+		}
+
+		return mostSimilar;
+	}
+
+	/// <summary>
+	/// Calculates similarity between two files using the mock filesystem
+	/// </summary>
+	/// <param name="file1">Path to the first file</param>
+	/// <param name="file2">Path to the second file</param>
+	/// <returns>Similarity score between 0.0 and 1.0</returns>
+	private double CalculateFileSimilarity(string file1, string file2)
+	{
+		string[] lines1 = _fileSystem.File.ReadAllLines(file1);
+		string[] lines2 = _fileSystem.File.ReadAllLines(file2);
+
+		// Use FileDiffer.CalculateLineSimilarity which doesn't require file access
+		return FileDiffer.CalculateLineSimilarity(lines1, lines2);
+	}
+
+	/// <summary>
 	/// Internal implementation of FindDifferences that works with string arrays
 	/// </summary>
 	/// <param name="lines1">Lines from the first file</param>

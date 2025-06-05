@@ -628,7 +628,8 @@ public static class FileDiffer
 	public static string CalculateFileHash(string content) => FileHasher.ComputeContentHash(content);
 
 	/// <summary>
-	/// Finds the two most similar files from a collection of unique file groups
+	/// Finds the two most similar files from a collection of unique file groups.
+	/// Only compares files with the same filename to prevent merging unrelated files.
 	/// </summary>
 	/// <param name="fileGroups">Collection of file groups with different content</param>
 	/// <returns>A FileSimilarity object with the most similar pair, or null if less than 2 groups</returns>
@@ -651,6 +652,17 @@ public static class FileDiffer
 			{
 				string file1 = groups[i].FilePaths.First();
 				string file2 = groups[j].FilePaths.First();
+
+				// CRITICAL SAFETY CHECK: Only compare files with the same filename
+				// This prevents merging unrelated files like update-readme.yml with dotnet-sdk.yml
+				string filename1 = Path.GetFileName(file1);
+				string filename2 = Path.GetFileName(file2);
+
+				if (!string.Equals(filename1, filename2, StringComparison.OrdinalIgnoreCase))
+				{
+					continue; // Skip comparison of files with different names
+				}
+
 				double similarity = CalculateFileSimilarity(file1, file2);
 
 				if (similarity > highestSimilarity)

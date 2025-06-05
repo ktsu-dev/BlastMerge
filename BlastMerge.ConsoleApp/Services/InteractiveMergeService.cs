@@ -23,26 +23,82 @@ public static class InteractiveMergeService
 	{
 		ArgumentNullException.ThrowIfNull(fileGroups);
 
-		// Convert to file groups by hash to find groups with multiple versions
+		// Convert to file groups by hash to find groups with multiple identical copies
 		List<string> allFiles = [.. fileGroups.SelectMany(g => g.Value)];
 		IReadOnlyCollection<FileGroup> groups = FileDiffer.GroupFilesByHash(allFiles);
 
 		// Filter to groups with multiple files for merging
 		List<FileGroup> groupsWithMultipleFiles = [.. groups.Where(g => g.FilePaths.Count > 1)];
 
-		if (groupsWithMultipleFiles.Count == 0)
-		{
-			UIHelper.ShowWarning("No groups with multiple files to merge.");
-			return;
-		}
+		// Show detailed table summary (this will show the user what can be merged)
+		ShowIterativeMergeTable(fileGroups, allFiles.Count, groupsWithMultipleFiles.Count);
 
-		UIHelper.ShowInfo($"Found {groupsWithMultipleFiles.Count} groups with multiple versions that can be merged.");
+		// Only proceed with merging if there are groups with multiple files
+		if (groupsWithMultipleFiles.Count > 0)
+		{
+			foreach (FileGroup group in groupsWithMultipleFiles)
+			{
+				PerformGroupMerge(group);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Shows a detailed table summary for iterative merge.
+	/// </summary>
+	/// <param name="fileGroups">The file groups to display.</param>
+	/// <param name="totalFiles">Total number of files found.</param>
+	/// <param name="groupsToMerge">Number of groups that have multiple files to merge.</param>
+	private static void ShowIterativeMergeTable(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups, int totalFiles, int groupsToMerge)
+	{
+		AnsiConsole.MarkupLine($"[green]Found {totalFiles} files in {fileGroups.Count} groups:[/]");
+		UIHelper.ShowInfo($"[cyan]{groupsToMerge} groups have multiple identical copies that can be merged.[/]");
 		AnsiConsole.WriteLine();
 
-		foreach (FileGroup group in groupsWithMultipleFiles)
+		// Sort fileGroups by the first filename in each group for better organization
+		List<KeyValuePair<string, IReadOnlyCollection<string>>> sortedFileGroups = [.. fileGroups
+			.OrderBy(g => Path.GetFileName(g.Value.First()))];
+
+		Table table = new Table()
+			.Border(TableBorder.Rounded)
+			.BorderColor(Color.Blue)
+			.AddColumn("[bold]Group[/]")
+			.AddColumn("[bold]Files[/]")
+			.AddColumn("[bold]Status[/]")
+			.AddColumn("[bold]Filename[/]")
+			.AddColumn("[bold]Hash[/]");
+
+		foreach ((KeyValuePair<string, IReadOnlyCollection<string>> group, int groupIndex) in sortedFileGroups.Select((group, index) => (group, index + 1)))
 		{
-			PerformGroupMerge(group);
+			string status = group.Value.Count > 1 ? "[yellow]Multiple identical copies[/]" : "[green]Unique[/]";
+
+			// Get unique filenames in this group
+			IEnumerable<string> uniqueFilenames = group.Value
+				.Select(Path.GetFileName)
+				.OfType<string>()
+				.Where(f => !string.IsNullOrEmpty(f))
+				.Distinct()
+				.OrderBy(f => f);
+
+			string filenamesDisplay = string.Join("; ", uniqueFilenames);
+			if (filenamesDisplay.Length > 50)
+			{
+				filenamesDisplay = filenamesDisplay[..47] + "...";
+			}
+
+			// Show first 8 characters of hash
+			string shortHash = group.Key.Length > 8 ? group.Key[..8] + "..." : group.Key;
+
+			table.AddRow(
+				$"[cyan]{groupIndex}[/]",
+				$"[dim]{group.Value.Count}[/]",
+				status,
+				$"[dim]{filenamesDisplay}[/]",
+				$"[dim]{shortHash}[/]");
 		}
+
+		AnsiConsole.Write(table);
+		AnsiConsole.WriteLine();
 	}
 
 	/// <summary>

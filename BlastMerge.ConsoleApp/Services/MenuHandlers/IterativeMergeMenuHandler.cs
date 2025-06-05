@@ -24,17 +24,28 @@ public class IterativeMergeMenuHandler(ApplicationService applicationService) : 
 	{
 		ShowMenuTitle("Run Iterative Merge");
 
-		string directory = HistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
-		if (string.IsNullOrWhiteSpace(directory))
-		{
-			ShowWarning("Operation cancelled.");
-			return;
-		}
+		string directory;
+		string fileName;
 
-		string fileName = HistoryInput.AskWithHistory("[cyan]Enter filename pattern[/]");
-		if (string.IsNullOrWhiteSpace(fileName))
+		try
 		{
-			ShowWarning("Operation cancelled.");
+			directory = HistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
+			if (string.IsNullOrWhiteSpace(directory))
+			{
+				ShowWarning("Operation cancelled.");
+				return;
+			}
+
+			fileName = HistoryInput.AskWithHistory("[cyan]Enter filename pattern[/]");
+			if (string.IsNullOrWhiteSpace(fileName))
+			{
+				ShowWarning("Operation cancelled.");
+				return;
+			}
+		}
+		catch (InputCancelledException)
+		{
+			GoBack();
 			return;
 		}
 
