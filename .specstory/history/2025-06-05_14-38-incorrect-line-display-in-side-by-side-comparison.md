@@ -3489,3 +3489,938 @@ _**Assistant**_
 
 ---
 
+This is extremely helpful! Looking at your previous DiffPlex implementation, I can see a much better approach that would solve the line alignment issues. Your code reveals a key insight I was missing.
+
+You're **not using `SideBySideDiffModel` at all**! Instead, you're using the regular `DiffResult` from `Differ.Instance.CreateLineDiffs()` and then manually creating a side-by-side display by processing each `DiffBlock`. This is brilliant because:
+
+1. **`DiffBlock`-based approach**: Each `DiffBlock` represents a coherent change with known start positions and counts
+2. **Proper alignment**: You ensure alignment by processing the same `DiffBlock` on both sides simultaneously  
+3. **Context handling**: You show prologue/epilogue context around each block
+4. **Padding logic**: You add empty filler lines when one side has more changes than the other
+
+Let me check if BlastMerge is currently using this approach:
+
+---
+
+<details>
+            <summary>Searched codebase "DiffResult DiffBlock CreateLineDiffs Differ.Instance" • **10** results</summary>
+        
+| File | Lines |
+|------|-------|
+| `BlastMerge.Core/Services/BlockMerger.cs` | L111-167 |
+| `BlastMerge.Core/Services/BlockMerger.cs` | L58-111 |
+| `BlastMerge.Core/Services/DiffPlexDiffer.cs` | L1-61 |
+| `BlastMerge.Core/Services/BlockMerger.cs` | L1-58 |
+| `BlastMerge.Core/Services/BlockMerger.cs` | L212-268 |
+| `BlastMerge.Core/Services/DiffPlexDiffer.cs` | L312-380 |
+| `BlastMerge.Core/Services/FileDiffer.cs` | L616-662 |
+| `BlastMerge.Core/Services/DiffPlexDiffer.cs` | L260-312 |
+| `BlastMerge.Core/Services/BlockMerger.cs` | L268-312 |
+| `BlastMerge.Core/Services/BlockMerger.cs` | L167-212 |
+
+</details>
+
+---
+
+I can see that BlastMerge is indeed using some DiffPlex functionality, but it's using `InlineDiffBuilder` and `SideBySideDiffBuilder` in `DiffPlexDiffer.cs`, whereas your approach uses the core `Differ.Instance.CreateLineDiffs()` directly to get `DiffResult` with `DiffBlocks`.
+
+Let me check what's currently being used for the side-by-side display:
+
+---
+
+Read file: BlastMerge.ConsoleApp/Services/Common/FileComparisonDisplayService.cs
+
+---
+
+Perfect! Now I see the issue clearly. BlastMerge is using `SideBySideDiffModel` from DiffPlex's `SideBySideDiffBuilder`, which is **the wrong approach**. Your example shows the correct way: using `Differ.Instance.CreateLineDiffs()` to get a `DiffResult` with `DiffBlocks`.
+
+Let me implement your approach by rewriting the side-by-side diff method to use the core DiffPlex API directly:
+
+---
+
+```diff
+  using ktsu.BlastMerge.Core.Services;
+  using Spectre.Console;
++ using DiffPlex.Model;
+  
+  /// <summary>
+```
+
+```diff
+  
+  	/// <summary>
+- 	/// Shows a side-by-side diff between two files.
++ 	/// Shows a side-by-side diff comparison of two files.
+  	/// </summary>
+- 	/// <param name="file1">First file path.</param>
+- 	/// <param name="file2">Second file path.</param>
++ 	/// <param name="file1">Path to the first file.</param>
++ 	/// <param name="file2">Path to the second file.</param>
+  	public static void ShowSideBySideDiff(string file1, string file2)
+  	{
+```
+
+```diff
+  		try
+  		{
+- 			SideBySideDiffModel sideBySideDiff = DiffPlexDiffer.GenerateSideBySideDiff(file1, file2);
++ 			// Use core DiffPlex API to get DiffResult with DiffBlocks
++ 			string content1 = File.ReadAllText(file1);
++ 			string content2 = File.ReadAllText(file2);
++ 			
++ 			DiffPlex.Model.DiffResult diffResult = DiffPlex.Differ.Instance.CreateLineDiffs(content1, content2, ignoreWhitespace: false, ignoreCase: false);
+  
+- 			if (AreFilesIdentical(sideBySideDiff))
++ 			if (!diffResult.DiffBlocks.Any())
+  			{
+  				UIHelper.ShowSuccess("Files are identical!");
+```
+
+```diff
+  
+  			Table table = CreateSideBySideTable(file1, file2);
+- 			PopulateTableWithDiffLines(table, sideBySideDiff);
+- 			DisplayDiffWithStatistics(table, sideBySideDiff);
++ 			PopulateTableWithDiffBlocks(table, diffResult);
++ 			DisplayDiffWithDiffBlockStatistics(table, diffResult);
+  			ShowDiffLegend();
+  		}
+```
+
+```diff
+  
+  	/// <summary>
+- 	/// Populates the table with diff lines from both sides.
++ 	/// Populates the table with diff blocks from both sides.
+  	/// </summary>
+  	/// <param name="table">The table to populate.</param>
+- 	/// <param name="sideBySideDiff">The side-by-side diff model.</param>
+- 	private static void PopulateTableWithDiffLines(Table table, SideBySideDiffModel sideBySideDiff)
++ 	/// <param name="diffResult">The diff result with diff blocks.</param>
++ 	private static void PopulateTableWithDiffBlocks(Table table, DiffResult diffResult)
+  	{
+  		// Build separate line lists for left and right
+```
+
+```diff
+  		// Process left side (old text)
+  		int leftLineNumber = 1;
+- 		foreach (DiffPiece piece in sideBySideDiff.OldText.Lines)
++ 		foreach (DiffBlock block in diffResult.DiffBlocks)
++ 		{
++ 			foreach (DiffPiece piece in block.Pieces)
+  			{
+  				if (piece.Type == ChangeType.Imaginary)
+```
+
+```diff
+  				{
+  					leftLineNumber++;
++ 				}
+  			}
+  		}
+  
+  		// Process right side (new text)
+  		int rightLineNumber = 1;
+- 		foreach (DiffPiece piece in sideBySideDiff.NewText.Lines)
++ 		foreach (DiffBlock block in diffResult.DiffBlocks)
++ 		{
++ 			foreach (DiffPiece piece in block.Pieces)
+  			{
+  				if (piece.Type == ChangeType.Imaginary)
+```
+
+```diff
+  				{
+  					rightLineNumber++;
++ 				}
+  			}
+  		}
+```
+
+```diff
+  	/// </summary>
+  	/// <param name="table">The populated table.</param>
+- 	/// <param name="sideBySideDiff">The side-by-side diff model for statistics.</param>
+- 	private static void DisplayDiffWithStatistics(Table table, SideBySideDiffModel sideBySideDiff)
++ 	/// <param name="diffResult">The diff result with diff blocks.</param>
++ 	private static void DisplayDiffWithDiffBlockStatistics(Table table, DiffResult diffResult)
+  	{
+- 		string stats = CalculateDiffStatistics(sideBySideDiff);
++ 		string stats = CalculateDiffStatistics(diffResult);
+  
+  		Panel panel = new(table)
+```
+
+```diff
+  	/// Calculates and formats diff statistics.
+  	/// </summary>
+- 	/// <param name="sideBySideDiff">The side-by-side diff model.</param>
++ 	/// <param name="diffResult">The diff result with diff blocks.</param>
+  	/// <returns>Formatted statistics string.</returns>
+- 	private static string CalculateDiffStatistics(SideBySideDiffModel sideBySideDiff)
++ 	private static string CalculateDiffStatistics(DiffResult diffResult)
+  	{
+- 		int additions = sideBySideDiff.NewText.Lines.Count(l => l.Type == ChangeType.Inserted);
+- 		int deletions = sideBySideDiff.OldText.Lines.Count(l => l.Type == ChangeType.Deleted);
+- 		int modifications = sideBySideDiff.OldText.Lines.Count(l => l.Type == ChangeType.Modified);
++ 		int additions = diffResult.DiffBlocks.Count(b => b.Pieces.Any(p => p.Type == ChangeType.Inserted));
++ 		int deletions = diffResult.DiffBlocks.Count(b => b.Pieces.Any(p => p.Type == ChangeType.Deleted));
++ 		int modifications = diffResult.DiffBlocks.Count(b => b.Pieces.Any(p => p.Type == ChangeType.Modified));
+  
+  		string stats = $"[green]+{additions}[/] [red]-{deletions}[/]";
+```
+
+---
+
+Wait, I think I'm not understanding the DiffPlex API correctly. Let me research this better. Based on your code, the `DiffResult` should contain `DiffBlocks` but also `PiecesOld` and `PiecesNew` arrays. Let me check the DiffPlex API more carefully:
+
+---
+
+<details>
+            <summary>Searched web "DiffPlex Differ.Instance.CreateLineDiffs DiffResult DiffBlocks PiecesOld PiecesNew API" • **6** results</summary>
+        
+| Title | URL |
+|-------|-----|
+| Package DiffPlex | https://github.com/mmanela/diffplex/packages/11967 |
+| DiffPlex is Netstandard 2.0+ C# library to generate textual ... | https://github.com/mmanela/diffplex |
+| SideBySideDiffBuilder.cs - This C# code is a part of a diff… | https://searchcode.com/codesearch/view/2683886/ |
+| GitHub - mmanela/diffplex: DiffPlex is Netstandard 1.0+ C# library to generate textual diffs. | https://github.com/mmanela/diffplex |
+| DiffPlex 1.2 Released | https://matthewmanela.com/blog/diffplex-1-2-released/ |
+| Home | https://diff-match-patch.blyth.me.uk/ |
+
+</details>
+
+---
+
+Perfect! Now I understand the issue completely. Looking at your example and the DiffPlex documentation, I can see that I've been approaching this incorrectly.
+
+The key insight from your code and the documentation is that `DiffResult` contains **both** `DiffBlocks` **AND** `PiecesOld`/`PiecesNew` arrays. In the `SideBySideDiffBuilder.cs` source I found, it uses the `BuildDiffPieces` method which processes `DiffBlocks` **and** uses `diffResult.PiecesOld` and `diffResult.PiecesNew` to get the actual text content.
+
+Let me implement the correct approach:
+
+---
+
+```diff
+  	private static void PopulateTableWithDiffBlocks(Table table, DiffResult diffResult)
+  	{
+- 		// Build separate line lists for left and right
+- 		List<(string lineNum, string content, string style)> leftLines = [];
+- 		List<(string lineNum, string content, string style)> rightLines = [];
++ 		List<(string lineNum, string content, string style)> leftPieces = [];
++ 		List<(string lineNum, string content, string style)> rightPieces = [];
+  
+- 		// Process left side (old text)
+- 		int leftLineNumber = 1;
+- 		foreach (DiffBlock block in diffResult.DiffBlocks)
++ 		// This follows the same approach as DiffPlex's SideBySideDiffBuilder
++ 		int aPos = 0; // Position in PiecesOld
++ 		int bPos = 0; // Position in PiecesNew
++ 
++ 		foreach (DiffBlock diffBlock in diffResult.DiffBlocks)
+  		{
+- 			foreach (DiffPiece piece in block.Pieces)
+- 			{
+- 				if (piece.Type == ChangeType.Imaginary)
++ 			// Add unchanged pieces before this diff block
++ 			while (bPos < diffBlock.InsertStartB && aPos < diffBlock.DeleteStartA)
+  			{
+- 					continue; // Skip imaginary pieces
+- 				}
+- 
+- 				string style = piece.Type switch
+- 				{
+- 					ChangeType.Deleted => "red on darkred",
+- 					ChangeType.Unchanged => "white",
+- 					ChangeType.Modified => "yellow on darkorange",
+- 					ChangeType.Inserted => "white",
+- 					ChangeType.Imaginary => "white",
+- 					_ => "white"
+- 				};
+- 
+- 				string lineNumberText = piece.Type == ChangeType.Imaginary ? "" : leftLineNumber.ToString();
+- 				string content = piece.Text ?? "";
+- 
+- 				leftLines.Add((lineNumberText, content, style));
+- 
+- 				if (piece.Type != ChangeType.Imaginary)
+- 				{
+- 					leftLineNumber++;
++ 				leftPieces.Add(((aPos + 1).ToString(), diffResult.PiecesOld[aPos], "white"));
++ 				rightPieces.Add(((bPos + 1).ToString(), diffResult.PiecesNew[bPos], "white"));
++ 				aPos++;
++ 				bPos++;
++ 			}
++ 
++ 			// Process the paired changes (modified lines)
++ 			int i = 0;
++ 			for (; i < Math.Min(diffBlock.DeleteCountA, diffBlock.InsertCountB); i++)
++ 			{
++ 				// Add deleted line from left side
++ 				leftPieces.Add(((aPos + 1).ToString(), diffResult.PiecesOld[i + diffBlock.DeleteStartA], "red on darkred"));
++ 				// Add inserted line to right side
++ 				rightPieces.Add(((bPos + 1).ToString(), diffResult.PiecesNew[i + diffBlock.InsertStartB], "green on darkgreen"));
++ 				aPos++;
++ 				bPos++;
++ 			}
++ 
++ 			// Handle remaining deletions (more deletions than insertions)
++ 			if (diffBlock.DeleteCountA > diffBlock.InsertCountB)
++ 			{
++ 				for (; i < diffBlock.DeleteCountA; i++)
++ 				{
++ 					leftPieces.Add(((aPos + 1).ToString(), diffResult.PiecesOld[i + diffBlock.DeleteStartA], "red on darkred"));
++ 					rightPieces.Add(("", "", "white")); // Empty placeholder on right
++ 					aPos++;
+  				}
+  			}
+- 		}
+- 
+- 		// Process right side (new text)
+- 		int rightLineNumber = 1;
+- 		foreach (DiffBlock block in diffResult.DiffBlocks)
+- 		{
+- 			foreach (DiffPiece piece in block.Pieces)
++ 			// Handle remaining insertions (more insertions than deletions)
++ 			else
++ 			{
++ 				for (; i < diffBlock.InsertCountB; i++)
+  				{
+- 				if (piece.Type == ChangeType.Imaginary)
+- 				{
+- 					continue; // Skip imaginary pieces
+- 				}
+- 
+- 				string style = piece.Type switch
+- 				{
+- 					ChangeType.Inserted => "green on darkgreen",
+- 					ChangeType.Unchanged => "white",
+- 					ChangeType.Modified => "yellow on darkorange",
+- 					ChangeType.Deleted => "white",
+- 					ChangeType.Imaginary => "white",
+- 					_ => "white"
+- 				};
+- 
+- 				string lineNumberText = piece.Type == ChangeType.Imaginary ? "" : rightLineNumber.ToString();
+- 				string content = piece.Text ?? "";
+- 
+- 				rightLines.Add((lineNumberText, content, style));
+- 
+- 				if (piece.Type != ChangeType.Imaginary)
+- 				{
+- 					rightLineNumber++;
+- 				}
+- 			}
++ 					leftPieces.Add(("", "", "white")); // Empty placeholder on left  
++ 					rightPieces.Add(((bPos + 1).ToString(), diffResult.PiecesNew[i + diffBlock.InsertStartB], "green on darkgreen"));
++ 					bPos++;
++ 				}
++ 			}
++ 		}
++ 
++ 		// Add any remaining unchanged pieces after all diff blocks
++ 		while (bPos < diffResult.PiecesNew.Length && aPos < diffResult.PiecesOld.Length)
++ 		{
++ 			leftPieces.Add(((aPos + 1).ToString(), diffResult.PiecesOld[aPos], "white"));
++ 			rightPieces.Add(((bPos + 1).ToString(), diffResult.PiecesNew[bPos], "white"));
++ 			aPos++;
++ 			bPos++;
+  		}
+  
+- 		// Determine max lines to display
+- 		int maxLines = Math.Max(leftLines.Count, rightLines.Count);
++ 		// Ensure both sides have the same number of rows
++ 		int maxRows = Math.Max(leftPieces.Count, rightPieces.Count);
++ 		while (leftPieces.Count < maxRows) leftPieces.Add(("", "", "white"));
++ 		while (rightPieces.Count < maxRows) rightPieces.Add(("", "", "white"));
+  
+  		// Add rows to table
+- 		for (int i = 0; i < maxLines; i++)
++ 		for (int i = 0; i < maxRows; i++)
+  		{
+- 			(string, string, string) leftLine = i < leftLines.Count ? leftLines[i] : ("", "", "white");
+- 			(string, string, string) rightLine = i < rightLines.Count ? rightLines[i] : ("", "", "white");
++ 			(string leftLineNum, string leftContent, string leftStyle) = leftPieces[i];
++ 			(string rightLineNum, string rightContent, string rightStyle) = rightPieces[i];
+  
+- 			// Format content with markup for both sides
+- 			string leftContent = string.IsNullOrEmpty(leftLine.Item2) ? "" : $"[{leftLine.Item3}]{leftLine.Item2}[/]";
+- 			string rightContent = string.IsNullOrEmpty(rightLine.Item2) ? "" : $"[{rightLine.Item3}]{rightLine.Item2}[/]";
++ 			// Format content with markup
++ 			string leftContentFormatted = string.IsNullOrEmpty(leftContent) ? "" : $"[{leftStyle}]{leftContent.EscapeMarkup()}[/]";
++ 			string rightContentFormatted = string.IsNullOrEmpty(rightContent) ? "" : $"[{rightStyle}]{rightContent.EscapeMarkup()}[/]";
+  
+- 			// Add prefixes for change types on left side
+- 			if (!string.IsNullOrEmpty(leftLine.Item2))
+- 			{
+- 				string leftLineMarkup = leftLine.Item3.Contains("red") ? "-" : leftLine.Item3.Contains("yellow") ? "~" : "";
+- 				leftContent = leftLineMarkup + " " + leftContent;
+- 			}
+- 
+- 			// Add prefixes for change types on right side
+- 			if (!string.IsNullOrEmpty(rightLine.Item2))
+- 			{
+- 				string rightLineMarkup = rightLine.Item3.Contains("green") ? "+" : rightLine.Item3.Contains("yellow") ? "~" : "";
+- 				rightContent = rightLineMarkup + " " + rightContent;
++ 			// Add prefixes for change types
++ 			if (!string.IsNullOrEmpty(leftContent) && leftStyle.Contains("red"))
++ 			{
++ 				leftContentFormatted = "- " + leftContentFormatted;
++ 			}
++ 			else if (!string.IsNullOrEmpty(leftContent))
++ 			{
++ 				leftContentFormatted = "  " + leftContentFormatted;
++ 			}
++ 
++ 			if (!string.IsNullOrEmpty(rightContent) && rightStyle.Contains("green"))
++ 			{
++ 				rightContentFormatted = "+ " + rightContentFormatted;
++ 			}
++ 			else if (!string.IsNullOrEmpty(rightContent))
++ 			{
++ 				rightContentFormatted = "  " + rightContentFormatted;
+  			}
+  
+- 			table.AddRow(
+- 				leftLine.Item1,
+- 				leftContent,
+- 				rightLine.Item1,
+- 				rightContent
+- 			);
++ 			table.AddRow(leftLineNum, leftContentFormatted, rightLineNum, rightContentFormatted);
+  		}
+  	}
+```
+
+---
+
+Now let me build and test this:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+C:\dev\ktsu-dev\BlastMerge>dotnet build
+
+  C:\dev\ktsu-dev\BlastMerge\BlastMerge.sln                                                              Restore (0.0s)
+ed statements must be on their own line (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide2001)        
+    C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\Services\Common\FileComparisonDisplayService.cs(316,39): error IDE2001: Embedd
+ed statements must be on their own line (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide2001)        
+
+Build failed with 12 error(s) in 1.8s
+
+C:\dev\ktsu-dev\BlastMerge>
+```
+
+---
+
+I need to fix the formatting issue with the while loops. Let me fix that:
+
+---
+
+
+
+---
+
+I need to fix several issues. The main one is that I'm mixing DiffPlex's `DiffBlock` with BlastMerge's `DiffBlock`. Let me fix that and use the correct API:
+
+---
+
+
+
+---
+
+Let me fix the `Length` vs `Count` issue and simplify the name:
+
+---
+
+
+
+---
+
+I need to fix the name simplification issue first. Let me check what the `DiffResult` type is:
+
+---
+
+
+
+---
+
+This is my third attempt. The issue is that there are still some references to `DiffBlock.Pieces` which don't exist in the DiffPlex model. Let me stop here and build to see what errors remain, then we can address them separately if needed.
+
+---
+
+```bash
+dotnet build
+```
+
+```
+C:\dev\ktsu-dev\BlastMerge>dotnet build
+
+  C:\dev\ktsu-dev\BlastMerge\BlastMerge.sln                                                              Restore (0.0s)
+Restore complete (0.6s)
+  BlastMerge.Core succeeded (0.4s) → BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll
+  BlastMerge.ConsoleApp failed with 3 error(s) (0.3s)
+    C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\Services\Common\FileComparisonDisplayService.cs(382,54): error CS1061: 'DiffBl
+ock' does not contain a definition for 'Pieces' and no accessible extension method 'Pieces' accepting a first argument of type 'Dif
+fBlock' could be found (are you missing a using directive or an assembly reference?)
+    C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\Services\Common\FileComparisonDisplayService.cs(383,54): error CS1061: 'DiffBl
+ock' does not contain a definition for 'Pieces' and no accessible extension method 'Pieces' accepting a first argument of type 'Dif
+fBlock' could be found (are you missing a using directive or an assembly reference?)
+    C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\Services\Common\FileComparisonDisplayService.cs(384,58): error CS1061: 'DiffBl
+ock' does not contain a definition for 'Pieces' and no accessible extension method 'Pieces' accepting a first argument of type 'Dif
+fBlock' could be found (are you missing a using directive or an assembly reference?)
+
+Build failed with 3 error(s) in 1.6s
+
+C:\dev\ktsu-dev\BlastMerge>
+```
+
+---
+
+I see there are still some references to `DiffBlock.Pieces` in the `CalculateDiffStatistics` method. Let me find and fix those:
+
+---
+
+Read file: BlastMerge.ConsoleApp/Services/Common/FileComparisonDisplayService.cs
+
+---
+
+I can see the issue. The `CalculateDiffStatistics` method is still trying to use `DiffBlock.Pieces`, but DiffPlex's `DiffBlock` doesn't have a `Pieces` property. Let me fix this:
+
+---
+
+```diff
+  	private static string CalculateDiffStatistics(DiffResult diffResult)
+  	{
+- 		int additions = diffResult.DiffBlocks.Count(b => b.Pieces.Any(p => p.Type == ChangeType.Inserted));
+- 		int deletions = diffResult.DiffBlocks.Count(b => b.Pieces.Any(p => p.Type == ChangeType.Deleted));
+- 		int modifications = diffResult.DiffBlocks.Count(b => b.Pieces.Any(p => p.Type == ChangeType.Modified));
++ 		int additions = diffResult.DiffBlocks.Sum(b => b.InsertCountB);
++ 		int deletions = diffResult.DiffBlocks.Sum(b => b.DeleteCountA);
++ 		int modifications = diffResult.DiffBlocks.Count(b => b.InsertCountB > 0 && b.DeleteCountA > 0);
+  
+  		string stats = $"[green]+{additions}[/] [red]-{deletions}[/]";
+```
+
+---
+
+Let me remove the unused method:
+
+---
+
+
+
+---
+
+Let me find the exact text first:
+
+---
+
+Read file: BlastMerge.ConsoleApp/Services/Common/FileComparisonDisplayService.cs
+
+---
+
+Let me remove the unused method:
+
+---
+
+
+
+---
+
+I've reached my limit of 3 fix attempts. Let me build to see if there are any remaining critical errors:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+C:\dev\ktsu-dev\BlastMerge>dotnet build
+
+  C:\dev\ktsu-dev\BlastMerge\BlastMerge.sln                                                              Restore (0.0s)
+Restore complete (0.7s)
+  BlastMerge.Core succeeded (0.2s) → BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll
+  BlastMerge.ConsoleApp failed with 2 error(s) (0.4s)
+ultiple blank lines (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide2000)
+    C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\Services\Common\FileComparisonDisplayService.cs(9,1): error IDE0005: Using dir
+ective is unnecessary. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0005)
+
+Build failed with 2 error(s) in 1.6s
+
+C:\dev\ktsu-dev\BlastMerge>
+```
+
+---
+
+_**User**_
+
+its still not fixed:
+
+🔍 Block 2 (Delete)
+Block Type: Delete
+
+╭────────┬─────────────────────────────────────────────┬────────┬─────────────────────────────────────────────╮
+│ Line   │ AppDataStorage/.github/workflows/dotnet.yml │ Line   │ BlastMerge/.github/workflows/dotnet.yml     │
+├────────┼─────────────────────────────────────────────┼────────┼─────────────────────────────────────────────┤
+│ 5      │     branches: [main, develop]               │ 6      │     paths-ignore:                           │
+│ 6      │     paths-ignore: ['**.md',                 │ 7      │       ["**.md",                             │
+│        │ '.github/ISSUE_TEMPLATE/**',                │        │ ".github/ISSUE_TEMPLATE/**",                │
+│        │ '.github/pull_request_template.md']         │        │ ".github/pull_request_template.md"]         │
+│ 7      │   pull_request:                             │ 8      │   pull_request:                             │
+│ 8      │ -     paths-ignore: ['**.md',               │        │                                             │
+│        │ '.github/ISSUE_TEMPLATE/**',                │        │                                             │
+│        │ '.github/pull_request_template.md']         │        │                                             │
+│ 9      │   schedule:                                 │ 10     │       ["**.md",                             │
+│        │                                             │        │ ".github/ISSUE_TEMPLATE/**",                │
+│        │                                             │        │ ".github/pull_request_template.md"]         │
+│ 10     │     - cron: "0 23 * * *"  # Daily at 11 PM  │ 11     │   schedule:                                 │
+│        │ UTC                                         │        │                                             │
+│ 11     │                                             │ 12     │     - cron: "0 23 * * *" # Daily at 11 PM   │
+│        │                                             │        │ UTC                                         │
+╰────────┴─────────────────────────────────────────────┴────────┴─────────────────────────────────────────────╯
+
+This content exists only in AppDataStorage/.github/workflows/dotnet.yml. What would you like to do?
+
+> ✅ Keep the content
+  ❌ Remove the content
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+I can see the issue is still persisting - line 9 is missing on the right side. Looking at your code example and the import change you made (removing `DiffPlex.DiffBuilder.Model` and keeping `DiffPlex.Model`), I understand now that I should use the core DiffPlex API more directly.
+
+Let me completely rewrite this using the simpler approach from your example, which processes `PiecesOld` and `PiecesNew` independently:
+
+---
+
+```diff
+  		List<(string lineNum, string content, string style)> rightPieces = [];
+  
+- 		// This follows the same approach as DiffPlex's SideBySideDiffBuilder
+- 		int aPos = 0; // Position in PiecesOld
+- 		int bPos = 0; // Position in PiecesNew
+- 
+- 		foreach (DiffPlex.Model.DiffBlock diffBlock in diffResult.DiffBlocks)
+- 		{
+- 			// Add unchanged pieces before this diff block
+- 			while (bPos < diffBlock.InsertStartB && aPos < diffBlock.DeleteStartA)
+- 			{
+- 				leftPieces.Add(((aPos + 1).ToString(), diffResult.PiecesOld[aPos], "white"));
+- 				rightPieces.Add(((bPos + 1).ToString(), diffResult.PiecesNew[bPos], "white"));
+- 				aPos++;
+- 				bPos++;
+- 			}
+- 
+- 			// Process the paired changes (modified lines)
+- 			int i = 0;
+- 			for (; i < Math.Min(diffBlock.DeleteCountA, diffBlock.InsertCountB); i++)
+- 			{
+- 				// Add deleted line from left side
+- 				leftPieces.Add(((aPos + 1).ToString(), diffResult.PiecesOld[i + diffBlock.DeleteStartA], "red on darkred"));
+- 				// Add inserted line to right side
+- 				rightPieces.Add(((bPos + 1).ToString(), diffResult.PiecesNew[i + diffBlock.InsertStartB], "green on darkgreen"));
+- 				aPos++;
+- 				bPos++;
++ 		// Process left side (PiecesOld) - similar to user's example
++ 		int leftLineNumber = 1;
++ 		for (int i = 0; i < diffResult.PiecesOld.Count; i++)
++ 		{
++ 			DiffPiece piece = diffResult.PiecesOld[i];
++ 			
++ 			if (piece.Type != ChangeType.Imaginary)
++ 			{
++ 				string style = piece.Type switch
++ 				{
++ 					ChangeType.Deleted => "red on darkred",
++ 					ChangeType.Unchanged => "white",
++ 					ChangeType.Modified => "yellow on darkorange",
++ 					_ => "white"
++ 				};
++ 				
++ 				leftPieces.Add((leftLineNumber.ToString(), piece.Text ?? "", style));
++ 				leftLineNumber++;
++ 			}
+  		}
+  
+- 			// Handle remaining deletions (more deletions than insertions)
+- 			if (diffBlock.DeleteCountA > diffBlock.InsertCountB)
+- 			{
+- 				for (; i < diffBlock.DeleteCountA; i++)
++ 		// Process right side (PiecesNew) - similar to user's example  
++ 		int rightLineNumber = 1;
++ 		for (int i = 0; i < diffResult.PiecesNew.Count; i++)
+  		{
+- 					leftPieces.Add(((aPos + 1).ToString(), diffResult.PiecesOld[i + diffBlock.DeleteStartA], "red on darkred"));
+- 					rightPieces.Add(("", "", "white")); // Empty placeholder on right
+- 					aPos++;
+- 				}
+- 			}
+- 			// Handle remaining insertions (more insertions than deletions)
+- 			else
+- 			{
+- 				for (; i < diffBlock.InsertCountB; i++)
+- 				{
+- 					leftPieces.Add(("", "", "white")); // Empty placeholder on left
+- 					rightPieces.Add(((bPos + 1).ToString(), diffResult.PiecesNew[i + diffBlock.InsertStartB], "green on darkgreen"));
+- 					bPos++;
+- 				}
+- 			}
+- 		}
+- 
+- 		// Add any remaining unchanged pieces after all diff blocks
+- 		while (bPos < diffResult.PiecesNew.Count && aPos < diffResult.PiecesOld.Count)
+- 		{
+- 			leftPieces.Add(((aPos + 1).ToString(), diffResult.PiecesOld[aPos], "white"));
+- 			rightPieces.Add(((bPos + 1).ToString(), diffResult.PiecesNew[bPos], "white"));
+- 			aPos++;
+- 			bPos++;
++ 			DiffPiece piece = diffResult.PiecesNew[i];
++ 			
++ 			if (piece.Type != ChangeType.Imaginary)
++ 			{
++ 				string style = piece.Type switch
++ 				{
++ 					ChangeType.Inserted => "green on darkgreen",
++ 					ChangeType.Unchanged => "white",
++ 					ChangeType.Modified => "yellow on darkorange",
++ 					_ => "white"
++ 				};
++ 				
++ 				rightPieces.Add((rightLineNumber.ToString(), piece.Text ?? "", style));
++ 				rightLineNumber++;
++ 			}
+  		}
+  
+- 		// Ensure both sides have the same number of rows
++ 		// Ensure both sides have the same number of rows for table display
+  		int maxRows = Math.Max(leftPieces.Count, rightPieces.Count);
+  		while (leftPieces.Count < maxRows)
+```
+
+```diff
+  		for (int i = 0; i < maxRows; i++)
+  		{
+- 			(string leftLineNum, string leftContent, string leftStyle) = leftPieces[i];
+- 			(string rightLineNum, string rightContent, string rightStyle) = rightPieces[i];
++ 			(string, string, string) leftLine = leftPieces[i];
++ 			(string, string, string) rightLine = rightPieces[i];
+  
+- 			// Format content with markup
+- 			string leftContentFormatted = string.IsNullOrEmpty(leftContent) ? "" : $"[{leftStyle}]{leftContent.EscapeMarkup()}[/]";
+- 			string rightContentFormatted = string.IsNullOrEmpty(rightContent) ? "" : $"[{rightStyle}]{rightContent.EscapeMarkup()}[/]";
++ 			// Format content with markup for both sides
++ 			string leftContent = string.IsNullOrEmpty(leftLine.Item2) ? "" : $"[{leftLine.Item3}]{leftLine.Item2.EscapeMarkup()}[/]";
++ 			string rightContent = string.IsNullOrEmpty(rightLine.Item2) ? "" : $"[{rightLine.Item3}]{rightLine.Item2.EscapeMarkup()}[/]";
+  
+  			// Add prefixes for change types
+- 			if (!string.IsNullOrEmpty(leftContent) && leftStyle.Contains("red"))
+- 			{
+- 				leftContentFormatted = "- " + leftContentFormatted;
+- 			}
+- 			else if (!string.IsNullOrEmpty(leftContent))
+- 			{
+- 				leftContentFormatted = "  " + leftContentFormatted;
++ 			if (!string.IsNullOrEmpty(leftLine.Item2))
++ 			{
++ 				string leftPrefix = leftLine.Item3.Contains("red") ? "- " : leftLine.Item3.Contains("yellow") ? "~ " : "  ";
++ 				leftContent = leftPrefix + leftContent;
+  			}
+  
+- 			if (!string.IsNullOrEmpty(rightContent) && rightStyle.Contains("green"))
+- 			{
+- 				rightContentFormatted = "+ " + rightContentFormatted;
+- 			}
+- 			else if (!string.IsNullOrEmpty(rightContent))
+- 			{
+- 				rightContentFormatted = "  " + rightContentFormatted;
++ 			if (!string.IsNullOrEmpty(rightLine.Item2))
++ 			{
++ 				string rightPrefix = rightLine.Item3.Contains("green") ? "+ " : rightLine.Item3.Contains("yellow") ? "~ " : "  ";
++ 				rightContent = rightPrefix + rightContent;
+  			}
+  
+- 			table.AddRow(leftLineNum, leftContentFormatted, rightLineNum, rightContentFormatted);
++ 			table.AddRow(leftLine.Item1, leftContent, rightLine.Item1, rightContent);
+  		}
+  	}
+```
+
+---
+
+Now let me build and test this:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+C:\dev\ktsu-dev\BlastMerge>dotnet build
+Microsoft Windows [Version 10.0.26100.4061]
+(c) Microsoft Corporation. All rights reserved.
+
+C:\dev\ktsu-dev\BlastMerge>dotnet build
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Restore complete (0.6s)
+  BlastMerge.Core succeeded (0.4s) → BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll
+  BlastMerge.ConsoleApp failed with 10 error(s) (0.3s)
+    C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\Services\Common\FileComparisonDisplayService.cs(253,4): error CS0246: The type
+ or namespace name 'DiffPiece' could not be found (are you missing a using directive or an assembly reference?)
+    C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\Services\Common\FileComparisonDisplayService.cs(255,22): error CS0103: The nam
+e 'ChangeType' does not exist in the current context
+    C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\Services\Common\FileComparisonDisplayService.cs(259,6): error CS0103: The name
+ 'ChangeType' does not exist in the current context
+    C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\Services\Common\FileComparisonDisplayService.cs(260,6): error CS0103: The name
+ 'ChangeType' does not exist in the current context
+    C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\Services\Common\FileComparisonDisplayService.cs(261,6): error CS0103: The name
+ 'ChangeType' does not exist in the current context
+    C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\Services\Common\FileComparisonDisplayService.cs(274,4): error CS0246: The type
+ or namespace name 'DiffPiece' could not be found (are you missing a using directive or an assembly reference?)
+    C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\Services\Common\FileComparisonDisplayService.cs(276,22): error CS0103: The nam
+e 'ChangeType' does not exist in the current context
+    C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\Services\Common\FileComparisonDisplayService.cs(280,6): error CS0103: The name
+ 'ChangeType' does not exist in the current context
+    C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\Services\Common\FileComparisonDisplayService.cs(281,6): error CS0103: The name
+ 'ChangeType' does not exist in the current context
+    C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\Services\Common\FileComparisonDisplayService.cs(282,6): error CS0103: The name
+ 'ChangeType' does not exist in the current context
+
+Build failed with 10 error(s) in 1.6s
+
+C:\dev\ktsu-dev\BlastMerge>
+```
+
+---
+
+I see the issue - I need to use the correct types from the DiffPlex.Model namespace. Let me check the correct types:
+
+---
+
+<details>
+            <summary>Searched web "DiffPlex.Model DiffResult PiecesOld PiecesNew DiffPiece ChangeType namespace" • **6** results</summary>
+        
+| Title | URL |
+|-------|-----|
+| diffplex/DiffPlex/DiffBuilder/SideBySideDiffBuilder.cs at ... | https://github.com/mmanela/diffplex/blob/master/DiffPlex/DiffBuilder/SideBySideDiffBuilder.cs |
+| InlineDiffBuilder.cs - mmanela/diffplex | https://github.com/mmanela/diffplex/blob/master/DiffPlex/DiffBuilder/InlineDiffBuilder.cs |
+| DiffPlex 1.7.2 | https://www.nuget.org/packages/DiffPlex |
+| Build software better, together | https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fmmanela%2Fdiffplex%2Fblob%2F201825eeb34e7c1f011dbbcac2d283b71c0f4f70%2FDiffPlex%2FDiffBuilder%2FModel%2FDiffPiece.cs |
+| GitHub - mmanela/diffplex: DiffPlex is Netstandard 1.0+ C# library to generate textual diffs. | https://github.com/mmanela/diffplex |
+| DiffPlex 1.7.2 | https://www.nuget.org/packages/DiffPlex |
+
+</details>
+
+---
+
+Perfect! Now I understand the correct types to use. The issue is that DiffPlex has two different types with similar names:
+- `DiffPlex.Model.DiffPiece` (for the core DiffPlex API)
+- `DiffPlex.DiffBuilder.Model.DiffPiece` (for the diff builder API)
+
+I need to use the core DiffPlex types. Let me fix the compilation errors:
+
+---
+
+```diff
+  using ktsu.BlastMerge.Core.Services;
+  using Spectre.Console;
++ using System;
++ using System.Collections.Generic;
++ using System.Linq;
+  
+  /// <summary>
+```
+
+---
+
+I see I need to add the correct using directive. Let me fix this:
+
+---
+
+
+
+---
+
+Let me check the current using statements:
+
+---
+
+Read file: BlastMerge.ConsoleApp/Services/Common/FileComparisonDisplayService.cs
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+_**User**_
+
+lets make sure were using the strategy from project directory
+
+---
+
+_**Assistant**_
+
+
+
+---
+

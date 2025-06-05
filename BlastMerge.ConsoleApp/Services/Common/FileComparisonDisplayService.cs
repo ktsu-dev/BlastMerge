@@ -10,6 +10,9 @@ using DiffPlex.Model;
 using ktsu.BlastMerge.Core.Models;
 using ktsu.BlastMerge.Core.Services;
 using Spectre.Console;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 /// <summary>
 /// Centralized service for file comparison display functionality.
@@ -243,108 +246,91 @@ public static class FileComparisonDisplayService
 	/// <param name="diffResult">The diff result with diff blocks.</param>
 	private static void PopulateTableWithDiffBlocks(Table table, DiffResult diffResult)
 	{
-		List<(string lineNum, string content, string style)> leftPieces = [];
-		List<(string lineNum, string content, string style)> rightPieces = [];
+		string[] linesA = [.. diffResult.PiecesOld];
+		string[] linesB = [.. diffResult.PiecesNew];
 
-		// This follows the same approach as DiffPlex's SideBySideDiffBuilder
-		int aPos = 0; // Position in PiecesOld
-		int bPos = 0; // Position in PiecesNew
+		const int contextLines = 3; // Show 3 lines of context around changes
 
-		foreach (DiffPlex.Model.DiffBlock diffBlock in diffResult.DiffBlocks)
+		foreach (DiffPlex.Model.DiffBlock block in diffResult.DiffBlocks)
 		{
-			// Add unchanged pieces before this diff block
-			while (bPos < diffBlock.InsertStartB && aPos < diffBlock.DeleteStartA)
-			{
-				leftPieces.Add(((aPos + 1).ToString(), diffResult.PiecesOld[aPos], "white"));
-				rightPieces.Add(((bPos + 1).ToString(), diffResult.PiecesNew[bPos], "white"));
-				aPos++;
-				bPos++;
-			}
+			// Calculate context range
+			int startA = Math.Max(0, block.DeleteStartA - contextLines);
+			int endA = Math.Min(linesA.Length - 1, block.DeleteStartA + block.DeleteCountA + contextLines - 1);
 
-			// Process the paired changes (modified lines)
-			int i = 0;
-			for (; i < Math.Min(diffBlock.DeleteCountA, diffBlock.InsertCountB); i++)
-			{
-				// Add deleted line from left side
-				leftPieces.Add(((aPos + 1).ToString(), diffResult.PiecesOld[i + diffBlock.DeleteStartA], "red on darkred"));
-				// Add inserted line to right side
-				rightPieces.Add(((bPos + 1).ToString(), diffResult.PiecesNew[i + diffBlock.InsertStartB], "green on darkgreen"));
-				aPos++;
-				bPos++;
-			}
+			int startB = Math.Max(0, block.InsertStartB - contextLines);
+			int endB = Math.Min(linesB.Length - 1, block.InsertStartB + block.InsertCountB + contextLines - 1);
 
-			// Handle remaining deletions (more deletions than insertions)
-			if (diffBlock.DeleteCountA > diffBlock.InsertCountB)
+			// Show context before changes
+			int contextStart = Math.Min(startA, startB);
+			int preContextLines = Math.Min(contextLines, Math.Min(block.DeleteStartA, block.InsertStartB));
+
+			for (int i = 0; i < preContextLines; i++)
 			{
-				for (; i < diffBlock.DeleteCountA; i++)
+				int lineA = block.DeleteStartA - preContextLines + i;
+				int lineB = block.InsertStartB - preContextLines + i;
+
+				if (lineA >= 0 && lineA < linesA.Length && lineB >= 0 && lineB < linesB.Length)
 				{
-					leftPieces.Add(((aPos + 1).ToString(), diffResult.PiecesOld[i + diffBlock.DeleteStartA], "red on darkred"));
-					rightPieces.Add(("", "", "white")); // Empty placeholder on right
-					aPos++;
+					string leftContent = $"  {linesA[lineA].EscapeMarkup()}";
+					string rightContent = $"  {linesB[lineB].EscapeMarkup()}";
+					table.AddRow((lineA + 1).ToString(), leftContent, (lineB + 1).ToString(), rightContent);
 				}
 			}
-			// Handle remaining insertions (more insertions than deletions)
-			else
+
+			// Show the actual changes
+			int maxChanges = Math.Max(block.DeleteCountA, block.InsertCountB);
+
+			for (int i = 0; i < maxChanges; i++)
 			{
-				for (; i < diffBlock.InsertCountB; i++)
+				string leftLineNum = "";
+				string leftContent = "";
+				string rightLineNum = "";
+				string rightContent = "";
+
+				// Handle deleted lines (left side)
+				if (i < block.DeleteCountA)
 				{
-					leftPieces.Add(("", "", "white")); // Empty placeholder on left
-					rightPieces.Add(((bPos + 1).ToString(), diffResult.PiecesNew[i + diffBlock.InsertStartB], "green on darkgreen"));
-					bPos++;
+					int lineIndex = block.DeleteStartA + i;
+					leftLineNum = (lineIndex + 1).ToString();
+					leftContent = $"[red on darkred]- {linesA[lineIndex].EscapeMarkup()}[/]";
+				}
+
+				// Handle inserted lines (right side)
+				if (i < block.InsertCountB)
+				{
+					int lineIndex = block.InsertStartB + i;
+					rightLineNum = (lineIndex + 1).ToString();
+					rightContent = $"[green on darkgreen]+ {linesB[lineIndex].EscapeMarkup()}[/]";
+				}
+
+				table.AddRow(leftLineNum, leftContent, rightLineNum, rightContent);
+			}
+
+			// Show context after changes
+			int postContextLines = contextLines;
+			int leftPostStart = block.DeleteStartA + block.DeleteCountA;
+			int rightPostStart = block.InsertStartB + block.InsertCountB;
+
+			for (int i = 0; i < postContextLines; i++)
+			{
+				int lineA = leftPostStart + i;
+				int lineB = rightPostStart + i;
+
+				if (lineA < linesA.Length && lineB < linesB.Length)
+				{
+					string leftContent = $"  {linesA[lineA].EscapeMarkup()}";
+					string rightContent = $"  {linesB[lineB].EscapeMarkup()}";
+					table.AddRow((lineA + 1).ToString(), leftContent, (lineB + 1).ToString(), rightContent);
 				}
 			}
-		}
 
-		// Add any remaining unchanged pieces after all diff blocks
-		while (bPos < diffResult.PiecesNew.Count && aPos < diffResult.PiecesOld.Count)
-		{
-			leftPieces.Add(((aPos + 1).ToString(), diffResult.PiecesOld[aPos], "white"));
-			rightPieces.Add(((bPos + 1).ToString(), diffResult.PiecesNew[bPos], "white"));
-			aPos++;
-			bPos++;
-		}
-
-		// Ensure both sides have the same number of rows
-		int maxRows = Math.Max(leftPieces.Count, rightPieces.Count);
-		while (leftPieces.Count < maxRows)
-		{
-			leftPieces.Add(("", "", "white"));
-		}
-		while (rightPieces.Count < maxRows)
-		{
-			rightPieces.Add(("", "", "white"));
-		}
-
-		// Add rows to table
-		for (int i = 0; i < maxRows; i++)
-		{
-			(string leftLineNum, string leftContent, string leftStyle) = leftPieces[i];
-			(string rightLineNum, string rightContent, string rightStyle) = rightPieces[i];
-
-			// Format content with markup
-			string leftContentFormatted = string.IsNullOrEmpty(leftContent) ? "" : $"[{leftStyle}]{leftContent.EscapeMarkup()}[/]";
-			string rightContentFormatted = string.IsNullOrEmpty(rightContent) ? "" : $"[{rightStyle}]{rightContent.EscapeMarkup()}[/]";
-
-			// Add prefixes for change types
-			if (!string.IsNullOrEmpty(leftContent) && leftStyle.Contains("red"))
+			// Add separator between blocks if there are more blocks
+			if (block != diffResult.DiffBlocks.Last())
 			{
-				leftContentFormatted = "- " + leftContentFormatted;
+				table.AddEmptyRow();
+				table.AddRow("[dim]...[/]", "[dim]...[/]", "[dim]...[/]", "[dim]...[/]");
+				table.AddEmptyRow();
 			}
-			else if (!string.IsNullOrEmpty(leftContent))
-			{
-				leftContentFormatted = "  " + leftContentFormatted;
-			}
-
-			if (!string.IsNullOrEmpty(rightContent) && rightStyle.Contains("green"))
-			{
-				rightContentFormatted = "+ " + rightContentFormatted;
-			}
-			else if (!string.IsNullOrEmpty(rightContent))
-			{
-				rightContentFormatted = "  " + rightContentFormatted;
-			}
-
-			table.AddRow(leftLineNum, leftContentFormatted, rightLineNum, rightContentFormatted);
 		}
 	}
 

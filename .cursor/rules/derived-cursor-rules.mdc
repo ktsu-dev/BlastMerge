@@ -132,13 +132,6 @@ globs: *
 -   When displaying file paths during iterative merge, and files have the same relative path in different repositories, show the unique parts of the path to distinguish between the files.
 -   In `PopulateTableWithDiffLines` method, ensure that the side-by-side diff implementation correctly pairs lines based on the DiffPlex model, rather than assuming a one-to-one mapping by array index.
 -   When generating insert and delete choices during iterative merge, use `FileDisplayService.GetDistinguishingLabels()` instead of `FileDisplayService.GetRelativeDirectoryName()` to provide meaningful labels that help distinguish between different versions of files from different directories/repositories.
--   Ensure that diff blocks are combined to reduce the number of piecemeal changes that have to be viewed. This happens in two different parts of the system:
-    -   For Interactive Merging (Block-by-block choices), in the `BlockMerger.cs` service, the `ConvertDifferencesToBlocks` method specifically combines contiguous changes into logical blocks. The `IsContiguousDifference` method defines contiguous as differences within 1 line of each other.
-    -   For Side-by-Side Display, the side-by-side diff display also uses intelligent pairing logic to reduce visual clutter by properly aligning and grouping related changes.
--   In `PopulateTableWithDiffLines` method, the side-by-side diff implementation was updated to correctly pair lines based on the DiffPlex model, rather than assuming a one-to-one mapping by array index. The previous implementation incorrectly treated DiffPlex's side-by-side model as having corresponding lines at the same array indices. The corrected implementation tracks indices and line numbers separately for left and right sides and handles different change types appropriately (Unchanged, Deleted+Inserted, Standalone Deletions/Insertions, Modified, Imaginary).
--   In `GetInsertChoice` and `GetDeleteChoice` methods, `FileDisplayService.GetDistinguishingLabels()` should be used instead of `FileDisplayService.GetRelativeDirectoryName()` to provide meaningful labels that help distinguish between different versions of files from different directories/repositories during iterative merge.
--   In `PopulateTableWithDiffLines` method, the side-by-side diff implementation was updated to correctly pair lines based on the DiffPlex model, rather than assuming a one-to-one mapping by array index. The previous implementation incorrectly treated DiffPlex's side-by-side model as having corresponding lines at the same array indices. The corrected implementation tracks indices and line numbers separately for left and right sides and handles different change types appropriately (Unchanged, Deleted+Inserted, Standalone Deletions/Insertions, Modified, Imaginary).
--   In `PopulateTableWithDiffLines` method, the side-by-side diff implementation was updated again to simplify and take a more straightforward approach that ensures **every line gets displayed**.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -189,6 +182,7 @@ globs: *
     -   For Side-by-Side Display, the side-by-side diff display also uses intelligent pairing logic to reduce visual clutter by properly aligning and grouping related changes.
 -   In `PopulateTableWithDiffLines` method, the side-by-side diff implementation was updated to correctly pair lines based on the DiffPlex model, rather than assuming a one-to-one mapping by array index. The previous implementation incorrectly treated DiffPlex's side-by-side model as having corresponding lines at the same array indices. The corrected implementation tracks indices and line numbers separately for left and right sides and handles different change types appropriately (Unchanged, Deleted+Inserted, Standalone Deletions/Insertions, Modified, Imaginary).
 -   In `PopulateTableWithDiffLines` method, the side-by-side diff implementation was updated again to simplify and take a more straightforward approach that ensures **every line gets displayed**.
+-   The `ShowSideBySideDiff` method should use the core DiffPlex API directly, specifically `Differ.Instance.CreateLineDiffs()` to get a `DiffResult` with `DiffBlocks`. The method should then manually create a side-by-side display by processing each `DiffBlock`, ensuring proper alignment, context handling, and padding logic. This approach involves processing `PiecesOld` and `PiecesNew` independently to generate the side-by-side view.
 
 ## DEBUGGING
 
@@ -348,3 +342,23 @@ globs: *
 -   The `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` should have only one `dotnet publish` step, consolidating the previous separate steps for general application and winget package publishing.
 -   The executable name in the winget manifest (`winget/ktsu.BlastMerge.installer.yaml`) should match the actual executable name in the build output directory (e.g., `ktsu.BlastMerge.ConsoleApp.exe`).
 - Add a `--version` command-line argument that winget validation requires. When winget calls `blastmerge.exe --version`, it should display the application's version.
+- The `HistoryInput.cs` file must handle cases where it cannot create a directory in `ApplicationData`, and should fall back to a temporary directory or the current directory.
+
+## CROSS PLATFORM SUPPORT
+
+-   The application should publish portable zip files for Linux and macOS platforms in addition to Windows, even if they are not included in the winget manifest.
+
+## PUBLISHING RULES
+
+-   The `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` should have only one `dotnet publish` step, consolidating the previous separate steps for general application and winget package publishing.
+-   When publishing, all applications should be published with the same optimized settings (self-contained, single-file, etc.) whether they're for general use or winget packages.
+-   Every project should be published for all specified architectures (win-x64, win-x86, win-arm64, linux-x64, linux-arm64, osx-x64, osx-arm64) in a single pass.
+-   General application ZIP files should be created for all projects and architectures.
+-   SHA256 hashes should be generated for all published packages across all platforms.
+-   The staging directory should contain all the packages and the `hashes.txt` file.
+-   The build script `PSBuild.psm1` must respect the "should release" flag and not push files to package repos from a branch build.
+-   The GitHub release creation in `Invoke-ReleaseWorkflow` must check the `ShouldRelease` flag and only create releases when `ShouldRelease` is true (main branch + not tagged + official repo).
+
+## WINGET INSTALLATION
+
+- The executable name in the
