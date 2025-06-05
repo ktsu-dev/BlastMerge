@@ -545,13 +545,24 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		try
 		{
 			string json = JsonSerializer.Serialize(allBatches, JsonSerializerOptions);
-
 			File.WriteAllText(exportPath, json);
 			ShowSuccess($"Exported {allBatches.Count} batch configurations to '{exportPath}'");
 		}
-		catch (Exception ex)
+		catch (UnauthorizedAccessException ex)
 		{
-			ShowError($"Failed to export batches: {ex.Message}");
+			ShowError($"Access denied to file '{exportPath}': {ex.Message}");
+		}
+		catch (DirectoryNotFoundException ex)
+		{
+			ShowError($"Directory not found for path '{exportPath}': {ex.Message}");
+		}
+		catch (IOException ex)
+		{
+			ShowError($"I/O error while writing to '{exportPath}': {ex.Message}");
+		}
+		catch (JsonException ex)
+		{
+			ShowError($"Failed to serialize batch configurations: {ex.Message}");
 		}
 
 		WaitForKeyPress();
@@ -581,9 +592,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 
 		try
 		{
-			string json = File.ReadAllText(importPath);
-			List<BatchConfiguration>? importedBatches = JsonSerializer.Deserialize<List<BatchConfiguration>>(json, JsonSerializerOptions);
-
+			List<BatchConfiguration>? importedBatches = LoadBatchesFromFile(importPath);
 			if (importedBatches == null || importedBatches.Count == 0)
 			{
 				ShowWarning("No valid batch configurations found in the file.");
@@ -591,81 +600,157 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 				return;
 			}
 
-			// Show what will be imported
-			AnsiConsole.MarkupLine($"[cyan]Found {importedBatches.Count} batch configurations to import:[/]");
-			foreach (BatchConfiguration batch in importedBatches)
-			{
-				AnsiConsole.MarkupLine($"  • [green]{batch.Name}[/] - {batch.FilePatterns.Count} patterns");
-			}
-
-			bool proceed = AnsiConsole.Confirm("\n[cyan]Proceed with import?[/]");
-			if (!proceed)
+			if (!ConfirmImport(importedBatches))
 			{
 				ShowWarning("Import cancelled.");
 				WaitForKeyPress();
 				return;
 			}
 
-			// Import batches
-			int successCount = 0;
-			int skipCount = 0;
-			int errorCount = 0;
-
-			foreach (BatchConfiguration batch in importedBatches)
-			{
-				if (!batch.IsValid())
-				{
-					AnsiConsole.MarkupLine($"[red]Skipping invalid batch: {batch.Name}[/]");
-					errorCount++;
-					continue;
-				}
-
-				// Check if batch already exists
-				BatchConfiguration? existing = BatchManager.LoadBatch(batch.Name);
-				if (existing != null)
-				{
-					bool overwrite = AnsiConsole.Confirm($"[yellow]Batch '{batch.Name}' already exists. Overwrite?[/]");
-					if (!overwrite)
-					{
-						AnsiConsole.MarkupLine($"[yellow]Skipped existing batch: {batch.Name}[/]");
-						skipCount++;
-						continue;
-					}
-				}
-
-				// Set import timestamps
-				batch.CreatedDate = DateTime.UtcNow;
-				batch.LastModified = DateTime.UtcNow;
-
-				bool saved = BatchManager.SaveBatch(batch);
-				if (saved)
-				{
-					AnsiConsole.MarkupLine($"[green]Imported: {batch.Name}[/]");
-					successCount++;
-				}
-				else
-				{
-					AnsiConsole.MarkupLine($"[red]Failed to save: {batch.Name}[/]");
-					errorCount++;
-				}
-			}
-
-			// Show import summary
-			AnsiConsole.MarkupLine($"\n[bold]Import Summary:[/]");
-			AnsiConsole.MarkupLine($"[green]Imported: {successCount}[/]");
-			AnsiConsole.MarkupLine($"[yellow]Skipped: {skipCount}[/]");
-			AnsiConsole.MarkupLine($"[red]Errors: {errorCount}[/]");
+			ImportBatchResults results = ProcessBatchImport(importedBatches);
+			DisplayImportSummary(results);
+		}
+		catch (UnauthorizedAccessException ex)
+		{
+			ShowError($"Access denied to file '{importPath}': {ex.Message}");
+		}
+		catch (FileNotFoundException ex)
+		{
+			ShowError($"File not found: {ex.Message}");
+		}
+		catch (IOException ex)
+		{
+			ShowError($"I/O error while reading '{importPath}': {ex.Message}");
 		}
 		catch (JsonException ex)
 		{
 			ShowError($"Invalid JSON format: {ex.Message}");
 		}
-		catch (Exception ex)
-		{
-			ShowError($"Import failed: {ex.Message}");
-		}
 
 		WaitForKeyPress();
+	}
+
+	/// <summary>
+	/// Loads batch configurations from a JSON file.
+	/// </summary>
+	/// <param name="filePath">The path to the JSON file.</param>
+	/// <returns>The loaded batch configurations, or null if loading failed.</returns>
+	private static List<BatchConfiguration>? LoadBatchesFromFile(string filePath)
+	{
+		string json = File.ReadAllText(filePath);
+		return JsonSerializer.Deserialize<List<BatchConfiguration>>(json, JsonSerializerOptions);
+	}
+
+	/// <summary>
+	/// Displays import preview and asks for user confirmation.
+	/// </summary>
+	/// <param name="batches">The batches to import.</param>
+	/// <returns>True if the user confirmed the import, false otherwise.</returns>
+	private static bool ConfirmImport(List<BatchConfiguration> batches)
+	{
+		AnsiConsole.MarkupLine($"[cyan]Found {batches.Count} batch configurations to import:[/]");
+		foreach (BatchConfiguration batch in batches)
+		{
+			AnsiConsole.MarkupLine($"  • [green]{batch.Name}[/] - {batch.FilePatterns.Count} patterns");
+		}
+
+		return AnsiConsole.Confirm("\n[cyan]Proceed with import?[/]");
+	}
+
+	/// <summary>
+	/// Processes the import of batch configurations.
+	/// </summary>
+	/// <param name="batches">The batches to import.</param>
+	/// <returns>The import results.</returns>
+	private static ImportBatchResults ProcessBatchImport(List<BatchConfiguration> batches)
+	{
+		ImportBatchResults results = new();
+
+		foreach (BatchConfiguration batch in batches)
+		{
+			if (!batch.IsValid())
+			{
+				AnsiConsole.MarkupLine($"[red]Skipping invalid batch: {batch.Name}[/]");
+				results.ErrorCount++;
+				continue;
+			}
+
+			if (HandleExistingBatch(batch))
+			{
+				results.SkipCount++;
+				continue;
+			}
+
+			if (ImportSingleBatch(batch))
+			{
+				AnsiConsole.MarkupLine($"[green]Imported: {batch.Name}[/]");
+				results.SuccessCount++;
+			}
+			else
+			{
+				AnsiConsole.MarkupLine($"[red]Failed to save: {batch.Name}[/]");
+				results.ErrorCount++;
+			}
+		}
+
+		return results;
+	}
+
+	/// <summary>
+	/// Handles the case when a batch with the same name already exists.
+	/// </summary>
+	/// <param name="batch">The batch to check.</param>
+	/// <returns>True if the batch should be skipped, false if it should be processed.</returns>
+	private static bool HandleExistingBatch(BatchConfiguration batch)
+	{
+		BatchConfiguration? existing = BatchManager.LoadBatch(batch.Name);
+		if (existing == null)
+		{
+			return false;
+		}
+
+		bool overwrite = AnsiConsole.Confirm($"[yellow]Batch '{batch.Name}' already exists. Overwrite?[/]");
+		if (!overwrite)
+		{
+			AnsiConsole.MarkupLine($"[yellow]Skipped existing batch: {batch.Name}[/]");
+			return true;
+		}
+
+		return false;
+	}
+
+	/// <summary>
+	/// Imports a single batch configuration.
+	/// </summary>
+	/// <param name="batch">The batch to import.</param>
+	/// <returns>True if the import was successful, false otherwise.</returns>
+	private static bool ImportSingleBatch(BatchConfiguration batch)
+	{
+		batch.CreatedDate = DateTime.UtcNow;
+		batch.LastModified = DateTime.UtcNow;
+		return BatchManager.SaveBatch(batch);
+	}
+
+	/// <summary>
+	/// Displays the import summary.
+	/// </summary>
+	/// <param name="results">The import results.</param>
+	private static void DisplayImportSummary(ImportBatchResults results)
+	{
+		AnsiConsole.MarkupLine($"\n[bold]Import Summary:[/]");
+		AnsiConsole.MarkupLine($"[green]Imported: {results.SuccessCount}[/]");
+		AnsiConsole.MarkupLine($"[yellow]Skipped: {results.SkipCount}[/]");
+		AnsiConsole.MarkupLine($"[red]Errors: {results.ErrorCount}[/]");
+	}
+
+	/// <summary>
+	/// Represents the results of a batch import operation.
+	/// </summary>
+	private sealed class ImportBatchResults
+	{
+		public int SuccessCount { get; set; }
+		public int SkipCount { get; set; }
+		public int ErrorCount { get; set; }
 	}
 
 	/// <summary>
