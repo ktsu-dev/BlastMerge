@@ -49,13 +49,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// <param name="fileName">The filename pattern to search for.</param>
 	public override void ProcessFiles(string directory, string fileName)
 	{
-		ArgumentNullException.ThrowIfNull(directory);
-		ArgumentNullException.ThrowIfNull(fileName);
-
-		if (!Directory.Exists(directory))
-		{
-			throw new DirectoryNotFoundException($"Directory '{directory}' does not exist.");
-		}
+		ValidateDirectoryAndFileName(directory, fileName);
 
 		AnsiConsole.MarkupLine($"[cyan]Processing files matching pattern '[yellow]{fileName}[/]' in '[yellow]{directory}[/]'[/]");
 		AnsiConsole.WriteLine();
@@ -129,11 +123,7 @@ public class ConsoleApplicationService : ApplicationService
 	{
 		ArgumentNullException.ThrowIfNull(directory);
 		ArgumentNullException.ThrowIfNull(batchName);
-
-		if (!Directory.Exists(directory))
-		{
-			throw new DirectoryNotFoundException($"Directory '{directory}' does not exist.");
-		}
+		ValidateDirectoryExists(directory);
 
 		BatchConfiguration? batch = GetBatchConfiguration(batchName);
 		if (batch == null)
@@ -334,12 +324,25 @@ public class ConsoleApplicationService : ApplicationService
 	/// </summary>
 	/// <param name="directory">The directory to search.</param>
 	/// <param name="fileName">The file name pattern to match.</param>
-	private void RunBatchIterativeMerge(string directory, string fileName)
+	private void RunBatchIterativeMerge(string directory, string fileName) =>
+		RunIterativeMergeWithCallbacks(directory, fileName, BatchMergeCallback, ConsoleStatusCallback, BatchContinueCallback);
+
+	/// <summary>
+	/// Runs iterative merge with custom callbacks - shared implementation for both interactive and batch modes.
+	/// </summary>
+	/// <param name="directory">The directory to search.</param>
+	/// <param name="fileName">The file name pattern to match.</param>
+	/// <param name="mergeCallback">Callback for handling merge conflicts.</param>
+	/// <param name="statusCallback">Callback for status updates.</param>
+	/// <param name="continueCallback">Callback for continuation decisions.</param>
+	private void RunIterativeMergeWithCallbacks(
+		string directory,
+		string fileName,
+		Func<string, string, string?, MergeResult?> mergeCallback,
+		Action<MergeSessionStatus> statusCallback,
+		Func<bool> continueCallback)
 	{
-		if (!Directory.Exists(directory))
-		{
-			throw new DirectoryNotFoundException($"Directory '{directory}' does not exist.");
-		}
+		ValidateDirectoryExists(directory);
 
 		// First get all files for the table display
 		IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups = CompareFiles(directory, fileName);
@@ -365,12 +368,12 @@ public class ConsoleApplicationService : ApplicationService
 			return;
 		}
 
-		// Start iterative merge process with batch callbacks (auto-continue without prompting)
+		// Start iterative merge process with provided callbacks
 		MergeCompletionResult result = IterativeMergeOrchestrator.StartIterativeMergeProcess(
 			coreFileGroups,
-			BatchMergeCallback,
-			ConsoleStatusCallback,
-			BatchContinueCallback);
+			mergeCallback,
+			statusCallback,
+			continueCallback);
 
 		// Handle result
 		ProgressReportingService.ReportCompletionResult(result);
@@ -385,23 +388,26 @@ public class ConsoleApplicationService : ApplicationService
 	/// <returns>Merge result using safe automatic conflict resolution.</returns>
 	private static MergeResult? BatchMergeCallback(string file1, string file2, string? existingContent)
 	{
-		// For batch processing, use automatic conflict resolution:
-		// - If files are identical, merge them
-		// - If files have conflicts, skip merging to preserve both files safely
+		// Batch processing strategy for merge conflicts:
+		// 1. Perform the same merge operation as interactive mode
+		// 2. If files are identical, they merge cleanly without conflicts
+		// 3. If files have differences, create a merged file with conflict markers
+		//    (e.g., <<<<<<< Version 1, =======, >>>>>>> Version 2)
+		// 4. This preserves both versions of conflicting content for later manual review
+		// 5. Users can then search for conflict markers and resolve them as needed
+		//
+		// This approach is safer than the previous version which skipped all files
+		// with differences, because it still performs the merge but leaves conflicts
+		// clearly marked for human review.
 		try
 		{
-			IReadOnlyCollection<LineDifference> differences = FileDiffer.FindDifferences(file1, file2);
+			// Use the same merge logic as interactive mode but create conflict markers
+			// instead of prompting the user for choices
+			MergeResult mergeResult = FileDiffer.MergeFiles(file1, file2);
 
-			// If files are identical (no differences), safe to merge
-			if (differences.Count == 0)
-			{
-				string[] lines = File.ReadAllLines(file1);
-				return new MergeResult(lines.AsReadOnly(), Array.Empty<MergeConflict>().AsReadOnly());
-			}
-
-			// If files have differences, skip merging in batch mode for safety
-			// This preserves both files rather than making potentially incorrect automatic choices
-			return null;
+			// Return the merge result even if it has conflicts - the conflict markers
+			// will preserve both versions of conflicting content for later review
+			return mergeResult;
 		}
 		catch (IOException)
 		{
@@ -457,81 +463,15 @@ public class ConsoleApplicationService : ApplicationService
 		AnsiConsole.MarkupLine($"[dim]Processed {totalPatternsProcessed} patterns, found {totalFilesFound} total files.[/]");
 	}
 
-	/// <summary>
-	/// Compares files in a directory and returns file groups.
-	/// </summary>
-	/// <param name="directory">The directory containing files to compare.</param>
-	/// <param name="fileName">The filename pattern to search for.</param>
-	/// <returns>Dictionary of file groups organized by hash.</returns>
-	public override IReadOnlyDictionary<string, IReadOnlyCollection<string>> CompareFiles(string directory, string fileName)
-	{
-		ArgumentNullException.ThrowIfNull(directory);
-		ArgumentNullException.ThrowIfNull(fileName);
-
-		if (!Directory.Exists(directory))
-		{
-			throw new DirectoryNotFoundException($"Directory '{directory}' does not exist.");
-		}
-
-		IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(directory, fileName);
-		IReadOnlyCollection<FileGroup> fileGroups = FileDiffer.GroupFilesByHash(filePaths);
-
-		// Convert FileGroup collection to Dictionary<string, IReadOnlyCollection<string>>
-		Dictionary<string, IReadOnlyCollection<string>> result = [];
-		foreach (FileGroup group in fileGroups)
-		{
-			result[group.Hash] = group.FilePaths;
-		}
-
-		return result.AsReadOnly();
-	}
+	// CompareFiles method removed - using base class implementation since it's identical
 
 	/// <summary>
 	/// Runs iterative merge on files in a directory.
 	/// </summary>
 	/// <param name="directory">The directory to search.</param>
 	/// <param name="fileName">The file name pattern to match.</param>
-	public override void RunIterativeMerge(string directory, string fileName)
-	{
-		if (!Directory.Exists(directory))
-		{
-			throw new DirectoryNotFoundException($"Directory '{directory}' does not exist.");
-		}
-
-		// First get all files for the table display
-		IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups = CompareFiles(directory, fileName);
-		int totalFiles = fileGroups.Sum(g => g.Value.Count);
-
-		// Show the improved table summary first
-		ShowFileGroupSummaryTable(fileGroups, directory, totalFiles);
-
-		// Check if there are any groups with multiple files that can be merged
-		int groupsWithMultipleFiles = fileGroups.Count(g => g.Value.Count > 1);
-		if (groupsWithMultipleFiles == 0)
-		{
-			// Table already showed this information, so just return
-			return;
-		}
-
-		// Prepare file groups for merging using the Core library
-		IReadOnlyCollection<FileGroup>? coreFileGroups = IterativeMergeOrchestrator.PrepareFileGroupsForMerging(directory, fileName);
-
-		if (coreFileGroups == null)
-		{
-			AnsiConsole.MarkupLine("[yellow]No files found or insufficient unique versions to merge.[/]");
-			return;
-		}
-
-		// Start iterative merge process with console callbacks
-		MergeCompletionResult result = IterativeMergeOrchestrator.StartIterativeMergeProcess(
-			coreFileGroups,
-			ConsoleMergeCallback,
-			ConsoleStatusCallback,
-			ConsoleContinueCallback);
-
-		// Handle result
-		ProgressReportingService.ReportCompletionResult(result);
-	}
+	public override void RunIterativeMerge(string directory, string fileName) =>
+		RunIterativeMergeWithCallbacks(directory, fileName, ConsoleMergeCallback, ConsoleStatusCallback, ConsoleContinueCallback);
 
 	/// <summary>
 	/// Lists all available batch configurations.

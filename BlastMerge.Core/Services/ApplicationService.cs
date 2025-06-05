@@ -16,6 +16,33 @@ using ktsu.BlastMerge.Core.Models;
 public abstract class ApplicationService : IApplicationService
 {
 	/// <summary>
+	/// Validates that parameters are not null and directory exists.
+	/// </summary>
+	/// <param name="directory">The directory to validate.</param>
+	/// <param name="fileName">The filename pattern to validate.</param>
+	/// <exception cref="ArgumentNullException">Thrown when directory or fileName is null.</exception>
+	/// <exception cref="DirectoryNotFoundException">Thrown when directory does not exist.</exception>
+	protected static void ValidateDirectoryAndFileName(string directory, string fileName)
+	{
+		ArgumentNullException.ThrowIfNull(directory);
+		ArgumentNullException.ThrowIfNull(fileName);
+		ValidateDirectoryExists(directory);
+	}
+
+	/// <summary>
+	/// Validates that the directory exists.
+	/// </summary>
+	/// <param name="directory">The directory to validate.</param>
+	/// <exception cref="DirectoryNotFoundException">Thrown when directory does not exist.</exception>
+	protected static void ValidateDirectoryExists(string directory)
+	{
+		if (!Directory.Exists(directory))
+		{
+			throw new DirectoryNotFoundException($"Directory '{directory}' does not exist.");
+		}
+	}
+
+	/// <summary>
 	/// Processes files in a directory with a specified filename pattern.
 	/// </summary>
 	/// <param name="directory">The directory to process.</param>
@@ -37,13 +64,7 @@ public abstract class ApplicationService : IApplicationService
 	/// <returns>Dictionary of file groups organized by hash.</returns>
 	public virtual IReadOnlyDictionary<string, IReadOnlyCollection<string>> CompareFiles(string directory, string fileName)
 	{
-		ArgumentNullException.ThrowIfNull(directory);
-		ArgumentNullException.ThrowIfNull(fileName);
-
-		if (!Directory.Exists(directory))
-		{
-			throw new DirectoryNotFoundException($"Directory '{directory}' does not exist.");
-		}
+		ValidateDirectoryAndFileName(directory, fileName);
 
 		IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(directory, fileName);
 		IReadOnlyCollection<FileGroup> fileGroups = FileDiffer.GroupFilesByHash(filePaths);

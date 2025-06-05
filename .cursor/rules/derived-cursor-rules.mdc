@@ -151,6 +151,7 @@ globs: *
     - All the duplicate files in that group are identical (same hash)
     - No user action is needed since there are no conflicts to resolve
 -   When there are multiple groups with multiple files, it means there are multiple different versions (with different content), not just identical copies. The message should indicate that there are **different versions** that need merging, not just identical copies.
+-   Refactor the `BlastMerge.Core/Services/ApplicationService.cs`, `BlastMerge.ConsoleApp/ConsoleApplicationService.cs`, and `BlastMerge.ConsoleApp/Services/InteractiveMergeService.cs` to reduce code duplication.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -340,7 +341,3 @@ globs: *
 -   Use `UIHelper` class for common UI operations and standardized display methods.
 -   Implement a navigation stack so that users can go back to where they were instead of back to the main menu.
 -   When the navigation stack is:
-    1. Main Menu
-    2. Compare Files
-
-    The `Peek()` returns "Compare Files" (the current menu), but the back button should go to "Main Menu" (the previous menu). Modify the `GetBackMenuText()` method to
