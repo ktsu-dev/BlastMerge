@@ -6,6 +6,7 @@ namespace ktsu.BlastMerge.Test;
 
 using System;
 using System.IO;
+using ktsu.BlastMerge.Core.Models;
 using ktsu.BlastMerge.Test.Adapters;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 

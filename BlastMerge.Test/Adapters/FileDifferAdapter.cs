@@ -9,7 +9,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.IO.Abstractions;
-using ktsu.BlastMerge.Core;
+using ktsu.BlastMerge.Core.Models;
+using ktsu.BlastMerge.Core.Services;
 
 /// <summary>
 /// Adapter for FileDiffer that works with a mock filesystem
