@@ -18,21 +18,43 @@ public static class MenuDisplayService
 	{
 		AnsiConsole.Clear();
 
+		// Epic title with gradient colors
 		FigletText figlet = new FigletText("BlastMerge")
 			.LeftJustified()
-			.Color(Color.Cyan1);
+			.Color(Color.DeepSkyBlue1);
 
 		AnsiConsole.Write(figlet);
 
-		Panel panel = new Panel(
-			new Markup("[bold]Cross-Repository File Synchronization Tool[/]\n\n" +
-					  "[dim]Efficiently merge and synchronize files across multiple repositories[/]\n" +
-					  "[dim]Navigate using arrow keys, press Enter to select[/]"))
-			.Header("Welcome")
-			.Border(BoxBorder.Rounded)
+		// Create an epic welcome panel with rich content
+		Table welcomeTable = new Table()
+			.BorderColor(Color.Purple)
+			.Border(TableBorder.Rounded)
+			.AddColumn(new TableColumn("").Width(80).Centered());
+
+		welcomeTable.AddRow(new Markup(
+			"[bold blue]🚀 CROSS-REPOSITORY FILE SYNCHRONIZATION TOOL 🚀[/]\n\n" +
+			"[yellow]⚡ Lightning-fast intelligent merging[/]\n" +
+			"[green]🔄 Multi-repository synchronization[/]\n" +
+			"[cyan]📊 Advanced diff visualization[/]\n" +
+			"[magenta]🎯 Whitespace-aware comparisons[/]\n" +
+			"[red]🛠️ Iterative merge resolution[/]\n\n" +
+			"[bold white on blue] POWERED BY DIFFPLEX & SPECTRE.CONSOLE [/]\n\n" +
+			"[dim]Navigate: [/][yellow]↑ ↓ Arrow Keys[/] [dim]• Select: [/][green]Enter[/] [dim]• Exit: [/][red]Escape[/]"
+		));
+
+		Panel welcomePanel = new Panel(welcomeTable)
+			.Header(new PanelHeader("[bold yellow]🌟 WELCOME TO THE FUTURE OF FILE MERGING 🌟[/]", Justify.Center))
+			.Border(BoxBorder.Double)
 			.BorderColor(Color.Blue);
 
-		AnsiConsole.Write(panel);
+		AnsiConsole.Write(welcomePanel);
+
+		// Add a status bar
+		Rule rule = new Rule("[dim]Ready to merge the impossible[/]")
+			.RuleStyle("cyan")
+			.LeftJustified();
+
+		AnsiConsole.Write(rule);
 		AnsiConsole.WriteLine();
 	}
 
@@ -43,21 +65,56 @@ public static class MenuDisplayService
 	{
 		AnsiConsole.Clear();
 
-		FigletText figlet = new FigletText("Goodbye!")
-			.Centered()
-			.Color(Color.Yellow);
+		// Epic goodbye with multiple figlet texts
+		FigletText thankYou = new FigletText("Thank You!")
+			.LeftJustified()
+			.Color(Color.Gold1);
 
-		AnsiConsole.Write(figlet);
+		AnsiConsole.Write(thankYou);
 
-		Panel panel = new Panel(
-			new Markup("[bold]Thank you for using BlastMerge![/]\n\n" +
-					  "[dim]Your files have been processed successfully.[/]\n" +
-					  "[dim]Visit us at https://github.com/ktsu-dev/BlastMerge for updates.[/]"))
-			.Header("Session Complete")
-			.Border(BoxBorder.Rounded)
+		FigletText goodbye = new FigletText("Goodbye!")
+			.LeftJustified()
+			.Color(Color.DeepPink1);
+
+		AnsiConsole.Write(goodbye);
+
+		// Create epic goodbye content
+		Table goodbyeTable = new Table()
+			.BorderColor(Color.Gold1)
+			.Border(TableBorder.Heavy)
+			.AddColumn(new TableColumn("").Width(70).Centered());
+
+		goodbyeTable.AddRow(new Markup(
+			"[bold green]🎉 MISSION ACCOMPLISHED! 🎉[/]\n\n" +
+			"[yellow]✨ Your files have been perfectly synchronized[/]\n" +
+			"[cyan]🔥 Changes merged with surgical precision[/]\n" +
+			"[magenta]🚀 Repository harmony restored[/]\n\n" +
+			"[bold white on purple] POWERED BY THE KTSU DEVELOPMENT TEAM [/]\n\n" +
+			"[dim]Visit us for updates and new features:[/]\n" +
+			"[link=https://github.com/ktsu-dev/BlastMerge]🌐 https://github.com/ktsu-dev/BlastMerge[/]\n\n" +
+			"[bold blue]Until next time, keep merging! 🛡️[/]"
+		));
+
+		Panel goodbyePanel = new Panel(goodbyeTable)
+			.Header(new PanelHeader("[bold gold1]🏆 SESSION COMPLETE - YOU'RE A MERGE MASTER! 🏆[/]", Justify.Center))
+			.Border(BoxBorder.Double)
 			.BorderColor(Color.Green);
 
-		AnsiConsole.Write(panel);
+		AnsiConsole.Write(goodbyePanel);
+
+		// Add epic final message
+		Rule finalRule = new Rule("[bold yellow]⭐ May your diffs be ever in your favor ⭐[/]")
+			.RuleStyle("gold1")
+			.Centered();
+
+		AnsiConsole.Write(finalRule);
+
+		// Add some space for dramatic effect
+		AnsiConsole.WriteLine();
+		AnsiConsole.WriteLine();
+
+		// Final epic message
+		AnsiConsole.Write(new Markup("[dim italic]Exiting in 3... 2... 1... [/][bold red]💥[/]"));
 		AnsiConsole.WriteLine();
 	}
 }
