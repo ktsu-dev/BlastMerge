@@ -125,6 +125,7 @@ globs: *
 -   Duplicated code should be refactored into centralized services or helper methods to improve maintainability and reduce redundancy.
 -   When displaying statistics, display the managed memory, the working set, and the total available memory. Displaying the managed memory with the label "Available Memory" is misleading.
 -   When catching exceptions in `HandleExportBatches()` and `HandleImportBatches()`, catch specific exception types instead of general `Exception` to adhere to CA1031.
+-   When refactoring, follow the Single Responsibility Principle by breaking down large methods into smaller, focused methods, each with a single, well-defined purpose.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -368,5 +369,4 @@ globs: *
 
 ## FILE FINDING
 
-- BlastMerge supports glob patterns through the .NET `Directory.GetFiles()` method, which accepts wildcard patterns.
-  - Uses `Directory.GetFiles(rootDirectory, fileName, SearchOption.TopDirectory
+- BlastMerge supports glob patterns through the .NET

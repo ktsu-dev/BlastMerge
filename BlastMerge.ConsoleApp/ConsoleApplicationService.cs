@@ -21,15 +21,11 @@ using Spectre.Console;
 public class ConsoleApplicationService : ApplicationService
 {
 	private const string PressAnyKeyMessage = "Press any key to continue...";
-	private const string EnterDirectoryPathPrompt = "[cyan]Enter directory path[/]";
-	private const string OperationCancelledMessage = "[yellow]Operation cancelled.[/]";
 
 	// Table column names
 	private const string GroupColumnName = "Group";
 	private const string FilesColumnName = "Files";
 	private const string StatusColumnName = "Status";
-	private const string FilePathColumnName = "File Path";
-	private const string SizeColumnName = "Size";
 
 	// Menu display text to command mappings
 	private static readonly Dictionary<string, MenuChoice> MainMenuChoices = new()
@@ -423,26 +419,19 @@ public class ConsoleApplicationService : ApplicationService
 
 		if (fileGroups == null)
 		{
-			Console.WriteLine("No files found or insufficient unique versions to merge.");
+			AnsiConsole.MarkupLine("[yellow]No files found or insufficient unique versions to merge.[/]");
 			return;
 		}
 
-		// Start iterative merge process
+		// Start iterative merge process with console callbacks
 		MergeCompletionResult result = IterativeMergeOrchestrator.StartIterativeMergeProcess(
 			fileGroups,
-			PerformMergeCallback,
-			ProgressReportingService.ReportMergeStatus,
-			ContinueMergeCallback);
+			ConsoleMergeCallback,
+			ConsoleStatusCallback,
+			ConsoleContinueCallback);
 
 		// Handle result
-		if (result.IsSuccessful)
-		{
-			Console.WriteLine($"Merge completed successfully. Final file: {result.OriginalFileName}");
-		}
-		else
-		{
-			Console.WriteLine($"Merge failed or was cancelled: {result.OriginalFileName}");
-		}
+		ProgressReportingService.ReportCompletionResult(result);
 	}
 
 	/// <summary>
@@ -484,44 +473,63 @@ public class ConsoleApplicationService : ApplicationService
 		{
 			try
 			{
-				MenuChoice choice = ShowMainMenu();
-
-				if (choice == MenuChoice.Exit)
+				// Check navigation stack to determine what menu to show
+				if (NavigationHistory.ShouldGoToMainMenu())
 				{
-					break;
-				}
+					MenuChoice choice = ShowMainMenu();
 
-				ExecuteMenuChoice(choice);
+					if (choice == MenuChoice.Exit)
+					{
+						break;
+					}
+
+					ExecuteMenuChoice(choice);
+				}
+				else
+				{
+					// Navigate back based on navigation stack
+					NavigateBasedOnStack();
+				}
 			}
 			catch (DirectoryNotFoundException ex)
 			{
 				AnsiConsole.MarkupLine($"[red]Directory not found: {ex.Message}[/]");
 				AnsiConsole.WriteLine(PressAnyKeyMessage);
 				Console.ReadKey();
+				// Clear navigation on error to return to main menu
+				NavigationHistory.Clear();
 			}
 			catch (UnauthorizedAccessException ex)
 			{
 				AnsiConsole.MarkupLine($"[red]Access denied: {ex.Message}[/]");
 				AnsiConsole.WriteLine(PressAnyKeyMessage);
 				Console.ReadKey();
+				// Clear navigation on error to return to main menu
+				NavigationHistory.Clear();
 			}
 			catch (IOException ex)
 			{
 				AnsiConsole.MarkupLine($"[red]File I/O error: {ex.Message}[/]");
 				AnsiConsole.WriteLine(PressAnyKeyMessage);
 				Console.ReadKey();
+				// Clear navigation on error to return to main menu
+				NavigationHistory.Clear();
 			}
 			catch (ArgumentException ex)
 			{
 				AnsiConsole.MarkupLine($"[red]Invalid input: {ex.Message}[/]");
 				AnsiConsole.WriteLine(PressAnyKeyMessage);
 				Console.ReadKey();
+				// Clear navigation on error to return to main menu
+				NavigationHistory.Clear();
 			}
 			catch (InvalidOperationException ex)
 			{
 				AnsiConsole.MarkupLine($"[red]Operation error: {ex.Message}[/]");
 				AnsiConsole.WriteLine(PressAnyKeyMessage);
 				Console.ReadKey();
+				// Clear navigation on error to return to main menu
+				NavigationHistory.Clear();
 			}
 		}
 
@@ -562,10 +570,10 @@ public class ConsoleApplicationService : ApplicationService
 		switch (choice)
 		{
 			case MenuChoice.FindFiles:
-				HandleFindFiles();
+				new FindFilesMenuHandler(this).Enter();
 				break;
 			case MenuChoice.IterativeMerge:
-				HandleIterativeMerge();
+				new IterativeMergeMenuHandler(this).Enter();
 				break;
 			case MenuChoice.CompareFiles:
 				new CompareFilesMenuHandler(this).Enter();
@@ -589,93 +597,6 @@ public class ConsoleApplicationService : ApplicationService
 	}
 
 	/// <summary>
-	/// Handles the find files operation.
-	/// </summary>
-	private void HandleFindFiles()
-	{
-		AnsiConsole.Clear();
-		AnsiConsole.MarkupLine("[bold cyan]Find & Process Files[/]");
-		AnsiConsole.WriteLine();
-
-		string directory = HistoryInput.AskWithHistory(EnterDirectoryPathPrompt);
-		if (string.IsNullOrWhiteSpace(directory))
-		{
-			AnsiConsole.MarkupLine(OperationCancelledMessage);
-			return;
-		}
-
-		string fileName = HistoryInput.AskWithHistory("[cyan]Enter filename pattern[/]");
-		if (string.IsNullOrWhiteSpace(fileName))
-		{
-			AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
-			return;
-		}
-
-		AnsiConsole.Status()
-			.Start("Finding files...", ctx =>
-			{
-				IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(directory, fileName);
-
-				ctx.Refresh();
-
-				if (filePaths.Count == 0)
-				{
-					AnsiConsole.MarkupLine("[yellow]No files found matching the pattern.[/]");
-					return;
-				}
-
-				Table table = new Table()
-					.Border(TableBorder.Rounded)
-					.BorderColor(Color.Blue)
-					.AddColumn(FilePathColumnName)
-					.AddColumn(SizeColumnName);
-
-				foreach (string filePath in filePaths)
-				{
-					FileInfo fileInfo = new(filePath);
-					table.AddRow(
-						$"[green]{filePath}[/]",
-						$"[dim]{fileInfo.Length:N0} bytes[/]");
-				}
-
-				AnsiConsole.Write(table);
-				AnsiConsole.MarkupLine($"\n[green]Found {filePaths.Count} files.[/]");
-			});
-
-		AnsiConsole.WriteLine(PressAnyKeyMessage);
-		Console.ReadKey();
-	}
-
-	/// <summary>
-	/// Handles the iterative merge operation.
-	/// </summary>
-	private void HandleIterativeMerge()
-	{
-		AnsiConsole.Clear();
-		AnsiConsole.MarkupLine("[bold cyan]Run Iterative Merge[/]");
-		AnsiConsole.WriteLine();
-
-		string directory = HistoryInput.AskWithHistory(EnterDirectoryPathPrompt);
-		if (string.IsNullOrWhiteSpace(directory))
-		{
-			AnsiConsole.MarkupLine(OperationCancelledMessage);
-			return;
-		}
-
-		string fileName = HistoryInput.AskWithHistory("[cyan]Enter filename pattern[/]");
-		if (string.IsNullOrWhiteSpace(fileName))
-		{
-			AnsiConsole.MarkupLine(OperationCancelledMessage);
-			return;
-		}
-
-		RunIterativeMergeWithConsoleOutput(directory, fileName);
-
-		AnsiConsole.WriteLine(PressAnyKeyMessage);
-		Console.ReadKey();
-	}
-
-	/// <summary>
 	/// Handles help and information display.
 	/// </summary>
 	private void HandleHelp()
@@ -691,43 +612,49 @@ public class ConsoleApplicationService : ApplicationService
 	private static void ShowGoodbyeScreen() => MenuDisplayService.ShowGoodbyeScreen();
 
 	/// <summary>
-	/// Shows a detailed list of files grouped by hash.
+	/// Navigates based on the current navigation stack.
 	/// </summary>
-
-	/// <summary>
-	/// Runs iterative merge with console output and user interaction.
-	/// </summary>
-	/// <param name="directory">The directory containing files to merge.</param>
-	/// <param name="fileName">The filename pattern to search for.</param>
-	private void RunIterativeMergeWithConsoleOutput(string directory, string fileName)
+	private void NavigateBasedOnStack()
 	{
-		ArgumentNullException.ThrowIfNull(directory);
-		ArgumentNullException.ThrowIfNull(fileName);
+		string? currentMenu = NavigationHistory.Peek();
 
-		if (!Directory.Exists(directory))
+		if (currentMenu == null)
 		{
-			throw new DirectoryNotFoundException($"Directory '{directory}' does not exist.");
-		}
-
-		// Prepare file groups for merging
-		IReadOnlyCollection<FileGroup>? fileGroups = IterativeMergeOrchestrator.PrepareFileGroupsForMerging(directory, fileName);
-
-		if (fileGroups == null)
-		{
-			AnsiConsole.MarkupLine("[yellow]No files found or insufficient unique versions to merge.[/]");
+			NavigationHistory.Clear();
 			return;
 		}
 
-		// Start iterative merge process with console callbacks
-		MergeCompletionResult result = IterativeMergeOrchestrator.StartIterativeMergeProcess(
-			fileGroups,
-			ConsoleMergeCallback,
-			ConsoleStatusCallback,
-			ConsoleContinueCallback);
-
-		// Handle result
-		ProgressReportingService.ReportCompletionResult(result);
+		// Route to the appropriate menu handler based on navigation stack
+		switch (currentMenu)
+		{
+			case "Find Files":
+				new FindFilesMenuHandler(this).Handle();
+				break;
+			case "Iterative Merge":
+				new IterativeMergeMenuHandler(this).Handle();
+				break;
+			case "Compare Files":
+				new CompareFilesMenuHandler(this).Handle();
+				break;
+			case "Batch Operations":
+				new BatchOperationsMenuHandler(this).Handle();
+				break;
+			case "Settings":
+				new SettingsMenuHandler(this).Handle();
+				break;
+			case "Help":
+				new HelpMenuHandler(this).Handle();
+				break;
+			default:
+				// Unknown menu - clear navigation and return to main
+				NavigationHistory.Clear();
+				break;
+		}
 	}
+
+	/// <summary>
+	/// Shows a detailed list of files grouped by hash.
+	/// </summary>
 
 	/// <summary>
 	/// Console-specific callback to perform merge operation between two files.
@@ -789,35 +716,6 @@ public class ConsoleApplicationService : ApplicationService
 	/// </summary>
 	/// <returns>True to continue, false to stop.</returns>
 	private static bool ConsoleContinueCallback() => UserInteractionService.ConfirmContinueMerge();
-
-	/// <summary>
-	/// Callback to perform merge operation between two files.
-	/// </summary>
-	/// <param name="file1">First file path.</param>
-	/// <param name="file2">Second file path.</param>
-	/// <param name="existingContent">Existing merged content.</param>
-	/// <returns>Merge result or null if cancelled.</returns>
-	private MergeResult? PerformMergeCallback(string file1, string file2, string? existingContent)
-	{
-		// For console app, perform automatic merge or prompt user
-		// This is a simplified implementation - in a real app you'd want user interaction
-		return IterativeMergeOrchestrator.PerformMergeWithConflictResolution(
-			file1,
-			file2,
-			existingContent,
-			(block, context, index) => BlockChoice.UseVersion1); // Default to version 1 choice
-	}
-
-	/// <summary>
-	/// Callback to ask if the user wants to continue merging.
-	/// </summary>
-	/// <returns>True to continue, false to stop.</returns>
-	private bool ContinueMergeCallback()
-	{
-		Console.Write("Continue with next merge? (y/n): ");
-		string? response = Console.ReadLine();
-		return response?.ToLowerInvariant() is "y" or "yes";
-	}
 
 	/// <summary>
 	/// Gets the user's choice for a merge block with visual conflict resolution
