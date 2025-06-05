@@ -11,6 +11,7 @@ globs: *
 -   Code must be well-commented, explaining non-obvious logic.
 -   Fix formatting issues.
 -   Before continuing work, always check the current state of the project and run the tests.
+-   One class/type definition per file please
 
 ## TECH STACK
 
@@ -75,6 +76,7 @@ globs: *
 -   When converting classes to records, consider the potential breaking changes for consumers that rely on reference equality comparisons, inheritance patterns, or mutable object patterns.
 -   Reorder using statements to follow .NET conventions (project imports before framework imports).
 -   **Address Class Coupling and Cyclomatic Complexity**: Refactor code to minimize class coupling and cyclomatic complexity, ensuring the console app primarily handles input and display, while business logic resides in the core library.
+-   Use `dotnet format` to automatically fix formatting and style issues. Be aware that `dotnet format` may not be able to fix all issues, such as catching general exceptions or performance improvement suggestions.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -300,7 +302,7 @@ globs: *
 
 ## CHANGELOG GENERATION
 
-- In `PSBuild.psm1`, when the `git log` command fails or returns an error during changelog generation, ensure the `$rawCommits` variable handles the error object appropriately, especially when accessing its `.Count` property. Improve error handling and the `ConvertTo-ArraySafe` function to handle these edge cases. The `ConvertTo-ArraySafe` function should handle `null`, empty inputs, PowerShell error objects, empty strings, and whitespace-only strings. Add try-catch protection around array conversion. After calling `ConvertTo-ArraySafe`, explicitly check that the result has a `Count` property before using it.
+- In `PSBuild.psm1`, when the `git log` command fails or returns an error during changelog generation, ensure the `$rawCommits` variable handles the error object appropriately, especially when accessing its `.Count` property. Improve error handling and the `ConvertTo-ArraySafe` function to handle these edge cases. The `ConvertTo-ArraySafe` function should handle `null`, empty inputs, PowerShell error objects, empty strings, and whitespace-only strings. Add try-catch protection around array conversion. After calling `ConvertTo-ArraySafe`, explicitly check that the result has a `Count` property before using it, and create an empty array if it does not.
 - In `PSBuild.psm1`, the `$uniqueCommits` variable must be created using `ConvertTo-ArraySafe -InputObject ($structuredCommits | Sort-Object -Property Hash -Unique | ForEach-Object { $_.FormattedEntry })` to ensure it is always an array, even when the pipeline returns no results.
 - In `PSBuild.psm1`, when the `git log` command fails or returns an error, ensure the `$rawCommits` variable handles the error object appropriately, especially when accessing its `.Count` property. Improve error handling and the `ConvertTo-ArraySafe` function to handle `null`, empty inputs, PowerShell error objects, empty strings, and whitespace-only strings. Add try-catch protection around array conversion. After calling `ConvertTo-ArraySafe`, explicitly check that the result has a `Count` property before using it, and create an empty array if it does not. After calling `ConvertTo-ArraySafe`, explicitly check that the result has a `Count` property before using it, and create an empty array if it does not.
 
@@ -336,3 +338,13 @@ globs: *
     - `PromptBeforeEachPattern` (bool): Whether to prompt before processing each pattern (default: false).
 - Add a `CreateDefault()` method to the `BatchConfiguration` class that returns a default batch configuration for common repository files (e.g., `.gitignore`, `.gitattributes`, `.editorconfig`, `*.yml`, `*.yaml`, `.mailmap`, `LICENSE`, `LICENSE.md`, `LICENSE.txt`).
 - Add an `IsValid()` method to the `BatchConfiguration` class that validates the batch configuration.
+
+## PROJECT STRUCTURE
+
+- Use a Contracts, Models, Services directory layout in the ConsoleApp project.
+- The `Program.cs` in `BlastMerge.ConsoleApp` should be simplified, only handling application bootstrapping and instantiating services. Business logic should be delegated to the Core library and implemented in the Services directory.
+- When using a Contracts, Models, Services directory layout:
+    - The `IApplicationService` and `ApplicationService` should reside in the Core library.
+    - Domain models such as `BatchRequest` and `ProcessingRequest` should reside in the Core library.
+    - UI-specific elements like `ICommandLineHandler`, `CommandLineHandler`, and `CommandLineOptions` should stay in the ConsoleApp.
+- The Contracts, Models, and Services should be in the core library, and all the files should be organized in their respective folders.
