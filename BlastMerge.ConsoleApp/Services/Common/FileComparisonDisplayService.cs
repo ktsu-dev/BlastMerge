@@ -244,89 +244,104 @@ public static class FileComparisonDisplayService
 	/// <param name="sideBySideDiff">The side-by-side diff model.</param>
 	private static void PopulateTableWithDiffLines(Table table, SideBySideDiffModel sideBySideDiff)
 	{
-		// Process each side independently to create rows
-		List<(string leftLineNum, string leftContent)> leftRows = [];
-		List<(string rightLineNum, string rightContent)> rightRows = [];
-
-		int leftLineNumber = 1;
-		int rightLineNumber = 1;
+		// Build separate line lists for left and right
+		List<(string lineNum, string content, string style)> leftLines = [];
+		List<(string lineNum, string content, string style)> rightLines = [];
 
 		// Process left side (old text)
+		int leftLineNumber = 1;
 		foreach (DiffPiece piece in sideBySideDiff.OldText.Lines)
 		{
-			(string lineNum, string content, int newLineNumber) = ProcessLeftSide(piece, leftLineNumber);
-			leftRows.Add((lineNum, content));
-			leftLineNumber = newLineNumber;
+			if (piece.Type == ChangeType.Imaginary)
+			{
+				continue; // Skip imaginary pieces
+			}
+
+			string style = piece.Type switch
+			{
+				ChangeType.Deleted => "red on darkred",
+				ChangeType.Unchanged => "white",
+				ChangeType.Modified => "yellow on darkorange",
+				ChangeType.Inserted => "white",
+				ChangeType.Imaginary => "white",
+				_ => "white"
+			};
+
+			string lineNumberText = piece.Type == ChangeType.Imaginary ? "" : leftLineNumber.ToString();
+			string content = piece.Text ?? "";
+
+			leftLines.Add((lineNumberText, content, style));
+
+			if (piece.Type != ChangeType.Imaginary)
+			{
+				leftLineNumber++;
+			}
 		}
 
 		// Process right side (new text)
+		int rightLineNumber = 1;
 		foreach (DiffPiece piece in sideBySideDiff.NewText.Lines)
 		{
-			(string lineNum, string content, int newLineNumber) = ProcessRightSide(piece, rightLineNumber);
-			rightRows.Add((lineNum, content));
-			rightLineNumber = newLineNumber;
+			if (piece.Type == ChangeType.Imaginary)
+			{
+				continue; // Skip imaginary pieces
+			}
+
+			string style = piece.Type switch
+			{
+				ChangeType.Inserted => "green on darkgreen",
+				ChangeType.Unchanged => "white",
+				ChangeType.Modified => "yellow on darkorange",
+				ChangeType.Deleted => "white",
+				ChangeType.Imaginary => "white",
+				_ => "white"
+			};
+
+			string lineNumberText = piece.Type == ChangeType.Imaginary ? "" : rightLineNumber.ToString();
+			string content = piece.Text ?? "";
+
+			rightLines.Add((lineNumberText, content, style));
+
+			if (piece.Type != ChangeType.Imaginary)
+			{
+				rightLineNumber++;
+			}
 		}
 
-		// Now create table rows by combining both sides
-		int maxRows = Math.Max(leftRows.Count, rightRows.Count);
+		// Determine max lines to display
+		int maxLines = Math.Max(leftLines.Count, rightLines.Count);
 
-		for (int i = 0; i < maxRows; i++)
+		// Add rows to table
+		for (int i = 0; i < maxLines; i++)
 		{
-			string leftLineNum = i < leftRows.Count ? leftRows[i].leftLineNum : "";
-			string leftContent = i < leftRows.Count ? leftRows[i].leftContent : "";
-			string rightLineNum = i < rightRows.Count ? rightRows[i].rightLineNum : "";
-			string rightContent = i < rightRows.Count ? rightRows[i].rightContent : "";
+			(string, string, string) leftLine = i < leftLines.Count ? leftLines[i] : ("", "", "white");
+			(string, string, string) rightLine = i < rightLines.Count ? rightLines[i] : ("", "", "white");
 
-			table.AddRow(leftLineNum, leftContent, rightLineNum, rightContent);
+			// Format content with markup for both sides
+			string leftContent = string.IsNullOrEmpty(leftLine.Item2) ? "" : $"[{leftLine.Item3}]{leftLine.Item2}[/]";
+			string rightContent = string.IsNullOrEmpty(rightLine.Item2) ? "" : $"[{rightLine.Item3}]{rightLine.Item2}[/]";
+
+			// Add prefixes for change types on left side
+			if (!string.IsNullOrEmpty(leftLine.Item2))
+			{
+				string leftLineMarkup = leftLine.Item3.Contains("red") ? "-" : leftLine.Item3.Contains("yellow") ? "~" : "";
+				leftContent = leftLineMarkup + " " + leftContent;
+			}
+
+			// Add prefixes for change types on right side
+			if (!string.IsNullOrEmpty(rightLine.Item2))
+			{
+				string rightLineMarkup = rightLine.Item3.Contains("green") ? "+" : rightLine.Item3.Contains("yellow") ? "~" : "";
+				rightContent = rightLineMarkup + " " + rightContent;
+			}
+
+			table.AddRow(
+				leftLine.Item1,
+				leftContent,
+				rightLine.Item1,
+				rightContent
+			);
 		}
-	}
-
-	/// <summary>
-	/// Processes the left side (original file) of the diff.
-	/// </summary>
-	/// <param name="leftLine">The left diff line.</param>
-	/// <param name="lineNum1">Current line number for left side.</param>
-	/// <returns>Tuple of line number display, content, and updated line number.</returns>
-	private static (string lineNum, string content, int newLineNum) ProcessLeftSide(DiffPiece? leftLine, int lineNum1)
-	{
-		if (leftLine == null)
-		{
-			return ("", "", lineNum1);
-		}
-
-		return leftLine.Type switch
-		{
-			ChangeType.Unchanged or ChangeType.Modified or ChangeType.Deleted =>
-				($"[dim]{lineNum1,3}[/]", FormatDiffLineEnhanced(leftLine, true), lineNum1 + 1),
-			ChangeType.Inserted or ChangeType.Imaginary =>
-				("[dim]   [/]", "[dim]...[/]", lineNum1),
-			_ =>
-				($"[dim]{lineNum1,3}[/]", FormatDiffLineEnhanced(leftLine, true), lineNum1 + 1)
-		};
-	}
-
-	/// <summary>
-	/// Processes the right side (modified file) of the diff.
-	/// </summary>
-	/// <param name="rightLine">The right diff line.</param>
-	/// <param name="lineNum2">Current line number for right side.</param>
-	/// <returns>Tuple of line number display, content, and updated line number.</returns>
-	private static (string lineNum, string content, int newLineNum) ProcessRightSide(DiffPiece? rightLine, int lineNum2)
-	{
-		if (rightLine == null)
-		{
-			return ("", "", lineNum2);
-		}
-
-		return rightLine.Type switch
-		{
-			ChangeType.Unchanged or ChangeType.Modified or ChangeType.Inserted =>
-				($"[dim]{lineNum2,3}[/]", FormatDiffLineEnhanced(rightLine, false), lineNum2 + 1),
-			ChangeType.Deleted or ChangeType.Imaginary =>
-				("[dim]   [/]", "[dim]...[/]", lineNum2),
-			_ =>
-				($"[dim]{lineNum2,3}[/]", FormatDiffLineEnhanced(rightLine, false), lineNum2 + 1)
-		};
 	}
 
 	/// <summary>
@@ -383,29 +398,7 @@ public static class FileComparisonDisplayService
 		};
 
 		AnsiConsole.Write(legend);
-	}
-
-	/// <summary>
-	/// Formats a diff line for enhanced side-by-side display with appropriate coloring and symbols.
-	/// </summary>
-	/// <param name="line">The diff line to format.</param>
-	/// <param name="isLeftSide">Whether this is the left side (original) of the diff.</param>
-	/// <returns>Formatted line with markup.</returns>
-	private static string FormatDiffLineEnhanced(DiffPiece line, bool isLeftSide)
-	{
-		string content = line.Text?.EscapeMarkup() ?? "";
-
-		return line.Type switch
-		{
-			ChangeType.Inserted when !isLeftSide => $"[green]+ {content}[/]",
-			ChangeType.Deleted when isLeftSide => $"[red]- {content}[/]",
-			ChangeType.Modified when isLeftSide => $"[yellow]~ {content}[/]",
-			ChangeType.Modified when !isLeftSide => $"[yellow]~ {content}[/]",
-			ChangeType.Unchanged => $"  {content}",
-			ChangeType.Imaginary => "[dim]...[/]",
-			_ => content
-		};
-	}
+		}
 
 	/// <summary>
 	/// Renders colored diff lines as a formatted string.

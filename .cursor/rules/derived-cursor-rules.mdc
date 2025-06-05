@@ -129,6 +129,9 @@ globs: *
 -   When displaying file paths during iterative merge, and files have the same relative path in different repositories, show the unique parts of the path to distinguish between the files.
 -   In `PopulateTableWithDiffLines` method, ensure that the side-by-side diff implementation correctly pairs lines based on the DiffPlex model, rather than assuming a one-to-one mapping by array index.
 -   When generating insert and delete choices during iterative merge, use `FileDisplayService.GetDistinguishingLabels()` instead of `FileDisplayService.GetRelativeDirectoryName()` to provide meaningful labels that help distinguish between different versions of files from different directories/repositories.
+-   Ensure that diff blocks are combined to reduce the number of piecemeal changes that have to be viewed. This happens in two different parts of the system:
+    -   For Interactive Merging (Block-by-block choices), in the `BlockMerger.cs` service, the `ConvertDifferencesToBlocks` method specifically combines contiguous changes into logical blocks. The `IsContiguousDifference` method defines contiguous as differences within 1 line of each other.
+    -   For Side-by-Side Display, the side-by-side diff display also uses intelligent pairing logic to reduce visual clutter by properly aligning and grouping related changes.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -177,6 +180,8 @@ globs: *
 -   Ensure that diff blocks are combined to reduce the number of piecemeal changes that have to be viewed. This happens in two different parts of the system:
     -   For Interactive Merging (Block-by-block choices), in the `BlockMerger.cs` service, the `ConvertDifferencesToBlocks` method specifically combines contiguous changes into logical blocks. The `IsContiguousDifference` method defines contiguous as differences within 1 line of each other.
     -   For Side-by-Side Display, the side-by-side diff display also uses intelligent pairing logic to reduce visual clutter by properly aligning and grouping related changes.
+-   In `PopulateTableWithDiffLines` method, the side-by-side diff implementation was updated to correctly pair lines based on the DiffPlex model, rather than assuming a one-to-one mapping by array index. The previous implementation incorrectly treated DiffPlex's side-by-side model as having corresponding lines at the same array indices. The corrected implementation tracks indices and line numbers separately for left and right sides and handles different change types appropriately (Unchanged, Deleted+Inserted, Standalone Deletions/Insertions, Modified, Imaginary).
+-   In `GetInsertChoice` and `GetDeleteChoice` methods, `FileDisplayService.GetDistinguishingLabels()` should be used instead of `FileDisplayService.GetRelativeDirectoryName()` to provide meaningful labels that help distinguish between different versions of files from different directories/repositories during iterative merge.
 
 ## DEBUGGING
 
@@ -351,24 +356,4 @@ globs: *
 -   SHA256 hashes should be generated for all published packages across all platforms.
 -   The staging directory should contain all the packages and the `hashes.txt` file.
 -   The build script `PSBuild.psm1` must respect the "should release" flag and not push files to package repos from a branch build.
--   The GitHub release creation in `Invoke-ReleaseWorkflow` must check the `ShouldRelease` flag and only create releases when `ShouldRelease` is true (main branch + not tagged + official repo).
-
-## WINGET INSTALLATION
-
-- The executable name in the winget manifest (`winget/ktsu.BlastMerge.installer.yaml`) should match the actual executable name in the build output directory (e.g., `ktsu.BlastMerge.ConsoleApp.exe`).
-- The `RelativeFilePath` entry in `winget/ktsu.BlastMerge.installer.yaml` must be `ktsu.BlastMerge.ConsoleApp.exe`, not `BlastMerge.ConsoleApp.exe`.
-- The `RelativeFilePath` entry in `scripts/update-winget-manifests.ps1` must be `ktsu.BlastMerge.ConsoleApp.exe`, not `BlastMerge.ConsoleApp.exe`.
-
-## WINGET VALIDATION
-- The application must handle the `--version` command-line argument, as required by winget validation.
-
-## COMMAND LINE PARSING
-
-- Use the CommandLineParser library for handling command-line arguments.
-- Create a `CommandLineOptions` class to define the available options.
-- Use the `[Option]` attribute to define options with short and long names, and help text.
-- Use the `[Value]` attribute to define positional arguments.
-- Handle parsing errors gracefully and display help information when necessary.
-- Use `using var parser = new Parser(...)` to ensure proper disposal of the parser object.
-
-## HISTORY INPUT
+-   The GitHub release creation in `Invoke-ReleaseWorkflow` must check the `ShouldRelease
