@@ -65,6 +65,13 @@ public static class FileComparisonDisplayService
 	/// <param name="file2">Second file path.</param>
 	public static void ShowFileComparisonOptions(string file1, string file2)
 	{
+		// Show whitespace legend first
+		AnsiConsole.Write(new Panel(WhitespaceVisualizer.CreateWhitespaceLegend())
+		{
+			Header = new PanelHeader("[dim]Whitespace Visualization Legend[/]"),
+			Border = BoxBorder.Rounded
+		});
+
 		string diffFormat = AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
 				.Title("[cyan]Choose diff format:[/]")
@@ -256,7 +263,9 @@ public static class FileComparisonDisplayService
 			int linesToShow = Math.Min(10, Math.Min(linesA.Length, linesB.Length));
 			for (int i = 0; i < linesToShow; i++)
 			{
-				table.AddRow((i + 1).ToString(), $"  {linesA[i].EscapeMarkup()}", (i + 1).ToString(), $"  {linesB[i].EscapeMarkup()}");
+				string processedA = WhitespaceVisualizer.ProcessLineForDisplay(linesA[i]);
+				string processedB = WhitespaceVisualizer.ProcessLineForDisplay(linesB[i]);
+				table.AddRow((i + 1).ToString(), $"  {processedA.EscapeMarkup()}", (i + 1).ToString(), $"  {processedB.EscapeMarkup()}");
 			}
 			return;
 		}
@@ -291,22 +300,24 @@ public static class FileComparisonDisplayService
 				if (lineA >= 0 && lineA < linesA.Length)
 				{
 					leftLineNum = (lineA + 1).ToString();
+					string processedLineA = WhitespaceVisualizer.ProcessLineForDisplay(linesA[lineA]);
 
 					// Check if this line is in the delete range
 					leftContent = lineA >= block.DeleteStartA && lineA < block.DeleteStartA + block.DeleteCountA
-						? $"[red on darkred]- {linesA[lineA].EscapeMarkup()}[/]"
-						: $"  {linesA[lineA].EscapeMarkup()}";
+						? $"[red on darkred]- {processedLineA.EscapeMarkup()}[/]"
+						: $"  {processedLineA.EscapeMarkup()}";
 				}
 
 				// Handle right side
 				if (lineB >= 0 && lineB < linesB.Length)
 				{
 					rightLineNum = (lineB + 1).ToString();
+					string processedLineB = WhitespaceVisualizer.ProcessLineForDisplay(linesB[lineB]);
 
 					// Check if this line is in the insert range
 					rightContent = lineB >= block.InsertStartB && lineB < block.InsertStartB + block.InsertCountB
-						? $"[green on darkgreen]+ {linesB[lineB].EscapeMarkup()}[/]"
-						: $"  {linesB[lineB].EscapeMarkup()}";
+						? $"[green on darkgreen]+ {processedLineB.EscapeMarkup()}[/]"
+						: $"  {processedLineB.EscapeMarkup()}";
 				}
 
 				table.AddRow(leftLineNum, leftContent, rightLineNum, rightContent);
@@ -367,7 +378,8 @@ public static class FileComparisonDisplayService
 			"[green]+ Added lines[/]   " +
 			"[red]- Deleted lines[/]   " +
 			"[yellow]~ Modified lines[/]   " +
-			"[dim]  Unchanged lines[/]")
+			"[dim]  Unchanged lines[/]\n" +
+			WhitespaceVisualizer.CreateWhitespaceLegend())
 		{
 			Header = new PanelHeader("[dim]Legend[/]"),
 			Border = BoxBorder.Rounded
@@ -397,7 +409,13 @@ public static class FileComparisonDisplayService
 			};
 
 			string endMarkup = string.IsNullOrEmpty(colorMarkup) ? "" : "[/]";
-			sb.AppendLine($"{colorMarkup}{line.Content.EscapeMarkup()}{endMarkup}");
+
+			// Apply whitespace visualization to diff content lines (not headers)
+			string processedContent = line.Color is DiffColor.Addition or DiffColor.Deletion
+				? WhitespaceVisualizer.ProcessLineForDisplay(line.Content)
+				: line.Content;
+
+			sb.AppendLine($"{colorMarkup}{processedContent.EscapeMarkup()}{endMarkup}");
 		}
 		return sb.ToString();
 	}
@@ -453,10 +471,14 @@ public static class FileComparisonDisplayService
 			string leftLine = i < contextLeft.Count ? contextLeft[i] : "";
 			string rightLine = i < contextRight.Count ? contextRight[i] : "";
 
+			// Apply whitespace visualization to context lines
+			string leftProcessed = WhitespaceVisualizer.ProcessLineForDisplay(leftLine);
+			string rightProcessed = WhitespaceVisualizer.ProcessLineForDisplay(rightLine);
+
 			table.AddRow(
 				$"[dim]{startLineNumber + i}[/]",
-				$"[dim]{Markup.Escape(leftLine)}[/]",
-				$"[dim]{Markup.Escape(rightLine)}[/]"
+				$"[dim]{Markup.Escape(leftProcessed)}[/]",
+				$"[dim]{Markup.Escape(rightProcessed)}[/]"
 			);
 		}
 	}
@@ -478,14 +500,18 @@ public static class FileComparisonDisplayService
 			// Get left side (deleted lines)
 			if (i < diffBlock.DeleteCountA && diffBlock.DeleteStartA + i < lines1.Length)
 			{
-				leftLine = $"[red]- {Markup.Escape(lines1[diffBlock.DeleteStartA + i])}[/]";
+				string originalLine = lines1[diffBlock.DeleteStartA + i];
+				string processedLine = WhitespaceVisualizer.ProcessLineForDisplay(originalLine);
+				leftLine = $"[red]- {Markup.Escape(processedLine)}[/]";
 				lineNumberDisplay = $"{diffBlock.DeleteStartA + i + 1}";
 			}
 
 			// Get right side (inserted lines)
 			if (i < diffBlock.InsertCountB && diffBlock.InsertStartB + i < lines2.Length)
 			{
-				rightLine = $"[green]+ {Markup.Escape(lines2[diffBlock.InsertStartB + i])}[/]";
+				string originalLine = lines2[diffBlock.InsertStartB + i];
+				string processedLine = WhitespaceVisualizer.ProcessLineForDisplay(originalLine);
+				rightLine = $"[green]+ {Markup.Escape(processedLine)}[/]";
 				if (string.IsNullOrEmpty(lineNumberDisplay))
 				{
 					lineNumberDisplay = $"{diffBlock.InsertStartB + i + 1}";

@@ -823,8 +823,8 @@ public class ConsoleApplicationService : ApplicationService
 		string choice = UserInteractionService.ShowSelectionPrompt(
 			"[cyan]This content differs between versions. What would you like to do?[/]",
 			[
-				$"1️⃣ Use {leftLabel}",
-				$"2️⃣ Use {rightLabel}",
+				$"  Use {leftLabel}",
+				$"  Use {rightLabel}",
 				"🔄 Use Both Versions",
 				"❌ Skip Both"
 			]);
