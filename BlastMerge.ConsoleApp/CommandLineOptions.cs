@@ -43,6 +43,18 @@ public class CommandLineOptions
 	public string? FileName { get; set; }
 
 	/// <summary>
+	/// Batch configuration name to run
+	/// </summary>
+	[Option('b', "batch", HelpText = "Run a saved batch configuration")]
+	public string? BatchName { get; set; }
+
+	/// <summary>
+	/// List all available batch configurations
+	/// </summary>
+	[Option('l', "list-batches", HelpText = "List all saved batch configurations")]
+	public bool ListBatches { get; set; }
+
+	/// <summary>
 	/// Examples usage text
 	/// </summary>
 	[Usage(ApplicationAlias = "BlastMerge.exe")]
@@ -50,9 +62,12 @@ public class CommandLineOptions
 	{
 		get
 		{
-			return [
+			return
+			[
 				new("Start interactive mode", new CommandLineOptions { }),
 				new("Process files directly", new CommandLineOptions { Directory = "C:\\Projects", FileName = "README.md" }),
+				new("Run a batch configuration", new CommandLineOptions { Directory = "C:\\Projects", BatchName = "Common Repository Files" }),
+				new("List batch configurations", new CommandLineOptions { ListBatches = true }),
 				new("Show version", new CommandLineOptions { ShowVersion = true }),
 				new("Show help", new CommandLineOptions { ShowHelp = true })
 			];

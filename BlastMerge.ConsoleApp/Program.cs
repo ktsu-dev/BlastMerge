@@ -6,6 +6,7 @@ namespace ktsu.BlastMerge.ConsoleApp;
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using CommandLine;
@@ -54,9 +55,31 @@ public static class Program
 					return;
 				}
 
+				// Handle list batches command
+				if (options.ListBatches)
+				{
+					ShowBatchList();
+					return;
+				}
+
 				try
 				{
 					ShowBanner();
+
+					// If directory and batch name are provided, run the batch
+					if (!string.IsNullOrEmpty(options.Directory) && !string.IsNullOrEmpty(options.BatchName))
+					{
+						if (Directory.Exists(options.Directory))
+						{
+							ProcessBatch(options.Directory, options.BatchName);
+							return;
+						}
+						else
+						{
+							AnsiConsole.MarkupLine($"[red]Error: Directory '{options.Directory}' does not exist![/]");
+							return;
+						}
+					}
 
 					// If directory and filename are provided, try to use them directly
 					if (!string.IsNullOrEmpty(options.Directory) && !string.IsNullOrEmpty(options.FileName))
@@ -129,6 +152,8 @@ public static class Program
 					.Title("[green]What would you like to do?[/]")
 					.AddChoices([
 						"🔀 Iterative Merge Multiple Versions [bold cyan](PRIMARY FEATURE)[/]",
+						"📦 Run Batch Configuration [bold yellow](NEW!)[/]",
+						"⚙️  Manage Batch Configurations",
 						"🔍 Compare Files in Directory",
 						"📁 Compare Two Directories",
 						"📄 Compare Two Specific Files",
@@ -139,6 +164,14 @@ public static class Program
 			if (choice.Contains("Iterative Merge Multiple Versions"))
 			{
 				RunIterativeMerge();
+			}
+			else if (choice.Contains("Run Batch Configuration"))
+			{
+				RunBatchConfiguration();
+			}
+			else if (choice.Contains("Manage Batch Configurations"))
+			{
+				ManageBatchConfigurations();
 			}
 			else if (choice.Contains("Compare Files in Directory"))
 			{
@@ -389,7 +422,7 @@ public static class Program
 	/// <param name="file2">Second file path</param>
 	private static void ShowChangeSummary(string file1, string file2)
 	{
-		System.Collections.ObjectModel.Collection<ColoredDiffLine> coloredSummary = FileDiffer.GenerateColoredChangeSummary(file1, file2);
+		Collection<ColoredDiffLine> coloredSummary = FileDiffer.GenerateColoredChangeSummary(file1, file2);
 
 		foreach (ColoredDiffLine line in coloredSummary)
 		{
@@ -415,7 +448,7 @@ public static class Program
 	{
 		string[] lines1 = File.ReadAllLines(file1);
 		string[] lines2 = File.ReadAllLines(file2);
-		System.Collections.ObjectModel.Collection<ColoredDiffLine> coloredDiff = FileDiffer.GenerateColoredDiff(file1, file2, lines1, lines2);
+		Collection<ColoredDiffLine> coloredDiff = FileDiffer.GenerateColoredDiff(file1, file2, lines1, lines2);
 
 		Panel panel = new(RenderColoredDiff(coloredDiff))
 		{
@@ -1308,5 +1341,415 @@ public static class Program
 		Console.WriteLine("  🔍 Compare Files in Directory");
 		Console.WriteLine("  📁 Compare Two Directories");
 		Console.WriteLine("  📄 Compare Two Specific Files");
+	}
+
+	/// <summary>
+	/// Shows the list of available batch configurations
+	/// </summary>
+	private static void ShowBatchList()
+	{
+		IReadOnlyCollection<BatchConfiguration> batches = BatchManager.GetAllBatches();
+
+		if (batches.Count == 0)
+		{
+			AnsiConsole.MarkupLine("[yellow]No batch configurations found.[/]");
+			AnsiConsole.MarkupLine("[dim]Use the interactive mode to create batch configurations.[/]");
+			return;
+		}
+
+		AnsiConsole.MarkupLine($"[green]Found {batches.Count} batch configuration(s):[/]");
+		AnsiConsole.WriteLine();
+
+		Table table = new Table()
+			.AddColumn("[bold]Name[/]")
+			.AddColumn("[bold]Description[/]")
+			.AddColumn("[bold]Patterns[/]")
+			.AddColumn("[bold]Last Modified[/]")
+			.Border(TableBorder.Rounded);
+
+		foreach (BatchConfiguration batch in batches)
+		{
+			string patternsDisplay = string.Join(", ", batch.FilePatterns.Take(3));
+			if (batch.FilePatterns.Count > 3)
+			{
+				patternsDisplay += $", ... (+{batch.FilePatterns.Count - 3} more)";
+			}
+
+			table.AddRow(
+				batch.Name,
+				batch.Description.Length > 50 ? batch.Description[..47] + "..." : batch.Description,
+				patternsDisplay,
+				batch.LastModified.ToString("yyyy-MM-dd HH:mm")
+			);
+		}
+
+		AnsiConsole.Write(table);
+	}
+
+	/// <summary>
+	/// Processes a batch configuration from command line
+	/// </summary>
+	/// <param name="directory">Directory to process</param>
+	/// <param name="batchName">Name of the batch configuration</param>
+	private static void ProcessBatch(string directory, string batchName)
+	{
+		BatchConfiguration? batch = BatchManager.LoadBatch(batchName);
+
+		if (batch == null)
+		{
+			AnsiConsole.MarkupLine($"[red]Error: Batch configuration '{batchName}' not found![/]");
+			AnsiConsole.MarkupLine("[dim]Use --list-batches to see available configurations.[/]");
+			return;
+		}
+
+		AnsiConsole.MarkupLine($"[green]Running batch: {batch.Name}[/]");
+		if (!string.IsNullOrEmpty(batch.Description))
+		{
+			AnsiConsole.MarkupLine($"[dim]{batch.Description}[/]");
+		}
+		AnsiConsole.WriteLine();
+
+		// Execute the batch
+		BatchProcessor.BatchResult result = BatchProcessor.ProcessBatch(
+			batch,
+			directory,
+			PerformSingleMerge,
+			ReportMergeStatus,
+			ConfirmContinuation);
+
+		// Show results
+		ShowBatchResults(result);
+	}
+
+	/// <summary>
+	/// Runs an interactive batch configuration
+	/// </summary>
+	private static void RunBatchConfiguration()
+	{
+		// Initialize batch system
+		BatchManager.CreateDefaultBatchIfNoneExist();
+
+		IReadOnlyCollection<string> availableBatches = BatchManager.ListBatches();
+
+		if (availableBatches.Count == 0)
+		{
+			AnsiConsole.MarkupLine("[yellow]No batch configurations found. Creating a default one...[/]");
+			BatchManager.CreateDefaultBatchIfNoneExist();
+			availableBatches = BatchManager.ListBatches();
+		}
+
+		if (availableBatches.Count == 0)
+		{
+			AnsiConsole.MarkupLine("[red]Error: Could not create or load batch configurations.[/]");
+			return;
+		}
+
+		string selectedBatch = AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("[cyan]Select a batch configuration to run:[/]")
+				.AddChoices(availableBatches));
+
+		string directory = HistoryInput.AskWithHistory("[cyan]Enter the directory path to process:[/]");
+
+		if (!Directory.Exists(directory))
+		{
+			AnsiConsole.MarkupLine("[red]Error: Directory does not exist![/]");
+			return;
+		}
+
+		ProcessBatch(directory, selectedBatch);
+	}
+
+	/// <summary>
+	/// Manages batch configurations (create, edit, delete)
+	/// </summary>
+	private static void ManageBatchConfigurations()
+	{
+		// Initialize batch system
+		BatchManager.CreateDefaultBatchIfNoneExist();
+
+		while (true)
+		{
+			string choice = AnsiConsole.Prompt(
+				new SelectionPrompt<string>()
+					.Title("[green]Batch Configuration Management[/]")
+					.AddChoices([
+						"📋 List All Configurations",
+						"➕ Create New Configuration",
+						"✏️  Edit Configuration",
+						"🗑️  Delete Configuration",
+						"🔙 Back to Main Menu"
+					]));
+
+			if (choice.Contains("List All Configurations"))
+			{
+				ShowBatchConfigurationDetails();
+			}
+			else if (choice.Contains("Create New Configuration"))
+			{
+				CreateNewBatchConfiguration();
+			}
+			else if (choice.Contains("Edit Configuration"))
+			{
+				EditBatchConfiguration();
+			}
+			else if (choice.Contains("Delete Configuration"))
+			{
+				DeleteBatchConfiguration();
+			}
+			else if (choice.Contains("Back to Main Menu"))
+			{
+				break;
+			}
+
+			if (!choice.Contains("Back to Main Menu"))
+			{
+				AnsiConsole.WriteLine();
+				AnsiConsole.MarkupLine("[dim]Press any key to continue...[/]");
+				Console.ReadKey(true);
+				AnsiConsole.Clear();
+				ShowBanner();
+			}
+		}
+	}
+
+	/// <summary>
+	/// Shows detailed information about batch configurations
+	/// </summary>
+	private static void ShowBatchConfigurationDetails()
+	{
+		IReadOnlyCollection<BatchConfiguration> batches = BatchManager.GetAllBatches();
+
+		if (batches.Count == 0)
+		{
+			AnsiConsole.MarkupLine("[yellow]No batch configurations found.[/]");
+			return;
+		}
+
+		foreach (BatchConfiguration batch in batches)
+		{
+			Panel panel = new($"""
+			[bold yellow]{batch.Name}[/]
+			{(string.IsNullOrEmpty(batch.Description) ? "[dim]No description[/]" : batch.Description)}
+
+			[bold]File Patterns ({batch.FilePatterns.Count}):[/]
+			{string.Join(", ", batch.FilePatterns)}
+
+			[bold]Settings:[/]
+			• Skip Empty Patterns: {(batch.SkipEmptyPatterns ? "[green]Yes[/]" : "[red]No[/]")}
+			• Prompt Before Each: {(batch.PromptBeforeEachPattern ? "[green]Yes[/]" : "[red]No[/]")}
+
+			[dim]Created: {batch.CreatedDate:yyyy-MM-dd HH:mm}
+			Last Modified: {batch.LastModified:yyyy-MM-dd HH:mm}[/]
+			""")
+			{
+				Border = BoxBorder.Rounded,
+				BorderStyle = Style.Parse("blue")
+			};
+
+			AnsiConsole.Write(panel);
+			AnsiConsole.WriteLine();
+		}
+	}
+
+	/// <summary>
+	/// Creates a new batch configuration
+	/// </summary>
+	private static void CreateNewBatchConfiguration()
+	{
+		AnsiConsole.MarkupLine("[cyan]Create New Batch Configuration[/]");
+		AnsiConsole.WriteLine();
+
+		string name = HistoryInput.AskWithHistory("[cyan]Enter configuration name:[/]");
+		if (string.IsNullOrWhiteSpace(name))
+		{
+			AnsiConsole.MarkupLine("[red]Name cannot be empty![/]");
+			return;
+		}
+
+		// Check if name already exists
+		if (BatchManager.LoadBatch(name) != null)
+		{
+			AnsiConsole.MarkupLine($"[red]Configuration '{name}' already exists![/]");
+			return;
+		}
+
+		string description = HistoryInput.AskWithHistory("[cyan]Enter description (optional):[/]");
+
+		AnsiConsole.MarkupLine("[cyan]Enter file patterns (comma-separated):[/]");
+		AnsiConsole.MarkupLine("[dim]Examples: .gitignore, *.yml, LICENSE.md[/]");
+		string patternsInput = HistoryInput.AskWithHistory("[cyan]Patterns:[/]");
+
+		if (string.IsNullOrWhiteSpace(patternsInput))
+		{
+			AnsiConsole.MarkupLine("[red]At least one pattern is required![/]");
+			return;
+		}
+
+		Collection<string> patterns = [.. patternsInput.Split(',', StringSplitOptions.RemoveEmptyEntries)
+			.Select(p => p.Trim())
+			.Where(p => !string.IsNullOrWhiteSpace(p))];
+
+		bool skipEmpty = AnsiConsole.Confirm("[cyan]Skip patterns that don't find any files?[/]", true);
+		bool promptBeforeEach = AnsiConsole.Confirm("[cyan]Prompt before processing each pattern?[/]", false);
+
+		BatchConfiguration newBatch = new()
+		{
+			Name = name,
+			Description = description,
+			FilePatterns = patterns,
+			SkipEmptyPatterns = skipEmpty,
+			PromptBeforeEachPattern = promptBeforeEach
+		};
+
+		if (BatchManager.SaveBatch(newBatch))
+		{
+			AnsiConsole.MarkupLine($"[green]Successfully created batch configuration '{name}'![/]");
+		}
+		else
+		{
+			AnsiConsole.MarkupLine("[red]Failed to save batch configuration![/]");
+		}
+	}
+
+	/// <summary>
+	/// Edits an existing batch configuration
+	/// </summary>
+	private static void EditBatchConfiguration()
+	{
+		IReadOnlyCollection<string> availableBatches = BatchManager.ListBatches();
+
+		if (availableBatches.Count == 0)
+		{
+			AnsiConsole.MarkupLine("[yellow]No batch configurations to edit.[/]");
+			return;
+		}
+
+		string selectedBatch = AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("[cyan]Select configuration to edit:[/]")
+				.AddChoices(availableBatches));
+
+		BatchConfiguration? batch = BatchManager.LoadBatch(selectedBatch);
+		if (batch == null)
+		{
+			AnsiConsole.MarkupLine("[red]Could not load batch configuration![/]");
+			return;
+		}
+
+		AnsiConsole.MarkupLine($"[cyan]Editing: {batch.Name}[/]");
+		AnsiConsole.WriteLine();
+
+		string description = HistoryInput.AskWithHistory("[cyan]Description:[/]", batch.Description);
+		string patternsInput = HistoryInput.AskWithHistory("[cyan]File patterns (comma-separated):[/]",
+			string.Join(", ", batch.FilePatterns));
+
+		Collection<string> patterns = [.. patternsInput.Split(',', StringSplitOptions.RemoveEmptyEntries)
+			.Select(p => p.Trim())
+			.Where(p => !string.IsNullOrWhiteSpace(p))];
+
+		if (patterns.Count == 0)
+		{
+			AnsiConsole.MarkupLine("[red]At least one pattern is required![/]");
+			return;
+		}
+
+		bool skipEmpty = AnsiConsole.Confirm("[cyan]Skip patterns that don't find any files?[/]", batch.SkipEmptyPatterns);
+		bool promptBeforeEach = AnsiConsole.Confirm("[cyan]Prompt before processing each pattern?[/]", batch.PromptBeforeEachPattern);
+
+		batch.Description = description;
+		batch.FilePatterns = patterns;
+		batch.SkipEmptyPatterns = skipEmpty;
+		batch.PromptBeforeEachPattern = promptBeforeEach;
+
+		if (BatchManager.SaveBatch(batch))
+		{
+			AnsiConsole.MarkupLine($"[green]Successfully updated batch configuration '{batch.Name}'![/]");
+		}
+		else
+		{
+			AnsiConsole.MarkupLine("[red]Failed to save batch configuration![/]");
+		}
+	}
+
+	/// <summary>
+	/// Deletes a batch configuration
+	/// </summary>
+	private static void DeleteBatchConfiguration()
+	{
+		IReadOnlyCollection<string> availableBatches = BatchManager.ListBatches();
+
+		if (availableBatches.Count == 0)
+		{
+			AnsiConsole.MarkupLine("[yellow]No batch configurations to delete.[/]");
+			return;
+		}
+
+		string selectedBatch = AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("[cyan]Select configuration to delete:[/]")
+				.AddChoices(availableBatches));
+
+		bool confirm = AnsiConsole.Confirm($"[red]Are you sure you want to delete '{selectedBatch}'?[/]", false);
+
+		if (confirm)
+		{
+			if (BatchManager.DeleteBatch(selectedBatch))
+			{
+				AnsiConsole.MarkupLine($"[green]Successfully deleted batch configuration '{selectedBatch}'![/]");
+			}
+			else
+			{
+				AnsiConsole.MarkupLine("[red]Failed to delete batch configuration![/]");
+			}
+		}
+		else
+		{
+			AnsiConsole.MarkupLine("[yellow]Delete cancelled.[/]");
+		}
+	}
+
+	/// <summary>
+	/// Shows the results of a batch operation
+	/// </summary>
+	/// <param name="result">The batch result to display</param>
+	private static void ShowBatchResults(BatchProcessor.BatchResult result)
+	{
+		AnsiConsole.WriteLine();
+		AnsiConsole.Write(new Rule($"[bold]{result.BatchName} - Results[/]"));
+		AnsiConsole.WriteLine();
+
+		Table table = new Table()
+			.AddColumn("[bold]Pattern[/]")
+			.AddColumn("[bold]Status[/]")
+			.AddColumn("[bold]Files Found[/]")
+			.AddColumn("[bold]Unique Versions[/]")
+			.AddColumn("[bold]Message[/]")
+			.Border(TableBorder.Rounded);
+
+		foreach (BatchProcessor.PatternResult patternResult in result.PatternResults)
+		{
+			string status = patternResult.Success ? "[green]✓ Success[/]" : "[red]✗ Failed[/]";
+
+			table.AddRow(
+				patternResult.Pattern,
+				status,
+				patternResult.FilesFound.ToString(),
+				patternResult.UniqueVersions.ToString(),
+				patternResult.Message
+			);
+		}
+
+		AnsiConsole.Write(table);
+
+		AnsiConsole.WriteLine();
+		if (result.Success)
+		{
+			AnsiConsole.MarkupLine($"[green]{result.Summary}[/]");
+		}
+		else
+		{
+			AnsiConsole.MarkupLine($"[yellow]{result.Summary}[/]");
+		}
 	}
 }
