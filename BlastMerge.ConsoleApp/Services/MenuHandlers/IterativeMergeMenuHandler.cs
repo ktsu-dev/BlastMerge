@@ -13,6 +13,11 @@ using ktsu.BlastMerge.Core.Services;
 public class IterativeMergeMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)
 {
 	/// <summary>
+	/// Gets the name of this menu for navigation purposes.
+	/// </summary>
+	protected override string MenuName => "Iterative Merge";
+
+	/// <summary>
 	/// Handles the iterative merge operation.
 	/// </summary>
 	public override void Handle()

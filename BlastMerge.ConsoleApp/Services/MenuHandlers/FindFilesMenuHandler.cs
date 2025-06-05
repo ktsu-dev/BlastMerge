@@ -15,6 +15,11 @@ using Spectre.Console;
 public class FindFilesMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)
 {
 	/// <summary>
+	/// Gets the name of this menu for navigation purposes.
+	/// </summary>
+	protected override string MenuName => "Find Files";
+
+	/// <summary>
 	/// Handles the find files operation.
 	/// </summary>
 	public override void Handle()

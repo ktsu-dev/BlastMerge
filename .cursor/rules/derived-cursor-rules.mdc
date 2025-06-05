@@ -123,6 +123,7 @@ globs: *
 -   When using `Path.GetTempPath()`, ensure publicly writable directories are used safely.
 -   Refactor methods to reduce cognitive complexity to below 15.
 -   Duplicated code should be refactored into centralized services or helper methods to improve maintainability and reduce redundancy.
+-   When displaying statistics, display the managed memory, the working set, and the total available memory. Displaying the managed memory with the label "Available Memory" is misleading.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -164,6 +165,9 @@ globs: *
 -   When using records with init-only properties, create new instances with the correct values instead of modifying the property after creation.
 -   Add constants for merge conflict markers: `ConflictMarkerStart`, `ConflictMarkerSeparator`, `ConflictMarkerEnd`, `ConflictMarkerDeleted`, `ConflictMarkerDeletedEnd`, `ConflictMarkerAdded`, `ConflictMarkerAddedEnd`.
 -   Enhance the side-by-side diff implementation to include line numbers, dynamic file headers, detailed statistics, and a color-coded legend for improved readability.
+-   Refactor the `GenerateUnifiedDiff` method to reduce its cognitive complexity to below 15.
+-   Refactor the `ShowSideBySideDiff` method to reduce its cognitive complexity to below 15.
+-   Refactor the `GenerateChangeSummaryDiff` method to reduce its cognitive complexity to below 15.
 
 ## DEBUGGING
 
@@ -367,12 +371,4 @@ globs: *
   - Uses `Directory.GetFiles(rootDirectory, fileName, SearchOption.TopDirectoryOnly)` where `fileName` can be a glob pattern
   - Common patterns supported:
     - `*.txt` - all text files
-    - `*.cs` - all C# files
-    - `*.*` - all files
-    - `README.*` - README files with any extension
-    - `config.json` - specific filename
-- BlastMerge automatically finds and processes multiple files.
-  - The `FileFinder.FindFiles()` method recursively searches directories and returns a collection of all matching files.
-  - Supports patterns like `*.txt`, `*.cs`, etc.
-  - Can search recursively through subdirectories.
-- When finding files, skip git submodules. Git sub
+    - `*.cs` - all C#

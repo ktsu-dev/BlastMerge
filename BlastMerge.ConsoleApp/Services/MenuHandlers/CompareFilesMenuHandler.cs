@@ -60,7 +60,7 @@ public class CompareFilesMenuHandler(ApplicationService applicationService) : Ba
 					break;
 			}
 		}
-		}
+	}
 
 	/// <summary>
 	/// Handles comparing files in a directory.

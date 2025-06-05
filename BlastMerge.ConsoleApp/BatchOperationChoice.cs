@@ -10,9 +10,9 @@ namespace ktsu.BlastMerge.ConsoleApp;
 public enum BatchOperationChoice
 {
 	/// <summary>
-	/// List all available batch configurations
+	/// Manage batch configurations (create, edit, delete)
 	/// </summary>
-	ListAvailableBatches,
+	ManageBatchConfigurations,
 
 	/// <summary>
 	/// Run a specific batch configuration
