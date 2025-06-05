@@ -183,7 +183,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// </summary>
 	/// <param name="batchName">The name of the batch configuration.</param>
 	/// <returns>The batch configuration or null if not found.</returns>
-	private BatchConfiguration? GetBatchConfiguration(string batchName)
+	private static BatchConfiguration? GetBatchConfiguration(string batchName)
 	{
 		IReadOnlyCollection<BatchConfiguration> allBatches = BatchManager.GetAllBatches();
 		BatchConfiguration? batch = allBatches.FirstOrDefault(b => b.Name.Equals(batchName, StringComparison.OrdinalIgnoreCase));
@@ -202,7 +202,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// </summary>
 	/// <param name="batch">The batch configuration.</param>
 	/// <param name="directory">The directory being processed.</param>
-	private void ShowBatchHeader(BatchConfiguration batch, string directory)
+	private static void ShowBatchHeader(BatchConfiguration batch, string directory)
 	{
 		AnsiConsole.MarkupLine($"[cyan]Processing batch configuration '[yellow]{batch.Name}[/]' in '[yellow]{directory}[/]'[/]");
 		AnsiConsole.WriteLine();
@@ -379,7 +379,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// </summary>
 	/// <param name="totalPatternsProcessed">Total patterns processed.</param>
 	/// <param name="totalFilesFound">Total files found.</param>
-	private void ShowBatchCompletion(int totalPatternsProcessed, int totalFilesFound)
+	private static void ShowBatchCompletion(int totalPatternsProcessed, int totalFilesFound)
 	{
 		AnsiConsole.MarkupLine($"[green]Batch processing completed![/]");
 		AnsiConsole.MarkupLine($"[dim]Processed {totalPatternsProcessed} patterns, found {totalFilesFound} total files.[/]");
@@ -542,13 +542,13 @@ public class ConsoleApplicationService : ApplicationService
 	/// <summary>
 	/// Shows the welcome screen with application information.
 	/// </summary>
-	private void ShowWelcomeScreen() => MenuDisplayService.ShowWelcomeScreen();
+	private static void ShowWelcomeScreen() => MenuDisplayService.ShowWelcomeScreen();
 
 	/// <summary>
 	/// Shows the main menu and returns the user's choice.
 	/// </summary>
 	/// <returns>The selected menu choice.</returns>
-	private MenuChoice ShowMainMenu()
+	private static MenuChoice ShowMainMenu()
 	{
 		string selection = AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
@@ -893,7 +893,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// </summary>
 	/// <param name="file1">First file path.</param>
 	/// <param name="file2">Second file path.</param>
-	private void CompareTwoFiles(string file1, string file2)
+	private static void CompareTwoFiles(string file1, string file2)
 	{
 		bool areSame = false;
 
@@ -1084,7 +1084,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// <summary>
 	/// Shows the goodbye screen when exiting.
 	/// </summary>
-	private void ShowGoodbyeScreen() => MenuDisplayService.ShowGoodbyeScreen();
+	private static void ShowGoodbyeScreen() => MenuDisplayService.ShowGoodbyeScreen();
 
 	/// <summary>
 	/// Shows a detailed list of files grouped by hash.
@@ -1178,13 +1178,13 @@ public class ConsoleApplicationService : ApplicationService
 	/// Console-specific callback to report merge status.
 	/// </summary>
 	/// <param name="status">Current merge session status.</param>
-	private void ConsoleStatusCallback(MergeSessionStatus status) => ProgressReportingService.ReportMergeStatus(status);
+	private static void ConsoleStatusCallback(MergeSessionStatus status) => ProgressReportingService.ReportMergeStatus(status);
 
 	/// <summary>
 	/// Console-specific callback to ask if the user wants to continue merging.
 	/// </summary>
 	/// <returns>True to continue, false to stop.</returns>
-	private bool ConsoleContinueCallback() => UserInteractionService.ConfirmContinueMerge();
+	private static bool ConsoleContinueCallback() => UserInteractionService.ConfirmContinueMerge();
 
 	/// <summary>
 	/// Callback to perform merge operation between two files.

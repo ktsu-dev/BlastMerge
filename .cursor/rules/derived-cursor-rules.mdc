@@ -109,6 +109,9 @@ globs: *
 -   Extract nested classes into their own separate files, following the same pattern as the other choice enum files in that directory.
 -   When a literal string is used multiple times, define a constant for it at the class level.
 -   Do not use nested classes; extract them into their own files.
+-   Follow SonarLint suggestions where applicable (e.g., making methods static where appropriate, simplifying loops, extracting nested ternary operations).
+-   Make methods static if they do not access instance data.
+-   Extract nested ternary operations into independent statements for improved readability.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -380,7 +383,4 @@ globs: *
 
 - Use a Contracts, Models, Services directory layout in the ConsoleApp project.
 - The `Program.cs` in `BlastMerge.ConsoleApp` should be simplified, only handling application bootstrapping and instantiating services. Business logic should be delegated to the Core library and implemented in the Services directory.
-- When using a Contracts, Models, Services directory layout:
-    - The `IApplicationService` and `ApplicationService` should reside in the Core library.
-    - Domain models such as `BatchRequest` and `ProcessingRequest` should reside in the Core library.
-    - UI-specific elements
+- When using a Contracts,

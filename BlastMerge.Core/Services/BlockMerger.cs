@@ -31,8 +31,8 @@ public static class BlockMerger
 		ArgumentNullException.ThrowIfNull(blockChoiceCallback);
 
 		// Create temporary files to use with FileDiffer
-		string tempFile1 = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-		string tempFile2 = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+		string tempFile1 = Path.GetTempFileName();
+		string tempFile2 = Path.GetTempFileName();
 
 		try
 		{

@@ -96,8 +96,9 @@ public static class FileDisplayService
 			// Compare first two files in the group
 			if (group.FilePaths.Count >= 2)
 			{
-				string file1 = group.FilePaths.First();
-				string file2 = group.FilePaths.Skip(1).First();
+				string[] firstTwoFiles = [.. group.FilePaths.Take(2)];
+				string file1 = firstTwoFiles[0];
+				string file2 = firstTwoFiles[1];
 
 				AnsiConsole.WriteLine();
 				AnsiConsole.MarkupLine($"[yellow]Comparing first two files:[/]");
