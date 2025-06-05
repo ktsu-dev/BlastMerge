@@ -15,9 +15,19 @@ public enum ProcessFileActionChoice
 	ViewDetailedFileList,
 
 	/// <summary>
+	/// Show differences between file versions
+	/// </summary>
+	ShowDifferences,
+
+	/// <summary>
 	/// Run iterative merge on duplicate files
 	/// </summary>
 	RunIterativeMergeOnDuplicates,
+
+	/// <summary>
+	/// Sync files to make them identical
+	/// </summary>
+	SyncFiles,
 
 	/// <summary>
 	/// Return to the main menu

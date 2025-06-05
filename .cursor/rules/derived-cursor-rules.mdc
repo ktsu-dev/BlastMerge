@@ -95,6 +95,8 @@ globs: *
 -   Use dictionaries for menus that display a string and translate it to a command to avoid string repetitions.
 -   Look for opportunities to use switch expressions instead of switch statements.
 -   Look for opportunities to use enums in place of strings where they're used for determination and not display purposes.
+-   When checking files, ensure the functionality from before we added the batching is present, and that additions, enhancements, and improvements we've been working on are also present.
+-   Break down large classes into smaller, more manageable classes, following the Single Responsibility Principle. Each menu should be its own class, potentially inheriting from a common menu prototype.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -396,6 +398,8 @@ globs: *
 - Use dictionaries for menus that display a string and translate it to a command to avoid string repetitions.
 - Look for opportunities to use switch expressions instead of switch statements.
 - Look for opportunities to use enums in place of strings where they're used for determination and not display purposes.
+- When checking files, ensure the functionality from before we added the batching is present, and that additions, enhancements, and improvements we've been working on are also present.
+- Break down large classes into smaller, more manageable classes, following the Single Responsibility Principle. Each menu should be its own class, potentially inheriting from a common menu prototype.
 
 ## ENUMS
 
@@ -404,12 +408,4 @@ globs: *
 
 ## MENU CHOICE IDENTIFIERS
 
-- The menu choice constants in `ConsoleApplicationService.cs` are used for logic determination rather than display and are perfect candidates for enum replacement.
-- Use the `MenuChoice` enum instead of string constants for menu choices. The `MenuChoice` enum should include values for `FindFiles`, `IterativeMerge`, `CompareFiles`, `BatchOperations`, `Settings`, `Help`, and `Exit`.
-- When using the `MenuChoice` enum, update the `ConsoleApplicationService.cs` to use the enum instead of string constants.
-- Update the MainMenuChoices dictionary and the switch expression to use the enum.
-- Update the ShowMainMenu method and ExecuteMenuChoice method to use the enum.
-
-## BATCH ACTION TYPES
-
-- Create
+- The menu choice constants in `ConsoleApplication
