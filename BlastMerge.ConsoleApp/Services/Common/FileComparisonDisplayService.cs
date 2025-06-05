@@ -6,7 +6,7 @@ namespace ktsu.BlastMerge.ConsoleApp.Services.Common;
 
 using System.Collections.ObjectModel;
 using System.IO;
-using DiffPlex.DiffBuilder.Model;
+using DiffPlex.Model;
 using ktsu.BlastMerge.Core.Models;
 using ktsu.BlastMerge.Core.Services;
 using Spectre.Console;
@@ -171,10 +171,10 @@ public static class FileComparisonDisplayService
 	}
 
 	/// <summary>
-	/// Shows a side-by-side diff between two files.
+	/// Shows a side-by-side diff comparison of two files.
 	/// </summary>
-	/// <param name="file1">First file path.</param>
-	/// <param name="file2">Second file path.</param>
+	/// <param name="file1">Path to the first file.</param>
+	/// <param name="file2">Path to the second file.</param>
 	public static void ShowSideBySideDiff(string file1, string file2)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
@@ -182,17 +182,21 @@ public static class FileComparisonDisplayService
 
 		try
 		{
-			SideBySideDiffModel sideBySideDiff = DiffPlexDiffer.GenerateSideBySideDiff(file1, file2);
+			// Use core DiffPlex API to get DiffResult with DiffBlocks
+			string content1 = File.ReadAllText(file1);
+			string content2 = File.ReadAllText(file2);
 
-			if (AreFilesIdentical(sideBySideDiff))
+			DiffResult diffResult = DiffPlex.Differ.Instance.CreateLineDiffs(content1, content2, ignoreWhitespace: false, ignoreCase: false);
+
+			if (!diffResult.DiffBlocks.Any())
 			{
 				UIHelper.ShowSuccess("Files are identical!");
 				return;
 			}
 
 			Table table = CreateSideBySideTable(file1, file2);
-			PopulateTableWithDiffLines(table, sideBySideDiff);
-			DisplayDiffWithStatistics(table, sideBySideDiff);
+			PopulateTableWithDiffBlocks(table, diffResult);
+			DisplayDiffWithDiffBlockStatistics(table, diffResult);
 			ShowDiffLegend();
 		}
 		catch (FileNotFoundException ex)
@@ -212,11 +216,6 @@ public static class FileComparisonDisplayService
 	/// <summary>
 	/// Checks if the files are identical based on diff model.
 	/// </summary>
-	/// <param name="sideBySideDiff">The side-by-side diff model.</param>
-	/// <returns>True if files are identical.</returns>
-	private static bool AreFilesIdentical(SideBySideDiffModel sideBySideDiff) =>
-		sideBySideDiff.OldText.Lines.All(l => l.Type == ChangeType.Unchanged) &&
-		sideBySideDiff.NewText.Lines.All(l => l.Type == ChangeType.Unchanged);
 
 	/// <summary>
 	/// Creates the side-by-side table structure.
@@ -238,109 +237,114 @@ public static class FileComparisonDisplayService
 	}
 
 	/// <summary>
-	/// Populates the table with diff lines from both sides.
+	/// Populates the table with diff blocks from both sides.
 	/// </summary>
 	/// <param name="table">The table to populate.</param>
-	/// <param name="sideBySideDiff">The side-by-side diff model.</param>
-	private static void PopulateTableWithDiffLines(Table table, SideBySideDiffModel sideBySideDiff)
+	/// <param name="diffResult">The diff result with diff blocks.</param>
+	private static void PopulateTableWithDiffBlocks(Table table, DiffResult diffResult)
 	{
-		// Build separate line lists for left and right
-		List<(string lineNum, string content, string style)> leftLines = [];
-		List<(string lineNum, string content, string style)> rightLines = [];
+		List<(string lineNum, string content, string style)> leftPieces = [];
+		List<(string lineNum, string content, string style)> rightPieces = [];
 
-		// Process left side (old text)
-		int leftLineNumber = 1;
-		foreach (DiffPiece piece in sideBySideDiff.OldText.Lines)
+		// This follows the same approach as DiffPlex's SideBySideDiffBuilder
+		int aPos = 0; // Position in PiecesOld
+		int bPos = 0; // Position in PiecesNew
+
+		foreach (DiffPlex.Model.DiffBlock diffBlock in diffResult.DiffBlocks)
 		{
-			if (piece.Type == ChangeType.Imaginary)
+			// Add unchanged pieces before this diff block
+			while (bPos < diffBlock.InsertStartB && aPos < diffBlock.DeleteStartA)
 			{
-				continue; // Skip imaginary pieces
+				leftPieces.Add(((aPos + 1).ToString(), diffResult.PiecesOld[aPos], "white"));
+				rightPieces.Add(((bPos + 1).ToString(), diffResult.PiecesNew[bPos], "white"));
+				aPos++;
+				bPos++;
 			}
 
-			string style = piece.Type switch
+			// Process the paired changes (modified lines)
+			int i = 0;
+			for (; i < Math.Min(diffBlock.DeleteCountA, diffBlock.InsertCountB); i++)
 			{
-				ChangeType.Deleted => "red on darkred",
-				ChangeType.Unchanged => "white",
-				ChangeType.Modified => "yellow on darkorange",
-				ChangeType.Inserted => "white",
-				ChangeType.Imaginary => "white",
-				_ => "white"
-			};
+				// Add deleted line from left side
+				leftPieces.Add(((aPos + 1).ToString(), diffResult.PiecesOld[i + diffBlock.DeleteStartA], "red on darkred"));
+				// Add inserted line to right side
+				rightPieces.Add(((bPos + 1).ToString(), diffResult.PiecesNew[i + diffBlock.InsertStartB], "green on darkgreen"));
+				aPos++;
+				bPos++;
+			}
 
-			string lineNumberText = piece.Type == ChangeType.Imaginary ? "" : leftLineNumber.ToString();
-			string content = piece.Text ?? "";
-
-			leftLines.Add((lineNumberText, content, style));
-
-			if (piece.Type != ChangeType.Imaginary)
+			// Handle remaining deletions (more deletions than insertions)
+			if (diffBlock.DeleteCountA > diffBlock.InsertCountB)
 			{
-				leftLineNumber++;
+				for (; i < diffBlock.DeleteCountA; i++)
+				{
+					leftPieces.Add(((aPos + 1).ToString(), diffResult.PiecesOld[i + diffBlock.DeleteStartA], "red on darkred"));
+					rightPieces.Add(("", "", "white")); // Empty placeholder on right
+					aPos++;
+				}
+			}
+			// Handle remaining insertions (more insertions than deletions)
+			else
+			{
+				for (; i < diffBlock.InsertCountB; i++)
+				{
+					leftPieces.Add(("", "", "white")); // Empty placeholder on left
+					rightPieces.Add(((bPos + 1).ToString(), diffResult.PiecesNew[i + diffBlock.InsertStartB], "green on darkgreen"));
+					bPos++;
+				}
 			}
 		}
 
-		// Process right side (new text)
-		int rightLineNumber = 1;
-		foreach (DiffPiece piece in sideBySideDiff.NewText.Lines)
+		// Add any remaining unchanged pieces after all diff blocks
+		while (bPos < diffResult.PiecesNew.Count && aPos < diffResult.PiecesOld.Count)
 		{
-			if (piece.Type == ChangeType.Imaginary)
-			{
-				continue; // Skip imaginary pieces
-			}
-
-			string style = piece.Type switch
-			{
-				ChangeType.Inserted => "green on darkgreen",
-				ChangeType.Unchanged => "white",
-				ChangeType.Modified => "yellow on darkorange",
-				ChangeType.Deleted => "white",
-				ChangeType.Imaginary => "white",
-				_ => "white"
-			};
-
-			string lineNumberText = piece.Type == ChangeType.Imaginary ? "" : rightLineNumber.ToString();
-			string content = piece.Text ?? "";
-
-			rightLines.Add((lineNumberText, content, style));
-
-			if (piece.Type != ChangeType.Imaginary)
-			{
-				rightLineNumber++;
-			}
+			leftPieces.Add(((aPos + 1).ToString(), diffResult.PiecesOld[aPos], "white"));
+			rightPieces.Add(((bPos + 1).ToString(), diffResult.PiecesNew[bPos], "white"));
+			aPos++;
+			bPos++;
 		}
 
-		// Determine max lines to display
-		int maxLines = Math.Max(leftLines.Count, rightLines.Count);
+		// Ensure both sides have the same number of rows
+		int maxRows = Math.Max(leftPieces.Count, rightPieces.Count);
+		while (leftPieces.Count < maxRows)
+		{
+			leftPieces.Add(("", "", "white"));
+		}
+		while (rightPieces.Count < maxRows)
+		{
+			rightPieces.Add(("", "", "white"));
+		}
 
 		// Add rows to table
-		for (int i = 0; i < maxLines; i++)
+		for (int i = 0; i < maxRows; i++)
 		{
-			(string, string, string) leftLine = i < leftLines.Count ? leftLines[i] : ("", "", "white");
-			(string, string, string) rightLine = i < rightLines.Count ? rightLines[i] : ("", "", "white");
+			(string leftLineNum, string leftContent, string leftStyle) = leftPieces[i];
+			(string rightLineNum, string rightContent, string rightStyle) = rightPieces[i];
 
-			// Format content with markup for both sides
-			string leftContent = string.IsNullOrEmpty(leftLine.Item2) ? "" : $"[{leftLine.Item3}]{leftLine.Item2}[/]";
-			string rightContent = string.IsNullOrEmpty(rightLine.Item2) ? "" : $"[{rightLine.Item3}]{rightLine.Item2}[/]";
+			// Format content with markup
+			string leftContentFormatted = string.IsNullOrEmpty(leftContent) ? "" : $"[{leftStyle}]{leftContent.EscapeMarkup()}[/]";
+			string rightContentFormatted = string.IsNullOrEmpty(rightContent) ? "" : $"[{rightStyle}]{rightContent.EscapeMarkup()}[/]";
 
-			// Add prefixes for change types on left side
-			if (!string.IsNullOrEmpty(leftLine.Item2))
+			// Add prefixes for change types
+			if (!string.IsNullOrEmpty(leftContent) && leftStyle.Contains("red"))
 			{
-				string leftLineMarkup = leftLine.Item3.Contains("red") ? "-" : leftLine.Item3.Contains("yellow") ? "~" : "";
-				leftContent = leftLineMarkup + " " + leftContent;
+				leftContentFormatted = "- " + leftContentFormatted;
+			}
+			else if (!string.IsNullOrEmpty(leftContent))
+			{
+				leftContentFormatted = "  " + leftContentFormatted;
 			}
 
-			// Add prefixes for change types on right side
-			if (!string.IsNullOrEmpty(rightLine.Item2))
+			if (!string.IsNullOrEmpty(rightContent) && rightStyle.Contains("green"))
 			{
-				string rightLineMarkup = rightLine.Item3.Contains("green") ? "+" : rightLine.Item3.Contains("yellow") ? "~" : "";
-				rightContent = rightLineMarkup + " " + rightContent;
+				rightContentFormatted = "+ " + rightContentFormatted;
+			}
+			else if (!string.IsNullOrEmpty(rightContent))
+			{
+				rightContentFormatted = "  " + rightContentFormatted;
 			}
 
-			table.AddRow(
-				leftLine.Item1,
-				leftContent,
-				rightLine.Item1,
-				rightContent
-			);
+			table.AddRow(leftLineNum, leftContentFormatted, rightLineNum, rightContentFormatted);
 		}
 	}
 
@@ -348,10 +352,10 @@ public static class FileComparisonDisplayService
 	/// Displays the diff table with statistics in a panel.
 	/// </summary>
 	/// <param name="table">The populated table.</param>
-	/// <param name="sideBySideDiff">The side-by-side diff model for statistics.</param>
-	private static void DisplayDiffWithStatistics(Table table, SideBySideDiffModel sideBySideDiff)
+	/// <param name="diffResult">The diff result with diff blocks.</param>
+	private static void DisplayDiffWithDiffBlockStatistics(Table table, DiffResult diffResult)
 	{
-		string stats = CalculateDiffStatistics(sideBySideDiff);
+		string stats = CalculateDiffStatistics(diffResult);
 
 		Panel panel = new(table)
 		{
@@ -365,13 +369,13 @@ public static class FileComparisonDisplayService
 	/// <summary>
 	/// Calculates and formats diff statistics.
 	/// </summary>
-	/// <param name="sideBySideDiff">The side-by-side diff model.</param>
+	/// <param name="diffResult">The diff result with diff blocks.</param>
 	/// <returns>Formatted statistics string.</returns>
-	private static string CalculateDiffStatistics(SideBySideDiffModel sideBySideDiff)
+	private static string CalculateDiffStatistics(DiffResult diffResult)
 	{
-		int additions = sideBySideDiff.NewText.Lines.Count(l => l.Type == ChangeType.Inserted);
-		int deletions = sideBySideDiff.OldText.Lines.Count(l => l.Type == ChangeType.Deleted);
-		int modifications = sideBySideDiff.OldText.Lines.Count(l => l.Type == ChangeType.Modified);
+		int additions = diffResult.DiffBlocks.Sum(b => b.InsertCountB);
+		int deletions = diffResult.DiffBlocks.Sum(b => b.DeleteCountA);
+		int modifications = diffResult.DiffBlocks.Count(b => b.InsertCountB > 0 && b.DeleteCountA > 0);
 
 		string stats = $"[green]+{additions}[/] [red]-{deletions}[/]";
 		if (modifications > 0)
@@ -398,7 +402,7 @@ public static class FileComparisonDisplayService
 		};
 
 		AnsiConsole.Write(legend);
-		}
+	}
 
 	/// <summary>
 	/// Renders colored diff lines as a formatted string.
