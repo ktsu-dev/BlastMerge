@@ -108,6 +108,7 @@ globs: *
 -   Refactor methods with high cognitive complexity by breaking them down into smaller, more manageable methods.
 -   Extract nested classes into their own separate files, following the same pattern as the other choice enum files in that directory.
 -   When a literal string is used multiple times, define a constant for it at the class level.
+-   Do not use nested classes; extract them into their own files.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -382,4 +383,4 @@ globs: *
 - When using a Contracts, Models, Services directory layout:
     - The `IApplicationService` and `ApplicationService` should reside in the Core library.
     - Domain models such as `BatchRequest` and `ProcessingRequest` should reside in the Core library.
-    - UI-specific elements like `ICommandLineHandler`, `CommandLineHandler`, and `CommandLineOptions` should
+    - UI-specific elements

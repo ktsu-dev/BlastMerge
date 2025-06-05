@@ -366,17 +366,6 @@ public static class HistoryInput
 	}
 
 	/// <summary>
-	/// Represents the current state of input processing
-	/// </summary>
-	/// <param name="initialInput">The initial input text</param>
-	private class InputState(string initialInput)
-	{
-		public string Input { get; set; } = initialInput;
-		public int CursorPos { get; set; } = initialInput.Length;
-		public int HistoryIndex { get; set; } = -1; // -1 means current input, 0+ means history items
-	}
-
-	/// <summary>
 	/// Redraws only the input portion, preserving the prompt
 	/// </summary>
 	/// <param name="input">Current input text</param>
