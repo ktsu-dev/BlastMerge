@@ -18,12 +18,17 @@ public static class MenuDisplayService
 	{
 		AnsiConsole.Clear();
 
-		// Epic title with gradient colors
-		FigletText figlet = new FigletText("BlastMerge")
-			.LeftJustified()
-			.Color(Color.DeepSkyBlue1);
+		// Epic explosive ASCII art title
+		string blastMergeArt = @"
+[red]██████  ██       █████   ███████ ████████    ███    ███ ███████ ██████   ██████  ███████[/]
+[red]██   ██ ██      ██   ██  ██         ██       ████  ████ ██      ██   ██ ██       ██     [/]
+[red]██████  ██      ███████  ███████    ██       ██ ████ ██ █████   ██████  ██   ███ █████  [/]
+[red]██   ██ ██      ██   ██       ██    ██       ██  ██  ██ ██      ██   ██ ██    ██ ██     [/]
+[red]██████  ███████ ██   ██  ███████    ██       ██      ██ ███████ ██   ██  ██████  ███████[/]
 
-		AnsiConsole.Write(figlet);
+";
+
+		AnsiConsole.Write(new Markup(blastMergeArt));
 
 		// Create an epic welcome panel with rich content
 		Table welcomeTable = new Table()
@@ -31,7 +36,9 @@ public static class MenuDisplayService
 			.Border(TableBorder.Rounded)
 			.AddColumn(new TableColumn("").Width(80).Centered());
 
-		welcomeTable.AddRow(new Markup(
+		welcomeTable
+		.HideHeaders()
+		.AddRow(new Markup(
 			"[bold red]💥 EXPLOSIVE FILE SYNCHRONIZATION WEAPON 💥[/]\n\n" +
 			"[yellow]🧨 Detonates merge conflicts into harmony[/]\n" +
 			"[green]💣 Nuclear-powered repository blasting[/]\n" +
@@ -48,13 +55,6 @@ public static class MenuDisplayService
 			.BorderColor(Color.Red);
 
 		AnsiConsole.Write(welcomePanel);
-
-		// Add a status bar
-		Rule rule = new Rule("[dim]Explosives armed and ready to blast... 🧨[/]")
-			.RuleStyle("red")
-			.LeftJustified();
-
-		AnsiConsole.Write(rule);
 		AnsiConsole.WriteLine();
 	}
 
@@ -65,18 +65,18 @@ public static class MenuDisplayService
 	{
 		AnsiConsole.Clear();
 
-		// Epic goodbye with multiple figlet texts
-		FigletText thankYou = new FigletText("Thank You!")
-			.LeftJustified()
-			.Color(Color.Gold1);
+		// Epic explosive goodbye ASCII art
+		string explosionArt = @"
 
-		AnsiConsole.Write(thankYou);
+[red] ██████   ██████   ██████  ██████  ██████  ██    ██ ███████ [/]
+[red]██       ██    ██ ██    ██ ██   ██ ██   ██  ██  ██  ██      [/]
+[red]██   ███ ██    ██ ██    ██ ██   ██ ██████    ████   █████   [/]
+[red]██    ██ ██    ██ ██    ██ ██   ██ ██   ██    ██    ██      [/]
+[red] ██████   ██████   ██████  ██████  ██████     ██    ███████ [/]
 
-		FigletText goodbye = new FigletText("Goodbye!")
-			.LeftJustified()
-			.Color(Color.DeepPink1);
+";
 
-		AnsiConsole.Write(goodbye);
+		AnsiConsole.Write(new Markup(explosionArt));
 
 		// Create epic goodbye content
 		Table goodbyeTable = new Table()
@@ -84,7 +84,9 @@ public static class MenuDisplayService
 			.Border(TableBorder.Heavy)
 			.AddColumn(new TableColumn("").Width(70).Centered());
 
-		goodbyeTable.AddRow(new Markup(
+		goodbyeTable
+		.HideHeaders()
+		.AddRow(new Markup(
 			"[bold red]💥 DETONATION SUCCESSFUL! TARGET OBLITERATED! 💥[/]\n\n" +
 			"[yellow]🧨 Your merge conflicts have been atomized[/]\n" +
 			"[cyan]🔥 Files blasted into perfect harmony[/]\n" +
@@ -102,12 +104,7 @@ public static class MenuDisplayService
 
 		AnsiConsole.Write(goodbyePanel);
 
-		// Add epic final message
-		Rule finalRule = new Rule("[bold yellow]💥 May your merges always go out with a BANG! 💥[/]")
-			.RuleStyle("red")
-			.Centered();
-
-		AnsiConsole.Write(finalRule);
+		AnsiConsole.Write(new Markup("[bold yellow]💥 May your merges always go out with a BANG! 💥[/]"));
 
 		// Add some space for dramatic effect
 		AnsiConsole.WriteLine();
