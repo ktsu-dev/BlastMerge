@@ -4,7 +4,6 @@
 
 namespace ktsu.BlastMerge.ConsoleApp.Services;
 
-using System;
 using Spectre.Console;
 
 /// <summary>
@@ -60,8 +59,5 @@ public static class MenuDisplayService
 
 		AnsiConsole.Write(panel);
 		AnsiConsole.WriteLine();
-
-		AnsiConsole.MarkupLine("[dim]Press any key to exit...[/]");
-		Console.ReadKey();
 	}
 }

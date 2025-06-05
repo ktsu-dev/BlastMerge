@@ -4957,7 +4957,280 @@ _**Assistant**_
 
 ---
 
+I'll add whitespace visualization to the diff display. This will help users see exactly what changed, including spaces, tabs, and trailing whitespace. Let me add this functionality to the diff display services.
 
+---
+
+Read file: BlastMerge.ConsoleApp/Services/Common/FileComparisonDisplayService.cs
+
+---
+
+I can see where the lines are being displayed. Let me create a whitespace visualization utility and integrate it into the diff display. First, let me create a helper class for whitespace visualization:
+
+---
+
+```diff
+- 
++ // Copyright (c) ktsu.dev
++ // All rights reserved.
++ // Licensed under the MIT license.
++ 
++ namespace ktsu.BlastMerge.Core.Services;
++ 
++ using System;
++ using System.Text;
++ 
++ /// <summary>
++ /// Provides functionality to visualize whitespace characters in text
++ /// </summary>
++ public static class WhitespaceVisualizer
++ {
++ 	/// <summary>
++ 	/// Makes whitespace characters visible in text by replacing them with visible symbols
++ 	/// </summary>
++ 	/// <param name="text">The text to process</param>
++ 	/// <param name="showSpaces">Whether to show spaces as visible characters</param>
++ 	/// <param name="showTabs">Whether to show tabs as visible characters</param>
++ 	/// <param name="showLineEndings">Whether to show line endings as visible characters</param>
++ 	/// <returns>Text with whitespace characters made visible</returns>
++ 	public static string MakeWhitespaceVisible(string? text, bool showSpaces = true, bool showTabs = true, bool showLineEndings = true)
++ 	{
++ 		if (string.IsNullOrEmpty(text))
++ 		{
++ 			return string.Empty;
++ 		}
++ 
++ 		StringBuilder result = new(text.Length * 2); // Allocate extra space for symbols
++ 
++ 		foreach (char c in text)
++ 		{
++ 			switch (c)
++ 			{
++ 				case ' ' when showSpaces:
++ 					result.Append('·'); // Middle dot for spaces
++ 					break;
++ 				case '\t' when showTabs:
++ 					result.Append('→'); // Right arrow for tabs
++ 					break;
++ 				case '\r' when showLineEndings:
++ 					result.Append("↵"); // Return symbol
++ 					break;
++ 				case '\n' when showLineEndings:
++ 					result.Append("¶"); // Pilcrow for newlines
++ 					break;
++ 				default:
++ 					result.Append(c);
++ 					break;
++ 			}
++ 		}
++ 
++ 		return result.ToString();
++ 	}
++ 
++ 	/// <summary>
++ 	/// Makes trailing whitespace visible with a special highlight
++ 	/// </summary>
++ 	/// <param name="text">The text to process</param>
++ 	/// <returns>Text with trailing whitespace highlighted</returns>
++ 	public static string HighlightTrailingWhitespace(string? text)
++ 	{
++ 		if (string.IsNullOrEmpty(text))
++ 		{
++ 			return string.Empty;
++ 		}
++ 
++ 		// Find trailing whitespace
++ 		int trailingStart = text.Length;
++ 		for (int i = text.Length - 1; i >= 0; i--)
++ 		{
++ 			if (text[i] == ' ' || text[i] == '\t')
++ 			{
++ 				trailingStart = i;
++ 			}
++ 			else
++ 			{
++ 				break;
++ 			}
++ 		}
++ 
++ 		// If no trailing whitespace, return as-is
++ 		if (trailingStart >= text.Length)
++ 		{
++ 			return text;
++ 		}
++ 
++ 		// Build result with highlighted trailing whitespace
++ 		StringBuilder result = new();
++ 		
++ 		// Add non-trailing part
++ 		if (trailingStart > 0)
++ 		{
++ 			result.Append(text[..trailingStart]);
++ 		}
++ 
++ 		// Add highlighted trailing whitespace
++ 		string trailingPart = text[trailingStart..];
++ 		string visibleTrailing = MakeWhitespaceVisible(trailingPart);
++ 		result.Append($"[on red]{visibleTrailing}[/]"); // Red background for trailing whitespace
++ 
++ 		return result.ToString();
++ 	}
++ 
++ 	/// <summary>
++ 	/// Creates a legend showing what the whitespace symbols mean
++ 	/// </summary>
++ 	/// <returns>A formatted legend string</returns>
++ 	public static string CreateWhitespaceLegend()
++ 	{
++ 		return "[dim]Whitespace: [/]" +
++ 		       "[dim]· = space  → = tab  ↵ = return  ¶ = newline  [/]" +
++ 		       "[on red dim]red background = trailing whitespace[/]";
++ 	}
++ 
++ 	/// <summary>
++ 	/// Processes a line for diff display with whitespace visualization
++ 	/// </summary>
++ 	/// <param name="line">The line to process</param>
++ 	/// <param name="showWhitespace">Whether to show whitespace characters</param>
++ 	/// <param name="highlightTrailing">Whether to highlight trailing whitespace</param>
++ 	/// <returns>Processed line ready for display</returns>
++ 	public static string ProcessLineForDisplay(string? line, bool showWhitespace = true, bool highlightTrailing = true)
++ 	{
++ 		if (string.IsNullOrEmpty(line))
++ 		{
++ 			return string.Empty;
++ 		}
++ 
++ 		if (!showWhitespace && !highlightTrailing)
++ 		{
++ 			return line;
++ 		}
++ 
++ 		if (highlightTrailing)
++ 		{
++ 			string highlighted = HighlightTrailingWhitespace(line);
++ 			if (showWhitespace)
++ 			{
++ 				// Apply whitespace visualization to the non-highlighted part
++ 				int redBackgroundStart = highlighted.IndexOf("[on red]", StringComparison.Ordinal);
++ 				if (redBackgroundStart >= 0)
++ 				{
++ 					string beforeTrailing = highlighted[..redBackgroundStart];
++ 					string trailingPart = highlighted[redBackgroundStart..];
++ 					return MakeWhitespaceVisible(beforeTrailing) + trailingPart;
++ 				}
++ 				else
++ 				{
++ 					return MakeWhitespaceVisible(highlighted);
++ 				}
++ 			}
++ 			return highlighted;
++ 		}
++ 		else if (showWhitespace)
++ 		{
++ 			return MakeWhitespaceVisible(line);
++ 		}
++ 
++ 		return line;
++ 	}
++ } 
+```
+
+---
+
+Let me fix these linter errors:
+
+---
+
+
+
+---
+
+Let me check and fix the formatting issues:
+
+---
+
+Read file: BlastMerge.Core/Services/WhitespaceVisualizer.cs
+
+---
+
+I can see the issue is with the multiline return statement formatting. Let me fix that:
+
+---
+
+
+
+---
+
+Now let me fix the pattern matching issue:
+
+---
+
+
+
+---
+
+Great! Now let me integrate the whitespace visualization into the diff display. Let me update the FileComparisonDisplayService to use it:
+
+---
+
+
+
+---
+
+Let me check the current using statements:
+
+---
+
+Read file: BlastMerge.ConsoleApp/Services/Common/FileComparisonDisplayService.cs
+
+---
+
+
+
+---
+
+Good, I can see the CollectionObjection is already there. Now let me modify the diff display methods to include whitespace visualization. First, let me update the legend to include whitespace information:
+
+---
+
+
+
+---
+
+Now let me update the methods that display individual lines to use whitespace visualization:
+
+---
+
+
+
+---
+
+Now let me update the main diff block content method:
+
+---
+
+
+
+---
+
+Now let me also update the git-style diff to include whitespace visualization:
+
+---
+
+
+
+---
+
+Let me also update the side-by-side table population method to include whitespace visualization:
+
+---
+
+Read file: BlastMerge.ConsoleApp/Services/Common/FileComparisonDisplayService.cs
+
+---
+
+Let me update the PopulateTableWithDiffBlocks method to include whitespace visualization:
 
 ---
 
@@ -4966,6 +5239,621 @@ _**Assistant**_
 ---
 
 
+
+---
+
+Now let me add an option to the file comparison menu to toggle whitespace visualization:
+
+---
+
+
+
+---
+
+Let me build the project to see if everything works correctly:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+
+                                                                                                                 (4.6s)
+
+                                                                                                                 (4.7s)
+
+                                                                                                                 (4.7s)
+
+                                                                                                                 (4.8s)
+
+                                                                                                                 (4.8s)
+
+                                                                                                                 (4.9s)
+
+                                                                                                                 (4.9s)
+
+                                                                                                                 (5.0s)
+
+                                                                                                                 (5.0s)
+
+                                                                                                                 (5.1s)
+
+                                                                                                                 (5.1s)
+
+C:\Program Files\dotnet\sdk\9.0.300\Microsoft.Common.CurrentVersion.targets(5094,5): warning MSB3026: Could not copy "C:\dev\ktsu-d
+ev\BlastMerge\BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll" to "bin\Debug\net9.0\ktsu.BlastMerge.Core.dll". Beginning 
+retry 4 in 1000ms. The process cannot access the file 'C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.Blast
+Merge.Core.dll' because it is being used by another process. The file is locked by: "ktsu.BlastMerge.ConsoleApp (44824)"
+
+  BlastMerge.ConsoleApp                                                                _CopyFilesMarkedCopyLocal (5.2s)
+
+                                                                                                                 (5.2s)
+
+                                                                                                                 (5.3s)
+
+                                                                                                                 (5.3s)
+
+                                                                                                                 (5.4s)
+
+                                                                                                                 (5.4s)
+
+                                                                                                                 (5.5s)
+
+                                                                                                                 (5.5s)
+
+                                                                                                                 (5.6s)
+
+                                                                                                                 (5.6s)
+
+                                                                                                                 (5.7s)
+
+                                                                                                                 (5.7s)
+
+                                                                                                                 (5.8s)
+
+                                                                                                                 (5.8s)
+
+                                                                                                                 (5.8s)
+
+                                                                                                                 (5.9s)
+
+                                                                                                                 (5.9s)
+
+                                                                                                                 (6.0s)
+
+                                                                                                                 (6.0s)
+
+                                                                                                                 (6.1s)
+
+                                                                                                                 (6.1s)
+
+                                                                                                                 (6.2s)
+
+                                                                                                                 (6.2s)
+
+                                                                                                                 (6.3s)
+
+                                                                                                                 (6.3s)
+
+                                                                                                                 (6.4s)
+
+                                                                                                                 (6.4s)
+
+                                                                                                                 (6.5s)
+
+                                                                                                                 (6.5s)
+
+C:\Program Files\dotnet\sdk\9.0.300\Microsoft.Common.CurrentVersion.targets(5094,5): warning MSB3026: Could not copy "C:\dev\ktsu-d
+ev\BlastMerge\BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll" to "bin\Debug\net9.0\ktsu.BlastMerge.Core.dll". Beginning 
+retry 5 in 1000ms. The process cannot access the file 'C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.Blast
+Merge.Core.dll' because it is being used by another process. The file is locked by: "ktsu.BlastMerge.ConsoleApp (44824)"
+
+  BlastMerge.ConsoleApp                                                                _CopyFilesMarkedCopyLocal (6.5s)
+
+                                                                                                                 (6.6s)
+
+                                                                                                                 (6.7s)
+
+                                                                                                                 (6.7s)
+
+                                                                                                                 (6.8s)
+
+                                                                                                                 (6.8s)
+
+                                                                                                                 (6.9s)
+
+                                                                                                                 (6.9s)
+
+                                                                                                                 (7.0s)
+
+                                                                                                                 (7.0s)
+
+                                                                                                                 (7.0s)
+
+                                                                                                                 (7.1s)
+
+                                                                                                                 (7.1s)
+
+                                                                                                                 (7.2s)
+
+                                                                                                                 (7.2s)
+
+                                                                                                                 (7.3s)
+
+                                                                                                                 (7.3s)
+
+                                                                                                                 (7.4s)
+
+                                                                                                                 (7.4s)
+
+                                                                                                                 (7.5s)
+
+                                                                                                                 (7.5s)
+
+                                                                                                                 (7.6s)
+
+                                                                                                                 (7.6s)
+
+                                                                                                                 (7.7s)
+
+                                                                                                                 (7.7s)
+
+                                                                                                                 (7.8s)
+
+                                                                                                                 (7.8s)
+
+                                                                                                                 (7.9s)
+
+                                                                                                                 (7.9s)
+
+C:\Program Files\dotnet\sdk\9.0.300\Microsoft.Common.CurrentVersion.targets(5094,5): warning MSB3026: Could not copy "C:\dev\ktsu-d
+ev\BlastMerge\BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll" to "bin\Debug\net9.0\ktsu.BlastMerge.Core.dll". Beginning 
+retry 6 in 1000ms. The process cannot access the file 'C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.Blast
+Merge.Core.dll' because it is being used by another process. The file is locked by: "ktsu.BlastMerge.ConsoleApp (44824)"
+
+  BlastMerge.ConsoleApp                                                                _CopyFilesMarkedCopyLocal (8.0s)
+
+                                                                                                                 (8.0s)
+
+                                                                                                                 (8.1s)
+
+                                                                                                                 (8.1s)
+
+                                                                                                                 (8.1s)
+
+                                                                                                                 (8.2s)
+
+                                                                                                                 (8.2s)
+
+                                                                                                                 (8.3s)
+
+                                                                                                                 (8.3s)
+
+                                                                                                                 (8.4s)
+
+                                                                                                                 (8.4s)
+
+                                                                                                                 (8.5s)
+
+                                                                                                                 (8.5s)
+
+                                                                                                                 (8.6s)
+
+                                                                                                                 (8.6s)
+
+                                                                                                                 (8.7s)
+
+                                                                                                                 (8.7s)
+
+                                                                                                                 (8.8s)
+
+                                                                                                                 (8.8s)
+
+                                                                                                                 (8.9s)
+
+                                                                                                                 (8.9s)
+
+                                                                                                                 (8.9s)
+
+                                                                                                                 (9.0s)
+
+                                                                                                                 (9.0s)
+
+                                                                                                                 (9.1s)
+
+                                                                                                                 (9.1s)
+
+                                                                                                                 (9.2s)
+
+C:\Program Files\dotnet\sdk\9.0.300\Microsoft.Common.CurrentVersion.targets(5094,5): warning MSB3026: Could not copy "C:\dev\ktsu-d
+ev\BlastMerge\BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll" to "bin\Debug\net9.0\ktsu.BlastMerge.Core.dll". Beginning 
+retry 7 in 1000ms. The process cannot access the file 'C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.Blast
+Merge.Core.dll' because it is being used by another process. The file is locked by: "ktsu.BlastMerge.ConsoleApp (44824)"
+
+  BlastMerge.ConsoleApp                                                                _CopyFilesMarkedCopyLocal (9.2s)
+
+                                                                                                                 (9.3s)
+
+                                                                                                                 (9.3s)
+
+                                                                                                                 (9.4s)
+
+                                                                                                                 (9.4s)
+
+                                                                                                                 (9.5s)
+
+                                                                                                                 (9.5s)
+
+                                                                                                                 (9.6s)
+
+                                                                                                                 (9.6s)
+
+                                                                                                                 (9.7s)
+
+                                                                                                                 (9.7s)
+
+                                                                                                                 (9.7s)
+
+                                                                                                                 (9.8s)
+
+                                                                                                                 (9.9s)
+
+                                                                                                                 (9.9s)
+
+  BlastMerge.ConsoleApp                                                               _CopyFilesMarkedCopyLocal (10.0s)
+
+                                                                                                                (10.0s)
+
+                                                                                                                (10.1s)
+
+                                                                                                                (10.1s)
+
+                                                                                                                (10.2s)
+
+                                                                                                                (10.2s)
+
+                                                                                                                (10.3s)
+
+                                                                                                                (10.3s)
+
+                                                                                                                (10.4s)
+
+                                                                                                                (10.4s)
+
+                                                                                                                (10.5s)
+
+                                                                                                                (10.5s)
+
+                                                                                                                (10.6s)
+
+C:\Program Files\dotnet\sdk\9.0.300\Microsoft.Common.CurrentVersion.targets(5094,5): warning MSB3026: Could not copy "C:\dev\ktsu-d
+ev\BlastMerge\BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll" to "bin\Debug\net9.0\ktsu.BlastMerge.Core.dll". Beginning 
+retry 8 in 1000ms. The process cannot access the file 'C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.Blast
+Merge.Core.dll' because it is being used by another process. The file is locked by: "ktsu.BlastMerge.ConsoleApp (44824)"
+
+  BlastMerge.ConsoleApp                                                               _CopyFilesMarkedCopyLocal (10.6s)
+
+                                                                                                                (10.7s)
+
+                                                                                                                (10.7s)
+
+                                                                                                                (10.8s)
+
+                                                                                                                (10.8s)
+
+                                                                                                                (10.9s)
+
+                                                                                                                (10.9s)
+
+                                                                                                                (10.9s)
+
+                                                                                                                (11.0s)
+
+                                                                                                                (11.0s)
+
+                                                                                                                (11.1s)
+
+                                                                                                                (11.1s)
+
+                                                                                                                (11.2s)
+
+                                                                                                                (11.2s)
+
+                                                                                                                (11.3s)
+
+                                                                                                                (11.3s)
+
+                                                                                                                (11.4s)
+
+                                                                                                                (11.4s)
+
+                                                                                                                (11.5s)
+
+                                                                                                                (11.5s)
+
+                                                                                                                (11.6s)
+
+                                                                                                                (11.6s)
+
+                                                                                                                (11.6s)
+
+                                                                                                                (11.7s)
+
+                                                                                                                (11.7s)
+
+                                                                                                                (11.8s)
+
+                                                                                                                (11.8s)
+
+                                                                                                                (11.9s)
+
+C:\Program Files\dotnet\sdk\9.0.300\Microsoft.Common.CurrentVersion.targets(5094,5): warning MSB3026: Could not copy "C:\dev\ktsu-d
+ev\BlastMerge\BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll" to "bin\Debug\net9.0\ktsu.BlastMerge.Core.dll". Beginning 
+retry 9 in 1000ms. The process cannot access the file 'C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.Blast
+Merge.Core.dll' because it is being used by another process. The file is locked by: "ktsu.BlastMerge.ConsoleApp (44824)"
+
+  BlastMerge.ConsoleApp                                                               _CopyFilesMarkedCopyLocal (11.9s)
+
+                                                                                                                (12.0s)
+
+                                                                                                                (12.0s)
+
+                                                                                                                (12.1s)
+
+                                                                                                                (12.1s)
+
+                                                                                                                (12.2s)
+
+                                                                                                                (12.2s)
+
+                                                                                                                (12.3s)
+
+                                                                                                                (12.3s)
+
+                                                                                                                (12.4s)
+
+                                                                                                                (12.4s)
+
+                                                                                                                (12.5s)
+
+                                                                                                                (12.5s)
+
+                                                                                                                (12.6s)
+
+                                                                                                                (12.6s)
+
+                                                                                                                (12.7s)
+
+                                                                                                                (12.7s)
+
+                                                                                                                (12.8s)
+
+                                                                                                                (12.8s)
+
+                                                                                                                (12.8s)
+
+                                                                                                                (12.9s)
+
+                                                                                                                (12.9s)
+
+                                                                                                                (13.0s)
+
+                                                                                                                (13.0s)
+
+                                                                                                                (13.1s)
+
+                                                                                                                (13.1s)
+
+                                                                                                                (13.2s)
+
+C:\Program Files\dotnet\sdk\9.0.300\Microsoft.Common.CurrentVersion.targets(5094,5): warning MSB3026: Could not copy "C:\dev\ktsu-d
+ev\BlastMerge\BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll" to "bin\Debug\net9.0\ktsu.BlastMerge.Core.dll". Beginning 
+retry 10 in 1000ms. The process cannot access the file 'C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.Blas
+tMerge.Core.dll' because it is being used by another process. The file is locked by: "ktsu.BlastMerge.ConsoleApp (44824)"
+
+  BlastMerge.ConsoleApp                                                               _CopyFilesMarkedCopyLocal (13.2s)
+
+                                                                                                                (13.3s)
+
+                                                                                                                (13.3s)
+
+                                                                                                                (13.4s)
+
+                                                                                                                (13.4s)
+
+                                                                                                                (13.5s)
+
+                                                                                                                (13.5s)
+
+                                                                                                                (13.5s)
+
+                                                                                                                (13.6s)
+
+                                                                                                                (13.6s)
+
+                                                                                                                (13.7s)
+
+                                                                                                                (13.7s)
+
+                                                                                                                (13.8s)
+
+                                                                                                                (13.8s)
+
+                                                                                                                (13.9s)
+
+                                                                                                                (13.9s)
+
+                                                                                                                (14.0s)
+
+                                                                                                                (14.0s)
+
+                                                                                                                (14.1s)
+
+                                                                                                                (14.1s)
+
+                                                                                                                (14.2s)
+
+                                                                                                                (14.2s)
+
+                                                                                                                (14.3s)
+
+                                                                                                                (14.3s)
+
+                                                                                                                (14.3s)
+
+                                                                                                                (14.4s)
+
+                                                                                                                (14.5s)
+
+                                                                                                                (14.5s)
+
+  BlastMerge.ConsoleApp failed with 2 error(s) and 10 warning(s) (14.5s)
+    C:\Program Files\dotnet\sdk\9.0.300\Microsoft.Common.CurrentVersion.targets(5094,5): warning MSB3026: Could not copy "C:\dev\kt
+su-dev\BlastMerge\BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll" to "bin\Debug\net9.0\ktsu.BlastMerge.Core.dll". Beginn
+ing retry 1 in 1000ms. The process cannot access the file 'C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.B
+lastMerge.Core.dll' because it is being used by another process. The file is locked by: "ktsu.BlastMerge.ConsoleApp (44824)"       
+    C:\Program Files\dotnet\sdk\9.0.300\Microsoft.Common.CurrentVersion.targets(5094,5): warning MSB3026: Could not copy "C:\dev\kt
+su-dev\BlastMerge\BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll" to "bin\Debug\net9.0\ktsu.BlastMerge.Core.dll". Beginn
+ing retry 2 in 1000ms. The process cannot access the file 'C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.B
+lastMerge.Core.dll' because it is being used by another process. The file is locked by: "ktsu.BlastMerge.ConsoleApp (44824)"       
+    C:\Program Files\dotnet\sdk\9.0.300\Microsoft.Common.CurrentVersion.targets(5094,5): warning MSB3026: Could not copy "C:\dev\kt
+su-dev\BlastMerge\BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll" to "bin\Debug\net9.0\ktsu.BlastMerge.Core.dll". Beginn
+ing retry 3 in 1000ms. The process cannot access the file 'C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.B
+lastMerge.Core.dll' because it is being used by another process. The file is locked by: "ktsu.BlastMerge.ConsoleApp (44824)"       
+    C:\Program Files\dotnet\sdk\9.0.300\Microsoft.Common.CurrentVersion.targets(5094,5): warning MSB3026: Could not copy "C:\dev\kt
+su-dev\BlastMerge\BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll" to "bin\Debug\net9.0\ktsu.BlastMerge.Core.dll". Beginn
+ing retry 4 in 1000ms. The process cannot access the file 'C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.B
+lastMerge.Core.dll' because it is being used by another process. The file is locked by: "ktsu.BlastMerge.ConsoleApp (44824)"       
+    C:\Program Files\dotnet\sdk\9.0.300\Microsoft.Common.CurrentVersion.targets(5094,5): warning MSB3026: Could not copy "C:\dev\kt
+su-dev\BlastMerge\BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll" to "bin\Debug\net9.0\ktsu.BlastMerge.Core.dll". Beginn
+ing retry 5 in 1000ms. The process cannot access the file 'C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.B
+lastMerge.Core.dll' because it is being used by another process. The file is locked by: "ktsu.BlastMerge.ConsoleApp (44824)"       
+    C:\Program Files\dotnet\sdk\9.0.300\Microsoft.Common.CurrentVersion.targets(5094,5): warning MSB3026: Could not copy "C:\dev\kt
+su-dev\BlastMerge\BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll" to "bin\Debug\net9.0\ktsu.BlastMerge.Core.dll". Beginn
+ing retry 6 in 1000ms. The process cannot access the file 'C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.B
+lastMerge.Core.dll' because it is being used by another process. The file is locked by: "ktsu.BlastMerge.ConsoleApp (44824)"       
+    C:\Program Files\dotnet\sdk\9.0.300\Microsoft.Common.CurrentVersion.targets(5094,5): warning MSB3026: Could not copy "C:\dev\kt
+su-dev\BlastMerge\BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll" to "bin\Debug\net9.0\ktsu.BlastMerge.Core.dll". Beginn
+ing retry 7 in 1000ms. The process cannot access the file 'C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.B
+lastMerge.Core.dll' because it is being used by another process. The file is locked by: "ktsu.BlastMerge.ConsoleApp (44824)"       
+    C:\Program Files\dotnet\sdk\9.0.300\Microsoft.Common.CurrentVersion.targets(5094,5): warning MSB3026: Could not copy "C:\dev\kt
+su-dev\BlastMerge\BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll" to "bin\Debug\net9.0\ktsu.BlastMerge.Core.dll". Beginn
+ing retry 8 in 1000ms. The process cannot access the file 'C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.B
+lastMerge.Core.dll' because it is being used by another process. The file is locked by: "ktsu.BlastMerge.ConsoleApp (44824)"       
+    C:\Program Files\dotnet\sdk\9.0.300\Microsoft.Common.CurrentVersion.targets(5094,5): warning MSB3026: Could not copy "C:\dev\kt
+su-dev\BlastMerge\BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll" to "bin\Debug\net9.0\ktsu.BlastMerge.Core.dll". Beginn
+ing retry 9 in 1000ms. The process cannot access the file 'C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.B
+lastMerge.Core.dll' because it is being used by another process. The file is locked by: "ktsu.BlastMerge.ConsoleApp (44824)"       
+    C:\Program Files\dotnet\sdk\9.0.300\Microsoft.Common.CurrentVersion.targets(5094,5): warning MSB3026: Could not copy "C:\dev\kt
+su-dev\BlastMerge\BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll" to "bin\Debug\net9.0\ktsu.BlastMerge.Core.dll". Beginn
+ing retry 10 in 1000ms. The process cannot access the file 'C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.
+BlastMerge.Core.dll' because it is being used by another process. The file is locked by: "ktsu.BlastMerge.ConsoleApp (44824)"      
+    C:\Program Files\dotnet\sdk\9.0.300\Microsoft.Common.CurrentVersion.targets(5094,5): error MSB3027: Could not copy "C:\dev\ktsu
+-dev\BlastMerge\BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll" to "bin\Debug\net9.0\ktsu.BlastMerge.Core.dll". Exceeded
+ retry count of 10. Failed. The file is locked by: "ktsu.BlastMerge.ConsoleApp (44824)"
+    C:\Program Files\dotnet\sdk\9.0.300\Microsoft.Common.CurrentVersion.targets(5094,5): error MSB3021: Unable to copy file "C:\dev
+\ktsu-dev\BlastMerge\BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll" to "bin\Debug\net9.0\ktsu.BlastMerge.Core.dll". The
+ process cannot access the file 'C:\dev\ktsu-dev\BlastMerge\BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll' becaus
+e it is being used by another process.
+
+
+
+
+
+Build failed with 2 error(s) and 10 warning(s) in 16.2s
+
+C:\dev\ktsu-dev\BlastMerge>
+```
+
+---
+
+The build failed because there's still a BlastMerge process running that's locking the DLL. Let me try a clean build:
+
+---
+
+```bash
+dotnet clean && dotnet build
+```
+
+---
+
+_**User**_
+
+dont have a press any key on the goodbye screen
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+I'll find the goodbye screen and remove the "press any key" prompt from it.
+
+---
+
+<details>
+            <summary>Grep search for "goodbye" • **7** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuDisplayService.cs` | L40 | `/// Shows the goodbye screen when exiting the application.` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuDisplayService.cs` | L42 | `public static void ShowGoodbyeScreen()` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuDisplayService.cs` | L46 | `FigletText figlet = new FigletText("Goodbye!")` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L534 | `ShowGoodbyeScreen();` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L608 | `/// Shows the goodbye screen when exiting.` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L610 | `private static void ShowGoodbyeScreen() => MenuDisplayService.ShowGoodbyeScreen();` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_08-05-enhance-interactive-mode-with-tui-menu.md` | L463 | `Let me find the ShowGoodbyeScreen method first:` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_08-05-enhance-interactive-mode-with-tui-menu.md` | L468 | `<summary>Grep search for "ShowGoodbyeScreen" • **2** files</summary>` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_08-05-enhance-interactive-mode-with-tui-menu.md` | L472 | `| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/ApplicationService.cs` | L360 | `ShowGoodbyeScreen();` |` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_08-05-enhance-interactive-mode-with-tui-menu.md` | L473 | `| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/ApplicationService.cs` | L873 | `private static void ShowGoodbyeScreen()` |` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_08-05-enhance-interactive-mode-with-tui-menu.md` | L474 | `| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/ApplicationService.cs` | L360 | `ShowGoodbyeScreen();` |` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_08-05-enhance-interactive-mode-with-tui-menu.md` | L475 | `| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/ApplicationService.cs` | L873 | `private static void ShowGoodbyeScreen()` |` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_08-05-enhance-interactive-mode-with-tui-menu.md` | L485 | `Now I'll add the `ShowDetailedFileList` method after the `ShowGoodbyeScreen` method:` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_10-10-reduce-class-coupling-in-consoleapplicationservice.md` | L2281 | `⟪ 151 characters skipped ⟫DetailedFileList` method after the `ShowGoodbyeScreen` method:` |` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_10-10-reduce-class-coupling-in-consoleapplicationservice.md` | L3399 | `+ 	/// Shows the goodbye screen when exiting the application.` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_10-10-reduce-class-coupling-in-consoleapplicationservice.md` | L3401 | `+ 	public static void ShowGoodbyeScreen()` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_10-10-reduce-class-coupling-in-consoleapplicationservice.md` | L3405 | `+ 		FigletText figlet = new FigletText("Goodbye!")` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_10-10-reduce-class-coupling-in-consoleapplicationservice.md` | L3443 | `Let me find the ShowGoodbyeScreen method:` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_10-10-reduce-class-coupling-in-consoleapplicationservice.md` | L3448 | `<summary>Grep search for "ShowGoodbyeScreen" • **6** files</summary>` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_10-10-reduce-class-coupling-in-consoleapplicationservice.md` | L3452 | `| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L424 | `ShowGoodbyeScreen();` |` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_10-10-reduce-class-coupling-in-consoleapplicationservice.md` | L3453 | `| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L972 | `private void ShowGoodbyeScreen()` |` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_10-10-reduce-class-coupling-in-consoleapplicationservice.md` | L3454 | `| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuDisplayService.cs` | L42 | `public static void ShowGoodbyeScreen()` |` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_10-10-reduce-class-coupling-in-consoleapplicationservice.md` | L3455 | `⟪ 172 characters skipped ⟫DetailedFileList` method after the `ShowGoodbyeScreen` method:` |` |` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_10-10-reduce-class-coupling-in-consoleapplicationservice.md` | L3456 | `⟪ 109 characters skipped ⟫-menu.md` | L463 | `Let me find the ShowGoodbyeScreen method first:` |` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_10-10-reduce-class-coupling-in-consoleapplicationservice.md` | L3457 | `⟪ 119 characters skipped ⟫| L468 | `<summary>Grep search for "ShowGoodbyeScreen" • **2** files</summary>` |` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_10-10-reduce-class-coupling-in-consoleapplicationservice.md` | L3458 | `⟪ 197 characters skipped ⟫es/ApplicationService.cs` | L360 | `ShowGoodbyeScreen();` |` |` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_10-10-reduce-class-coupling-in-consoleapplicationservice.md` | L3459 | `⟪ 217 characters skipped ⟫e.cs` | L873 | `private static void ShowGoodbyeScreen()` |` |` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_10-10-reduce-class-coupling-in-consoleapplicationservice.md` | L3460 | `⟪ 197 characters skipped ⟫es/ApplicationService.cs` | L360 | `ShowGoodbyeScreen();` |` |` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_10-10-reduce-class-coupling-in-consoleapplicationservice.md` | L3461 | `⟪ 217 characters skipped ⟫e.cs` | L873 | `private static void ShowGoodbyeScreen()` |` |` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_10-10-reduce-class-coupling-in-consoleapplicationservice.md` | L3462 | `⟪ 151 characters skipped ⟫DetailedFileList` method after the `ShowGoodbyeScreen` method:` |` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_10-10-reduce-class-coupling-in-consoleapplicationservice.md` | L3463 | `| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L424 | `ShowGoodbyeScreen();` |` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_10-10-reduce-class-coupling-in-consoleapplicationservice.md` | L3464 | `| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L972 | `private void ShowGoodbyeScreen()` |` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_10-10-reduce-class-coupling-in-consoleapplicationservice.md` | L3465 | `| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuDisplayService.cs` | L42 | `public static void ShowGoodbyeScreen()` |` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_10-10-reduce-class-coupling-in-consoleapplicationservice.md` | L3475 | `Now I can see the exact ShowGoodbyeScreen method. Let me replace it:` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_10-10-reduce-class-coupling-in-consoleapplicationservice.md` | L3524 | `8. **`MenuDisplayService.cs`** - Extracted welcome and goodbye screen display logic` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_12-04-separate-classes-into-individual-files.md` | L697 | `"message": "Make 'ShowGoodbyeScreen' a static method.",` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/.specstory/history/2025-06-05_08-34-resolve-loop-simplification-error.md` | L520 | `| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L896 | `.Header("Goodbye")` |` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L534 | `ShowGoodbyeScreen();` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L608 | `/// Shows the goodbye screen when exiting.` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L610 | `private static void ShowGoodbyeScreen() => MenuDisplayService.ShowGoodbyeScreen();` |
+
+</details>
+
+---
+
+Let me check the current implementation of the ShowGoodbyeScreen method:
+
+---
+
+Read file: BlastMerge.ConsoleApp/Services/MenuDisplayService.cs
+
+---
+
+Perfect! I can see the "Press any key to exit..." prompt and the `Console.ReadKey()` call at the end of the ShowGoodbyeScreen method. Let me remove those:
 
 ---
 

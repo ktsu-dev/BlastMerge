@@ -132,6 +132,7 @@ globs: *
 -   When displaying file paths during iterative merge, and files have the same relative path in different repositories, show the unique parts of the path to distinguish between the files.
 -   In `PopulateTableWithDiffLines` method, ensure that the side-by-side diff implementation correctly pairs lines based on the DiffPlex model, rather than assuming a one-to-one mapping by array index.
 -   When generating insert and delete choices during iterative merge, use `FileDisplayService.GetDistinguishingLabels()` instead of `FileDisplayService.GetRelativeDirectoryName()` to provide meaningful labels that help distinguish between different versions of files from different directories/repositories.
+-   The application should visualize whitespace characters in diffs.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -192,6 +193,9 @@ globs: *
     -   Add visual separators between different diff blocks.
 -   The iterative merge process should directly use DiffPlex's `DiffResult` and `DiffBlocks` for block-based merging.
 -   Use the `DiffPlexHelper` class to create line diffs and apply take left/right operations using DiffPlex blocks.
+-   Whitespace characters must be visualized in diffs, including spaces (·), tabs (→), returns (↵), and newlines (¶).
+-   Trailing whitespace should be highlighted with a red background.
+-   A legend explaining the whitespace symbols should be displayed.
 
 ## DEBUGGING
 
@@ -317,6 +321,7 @@ globs: *
 
     The `Peek()` returns "Compare Files" (the current menu), but the back button should go to "Main Menu" (the previous menu). Modify the `GetBackMenuText()` method to look at the menu below the current one.
 -   Display the full welcome message when returning to the main menu every time.
+-   There must not be a "press any key" prompt on the goodbye screen.
 
 ## PROJECT RENAMING
 
@@ -355,9 +360,4 @@ globs: *
 
 ## CROSS PLATFORM SUPPORT
 
--   The application should publish portable zip files for Linux and macOS platforms in addition to Windows, even if they are not included in the winget manifest.
-
-## PUBLISHING RULES
-
--   The `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` should have only one `dotnet publish` step, consolidating the previous separate steps for general application and winget package publishing.
--   When publishing, all applications should be published with the same optimized settings (self-contained, single-file, etc.) whether they're for general use or
+-   The application should publish portable zip files for Linux and macOS platforms in addition to Windows, even if they are not included in the winget
