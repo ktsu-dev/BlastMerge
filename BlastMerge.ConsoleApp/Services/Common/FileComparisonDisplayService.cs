@@ -226,14 +226,13 @@ public static class FileComparisonDisplayService
 	/// <returns>Configured table for side-by-side display.</returns>
 	private static Table CreateSideBySideTable(string file1, string file2)
 	{
-		string fileName1 = Path.GetFileName(file1);
-		string fileName2 = Path.GetFileName(file2);
+		(string label1, string label2) = FileDisplayService.GetDistinguishingLabels(file1, file2);
 
 		return new Table()
 			.AddColumn(new TableColumn("[dim]#[/]").Width(4))           // Line numbers for file1
-			.AddColumn(new TableColumn($"[bold cyan]{fileName1}[/]"))    // File1 content
+			.AddColumn(new TableColumn($"[bold cyan]{label1}[/]"))       // File1 content
 			.AddColumn(new TableColumn("[dim]#[/]").Width(4))           // Line numbers for file2
-			.AddColumn(new TableColumn($"[bold cyan]{fileName2}[/]"))    // File2 content
+			.AddColumn(new TableColumn($"[bold cyan]{label2}[/]"))       // File2 content
 			.Border(TableBorder.Rounded)
 			.Expand();
 	}

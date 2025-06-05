@@ -145,4 +145,104 @@ public static class FileDisplayService
 			return Path.GetFileName(filePath);
 		}
 	}
+
+	/// <summary>
+	/// Gets distinguishing labels for two file paths by finding the minimal unique parts.
+	/// </summary>
+	/// <param name="filePath1">First file path.</param>
+	/// <param name="filePath2">Second file path.</param>
+	/// <returns>A tuple containing distinguishing labels for both files.</returns>
+	public static (string label1, string label2) GetDistinguishingLabels(string filePath1, string filePath2)
+	{
+		try
+		{
+			// Normalize paths
+			string path1 = Path.GetFullPath(filePath1).Replace('\\', '/');
+			string path2 = Path.GetFullPath(filePath2).Replace('\\', '/');
+
+			// Split into components
+			string[] parts1 = path1.Split('/', StringSplitOptions.RemoveEmptyEntries);
+			string[] parts2 = path2.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+			// Find the distinguishing parts
+			(string[] unique1, string[] unique2) = FindDistinguishingParts(parts1, parts2);
+
+			// Create labels with the filename
+			string fileName = Path.GetFileName(filePath1); // Should be same for both
+			string label1 = unique1.Length > 0 ? $"{string.Join("/", unique1)}/{fileName}" : fileName;
+			string label2 = unique2.Length > 0 ? $"{string.Join("/", unique2)}/{fileName}" : fileName;
+
+			return (label1, label2);
+		}
+		catch (ArgumentException)
+		{
+			// Fallback to simple filename if path processing fails
+			string fileName = Path.GetFileName(filePath1);
+			return (filePath1, filePath2);
+		}
+	}
+
+	/// <summary>
+	/// Finds the minimal distinguishing parts of two path component arrays.
+	/// </summary>
+	/// <param name="parts1">Path components of first file.</param>
+	/// <param name="parts2">Path components of second file.</param>
+	/// <returns>A tuple containing the distinguishing parts for each path.</returns>
+	private static (string[] unique1, string[] unique2) FindDistinguishingParts(string[] parts1, string[] parts2)
+	{
+		// Find the first different component from the end (excluding filename)
+		int len1 = parts1.Length - 1; // Exclude filename
+		int len2 = parts2.Length - 1; // Exclude filename
+
+		int lastCommonIndex = -1;
+		int minLength = Math.Min(len1, len2);
+
+		// Find common suffix (working backwards from the directory before filename)
+		for (int i = 1; i <= minLength; i++)
+		{
+			int idx1 = len1 - i;
+			int idx2 = len2 - i;
+
+			if (idx1 >= 0 && idx2 >= 0 && parts1[idx1] == parts2[idx2])
+			{
+				lastCommonIndex = i;
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		// Determine how many distinguishing parts to show
+		int showParts = Math.Max(1, Math.Min(3, Math.Max(len1, len2) - lastCommonIndex));
+
+		// Extract distinguishing parts from the end
+		string[] unique1 = ExtractDistinguishingParts(parts1, len1, showParts);
+		string[] unique2 = ExtractDistinguishingParts(parts2, len2, showParts);
+
+		return (unique1, unique2);
+	}
+
+	/// <summary>
+	/// Extracts distinguishing parts from a path component array.
+	/// </summary>
+	/// <param name="parts">Path components.</param>
+	/// <param name="endIndex">End index (excluding filename).</param>
+	/// <param name="maxParts">Maximum parts to extract.</param>
+	/// <returns>Array of distinguishing path components.</returns>
+	private static string[] ExtractDistinguishingParts(string[] parts, int endIndex, int maxParts)
+	{
+		if (endIndex <= 0)
+		{
+			return [];
+		}
+
+		int startIndex = Math.Max(0, endIndex - maxParts);
+		int count = endIndex - startIndex;
+
+		string[] result = new string[count];
+		Array.Copy(parts, startIndex, result, 0, count);
+
+		return result;
+	}
 }

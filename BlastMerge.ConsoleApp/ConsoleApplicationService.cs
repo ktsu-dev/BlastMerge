@@ -754,8 +754,7 @@ public class ConsoleApplicationService : ApplicationService
 		AnsiConsole.MarkupLine($"[yellow]Block Type: {block.Type}[/]");
 		AnsiConsole.WriteLine();
 
-		string leftLabel = FileDisplayService.GetRelativeDirectoryName(leftFile);
-		string rightLabel = FileDisplayService.GetRelativeDirectoryName(rightFile);
+		(string leftLabel, string rightLabel) = FileDisplayService.GetDistinguishingLabels(leftFile, rightFile);
 
 		// Create a side-by-side diff visualization
 		Table table = new Table()
@@ -939,8 +938,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// <returns>User's choice</returns>
 	private static BlockChoice GetReplaceChoice(string leftFile, string rightFile)
 	{
-		string leftLabel = FileDisplayService.GetRelativeDirectoryName(leftFile);
-		string rightLabel = FileDisplayService.GetRelativeDirectoryName(rightFile);
+		(string leftLabel, string rightLabel) = FileDisplayService.GetDistinguishingLabels(leftFile, rightFile);
 		string choice = UserInteractionService.ShowSelectionPrompt(
 			"[cyan]This content differs between versions. What would you like to do?[/]",
 			[
