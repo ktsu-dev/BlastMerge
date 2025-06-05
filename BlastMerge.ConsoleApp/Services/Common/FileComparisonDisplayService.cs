@@ -182,136 +182,18 @@ public static class FileComparisonDisplayService
 
 		try
 		{
-			string[] lines1 = File.ReadAllLines(file1);
-			string[] lines2 = File.ReadAllLines(file2);
 			SideBySideDiffModel sideBySideDiff = DiffPlexDiffer.GenerateSideBySideDiff(file1, file2);
 
-			// Check if files are identical
-			if (sideBySideDiff.OldText.Lines.All(l => l.Type == ChangeType.Unchanged) &&
-				sideBySideDiff.NewText.Lines.All(l => l.Type == ChangeType.Unchanged))
+			if (AreFilesIdentical(sideBySideDiff))
 			{
 				UIHelper.ShowSuccess("Files are identical!");
 				return;
 			}
 
-			// Get file names for headers
-			string fileName1 = Path.GetFileName(file1);
-			string fileName2 = Path.GetFileName(file2);
-
-			// Create enhanced side-by-side table with line numbers
-			Table table = new Table()
-				.AddColumn(new TableColumn("[dim]#[/]").Width(4))           // Line numbers for file1
-				.AddColumn(new TableColumn($"[bold cyan]{fileName1}[/]"))    // File1 content
-				.AddColumn(new TableColumn("[dim]#[/]").Width(4))           // Line numbers for file2
-				.AddColumn(new TableColumn($"[bold cyan]{fileName2}[/]"))    // File2 content
-				.Border(TableBorder.Rounded)
-				.Expand();
-
-			// Process the diff and add rows
-			int lineNum1 = 1;
-			int lineNum2 = 1;
-			int maxLines = Math.Max(sideBySideDiff.OldText.Lines.Count, sideBySideDiff.NewText.Lines.Count);
-
-			for (int i = 0; i < maxLines; i++)
-			{
-				DiffPiece? leftLine = i < sideBySideDiff.OldText.Lines.Count ? sideBySideDiff.OldText.Lines[i] : null;
-				DiffPiece? rightLine = i < sideBySideDiff.NewText.Lines.Count ? sideBySideDiff.NewText.Lines[i] : null;
-
-				string leftLineNum = "";
-				string rightLineNum = "";
-				string leftContent = "";
-				string rightContent = "";
-
-				// Process left side (original file)
-				if (leftLine != null)
-				{
-					switch (leftLine.Type)
-					{
-						case ChangeType.Unchanged:
-						case ChangeType.Modified:
-						case ChangeType.Deleted:
-							leftLineNum = $"[dim]{lineNum1,3}[/]";
-							leftContent = FormatDiffLineEnhanced(leftLine, true);
-							lineNum1++;
-							break;
-						case ChangeType.Inserted:
-							leftLineNum = "[dim]   [/]";
-							leftContent = "[dim]...[/]";
-							break;
-						case ChangeType.Imaginary:
-							leftLineNum = "[dim]   [/]";
-							leftContent = "[dim]...[/]";
-							break;
-						default:
-							leftLineNum = $"[dim]{lineNum1,3}[/]";
-							leftContent = FormatDiffLineEnhanced(leftLine, true);
-							lineNum1++;
-							break;
-					}
-				}
-
-				// Process right side (modified file)
-				if (rightLine != null)
-				{
-					switch (rightLine.Type)
-					{
-						case ChangeType.Unchanged:
-						case ChangeType.Modified:
-						case ChangeType.Inserted:
-							rightLineNum = $"[dim]{lineNum2,3}[/]";
-							rightContent = FormatDiffLineEnhanced(rightLine, false);
-							lineNum2++;
-							break;
-						case ChangeType.Deleted:
-							rightLineNum = "[dim]   [/]";
-							rightContent = "[dim]...[/]";
-							break;
-						case ChangeType.Imaginary:
-							rightLineNum = "[dim]   [/]";
-							rightContent = "[dim]...[/]";
-							break;
-						default:
-							rightLineNum = $"[dim]{lineNum2,3}[/]";
-							rightContent = FormatDiffLineEnhanced(rightLine, false);
-							lineNum2++;
-							break;
-					}
-				}
-
-				table.AddRow(leftLineNum, leftContent, rightLineNum, rightContent);
-			}
-
-			// Show statistics
-			int additions = sideBySideDiff.NewText.Lines.Count(l => l.Type == ChangeType.Inserted);
-			int deletions = sideBySideDiff.OldText.Lines.Count(l => l.Type == ChangeType.Deleted);
-			int modifications = sideBySideDiff.OldText.Lines.Count(l => l.Type == ChangeType.Modified);
-
-			string stats = $"[green]+{additions}[/] [red]-{deletions}[/]";
-			if (modifications > 0)
-			{
-				stats += $" [yellow]~{modifications}[/]";
-			}
-
-			Panel panel = new(table)
-			{
-				Header = new PanelHeader($"[bold]Side-by-Side Diff[/] ({stats})"),
-				Border = BoxBorder.Rounded
-			};
-
-			AnsiConsole.Write(panel);
-
-			// Show legend
-			Panel legend = new(
-				"[green]+ Added lines[/]   " +
-				"[red]- Deleted lines[/]   " +
-				"[yellow]~ Modified lines[/]   " +
-				"[dim]  Unchanged lines[/]")
-			{
-				Header = new PanelHeader("[dim]Legend[/]"),
-				Border = BoxBorder.Rounded
-			};
-
-			AnsiConsole.Write(legend);
+			Table table = CreateSideBySideTable(file1, file2);
+			PopulateTableWithDiffLines(table, sideBySideDiff);
+			DisplayDiffWithStatistics(table, sideBySideDiff);
+			ShowDiffLegend();
 		}
 		catch (FileNotFoundException ex)
 		{
@@ -325,6 +207,165 @@ public static class FileComparisonDisplayService
 		{
 			UIHelper.ShowError($"Access denied: {ex.Message}");
 		}
+	}
+
+	/// <summary>
+	/// Checks if the files are identical based on diff model.
+	/// </summary>
+	/// <param name="sideBySideDiff">The side-by-side diff model.</param>
+	/// <returns>True if files are identical.</returns>
+	private static bool AreFilesIdentical(SideBySideDiffModel sideBySideDiff) =>
+		sideBySideDiff.OldText.Lines.All(l => l.Type == ChangeType.Unchanged) &&
+		sideBySideDiff.NewText.Lines.All(l => l.Type == ChangeType.Unchanged);
+
+	/// <summary>
+	/// Creates the side-by-side table structure.
+	/// </summary>
+	/// <param name="file1">First file path.</param>
+	/// <param name="file2">Second file path.</param>
+	/// <returns>Configured table for side-by-side display.</returns>
+	private static Table CreateSideBySideTable(string file1, string file2)
+	{
+		string fileName1 = Path.GetFileName(file1);
+		string fileName2 = Path.GetFileName(file2);
+
+		return new Table()
+			.AddColumn(new TableColumn("[dim]#[/]").Width(4))           // Line numbers for file1
+			.AddColumn(new TableColumn($"[bold cyan]{fileName1}[/]"))    // File1 content
+			.AddColumn(new TableColumn("[dim]#[/]").Width(4))           // Line numbers for file2
+			.AddColumn(new TableColumn($"[bold cyan]{fileName2}[/]"))    // File2 content
+			.Border(TableBorder.Rounded)
+			.Expand();
+	}
+
+	/// <summary>
+	/// Populates the table with diff lines from both sides.
+	/// </summary>
+	/// <param name="table">The table to populate.</param>
+	/// <param name="sideBySideDiff">The side-by-side diff model.</param>
+	private static void PopulateTableWithDiffLines(Table table, SideBySideDiffModel sideBySideDiff)
+	{
+		int lineNum1 = 1;
+		int lineNum2 = 1;
+		int maxLines = Math.Max(sideBySideDiff.OldText.Lines.Count, sideBySideDiff.NewText.Lines.Count);
+
+		for (int i = 0; i < maxLines; i++)
+		{
+			DiffPiece? leftLine = i < sideBySideDiff.OldText.Lines.Count ? sideBySideDiff.OldText.Lines[i] : null;
+			DiffPiece? rightLine = i < sideBySideDiff.NewText.Lines.Count ? sideBySideDiff.NewText.Lines[i] : null;
+
+			(string leftLineNum, string leftContent, int newLineNum1) = ProcessLeftSide(leftLine, lineNum1);
+			(string rightLineNum, string rightContent, int newLineNum2) = ProcessRightSide(rightLine, lineNum2);
+
+			lineNum1 = newLineNum1;
+			lineNum2 = newLineNum2;
+
+			table.AddRow(leftLineNum, leftContent, rightLineNum, rightContent);
+		}
+	}
+
+	/// <summary>
+	/// Processes the left side (original file) of the diff.
+	/// </summary>
+	/// <param name="leftLine">The left diff line.</param>
+	/// <param name="lineNum1">Current line number for left side.</param>
+	/// <returns>Tuple of line number display, content, and updated line number.</returns>
+	private static (string lineNum, string content, int newLineNum) ProcessLeftSide(DiffPiece? leftLine, int lineNum1)
+	{
+		if (leftLine == null)
+		{
+			return ("", "", lineNum1);
+		}
+
+		return leftLine.Type switch
+		{
+			ChangeType.Unchanged or ChangeType.Modified or ChangeType.Deleted =>
+				($"[dim]{lineNum1,3}[/]", FormatDiffLineEnhanced(leftLine, true), lineNum1 + 1),
+			ChangeType.Inserted or ChangeType.Imaginary =>
+				("[dim]   [/]", "[dim]...[/]", lineNum1),
+			_ =>
+				($"[dim]{lineNum1,3}[/]", FormatDiffLineEnhanced(leftLine, true), lineNum1 + 1)
+		};
+	}
+
+	/// <summary>
+	/// Processes the right side (modified file) of the diff.
+	/// </summary>
+	/// <param name="rightLine">The right diff line.</param>
+	/// <param name="lineNum2">Current line number for right side.</param>
+	/// <returns>Tuple of line number display, content, and updated line number.</returns>
+	private static (string lineNum, string content, int newLineNum) ProcessRightSide(DiffPiece? rightLine, int lineNum2)
+	{
+		if (rightLine == null)
+		{
+			return ("", "", lineNum2);
+		}
+
+		return rightLine.Type switch
+		{
+			ChangeType.Unchanged or ChangeType.Modified or ChangeType.Inserted =>
+				($"[dim]{lineNum2,3}[/]", FormatDiffLineEnhanced(rightLine, false), lineNum2 + 1),
+			ChangeType.Deleted or ChangeType.Imaginary =>
+				("[dim]   [/]", "[dim]...[/]", lineNum2),
+			_ =>
+				($"[dim]{lineNum2,3}[/]", FormatDiffLineEnhanced(rightLine, false), lineNum2 + 1)
+		};
+	}
+
+	/// <summary>
+	/// Displays the diff table with statistics in a panel.
+	/// </summary>
+	/// <param name="table">The populated table.</param>
+	/// <param name="sideBySideDiff">The side-by-side diff model for statistics.</param>
+	private static void DisplayDiffWithStatistics(Table table, SideBySideDiffModel sideBySideDiff)
+	{
+		string stats = CalculateDiffStatistics(sideBySideDiff);
+
+		Panel panel = new(table)
+		{
+			Header = new PanelHeader($"[bold]Side-by-Side Diff[/] ({stats})"),
+			Border = BoxBorder.Rounded
+		};
+
+		AnsiConsole.Write(panel);
+	}
+
+	/// <summary>
+	/// Calculates and formats diff statistics.
+	/// </summary>
+	/// <param name="sideBySideDiff">The side-by-side diff model.</param>
+	/// <returns>Formatted statistics string.</returns>
+	private static string CalculateDiffStatistics(SideBySideDiffModel sideBySideDiff)
+	{
+		int additions = sideBySideDiff.NewText.Lines.Count(l => l.Type == ChangeType.Inserted);
+		int deletions = sideBySideDiff.OldText.Lines.Count(l => l.Type == ChangeType.Deleted);
+		int modifications = sideBySideDiff.OldText.Lines.Count(l => l.Type == ChangeType.Modified);
+
+		string stats = $"[green]+{additions}[/] [red]-{deletions}[/]";
+		if (modifications > 0)
+		{
+			stats += $" [yellow]~{modifications}[/]";
+		}
+
+		return stats;
+	}
+
+	/// <summary>
+	/// Shows the diff legend panel.
+	/// </summary>
+	private static void ShowDiffLegend()
+	{
+		Panel legend = new(
+			"[green]+ Added lines[/]   " +
+			"[red]- Deleted lines[/]   " +
+			"[yellow]~ Modified lines[/]   " +
+			"[dim]  Unchanged lines[/]")
+		{
+			Header = new PanelHeader("[dim]Legend[/]"),
+			Border = BoxBorder.Rounded
+		};
+
+		AnsiConsole.Write(legend);
 	}
 
 	/// <summary>

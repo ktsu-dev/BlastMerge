@@ -81,108 +81,195 @@ public static class DiffPlexDiffer
 			$"+++ {file2}"
 		];
 
+		ProcessDiffLines(diff.Lines, result, contextLines);
+
+		return string.Join(Environment.NewLine, result);
+	}
+
+	/// <summary>
+	/// Processes diff lines and builds unified diff chunks
+	/// </summary>
+	/// <param name="lines">Diff lines to process</param>
+	/// <param name="result">Result list to add chunks to</param>
+	/// <param name="contextLines">Number of context lines</param>
+	private static void ProcessDiffLines(IEnumerable<DiffPiece> lines, List<string> result, int contextLines)
+	{
 		int currentLine1 = 1;
 		int currentLine2 = 1;
 		List<string> pendingLines = [];
 		List<string> contextBuffer = [];
 
-		foreach (DiffPiece? line in diff.Lines)
+		foreach (DiffPiece? line in lines)
 		{
-			switch (line.Type)
-			{
-				case ChangeType.Unchanged:
-					contextBuffer.Add($" {line.Text}");
-					if (contextBuffer.Count > contextLines * 2)
-					{
-						contextBuffer.RemoveAt(0);
-					}
-					currentLine1++;
-					currentLine2++;
-					break;
-
-				case ChangeType.Deleted:
-					if (pendingLines.Count == 0)
-					{
-						// Add context before changes
-						int contextStart = Math.Max(0, contextBuffer.Count - contextLines);
-						pendingLines.AddRange(contextBuffer.Skip(contextStart));
-					}
-					pendingLines.Add($"-{line.Text}");
-					currentLine1++;
-					break;
-
-				case ChangeType.Inserted:
-					if (pendingLines.Count == 0)
-					{
-						// Add context before changes
-						int contextStart = Math.Max(0, contextBuffer.Count - contextLines);
-						pendingLines.AddRange(contextBuffer.Skip(contextStart));
-					}
-					pendingLines.Add($"+{line.Text}");
-					currentLine2++;
-					break;
-
-				case ChangeType.Modified:
-					// Handle modified lines as deletion + insertion
-					if (pendingLines.Count == 0)
-					{
-						int contextStart = Math.Max(0, contextBuffer.Count - contextLines);
-						pendingLines.AddRange(contextBuffer.Skip(contextStart));
-					}
-					pendingLines.Add($"-{line.Text}");
-					pendingLines.Add($"+{line.Text}");
-					currentLine1++;
-					currentLine2++;
-					break;
-
-				case ChangeType.Imaginary:
-					// Handle imaginary lines (used for padding)
-					break;
-
-				default:
-					// Handle any other change types
-					currentLine1++;
-					currentLine2++;
-					break;
-			}
+			ProcessSingleDiffLine(line, ref currentLine1, ref currentLine2, pendingLines, contextBuffer, contextLines);
 
 			// If we have pending changes and hit unchanged text, output the chunk
 			if (line.Type == ChangeType.Unchanged && pendingLines.Count > 0)
 			{
-				// Add context after changes
-				List<string> contextAfter = [.. contextBuffer.Take(Math.Min(contextLines, contextBuffer.Count))];
-				pendingLines.AddRange(contextAfter);
-
-				// Add chunk header
-				int deletedCount = pendingLines.Count(l => l.StartsWith('-'));
-				int addedCount = pendingLines.Count(l => l.StartsWith('+'));
-				int contextCount = pendingLines.Count - deletedCount - addedCount;
-
-				int startLine1 = currentLine1 - deletedCount - (contextCount / 2);
-				int startLine2 = currentLine2 - addedCount - (contextCount / 2);
-
-				result.Add($"@@ -{startLine1},{deletedCount + (contextCount / 2)} +{startLine2},{addedCount + (contextCount / 2)} @@");
-				result.AddRange(pendingLines);
-
-				pendingLines.Clear();
+				OutputDiffChunk(pendingLines, contextBuffer, result, currentLine1, currentLine2, contextLines);
 			}
 		}
 
 		// Handle any remaining pending changes
 		if (pendingLines.Count > 0)
 		{
-			int deletedCount = pendingLines.Count(l => l.StartsWith('-'));
-			int addedCount = pendingLines.Count(l => l.StartsWith('+'));
-			int contextCount = pendingLines.Count - deletedCount - addedCount;
-
-			int startLine1 = currentLine1 - deletedCount - contextCount;
-			int startLine2 = currentLine2 - addedCount - contextCount;
-
-			result.Add($"@@ -{startLine1},{deletedCount + contextCount} +{startLine2},{addedCount + contextCount} @@");
-			result.AddRange(pendingLines);
+			OutputFinalDiffChunk(pendingLines, result, currentLine1, currentLine2);
 		}
+	}
 
-		return string.Join(Environment.NewLine, result);
+	/// <summary>
+	/// Processes a single diff line and updates tracking state
+	/// </summary>
+	/// <param name="line">The diff line to process</param>
+	/// <param name="currentLine1">Current line number in first file</param>
+	/// <param name="currentLine2">Current line number in second file</param>
+	/// <param name="pendingLines">List of pending diff lines</param>
+	/// <param name="contextBuffer">Buffer for context lines</param>
+	/// <param name="contextLines">Number of context lines</param>
+	private static void ProcessSingleDiffLine(DiffPiece line, ref int currentLine1, ref int currentLine2,
+		List<string> pendingLines, List<string> contextBuffer, int contextLines)
+	{
+		switch (line.Type)
+		{
+			case ChangeType.Unchanged:
+				HandleUnchangedLine(line, ref currentLine1, ref currentLine2, contextBuffer, contextLines);
+				break;
+
+			case ChangeType.Deleted:
+				HandleDeletedLine(line, ref currentLine1, pendingLines, contextBuffer, contextLines);
+				break;
+
+			case ChangeType.Inserted:
+				HandleInsertedLine(line, ref currentLine2, pendingLines, contextBuffer, contextLines);
+				break;
+
+			case ChangeType.Modified:
+				HandleModifiedLine(line, ref currentLine1, ref currentLine2, pendingLines, contextBuffer, contextLines);
+				break;
+
+			case ChangeType.Imaginary:
+				// Handle imaginary lines (used for padding) - no action needed
+				break;
+
+			default:
+				// Handle any other change types
+				currentLine1++;
+				currentLine2++;
+				break;
+		}
+	}
+
+	/// <summary>
+	/// Handles an unchanged line by updating context buffer
+	/// </summary>
+	private static void HandleUnchangedLine(DiffPiece line, ref int currentLine1, ref int currentLine2,
+		List<string> contextBuffer, int contextLines)
+	{
+		contextBuffer.Add($" {line.Text}");
+		if (contextBuffer.Count > contextLines * 2)
+		{
+			contextBuffer.RemoveAt(0);
+		}
+		currentLine1++;
+		currentLine2++;
+	}
+
+	/// <summary>
+	/// Handles a deleted line by adding it to pending changes
+	/// </summary>
+	private static void HandleDeletedLine(DiffPiece line, ref int currentLine1,
+		List<string> pendingLines, List<string> contextBuffer, int contextLines)
+	{
+		AddContextBeforeChanges(pendingLines, contextBuffer, contextLines);
+		pendingLines.Add($"-{line.Text}");
+		currentLine1++;
+	}
+
+	/// <summary>
+	/// Handles an inserted line by adding it to pending changes
+	/// </summary>
+	private static void HandleInsertedLine(DiffPiece line, ref int currentLine2,
+		List<string> pendingLines, List<string> contextBuffer, int contextLines)
+	{
+		AddContextBeforeChanges(pendingLines, contextBuffer, contextLines);
+		pendingLines.Add($"+{line.Text}");
+		currentLine2++;
+	}
+
+	/// <summary>
+	/// Handles a modified line by treating it as deletion + insertion
+	/// </summary>
+	private static void HandleModifiedLine(DiffPiece line, ref int currentLine1, ref int currentLine2,
+		List<string> pendingLines, List<string> contextBuffer, int contextLines)
+	{
+		AddContextBeforeChanges(pendingLines, contextBuffer, contextLines);
+		pendingLines.Add($"-{line.Text}");
+		pendingLines.Add($"+{line.Text}");
+		currentLine1++;
+		currentLine2++;
+	}
+
+	/// <summary>
+	/// Adds context lines before changes if this is the first change in a chunk
+	/// </summary>
+	private static void AddContextBeforeChanges(List<string> pendingLines, List<string> contextBuffer, int contextLines)
+	{
+		if (pendingLines.Count == 0)
+		{
+			int contextStart = Math.Max(0, contextBuffer.Count - contextLines);
+			pendingLines.AddRange(contextBuffer.Skip(contextStart));
+		}
+	}
+
+	/// <summary>
+	/// Outputs a diff chunk with header and context
+	/// </summary>
+	private static void OutputDiffChunk(List<string> pendingLines, List<string> contextBuffer,
+		List<string> result, int currentLine1, int currentLine2, int contextLines)
+	{
+		// Add context after changes
+		List<string> contextAfter = [.. contextBuffer.Take(Math.Min(contextLines, contextBuffer.Count))];
+		pendingLines.AddRange(contextAfter);
+
+		// Add chunk header
+		(int deletedCount, int addedCount, int contextCount) = CountLineTypes(pendingLines);
+
+		int startLine1 = currentLine1 - deletedCount - (contextCount / 2);
+		int startLine2 = currentLine2 - addedCount - (contextCount / 2);
+
+		result.Add($"@@ -{startLine1},{deletedCount + (contextCount / 2)} +{startLine2},{addedCount + (contextCount / 2)} @@");
+		result.AddRange(pendingLines);
+
+		pendingLines.Clear();
+	}
+
+	/// <summary>
+	/// Outputs the final diff chunk for any remaining pending changes
+	/// </summary>
+	private static void OutputFinalDiffChunk(List<string> pendingLines, List<string> result,
+		int currentLine1, int currentLine2)
+	{
+		(int deletedCount, int addedCount, int contextCount) = CountLineTypes(pendingLines);
+
+		int startLine1 = currentLine1 - deletedCount - contextCount;
+		int startLine2 = currentLine2 - addedCount - contextCount;
+
+		result.Add($"@@ -{startLine1},{deletedCount + contextCount} +{startLine2},{addedCount + contextCount} @@");
+		result.AddRange(pendingLines);
+	}
+
+	/// <summary>
+	/// Counts the different types of lines in pending changes
+	/// </summary>
+	/// <param name="pendingLines">List of pending diff lines</param>
+	/// <returns>Tuple of (deleted count, added count, context count)</returns>
+	private static (int deletedCount, int addedCount, int contextCount) CountLineTypes(List<string> pendingLines)
+	{
+		int deletedCount = pendingLines.Count(l => l.StartsWith('-'));
+		int addedCount = pendingLines.Count(l => l.StartsWith('+'));
+		int contextCount = pendingLines.Count - deletedCount - addedCount;
+
+		return (deletedCount, addedCount, contextCount);
 	}
 
 	/// <summary>

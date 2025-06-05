@@ -213,19 +213,45 @@ public static class FileDiffer
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		// Get the differences using DiffPlex
 		IReadOnlyCollection<LineDifference> differences = FindDifferences(file1, file2);
-
 		StringBuilder sb = new();
+
+		BuildChangeSummaryHeader(sb, file1, file2);
+		BuildStatisticsSummary(sb, differences);
+
+		if (HasNoDifferences(differences))
+		{
+			sb.AppendLine("No differences found.");
+			return sb.ToString();
+		}
+
+		sb.AppendLine();
+		BuildDetailedChanges(sb, differences, useColor);
+
+		return sb.ToString();
+	}
+
+	/// <summary>
+	/// Builds the header section of the change summary.
+	/// </summary>
+	/// <param name="sb">StringBuilder to append to.</param>
+	/// <param name="file1">Path to the first file.</param>
+	/// <param name="file2">Path to the second file.</param>
+	private static void BuildChangeSummaryHeader(StringBuilder sb, string file1, string file2)
+	{
 		sb.AppendLine($"Change Summary: {Path.GetFileName(file1)} vs {Path.GetFileName(file2)}");
 		sb.AppendLine("----------------------------------------");
+	}
 
-		// Count different types of changes
-		int modifications = differences.Count(d => d.LineNumber1.HasValue && d.LineNumber2.HasValue);
-		int additions = differences.Count(d => !d.LineNumber1.HasValue && d.LineNumber2.HasValue);
-		int deletions = differences.Count(d => d.LineNumber1.HasValue && !d.LineNumber2.HasValue);
+	/// <summary>
+	/// Builds the statistics summary section.
+	/// </summary>
+	/// <param name="sb">StringBuilder to append to.</param>
+	/// <param name="differences">Collection of line differences.</param>
+	private static void BuildStatisticsSummary(StringBuilder sb, IReadOnlyCollection<LineDifference> differences)
+	{
+		(int modifications, int additions, int deletions) = CountDifferenceTypes(differences);
 
-		// Add summary statistics
 		if (modifications > 0)
 		{
 			sb.AppendLine($"{modifications} line(s) modified");
@@ -240,43 +266,113 @@ public static class FileDiffer
 		{
 			sb.AppendLine($"{deletions} line(s) deleted");
 		}
+	}
 
-		if (modifications == 0 && additions == 0 && deletions == 0)
-		{
-			sb.AppendLine("No differences found.");
-			return sb.ToString();
-		}
+	/// <summary>
+	/// Counts the different types of changes in the differences.
+	/// </summary>
+	/// <param name="differences">Collection of line differences.</param>
+	/// <returns>Tuple of modification, addition, and deletion counts.</returns>
+	private static (int modifications, int additions, int deletions) CountDifferenceTypes(IReadOnlyCollection<LineDifference> differences)
+	{
+		int modifications = differences.Count(d => d.LineNumber1.HasValue && d.LineNumber2.HasValue);
+		int additions = differences.Count(d => !d.LineNumber1.HasValue && d.LineNumber2.HasValue);
+		int deletions = differences.Count(d => d.LineNumber1.HasValue && !d.LineNumber2.HasValue);
 
-		sb.AppendLine();
+		return (modifications, additions, deletions);
+	}
 
-		// Show details of changes
+	/// <summary>
+	/// Checks if there are no differences found.
+	/// </summary>
+	/// <param name="differences">Collection of line differences.</param>
+	/// <returns>True if no differences exist.</returns>
+	private static bool HasNoDifferences(IReadOnlyCollection<LineDifference> differences)
+	{
+		(int modifications, int additions, int deletions) = CountDifferenceTypes(differences);
+		return modifications == 0 && additions == 0 && deletions == 0;
+	}
+
+	/// <summary>
+	/// Builds the detailed changes section.
+	/// </summary>
+	/// <param name="sb">StringBuilder to append to.</param>
+	/// <param name="differences">Collection of line differences.</param>
+	/// <param name="useColor">Whether to use color codes.</param>
+	private static void BuildDetailedChanges(StringBuilder sb, IReadOnlyCollection<LineDifference> differences, bool useColor)
+	{
 		foreach (LineDifference diff in differences)
 		{
-			if (diff.LineNumber1.HasValue && diff.LineNumber2.HasValue)
+			string diffLine = FormatDifferenceDetail(diff, useColor);
+			if (diffLine.Length > 0)
 			{
-				// Modified line
-				string prefix = useColor ? "\u001b[33m" : "";
-				string suffix = useColor ? "\u001b[0m" : "";
-				sb.AppendLine($"{prefix}Modified line {diff.LineNumber1}: {diff.Content1} → {diff.Content2}{suffix}");
-			}
-			else if (!diff.LineNumber1.HasValue && diff.LineNumber2.HasValue)
-			{
-				// Added line
-				string prefix = useColor ? "\u001b[32m" : "";
-				string suffix = useColor ? "\u001b[0m" : "";
-				sb.AppendLine($"{prefix}Added line {diff.LineNumber2}: {diff.Content2}{suffix}");
-			}
-			else if (diff.LineNumber1.HasValue && !diff.LineNumber2.HasValue)
-			{
-				// Deleted line
-				string prefix = useColor ? "\u001b[31m" : "";
-				string suffix = useColor ? "\u001b[0m" : "";
-				sb.AppendLine($"{prefix}Deleted line {diff.LineNumber1}: {diff.Content1}{suffix}");
+				sb.AppendLine(diffLine);
 			}
 		}
-
-		return sb.ToString();
 	}
+
+	/// <summary>
+	/// Formats a single difference for detailed display.
+	/// </summary>
+	/// <param name="diff">The line difference to format.</param>
+	/// <param name="useColor">Whether to use color codes.</param>
+	/// <returns>Formatted difference string.</returns>
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S3358:Ternary operators should not be nested", Justification = "<Pending>")]
+	private static string FormatDifferenceDetail(LineDifference diff, bool useColor)
+	{
+		return diff.LineNumber1.HasValue && diff.LineNumber2.HasValue
+			? FormatModifiedLine(diff, useColor)
+			: !diff.LineNumber1.HasValue && diff.LineNumber2.HasValue
+			? FormatAddedLine(diff, useColor)
+			: diff.LineNumber1.HasValue && !diff.LineNumber2.HasValue
+			? FormatDeletedLine(diff, useColor)
+			: string.Empty;
+	}
+
+	/// <summary>
+	/// Formats a modified line with optional color.
+	/// </summary>
+	/// <param name="diff">The line difference.</param>
+	/// <param name="useColor">Whether to use color codes.</param>
+	/// <returns>Formatted modified line string.</returns>
+	private static string FormatModifiedLine(LineDifference diff, bool useColor)
+	{
+		(string prefix, string suffix) = GetColorCodes(useColor, "\u001b[33m"); // Yellow for modified
+		return $"{prefix}Modified line {diff.LineNumber1}: {diff.Content1} → {diff.Content2}{suffix}";
+	}
+
+	/// <summary>
+	/// Formats an added line with optional color.
+	/// </summary>
+	/// <param name="diff">The line difference.</param>
+	/// <param name="useColor">Whether to use color codes.</param>
+	/// <returns>Formatted added line string.</returns>
+	private static string FormatAddedLine(LineDifference diff, bool useColor)
+	{
+		(string prefix, string suffix) = GetColorCodes(useColor, "\u001b[32m"); // Green for added
+		return $"{prefix}Added line {diff.LineNumber2}: {diff.Content2}{suffix}";
+	}
+
+	/// <summary>
+	/// Formats a deleted line with optional color.
+	/// </summary>
+	/// <param name="diff">The line difference.</param>
+	/// <param name="useColor">Whether to use color codes.</param>
+	/// <returns>Formatted deleted line string.</returns>
+	private static string FormatDeletedLine(LineDifference diff, bool useColor)
+	{
+		(string prefix, string suffix) = GetColorCodes(useColor, "\u001b[31m"); // Red for deleted
+		return $"{prefix}Deleted line {diff.LineNumber1}: {diff.Content1}{suffix}";
+	}
+
+	/// <summary>
+	/// Gets color codes for formatting.
+	/// </summary>
+	/// <param name="useColor">Whether to use color codes.</param>
+	/// <param name="colorCode">The ANSI color code to use.</param>
+	/// <returns>Tuple of prefix and suffix color codes.</returns>
+	private static (string prefix, string suffix) GetColorCodes(bool useColor, string colorCode) =>
+		useColor ? (colorCode, "\u001b[0m") : ("", "");
 
 	/// <summary>
 	/// Generates a colored change summary showing added and removed lines

@@ -105,7 +105,7 @@ globs: *
 -   For code present, remove array creation and simply pass the elements.
 -   When a condition is always evaluating to 'False', and some code paths are unreachable, ensure that variables used in the condition are properly initialized before the condition check, especially when they are updated inside lambda expressions or status blocks. Consider moving file comparisons outside the status block to ensure proper assignment.
 -   Remove redundant jump statements, such as `continue` at the end of a loop iteration.
--   Refactor methods with high cognitive complexity by breaking them down into smaller, more manageable methods.
+-   Refactor methods with high cognitive complexity by breaking them down into smaller, more manageable methods. Refactor methods like `GenerateUnifiedDiff`, `ShowSideBySideDiff`, and `GenerateChangeSummaryDiff` to reduce cognitive complexity.
 -   Extract nested classes into their own separate files, following the same pattern as the other choice enum files in that directory.
 -   When a literal string is used multiple times, define a constant for it at the class level.
 -   Do not use nested classes; extract them into their own files.
@@ -114,7 +114,7 @@ globs: *
 -   Extract nested ternary operations into independent statements for improved readability.
 -   Duplication percentage should be minimized, and code should be refactored to reduce duplication.
 -   Centralize console UI patterns using methods in `BaseMenuHandler` or a dedicated `UIHelper` class.
--   Consolidate duplicate file comparison logic (`ShowChangeSummary`, `ShowGitStyleDiff`, `ShowSideBySideDiff`) into a common service.
+-   Consolidate duplicate file comparison logic (`ShowChangeSummary`, `ShowGitStyleDiff`, `ShowSideBySideDiff`) into a common service, specifically the `ComparisonOperationsService`.
 -   Standardize wait-for-key patterns (e.g., "Press any key to continue...") using a common utility method.
 -   Centralize error handling patterns to avoid repeated exception handling code.
 -   Consolidate file validation patterns (e.g., file/directory existence checks) into reusable methods.
@@ -373,5 +373,4 @@ globs: *
   - Supports patterns like `*.txt`, `*.cs`, etc.
   - Can search recursively through subdirectories.
 - When finding files, skip git submodules. Git submodules are identified by the presence of a `.git` file (not directory) in the subdirectory, which contains a reference to the actual git directory.
-- In `FileFinder.cs`, add a method `IsGitSubmodule` to determine if a directory is a git submodule. This method should check for the existence of a `.git` file (not directory) in the given directory path.
-- The `IsGitSubmodule` method should handle potential exceptions like `UnauthorizedAccessException`, `
+- In `FileFinder.cs`, add a method `IsGitSubmodule` to determine if a directory is a git submodule. This method should check for the existence of
