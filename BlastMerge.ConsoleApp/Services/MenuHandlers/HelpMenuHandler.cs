@@ -51,7 +51,7 @@ public class HelpMenuHandler(ApplicationService applicationService) : BaseMenuHa
 					ShowKeyboardShortcuts();
 					break;
 				case HelpChoice.BackToMainMenu:
-					// Return to main menu
+					GoBack();
 					break;
 				default:
 					// Unknown choice - do nothing

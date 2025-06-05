@@ -47,15 +47,27 @@ public static class NavigationHistory
 	/// Gets an appropriate back menu text based on the navigation stack.
 	/// </summary>
 	/// <returns>A string describing where the back action will go.</returns>
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1024:Use properties where appropriate", Justification = "This method performs complex logic and array operations, making it inappropriate for a property")]
 	public static string GetBackMenuText()
 	{
-		string? previousMenu = Peek();
-		return previousMenu switch
+		if (Count <= 1)
 		{
-			null => "🔙 Back to Main Menu",
-			"Main Menu" => "🔙 Back to Main Menu",
-			_ => $"🔙 Back to {previousMenu}"
-		};
+			return "🔙 Back to Main Menu";
+		}
+
+		// Look at the menu below the current one (where back will actually go)
+		string[] stackArray = [.. _navigationHistory];
+		if (stackArray.Length >= 2)
+		{
+			string previousMenu = stackArray[1]; // Second from top (below current)
+			return previousMenu switch
+			{
+				"Main Menu" => "🔙 Back to Main Menu",
+				_ => $"🔙 Back to {previousMenu}"
+			};
+		}
+
+		return "🔙 Back to Main Menu";
 	}
 
 	/// <summary>

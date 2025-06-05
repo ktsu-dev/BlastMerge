@@ -58,7 +58,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 					HandleRunBatch();
 					break;
 				case BatchOperationChoice.BackToMainMenu:
-					// Default action - do nothing
+					GoBack();
 					break;
 				default:
 					// Unknown choice - do nothing

@@ -53,7 +53,7 @@ public class CompareFilesMenuHandler(ApplicationService applicationService) : Ba
 					HandleCompareTwoSpecificFiles();
 					break;
 				case CompareChoice.BackToMainMenu:
-					// Return to main menu
+					GoBack();
 					break;
 				default:
 					// Unknown choice - do nothing

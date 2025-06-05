@@ -289,6 +289,11 @@ globs: *
 -   Improve the interactive mode with a TUI menu for accessing the features.
 -   Use `UIHelper` class for common UI operations and standardized display methods.
 -   Implement a navigation stack so that users can go back to where they were instead of back to the main menu.
+-   When the navigation stack is:
+    1. Main Menu
+    2. Compare Files
+
+    The `Peek()` returns "Compare Files" (the current menu), but the back button should go to "Main Menu" (the previous menu). Modify the `GetBackMenuText()` method to look at the menu below the current one.
 
 ## PROJECT RENAMING
 
@@ -365,8 +370,4 @@ globs: *
 
 - In `PSBuild.psm1`, when the `git log` command fails or returns an error during changelog generation, ensure the `$rawCommits` variable handles the error object appropriately, especially when accessing its `.Count` property. Improve error handling and the `ConvertTo-ArraySafe` function to handle these edge cases. The `ConvertTo-ArraySafe` function should handle `null`, empty inputs, PowerShell error objects, empty strings, and whitespace-only strings. Add try-catch protection around array conversion. After calling `ConvertTo-ArraySafe`, explicitly check that the result has a `Count` property before using it, and create an empty array if it does not.
 - In `PSBuild.psm1`, the `$uniqueCommits` variable must be created using `ConvertTo-ArraySafe -InputObject ($structuredCommits | Sort-Object -Property Hash -Unique | ForEach-Object { $_.FormattedEntry })` to ensure it is always an array, even when the pipeline returns no results.
-- In `PSBuild.psm1`, when the `git log` command fails or returns an error, ensure the `$rawCommits` variable handles the error object appropriately, especially when accessing its `.Count` property. Improve error handling and the `ConvertTo-ArraySafe` function to handle these edge cases. Improve error handling and the `ConvertTo-ArraySafe` function to handle `null`, empty inputs, PowerShell error objects, empty strings, and whitespace-only strings. Add try-catch protection around array conversion. After calling `ConvertTo-ArraySafe`, explicitly check that the result has a `Count` property before using it, and create an empty array if it does not.
-
-## FILE FINDING
-
-- BlastMerge supports glob patterns through the .NET
+- In `PSBuild.psm1`, when the `git log` command fails or returns an error, ensure the `$rawCommits` variable handles the error object appropriately, especially when accessing its `.Count` property. Improve error handling and the `ConvertTo-ArraySafe` function to handle these edge cases. Improve error handling and the `ConvertTo-ArraySafe` function to handle `null`, empty inputs

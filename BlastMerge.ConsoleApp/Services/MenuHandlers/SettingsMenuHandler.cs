@@ -51,7 +51,7 @@ public class SettingsMenuHandler(ApplicationService applicationService) : BaseMe
 					ShowStatistics();
 					break;
 				case SettingsChoice.BackToMainMenu:
-					// Return to main menu
+					GoBack();
 					break;
 				default:
 					// Unknown choice - do nothing
