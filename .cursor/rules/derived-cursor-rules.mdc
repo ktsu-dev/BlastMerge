@@ -121,6 +121,8 @@ globs: *
 -   'Path.GetTempFileName()' is insecure. Use 'Path.GetRandomFileName()' instead. but also address collision potential.
 -   Replace `Path.GetTempFileName()` with `SecureTempFileHelper.CreateTempFile()` to enhance security and handle potential file collisions. Use `SecureTempFileHelper.SafeDeleteTempFiles()` for cleanup.
 -   When using `Path.GetTempPath()`, ensure publicly writable directories are used safely.
+-   Refactor methods to reduce cognitive complexity to below 15.
+-   Duplicated code should be refactored into centralized services or helper methods to improve maintainability and reduce redundancy.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -372,5 +374,4 @@ globs: *
   - The `FileFinder.FindFiles()` method recursively searches directories and returns a collection of all matching files.
   - Supports patterns like `*.txt`, `*.cs`, etc.
   - Can search recursively through subdirectories.
-- When finding files, skip git submodules. Git submodules are identified by the presence of a `.git` file (not directory) in the subdirectory, which contains a reference to the actual git directory.
-- In `FileFinder.cs`, add a method `IsGitSubmodule` to determine if a directory is a git submodule. This method should check for the existence of
+- When finding files, skip git submodules. Git submodules are identified by the presence of a `.git` file (not directory) in the subdirectory, which contains a reference to

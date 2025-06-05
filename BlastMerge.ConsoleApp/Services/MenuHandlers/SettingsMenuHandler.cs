@@ -148,26 +148,45 @@ public class SettingsMenuHandler(ApplicationService applicationService) : BaseMe
 	{
 		ShowMenuTitle("Application Statistics");
 
-		Panel statistics = new("""
+		long managedMemoryMB = GC.GetTotalMemory(false) / 1024 / 1024;
+
+		// Get system memory information
+		GCMemoryInfo gcInfo = GC.GetGCMemoryInfo();
+		long totalAvailableMemoryMB = gcInfo.TotalAvailableMemoryBytes / 1024 / 1024;
+
+		// Get working set (physical memory used by this process)
+		long workingSetMB = Environment.WorkingSet / 1024 / 1024;
+
+		string content = string.Format("""
 			[bold cyan]Runtime Information[/]
 
 			• [green]Operating System:[/] {0}
 			• [green]Runtime Version:[/] {1}
 			• [green]Working Directory:[/] {2}
-			• [green]Available Memory:[/] {3:N0} MB
+
+			[bold cyan]Memory Information[/]
+
+			• [green]Managed Memory:[/] {3:N0} MB
+			• [green]Working Set:[/] {4:N0} MB
+			• [green]Total Available:[/] {5:N0} MB
 
 			[bold cyan]Application Information[/]
 
-			• [green]Process ID:[/] {4}
-			• [green]Thread Count:[/] {5}
-			• [green]Start Time:[/] {6}
-			""".Replace("{0}", Environment.OSVersion.ToString())
-			   .Replace("{1}", Environment.Version.ToString())
-			   .Replace("{2}", Environment.CurrentDirectory)
-			   .Replace("{3}", (GC.GetTotalMemory(false) / 1024 / 1024).ToString())
-			   .Replace("{4}", Environment.ProcessId.ToString())
-			   .Replace("{5}", Environment.ProcessorCount.ToString())
-			   .Replace("{6}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")))
+			• [green]Process ID:[/] {6}
+			• [green]Thread Count:[/] {7}
+			• [green]Start Time:[/] {8}
+			""",
+			Environment.OSVersion,
+			Environment.Version,
+			Environment.CurrentDirectory,
+			managedMemoryMB,
+			workingSetMB,
+			totalAvailableMemoryMB,
+			Environment.ProcessId,
+			Environment.ProcessorCount,
+			DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+
+		Panel statistics = new(content)
 		{
 			Header = new PanelHeader("[bold]System Information[/]"),
 			Border = BoxBorder.Rounded
