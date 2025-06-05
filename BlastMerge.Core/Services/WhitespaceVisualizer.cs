@@ -151,11 +151,8 @@ public static class WhitespaceVisualizer
 			}
 			return highlighted;
 		}
-		else if (showWhitespace)
-		{
-			return MakeWhitespaceVisible(line);
-		}
 
-		return line;
+		// If we reach here, highlightTrailing is false and showWhitespace must be true
+		return MakeWhitespaceVisible(line);
 	}
 }

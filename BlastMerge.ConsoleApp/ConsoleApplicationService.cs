@@ -313,9 +313,106 @@ public class ConsoleApplicationService : ApplicationService
 	/// <returns>The result of the merge operation.</returns>
 	private BatchActionResult ExecuteIterativeMerge(string directory, string pattern)
 	{
-		RunIterativeMerge(directory, pattern);
+		RunBatchIterativeMerge(directory, pattern);
 		return new BatchActionResult { ShouldStop = false };
 	}
+
+	/// <summary>
+	/// Runs iterative merge for batch processing without user interaction prompts.
+	/// </summary>
+	/// <param name="directory">The directory to search.</param>
+	/// <param name="fileName">The file name pattern to match.</param>
+	private void RunBatchIterativeMerge(string directory, string fileName)
+	{
+		if (!Directory.Exists(directory))
+		{
+			throw new DirectoryNotFoundException($"Directory '{directory}' does not exist.");
+		}
+
+		// First get all files for the table display
+		IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups = CompareFiles(directory, fileName);
+		int totalFiles = fileGroups.Sum(g => g.Value.Count);
+
+		// Show the improved table summary first
+		ShowFileGroupSummaryTable(fileGroups, directory, totalFiles);
+
+		// Check if there are any groups with multiple files that can be merged
+		int groupsWithMultipleFiles = fileGroups.Count(g => g.Value.Count > 1);
+		if (groupsWithMultipleFiles == 0)
+		{
+			// Table already showed this information, so just return
+			return;
+		}
+
+		// Prepare file groups for merging using the Core library
+		IReadOnlyCollection<FileGroup>? coreFileGroups = IterativeMergeOrchestrator.PrepareFileGroupsForMerging(directory, fileName);
+
+		if (coreFileGroups == null)
+		{
+			AnsiConsole.MarkupLine("[yellow]No files found or insufficient unique versions to merge.[/]");
+			return;
+		}
+
+		// Start iterative merge process with batch callbacks (auto-continue without prompting)
+		MergeCompletionResult result = IterativeMergeOrchestrator.StartIterativeMergeProcess(
+			coreFileGroups,
+			BatchMergeCallback,
+			ConsoleStatusCallback,
+			BatchContinueCallback);
+
+		// Handle result
+		ProgressReportingService.ReportCompletionResult(result);
+	}
+
+	/// <summary>
+	/// Batch-specific merge callback that handles conflicts automatically without user interaction.
+	/// </summary>
+	/// <param name="file1">First file path.</param>
+	/// <param name="file2">Second file path.</param>
+	/// <param name="existingContent">Existing merged content.</param>
+	/// <returns>Merge result using safe automatic conflict resolution.</returns>
+	private static MergeResult? BatchMergeCallback(string file1, string file2, string? existingContent)
+	{
+		// For batch processing, use automatic conflict resolution:
+		// - If files are identical, merge them
+		// - If files have conflicts, skip merging to preserve both files safely
+		try
+		{
+			IReadOnlyCollection<LineDifference> differences = FileDiffer.FindDifferences(file1, file2);
+
+			// If files are identical (no differences), safe to merge
+			if (differences.Count == 0)
+			{
+				string[] lines = File.ReadAllLines(file1);
+				return new MergeResult(lines.AsReadOnly(), Array.Empty<MergeConflict>().AsReadOnly());
+			}
+
+			// If files have differences, skip merging in batch mode for safety
+			// This preserves both files rather than making potentially incorrect automatic choices
+			return null;
+		}
+		catch (IOException)
+		{
+			// If there's any IO error reading files, skip merging for safety
+			return null;
+		}
+		catch (UnauthorizedAccessException)
+		{
+			// If there's any access error reading files, skip merging for safety
+			return null;
+		}
+		catch (ArgumentException)
+		{
+			// If there's any argument error with file paths, skip merging for safety
+			return null;
+		}
+	}
+
+	/// <summary>
+	/// Batch-specific callback that automatically continues merging without user prompts.
+	/// </summary>
+	/// <returns>Always true to continue automatically in batch mode.</returns>
+	private static bool BatchContinueCallback() => true;
 
 	/// <summary>
 	/// Handles skipping the current pattern.

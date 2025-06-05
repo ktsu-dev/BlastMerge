@@ -139,6 +139,7 @@ globs: *
 -   A legend explaining the whitespace symbols should be displayed.
 -   When using glob patterns, ensure that files of different names are not compared with each other.
 -   The `FindMostSimilarFiles` method must only compare files with the same filename.
+-   Change this condition so that it does not always evaluate to 'True'. Some code paths are unreachable.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -358,8 +359,3 @@ globs: *
 ## NEW PRIMARY FEATURE
 
 - The primary feature of the
-
-## FILE COMPARISON TABLE
-
--   When displaying the file comparison results, the table should:
-    -
