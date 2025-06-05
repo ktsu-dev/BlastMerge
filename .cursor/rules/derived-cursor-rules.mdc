@@ -132,6 +132,10 @@ globs: *
 -   When displaying file paths during iterative merge, and files have the same relative path in different repositories, show the unique parts of the path to distinguish between the files.
 -   In `PopulateTableWithDiffLines` method, ensure that the side-by-side diff implementation correctly pairs lines based on the DiffPlex model, rather than assuming a one-to-one mapping by array index.
 -   When generating insert and delete choices during iterative merge, use `FileDisplayService.GetDistinguishingLabels()` instead of `FileDisplayService.GetRelativeDirectoryName()` to provide meaningful labels that help distinguish between different versions of files from different directories/repositories.
+-   Use DiffPlex's `DiffResult` and `DiffBlocks` directly in the iterative merge feature, avoiding custom `LineDifference` objects.
+-   Show contextual windows around each diff block (3 lines before/after) in the side-by-side diff display.
+-   Handle line padding and alignment naturally within each diff block in the side-by-side diff display.
+-   Implement clean "take left" and "take right" buttons that directly manipulate the file content based on diff blocks.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -190,6 +194,8 @@ globs: *
     -   Show deleted lines (red) only on the left with their correct line numbers.
     -   Show inserted lines (green) only on the right with their correct line numbers.
     -   Add visual separators between different diff blocks.
+-   The iterative merge process should directly use DiffPlex's `DiffResult` and `DiffBlocks` for block-based merging.
+-   Use the `DiffPlexHelper` class to create line diffs and apply take left/right operations using DiffPlex blocks.
 
 ## DEBUGGING
 
@@ -353,10 +359,4 @@ globs: *
 
 ## CROSS PLATFORM SUPPORT
 
--   The application should publish portable zip files for Linux and macOS platforms in addition to Windows, even if they are not included in the winget manifest.
-
-## PUBLISHING RULES
-
--   The `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` should have only one `dotnet publish` step, consolidating the previous separate steps for general application and winget package publishing.
--   When publishing, all applications should be published with the same optimized settings (self-contained, single-file, etc.) whether they're for general use or winget packages.
--   Every project should be published for all specified architectures (win-x64, win-x86, win-arm64, linux-x64, linux-arm64, osx-x64, osx-arm64
+-   The application should publish portable zip files

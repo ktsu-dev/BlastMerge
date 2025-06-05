@@ -160,7 +160,7 @@ public static class IterativeMergeOrchestrator
 		string file1,
 		string file2,
 		string? existingMergedContent,
-		Func<DiffBlock, BlockContext, int, BlockChoice> blockChoiceCallback)
+		Func<DiffPlex.Model.DiffBlock, BlockContext, int, BlockChoice> blockChoiceCallback)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);

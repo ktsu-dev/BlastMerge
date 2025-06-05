@@ -694,7 +694,7 @@ public class ConsoleApplicationService : ApplicationService
 		ProgressReportingService.ReportMergeInitiation(leftFile, rightFile, existingContent != null);
 
 		MergeResult? result = IterativeMergeOrchestrator.PerformMergeWithConflictResolution(
-			leftFile, rightFile, existingContent, (block, context, blockNumber) => GetBlockChoice(block, context, blockNumber, leftFile, rightFile));
+			leftFile, rightFile, existingContent, (diffBlock, context, blockNumber) => GetBlockChoice(diffBlock, context, blockNumber, leftFile, rightFile));
 
 		if (result != null)
 		{
@@ -719,179 +719,58 @@ public class ConsoleApplicationService : ApplicationService
 	/// <summary>
 	/// Gets the user's choice for a merge block with visual conflict resolution
 	/// </summary>
-	/// <param name="block">The diff block to choose for</param>
+	/// <param name="diffBlock">The DiffPlex diff block to choose for</param>
 	/// <param name="context">The context around the block</param>
 	/// <param name="blockNumber">The block number being processed</param>
 	/// <param name="leftFile">The left file path</param>
 	/// <param name="rightFile">The right file path</param>
 	/// <returns>The user's choice for the block</returns>
-	private BlockChoice GetBlockChoice(DiffBlock block, BlockContext context, int blockNumber, string leftFile, string rightFile)
+	private BlockChoice GetBlockChoice(DiffPlex.Model.DiffBlock diffBlock, BlockContext context, int blockNumber, string leftFile, string rightFile)
 	{
-		AnsiConsole.MarkupLine($"[yellow]🔍 Block {blockNumber} ({block.Type})[/]");
-
-		// Show the block content with context
-		ShowBlockWithContext(block, context, leftFile, rightFile);
-
-		// Get user's choice based on block type
-		return block.Type switch
-		{
-			BlockType.Insert => GetInsertChoice(rightFile, leftFile),
-			BlockType.Delete => GetDeleteChoice(leftFile, rightFile),
-			BlockType.Replace => GetReplaceChoice(leftFile, rightFile),
-			_ => throw new InvalidOperationException($"Unknown block type: {block.Type}")
-		};
-	}
-
-	/// <summary>
-	/// Shows a block with its context in a side-by-side diff format
-	/// </summary>
-	/// <param name="block">The diff block to show</param>
-	/// <param name="context">The context around the block</param>
-	/// <param name="leftFile">The left file path</param>
-	/// <param name="rightFile">The right file path</param>
-	private static void ShowBlockWithContext(DiffBlock block, BlockContext context, string leftFile, string rightFile)
-	{
-		AnsiConsole.MarkupLine($"[yellow]Block Type: {block.Type}[/]");
-		AnsiConsole.WriteLine();
+		string blockType = DetermineBlockType(diffBlock);
+		AnsiConsole.MarkupLine($"[yellow]🔍 Block {blockNumber} ({blockType})[/]");
 
 		(string leftLabel, string rightLabel) = FileDisplayService.GetDistinguishingLabels(leftFile, rightFile);
 
-		// Create a side-by-side diff visualization
-		Table table = new Table()
-			.AddColumn(new TableColumn("[bold]Line[/]").Width(6))
-			.AddColumn(new TableColumn($"[bold]{leftLabel}[/]").Width(50))
-			.AddColumn(new TableColumn("[bold]Line[/]").Width(6))
-			.AddColumn(new TableColumn($"[bold]{rightLabel}[/]").Width(50))
-			.Border(TableBorder.Rounded)
-			.Expand();
+		// Show the diff block using our improved display service
+		string[] lines1 = File.ReadAllLines(leftFile);
+		string[] lines2 = File.ReadAllLines(rightFile);
+		FileComparisonDisplayService.ShowDiffBlock(lines1, lines2, diffBlock, context, leftLabel, rightLabel);
+		FileComparisonDisplayService.ShowDiffBlockStatistics(diffBlock);
 
-		// Calculate correct starting line numbers for context before the block
-		int firstLine1 = block.LineNumbers1.Count > 0 ? block.LineNumbers1.Min() : 1;
-		int firstLine2 = block.LineNumbers2.Count > 0 ? block.LineNumbers2.Min() : 1;
-
-		int contextStartLine1 = Math.Max(1, firstLine1 - context.ContextBefore1.Count);
-		int contextStartLine2 = Math.Max(1, firstLine2 - context.ContextBefore2.Count);
-
-		// Show context before the block
-		ShowContextLines(table, [.. context.ContextBefore1], [.. context.ContextBefore2], contextStartLine1, contextStartLine2);
-
-		// Show the actual diff block
-		ShowDiffBlock(table, block);
-
-		// Show context after the block
-		ShowContextLines(table, [.. context.ContextAfter1], [.. context.ContextAfter2],
-			block.LineNumbers1.LastOrDefault() + 1, block.LineNumbers2.LastOrDefault() + 1);
-
-		AnsiConsole.Write(table);
-		AnsiConsole.WriteLine();
-	}
-
-	/// <summary>
-	/// Shows context lines in the side-by-side table
-	/// </summary>
-	/// <param name="table">The table to add rows to</param>
-	/// <param name="lines1">Context lines from version 1</param>
-	/// <param name="lines2">Context lines from version 2</param>
-	/// <param name="startLine1">Starting line number for version 1</param>
-	/// <param name="startLine2">Starting line number for version 2</param>
-	private static void ShowContextLines(Table table, string[] lines1, string[] lines2, int startLine1, int startLine2)
-	{
-		int maxLines = Math.Max(lines1.Length, lines2.Length);
-
-		for (int i = 0; i < maxLines; i++)
+		// Get user's choice based on block content
+		if (diffBlock.DeleteCountA > 0 && diffBlock.InsertCountB > 0)
 		{
-			string line1 = i < lines1.Length ? lines1[i] : "";
-			string line2 = i < lines2.Length ? lines2[i] : "";
-
-			string lineNum1 = i < lines1.Length ? (startLine1 + i).ToString() : "";
-			string lineNum2 = i < lines2.Length ? (startLine2 + i).ToString() : "";
-
-			// Context lines are shown with dim styling
-			string content1 = string.IsNullOrEmpty(line1) ? "" : $"[dim]{line1.EscapeMarkup()}[/]";
-			string content2 = string.IsNullOrEmpty(line2) ? "" : $"[dim]{line2.EscapeMarkup()}[/]";
-
-			table.AddRow(lineNum1 ?? "", content1, lineNum2 ?? "", content2);
+			// Replace block - both deleted and inserted content
+			return GetReplaceChoice(leftFile, rightFile);
+		}
+		else if (diffBlock.InsertCountB > 0)
+		{
+			// Insert block - only inserted content
+			return GetInsertChoice(rightFile, leftFile);
+		}
+		else if (diffBlock.DeleteCountA > 0)
+		{
+			// Delete block - only deleted content
+			return GetDeleteChoice(leftFile, rightFile);
+		}
+		else
+		{
+			// No changes (shouldn't happen in practice)
+			return BlockChoice.UseVersion2;
 		}
 	}
 
 	/// <summary>
-	/// Shows the diff block with proper highlighting
+	/// Determines the block type for display purposes
 	/// </summary>
-	/// <param name="table">The table to add rows to</param>
-	/// <param name="block">The diff block to display</param>
-	private static void ShowDiffBlock(Table table, DiffBlock block)
+	/// <param name="diffBlock">The DiffPlex diff block</param>
+	/// <returns>A string describing the block type</returns>
+	private static string DetermineBlockType(DiffPlex.Model.DiffBlock diffBlock)
 	{
-		switch (block.Type)
-		{
-			case BlockType.Insert:
-				ShowInsertBlock(table, block);
-				break;
-			case BlockType.Delete:
-				ShowDeleteBlock(table, block);
-				break;
-			case BlockType.Replace:
-				ShowReplaceBlock(table, block);
-				break;
-			default:
-				break;
-		}
-	}
-
-	/// <summary>
-	/// Shows an insert block (content only in version 2)
-	/// </summary>
-	/// <param name="table">The table to add rows to</param>
-	/// <param name="block">The insert block</param>
-	private static void ShowInsertBlock(Table table, DiffBlock block)
-	{
-		for (int i = 0; i < block.Lines2.Count; i++)
-		{
-			string lineNum2 = block.LineNumbers2.Count > i ? block.LineNumbers2[i].ToString() : "";
-			string content2 = $"[green on darkgreen]+ {block.Lines2[i].EscapeMarkup()}[/]";
-
-			table.AddRow("", "", lineNum2, content2);
-		}
-	}
-
-	/// <summary>
-	/// Shows a delete block (content only in version 1)
-	/// </summary>
-	/// <param name="table">The table to add rows to</param>
-	/// <param name="block">The delete block</param>
-	private static void ShowDeleteBlock(Table table, DiffBlock block)
-	{
-		for (int i = 0; i < block.Lines1.Count; i++)
-		{
-			string lineNum1 = block.LineNumbers1.Count > i ? block.LineNumbers1[i].ToString() : "";
-			string content1 = $"[red on darkred]- {block.Lines1[i].EscapeMarkup()}[/]";
-
-			table.AddRow(lineNum1, content1, "", "");
-		}
-	}
-
-	/// <summary>
-	/// Shows a replace block (content differs between versions)
-	/// </summary>
-	/// <param name="table">The table to add rows to</param>
-	/// <param name="block">The replace block</param>
-	private static void ShowReplaceBlock(Table table, DiffBlock block)
-	{
-		int maxLines = Math.Max(block.Lines1.Count, block.Lines2.Count);
-
-		for (int i = 0; i < maxLines; i++)
-		{
-			string lineNum1 = i < block.LineNumbers1.Count ? block.LineNumbers1[i].ToString() : "";
-			string lineNum2 = i < block.LineNumbers2.Count ? block.LineNumbers2[i].ToString() : "";
-
-			string content1 = i < block.Lines1.Count
-				? $"[red on darkred]- {block.Lines1[i].EscapeMarkup()}[/]"
-				: "";
-			string content2 = i < block.Lines2.Count
-				? $"[green on darkgreen]+ {block.Lines2[i].EscapeMarkup()}[/]"
-				: "";
-
-			table.AddRow(lineNum1, content1, lineNum2, content2);
-		}
+		return diffBlock.DeleteCountA > 0 && diffBlock.InsertCountB > 0
+			? "Replace"
+			: diffBlock.InsertCountB > 0 ? "Insert" : diffBlock.DeleteCountA > 0 ? "Delete" : "Unchanged";
 	}
 
 	/// <summary>
