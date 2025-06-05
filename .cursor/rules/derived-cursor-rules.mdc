@@ -79,6 +79,22 @@ globs: *
 -   Use `dotnet format` to automatically fix formatting and style issues. Be aware that `dotnet format` may not be able to fix all issues, such as catching general exceptions or performance improvement suggestions.
 -   Prefer comparing 'Count' to 0 rather than using 'Any()', both for clarity and for performance (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1860)
 -   Member 'HandleListBatches' does not access instance data and can be marked as static (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822)
+-   Loop should be simplified by calling Select(group => group.Value))
+-   Define a constant instead of using the literal 'Press any key to continue...' multiple times.
+-   Menus like in ShowMainMenu that display a string and translate it to a command should use a dictionary to avoid string repetitions.
+-   Replace naked strings with constants throughout the file. Consider the following:
+    -   Table column names
+    -   Property names in batch access
+    -   Menu choice strings
+-   Replace manual `groupIndex` tracking with LINQ's indexed `Select`, which eliminates the need for a separate counter variable and makes the loop more functional.
+-   When replacing the literal string `"Press any key to continue..."`, define a constant `PressAnyKeyMessage` at the class level.
+-   When defining constants, ensure each constant is actually used in the code to avoid linter errors.
+-   Table column names should be constants.
+-   Menu choice identifiers (like `"find_files"`, `"settings"`, etc.) should be constants.
+-   Choice text strings that are used in switch statements should be constants.
+-   Use dictionaries for menus that display a string and translate it to a command to avoid string repetitions.
+-   Look for opportunities to use switch expressions instead of switch statements.
+-   Look for opportunities to use enums in place of strings where they're used for determination and not display purposes.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -115,6 +131,7 @@ globs: *
 -   When using the `DiffPlexDiffer.GenerateColoredDiff` method, be aware that it uses the real file system (`File.Exists()`) instead of the mock file system. When using a mock file system in tests, ensure that `FileDifferAdapter.GenerateColoredDiff` creates temporary files from the mock file system content, similar to how `GenerateGitStyleDiff` handles it.
 -   When creating `DiffBlock` instances, ensure the `BlockType` parameter is correctly specified.
 -   When using records with init-only properties, create new instances with the correct values instead of modifying the property after creation.
+-   Add constants for merge conflict markers: `ConflictMarkerStart`, `ConflictMarkerSeparator`, `ConflictMarkerEnd`, `ConflictMarkerDeleted`, `ConflictMarkerDeletedEnd`, `ConflictMarkerAdded`, `ConflictMarkerAddedEnd`.
 
 ## DEBUGGING
 
@@ -307,7 +324,7 @@ globs: *
 
 - In `PSBuild.psm1`, when the `git log` command fails or returns an error during changelog generation, ensure the `$rawCommits` variable handles the error object appropriately, especially when accessing its `.Count` property. Improve error handling and the `ConvertTo-ArraySafe` function to handle these edge cases. The `ConvertTo-ArraySafe` function should handle `null`, empty inputs, PowerShell error objects, empty strings, and whitespace-only strings. Add try-catch protection around array conversion. After calling `ConvertTo-ArraySafe`, explicitly check that the result has a `Count` property before using it, and create an empty array if it does not.
 - In `PSBuild.psm1`, the `$uniqueCommits` variable must be created using `ConvertTo-ArraySafe -InputObject ($structuredCommits | Sort-Object -Property Hash -Unique | ForEach-Object { $_.FormattedEntry })` to ensure it is always an array, even when the pipeline returns no results.
-- In `PSBuild.psm1`, when the `git log` command fails or returns an error, ensure the `$rawCommits` variable handles the error object appropriately, especially when accessing its `.Count` property. Improve error handling and the `ConvertTo-ArraySafe` function to handle `null`, empty inputs, PowerShell error objects, empty strings, and whitespace-only strings. Add try-catch protection around array conversion. After calling `ConvertTo-ArraySafe`, explicitly check that the result has a `Count` property before using it, and create an empty array if it does not. After calling `ConvertTo-ArraySafe`, explicitly check that the result has a `Count` property before using it, and create an empty array if it does not.
+- In `PSBuild.psm1`, when the `git log` command fails or returns an error, ensure the `$rawCommits` variable handles the error object appropriately, especially when accessing its `.Count` property. Improve error handling and the `ConvertTo-ArraySafe` function to handle these edge cases. Improve error handling and the `ConvertTo-ArraySafe` function to handle `null`, empty inputs, PowerShell error objects, empty strings, and whitespace-only strings. Add try-catch protection around array conversion. After calling `ConvertTo-ArraySafe`, explicitly check that the result has a `Count` property before using it, and create an empty array if it does not.
 
 ## FILE FINDING
 
@@ -360,3 +377,39 @@ globs: *
 
 - In `ShowDetailedFileList` method, replace the general `catch (Exception)` block with more specific exception types like `IOException`, `UnauthorizedAccessException`, `ArgumentException`, and `PathTooLongException`.
 - In the `ShowDetailedFileList` method, catch specific exception types in the following order: `UnauthorizedAccessException`, `DirectoryNotFoundException`, `FileNotFoundException`, `PathTooLongException`, `ArgumentException`, and `IOException`.
+
+## CODE ANALYZER RULES
+
+- Loop should be simplified by calling Select(group => group.Value))
+- Define a constant instead of using the literal 'Press any key to continue...' multiple times.
+- Menus like in ShowMainMenu that display a string and translate it to a command should use a dictionary to avoid string repetitions.
+- Replace naked strings with constants throughout the file. Consider the following:
+    - Table column names
+    - Property names in batch access
+    - Menu choice strings
+- Replace manual `groupIndex` tracking with LINQ's indexed `Select`, which eliminates the need for a separate counter variable and makes the loop more functional.
+- When replacing the literal string `"Press any key to continue..."`, define a constant `PressAnyKeyMessage` at the class level.
+- When defining constants, ensure each constant is actually used in the code to avoid linter errors.
+- Table column names should be constants.
+- Menu choice identifiers (like `"find_files"`, `"settings"`, etc.) should be constants.
+- Choice text strings that are used in switch statements should be constants.
+- Use dictionaries for menus that display a string and translate it to a command to avoid string repetitions.
+- Look for opportunities to use switch expressions instead of switch statements.
+- Look for opportunities to use enums in place of strings where they're used for determination and not display purposes.
+
+## ENUMS
+
+- Replace strings used for determination logic with enums, especially for control flow and state management.
+- Use enums for menu choice identifiers.
+
+## MENU CHOICE IDENTIFIERS
+
+- The menu choice constants in `ConsoleApplicationService.cs` are used for logic determination rather than display and are perfect candidates for enum replacement.
+- Use the `MenuChoice` enum instead of string constants for menu choices. The `MenuChoice` enum should include values for `FindFiles`, `IterativeMerge`, `CompareFiles`, `BatchOperations`, `Settings`, `Help`, and `Exit`.
+- When using the `MenuChoice` enum, update the `ConsoleApplicationService.cs` to use the enum instead of string constants.
+- Update the MainMenuChoices dictionary and the switch expression to use the enum.
+- Update the ShowMainMenu method and ExecuteMenuChoice method to use the enum.
+
+## BATCH ACTION TYPES
+
+- Create

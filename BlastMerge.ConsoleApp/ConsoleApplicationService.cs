@@ -18,6 +18,31 @@ using Spectre.Console;
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "<Pending>")]
 public class ConsoleApplicationService : ApplicationService
 {
+	private const string PressAnyKeyMessage = "Press any key to continue...";
+
+	// Table column names
+	private const string GroupColumnName = "Group";
+	private const string FilesColumnName = "Files";
+	private const string StatusColumnName = "Status";
+	private const string FilePathColumnName = "File Path";
+	private const string SizeColumnName = "Size";
+	private const string NameColumnName = "Name";
+	private const string DescriptionColumnName = "Description";
+	private const string PatternsColumnName = "Patterns";
+	private const string KeyColumnName = "Key";
+	private const string ActionColumnName = "Action";
+
+	// Menu display text to command mappings
+	private static readonly Dictionary<string, MenuChoice> MainMenuChoices = new()
+	{
+		["🔍 Find Files"] = MenuChoice.FindFiles,
+		["📊 Compare Files"] = MenuChoice.CompareFiles,
+		["🔄 Iterative Merge"] = MenuChoice.IterativeMerge,
+		["📦 Batch Operations"] = MenuChoice.BatchOperations,
+		["⚙️ Configuration & Settings"] = MenuChoice.Settings,
+		["❓ Help & Information"] = MenuChoice.Help,
+		["🚪 Exit"] = MenuChoice.Exit
+	};
 	/// <summary>
 	/// Processes files in a directory with a specified filename pattern.
 	/// </summary>
@@ -59,48 +84,52 @@ public class ConsoleApplicationService : ApplicationService
 		Table table = new Table()
 			.Border(TableBorder.Rounded)
 			.BorderColor(Color.Blue)
-			.AddColumn("Group")
-			.AddColumn("Files")
-			.AddColumn("Status");
+			.AddColumn(GroupColumnName)
+			.AddColumn(FilesColumnName)
+			.AddColumn(StatusColumnName);
 
-		int groupIndex = 1;
-		foreach (KeyValuePair<string, IReadOnlyCollection<string>> group in fileGroups)
+		foreach ((KeyValuePair<string, IReadOnlyCollection<string>> group, int groupIndex) in fileGroups.Select((group, index) => (group, index + 1)))
 		{
 			string status = group.Value.Count > 1 ? "[yellow]Multiple versions[/]" : "[green]Unique[/]";
 			table.AddRow(
 				$"[cyan]{groupIndex}[/]",
 				$"[dim]{group.Value.Count}[/]",
 				status);
-
-			groupIndex++;
 		}
 
 		AnsiConsole.Write(table);
 		AnsiConsole.WriteLine();
 
 		// Ask user what to do with the files
-		string[] choices =
-		[
-			"View detailed file list",
-			"Run iterative merge on duplicates",
-			"Return to main menu"
-		];
+		Dictionary<string, ProcessFileActionChoice> processFileActionChoices = new()
+		{
+			["View detailed file list"] = ProcessFileActionChoice.ViewDetailedFileList,
+			["Run iterative merge on duplicates"] = ProcessFileActionChoice.RunIterativeMergeOnDuplicates,
+			["Return to main menu"] = ProcessFileActionChoice.ReturnToMainMenu
+		};
 
 		string selection = AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
 				.Title("What would you like to do with these files?")
-				.AddChoices(choices));
+				.AddChoices(processFileActionChoices.Keys));
 
-		switch (selection)
+		if (processFileActionChoices.TryGetValue(selection, out ProcessFileActionChoice choice))
 		{
-			case "View detailed file list":
-				ShowDetailedFileList(fileGroups);
-				break;
-			case "Run iterative merge on duplicates":
-				RunIterativeMerge(directory, fileName);
-				break;
-			default:
-				break;
+			switch (choice)
+			{
+				case ProcessFileActionChoice.ViewDetailedFileList:
+					ShowDetailedFileList(fileGroups);
+					break;
+				case ProcessFileActionChoice.RunIterativeMergeOnDuplicates:
+					RunIterativeMerge(directory, fileName);
+					break;
+				case ProcessFileActionChoice.ReturnToMainMenu:
+					// Default action - do nothing
+					break;
+				default:
+					// Unknown choice - do nothing
+					break;
+			}
 		}
 	}
 
@@ -182,31 +211,35 @@ public class ConsoleApplicationService : ApplicationService
 			{
 				AnsiConsole.MarkupLine($"[yellow]Found {groupsWithMultipleFiles} groups with multiple versions that could be merged.[/]");
 
-				string[] choices =
-				[
-					"Run iterative merge",
-					"Skip this pattern",
-					"Stop batch processing"
-				];
+				Dictionary<string, BatchActionChoice> batchActionChoices = new()
+				{
+					["Run iterative merge"] = BatchActionChoice.RunIterativeMerge,
+					["Skip this pattern"] = BatchActionChoice.SkipPattern,
+					["Stop batch processing"] = BatchActionChoice.StopBatchProcessing
+				};
 
 				string selection = AnsiConsole.Prompt(
 					new SelectionPrompt<string>()
 						.Title($"Multiple versions found for pattern '{pattern}'. What would you like to do?")
-						.AddChoices(choices));
+						.AddChoices(batchActionChoices.Keys));
 
-				switch (selection)
+				if (batchActionChoices.TryGetValue(selection, out BatchActionChoice choice))
 				{
-					case "Run iterative merge":
-						RunIterativeMerge(directory, pattern);
-						break;
-					case "Skip this pattern":
-						AnsiConsole.MarkupLine("[yellow]Skipping pattern.[/]");
-						continue;
-					case "Stop batch processing":
-						AnsiConsole.MarkupLine("[yellow]Stopping batch processing.[/]");
-						return;
-					default:
-						break;
+					switch (choice)
+					{
+						case BatchActionChoice.RunIterativeMerge:
+							RunIterativeMerge(directory, pattern);
+							break;
+						case BatchActionChoice.SkipPattern:
+							AnsiConsole.MarkupLine("[yellow]Skipping pattern.[/]");
+							continue; // Skip to next pattern
+						case BatchActionChoice.StopBatchProcessing:
+							AnsiConsole.MarkupLine("[yellow]Stopping batch processing.[/]");
+							return; // Stop batch processing
+						default:
+							AnsiConsole.MarkupLine("[yellow]Unknown choice, skipping pattern.[/]");
+							continue;
+					}
 				}
 			}
 			else
@@ -331,9 +364,9 @@ public class ConsoleApplicationService : ApplicationService
 		{
 			try
 			{
-				string choice = ShowMainMenu();
+				MenuChoice choice = ShowMainMenu();
 
-				if (choice == "exit")
+				if (choice == MenuChoice.Exit)
 				{
 					break;
 				}
@@ -343,31 +376,31 @@ public class ConsoleApplicationService : ApplicationService
 			catch (DirectoryNotFoundException ex)
 			{
 				AnsiConsole.MarkupLine($"[red]Directory not found: {ex.Message}[/]");
-				AnsiConsole.WriteLine("Press any key to continue...");
+				AnsiConsole.WriteLine(PressAnyKeyMessage);
 				Console.ReadKey();
 			}
 			catch (UnauthorizedAccessException ex)
 			{
 				AnsiConsole.MarkupLine($"[red]Access denied: {ex.Message}[/]");
-				AnsiConsole.WriteLine("Press any key to continue...");
+				AnsiConsole.WriteLine(PressAnyKeyMessage);
 				Console.ReadKey();
 			}
 			catch (IOException ex)
 			{
 				AnsiConsole.MarkupLine($"[red]File I/O error: {ex.Message}[/]");
-				AnsiConsole.WriteLine("Press any key to continue...");
+				AnsiConsole.WriteLine(PressAnyKeyMessage);
 				Console.ReadKey();
 			}
 			catch (ArgumentException ex)
 			{
 				AnsiConsole.MarkupLine($"[red]Invalid input: {ex.Message}[/]");
-				AnsiConsole.WriteLine("Press any key to continue...");
+				AnsiConsole.WriteLine(PressAnyKeyMessage);
 				Console.ReadKey();
 			}
 			catch (InvalidOperationException ex)
 			{
 				AnsiConsole.MarkupLine($"[red]Operation error: {ex.Message}[/]");
-				AnsiConsole.WriteLine("Press any key to continue...");
+				AnsiConsole.WriteLine(PressAnyKeyMessage);
 				Console.ReadKey();
 			}
 		}
@@ -404,69 +437,36 @@ public class ConsoleApplicationService : ApplicationService
 	/// Shows the main menu and returns the user's choice.
 	/// </summary>
 	/// <returns>The selected menu choice.</returns>
-	private string ShowMainMenu()
+	private MenuChoice ShowMainMenu()
 	{
-		string[] choices =
-		[
-			"🔍 Find & Process Files",
-			"🔄 Run Iterative Merge",
-			"📊 Compare Files",
-			"📦 Batch Operations",
-			"⚙️  Configuration & Settings",
-			"❓ Help & Information",
-			"🚪 Exit"
-		];
-
 		string selection = AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
 				.Title("[bold cyan]Main Menu[/] - Select an option:")
 				.PageSize(10)
 				.MoreChoicesText("[grey](Move up and down to reveal more options)[/]")
-				.AddChoices(choices));
+				.AddChoices(MainMenuChoices.Keys));
 
-		return selection switch
-		{
-			"🔍 Find & Process Files" => "find_files",
-			"🔄 Run Iterative Merge" => "iterative_merge",
-			"📊 Compare Files" => "compare_files",
-			"📦 Batch Operations" => "batch_operations",
-			"⚙️  Configuration & Settings" => "settings",
-			"❓ Help & Information" => "help",
-			"🚪 Exit" => "exit",
-			_ => "help"
-		};
+		return MainMenuChoices.TryGetValue(selection, out MenuChoice command) ? command : MenuChoice.Help;
 	}
 
 	/// <summary>
 	/// Executes the selected menu choice.
 	/// </summary>
 	/// <param name="choice">The menu choice to execute.</param>
-	private void ExecuteMenuChoice(string choice)
+	private void ExecuteMenuChoice(MenuChoice choice)
 	{
-		switch (choice)
+		Action menuAction = choice switch
 		{
-			case "find_files":
-				HandleFindFiles();
-				break;
-			case "iterative_merge":
-				HandleIterativeMerge();
-				break;
-			case "compare_files":
-				HandleCompareFiles();
-				break;
-			case "batch_operations":
-				HandleBatchOperations();
-				break;
-			case "settings":
-				HandleSettings();
-				break;
-			case "help":
-				HandleHelp();
-				break;
-			default:
-				HandleHelp();
-				break;
-		}
+			MenuChoice.FindFiles => HandleFindFiles,
+			MenuChoice.IterativeMerge => HandleIterativeMerge,
+			MenuChoice.CompareFiles => HandleCompareFiles,
+			MenuChoice.BatchOperations => HandleBatchOperations,
+			MenuChoice.Settings => HandleSettings,
+			MenuChoice.Help => HandleHelp,
+			MenuChoice.Exit => HandleHelp, // This should never be called since Exit is handled in the main loop
+			_ => HandleHelp
+		};
+		menuAction();
 	}
 
 	/// <summary>
@@ -508,8 +508,8 @@ public class ConsoleApplicationService : ApplicationService
 				Table table = new Table()
 					.Border(TableBorder.Rounded)
 					.BorderColor(Color.Blue)
-					.AddColumn("File Path")
-					.AddColumn("Size");
+					.AddColumn(FilePathColumnName)
+					.AddColumn(SizeColumnName);
 
 				foreach (string filePath in filePaths)
 				{
@@ -523,7 +523,7 @@ public class ConsoleApplicationService : ApplicationService
 				AnsiConsole.MarkupLine($"\n[green]Found {filePaths.Count} files.[/]");
 			});
 
-		AnsiConsole.WriteLine("Press any key to continue...");
+		AnsiConsole.WriteLine(PressAnyKeyMessage);
 		Console.ReadKey();
 	}
 
@@ -552,7 +552,7 @@ public class ConsoleApplicationService : ApplicationService
 
 		RunIterativeMergeWithConsoleOutput(directory, fileName);
 
-		AnsiConsole.WriteLine("Press any key to continue...");
+		AnsiConsole.WriteLine(PressAnyKeyMessage);
 		Console.ReadKey();
 	}
 
@@ -611,7 +611,7 @@ public class ConsoleApplicationService : ApplicationService
 				AnsiConsole.MarkupLine($"\n[green]Found {fileGroups.Count} file groups.[/]");
 			});
 
-		AnsiConsole.WriteLine("Press any key to continue...");
+		AnsiConsole.WriteLine(PressAnyKeyMessage);
 		Console.ReadKey();
 	}
 
@@ -624,28 +624,35 @@ public class ConsoleApplicationService : ApplicationService
 		AnsiConsole.MarkupLine("[bold cyan]Batch Operations[/]");
 		AnsiConsole.WriteLine();
 
-		string[] choices =
-		[
-			"📋 List Available Batches",
-			"▶️  Run Batch Configuration",
-			"⬅️  Back to Main Menu"
-		];
+		Dictionary<string, BatchOperationChoice> batchOperationChoices = new()
+		{
+			["📋 List Available Batches"] = BatchOperationChoice.ListAvailableBatches,
+			["▶️ Run Batch Configuration"] = BatchOperationChoice.RunBatchConfiguration,
+			["⬅️ Back to Main Menu"] = BatchOperationChoice.BackToMainMenu
+		};
 
 		string selection = AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
 				.Title("Select batch operation:")
-				.AddChoices(choices));
+				.AddChoices(batchOperationChoices.Keys));
 
-		switch (selection)
+		if (batchOperationChoices.TryGetValue(selection, out BatchOperationChoice choice))
 		{
-			case "📋 List Available Batches":
-				HandleListBatches();
-				break;
-			case "▶️  Run Batch Configuration":
-				HandleRunBatch();
-				break;
-			default:
-				break;
+			switch (choice)
+			{
+				case BatchOperationChoice.ListAvailableBatches:
+					HandleListBatches();
+					break;
+				case BatchOperationChoice.RunBatchConfiguration:
+					HandleRunBatch();
+					break;
+				case BatchOperationChoice.BackToMainMenu:
+					// Default action - do nothing
+					break;
+				default:
+					// Unknown choice - do nothing
+					break;
+			}
 		}
 	}
 
@@ -670,9 +677,9 @@ public class ConsoleApplicationService : ApplicationService
 			Table table = new Table()
 				.Border(TableBorder.Rounded)
 				.BorderColor(Color.Blue)
-				.AddColumn("Name")
-				.AddColumn("Description")
-				.AddColumn("Patterns");
+				.AddColumn(NameColumnName)
+				.AddColumn(DescriptionColumnName)
+				.AddColumn(PatternsColumnName);
 
 			foreach (BatchConfiguration batch in allBatches)
 			{
@@ -685,7 +692,7 @@ public class ConsoleApplicationService : ApplicationService
 			AnsiConsole.Write(table);
 		}
 
-		AnsiConsole.WriteLine("Press any key to continue...");
+		AnsiConsole.WriteLine(PressAnyKeyMessage);
 		Console.ReadKey();
 	}
 
@@ -703,7 +710,7 @@ public class ConsoleApplicationService : ApplicationService
 		if (allBatches.Count == 0)
 		{
 			AnsiConsole.MarkupLine("[yellow]No batch configurations available.[/]");
-			AnsiConsole.WriteLine("Press any key to continue...");
+			AnsiConsole.WriteLine(PressAnyKeyMessage);
 			Console.ReadKey();
 			return;
 		}
@@ -728,7 +735,7 @@ public class ConsoleApplicationService : ApplicationService
 				AnsiConsole.MarkupLine("[green]Batch operation completed.[/]");
 			});
 
-		AnsiConsole.WriteLine("Press any key to continue...");
+		AnsiConsole.WriteLine(PressAnyKeyMessage);
 		Console.ReadKey();
 	}
 
@@ -754,7 +761,7 @@ public class ConsoleApplicationService : ApplicationService
 
 		AnsiConsole.Write(panel);
 
-		AnsiConsole.WriteLine("Press any key to continue...");
+		AnsiConsole.WriteLine(PressAnyKeyMessage);
 		Console.ReadKey();
 	}
 
@@ -767,32 +774,39 @@ public class ConsoleApplicationService : ApplicationService
 		AnsiConsole.MarkupLine("[bold cyan]Help & Information[/]");
 		AnsiConsole.WriteLine();
 
-		string[] choices =
-		[
-			"📖 Application Overview",
-			"🎯 Feature Guide",
-			"⌨️  Keyboard Shortcuts",
-			"⬅️  Back to Main Menu"
-		];
+		Dictionary<string, HelpMenuChoice> helpMenuChoices = new()
+		{
+			["📖 Application Overview"] = HelpMenuChoice.ApplicationOverview,
+			["🎯 Feature Guide"] = HelpMenuChoice.FeatureGuide,
+			["⌨️ Keyboard Shortcuts"] = HelpMenuChoice.KeyboardShortcuts,
+			["⬅️ Back to Main Menu"] = HelpMenuChoice.BackToMainMenu
+		};
 
 		string selection = AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
 				.Title("Select help topic:")
-				.AddChoices(choices));
+				.AddChoices(helpMenuChoices.Keys));
 
-		switch (selection)
+		if (helpMenuChoices.TryGetValue(selection, out HelpMenuChoice choice))
 		{
-			case "📖 Application Overview":
-				ShowApplicationOverview();
-				break;
-			case "🎯 Feature Guide":
-				ShowFeatureGuide();
-				break;
-			case "⌨️  Keyboard Shortcuts":
-				ShowKeyboardShortcuts();
-				break;
-			default:
-				break;
+			switch (choice)
+			{
+				case HelpMenuChoice.ApplicationOverview:
+					ShowApplicationOverview();
+					break;
+				case HelpMenuChoice.FeatureGuide:
+					ShowFeatureGuide();
+					break;
+				case HelpMenuChoice.KeyboardShortcuts:
+					ShowKeyboardShortcuts();
+					break;
+				case HelpMenuChoice.BackToMainMenu:
+					// Default action - do nothing
+					break;
+				default:
+					// Unknown choice - do nothing
+					break;
+			}
 		}
 	}
 
@@ -819,7 +833,7 @@ public class ConsoleApplicationService : ApplicationService
 
 		AnsiConsole.Write(panel);
 
-		AnsiConsole.WriteLine("Press any key to continue...");
+		AnsiConsole.WriteLine(PressAnyKeyMessage);
 		Console.ReadKey();
 	}
 
@@ -855,7 +869,7 @@ public class ConsoleApplicationService : ApplicationService
 
 		AnsiConsole.Write(tree);
 
-		AnsiConsole.WriteLine("Press any key to continue...");
+		AnsiConsole.WriteLine(PressAnyKeyMessage);
 		Console.ReadKey();
 	}
 
@@ -871,8 +885,8 @@ public class ConsoleApplicationService : ApplicationService
 		Table table = new Table()
 			.Border(TableBorder.Rounded)
 			.BorderColor(Color.Blue)
-			.AddColumn("Key")
-			.AddColumn("Action");
+			.AddColumn(KeyColumnName)
+			.AddColumn(ActionColumnName);
 
 		table.AddRow("[yellow]↑↓ Arrow Keys[/]", "Navigate menu options");
 		table.AddRow("[yellow]Enter[/]", "Select current option");
@@ -882,7 +896,7 @@ public class ConsoleApplicationService : ApplicationService
 
 		AnsiConsole.Write(table);
 
-		AnsiConsole.WriteLine("Press any key to continue...");
+		AnsiConsole.WriteLine(PressAnyKeyMessage);
 		Console.ReadKey();
 	}
 
@@ -961,7 +975,7 @@ public class ConsoleApplicationService : ApplicationService
 
 		AnsiConsole.Write(tree);
 		AnsiConsole.WriteLine();
-		AnsiConsole.WriteLine("Press any key to continue...");
+		AnsiConsole.WriteLine(PressAnyKeyMessage);
 		Console.ReadKey();
 	}
 

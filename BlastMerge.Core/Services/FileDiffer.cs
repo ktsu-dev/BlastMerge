@@ -17,6 +17,14 @@ using ktsu.BlastMerge.Core.Models;
 /// </summary>
 public static class FileDiffer
 {
+	// Merge conflict marker constants
+	private const string ConflictMarkerStart = "<<<<<<< Version 1";
+	private const string ConflictMarkerSeparator = "=======";
+	private const string ConflictMarkerEnd = ">>>>>>> Version 2";
+	private const string ConflictMarkerDeleted = "<<<<<<< Version 1 (deleted)";
+	private const string ConflictMarkerDeletedEnd = ">>>>>>> Version 2 (not present)";
+	private const string ConflictMarkerAdded = "<<<<<<< Version 1 (not present)";
+	private const string ConflictMarkerAddedEnd = ">>>>>>> Version 2 (added)";
 	/// <summary>
 	/// Groups files by their hash to identify unique versions
 	/// </summary>
@@ -161,25 +169,16 @@ public static class FileDiffer
 		foreach (ColoredDiffLine line in coloredDiff)
 		{
 			// Add color escape sequences for terminal
-			switch (line.Color)
+			string coloredLine = line.Color switch
 			{
-				case DiffColor.Addition:
-					sb.AppendLine($"\u001b[32m{line.Content}\u001b[0m"); // Green
-					break;
-				case DiffColor.Deletion:
-					sb.AppendLine($"\u001b[31m{line.Content}\u001b[0m"); // Red
-					break;
-				case DiffColor.ChunkHeader:
-					sb.AppendLine($"\u001b[36m{line.Content}\u001b[0m"); // Cyan
-					break;
-				case DiffColor.FileHeader:
-					sb.AppendLine($"\u001b[1;34m{line.Content}\u001b[0m"); // Bold blue
-					break;
-				case DiffColor.Default:
-				default:
-					sb.AppendLine(line.Content);
-					break;
-			}
+				DiffColor.Addition => $"\u001b[32m{line.Content}\u001b[0m", // Green
+				DiffColor.Deletion => $"\u001b[31m{line.Content}\u001b[0m", // Red
+				DiffColor.ChunkHeader => $"\u001b[36m{line.Content}\u001b[0m", // Cyan
+				DiffColor.FileHeader => $"\u001b[1;34m{line.Content}\u001b[0m", // Bold blue
+				DiffColor.Default => line.Content,
+				_ => line.Content
+			};
+			sb.AppendLine(coloredLine);
 		}
 
 		return sb.ToString();
@@ -546,11 +545,11 @@ public static class FileDiffer
 					conflicts.Add(new MergeConflict(mergedLines.Count + 1, diff.Content1, diff.Content2, null, false));
 
 					// For now, add a conflict marker
-					mergedLines.Add($"<<<<<<< Version 1");
+					mergedLines.Add(ConflictMarkerStart);
 					mergedLines.Add(diff.Content1 ?? "");
-					mergedLines.Add("=======");
+					mergedLines.Add(ConflictMarkerSeparator);
 					mergedLines.Add(diff.Content2 ?? "");
-					mergedLines.Add(">>>>>>> Version 2");
+					mergedLines.Add(ConflictMarkerEnd);
 				}
 				else if (diff.LineNumber1 > 0)
 				{
@@ -558,10 +557,10 @@ public static class FileDiffer
 					conflicts.Add(new MergeConflict(mergedLines.Count + 1, diff.Content1, null, null, false));
 
 					// Add conflict marker for deletion
-					mergedLines.Add($"<<<<<<< Version 1 (deleted)");
+					mergedLines.Add(ConflictMarkerDeleted);
 					mergedLines.Add(diff.Content1 ?? "");
-					mergedLines.Add("=======");
-					mergedLines.Add(">>>>>>> Version 2 (not present)");
+					mergedLines.Add(ConflictMarkerSeparator);
+					mergedLines.Add(ConflictMarkerDeletedEnd);
 				}
 				else if (diff.LineNumber2 > 0)
 				{
@@ -569,10 +568,10 @@ public static class FileDiffer
 					conflicts.Add(new MergeConflict(mergedLines.Count + 1, null, diff.Content2, null, false));
 
 					// Add conflict marker for addition
-					mergedLines.Add($"<<<<<<< Version 1 (not present)");
-					mergedLines.Add("=======");
+					mergedLines.Add(ConflictMarkerAdded);
+					mergedLines.Add(ConflictMarkerSeparator);
 					mergedLines.Add(diff.Content2 ?? "");
-					mergedLines.Add(">>>>>>> Version 2 (added)");
+					mergedLines.Add(ConflictMarkerAddedEnd);
 				}
 
 				// Update indices based on difference type

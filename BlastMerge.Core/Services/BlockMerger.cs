@@ -307,20 +307,14 @@ public static class BlockMerger
 	/// </summary>
 	private static void ApplyBlockChoice(DiffBlock block, BlockChoice choice, List<string> mergedLines)
 	{
-		switch (block.Type)
+		Action applyAction = block.Type switch
 		{
-			case BlockType.Insert:
-				ApplyInsertChoice(block, choice, mergedLines);
-				break;
-			case BlockType.Delete:
-				ApplyDeleteChoice(block, choice, mergedLines);
-				break;
-			case BlockType.Replace:
-				ApplyReplaceChoice(block, choice, mergedLines);
-				break;
-			default:
-				throw new InvalidOperationException($"Unknown block type: {block.Type}");
-		}
+			BlockType.Insert => () => ApplyInsertChoice(block, choice, mergedLines),
+			BlockType.Delete => () => ApplyDeleteChoice(block, choice, mergedLines),
+			BlockType.Replace => () => ApplyReplaceChoice(block, choice, mergedLines),
+			_ => throw new InvalidOperationException($"Unknown block type: {block.Type}")
+		};
+		applyAction();
 	}
 
 	/// <summary>
@@ -337,10 +331,15 @@ public static class BlockMerger
 				// Don't add anything
 				break;
 			case BlockChoice.UseVersion1:
+				break;
 			case BlockChoice.UseVersion2:
+				break;
 			case BlockChoice.UseBoth:
+				break;
 			case BlockChoice.Keep:
+				break;
 			case BlockChoice.Remove:
+				break;
 			default:
 				throw new InvalidOperationException($"Invalid choice {choice} for insertion block");
 		}
