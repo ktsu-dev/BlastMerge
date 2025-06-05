@@ -14,13 +14,10 @@ using Spectre.Console;
 /// <param name="applicationService">The application service.</param>
 public class BatchOperationsMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)
 {
-	// Menu display text to command mappings for batch operations
-	private static readonly Dictionary<string, BatchOperationChoice> BatchOperationChoices = new()
-	{
-		["📋 List Available Batches"] = BatchOperationChoice.ListAvailableBatches,
-		["▶️ Run Batch Configuration"] = BatchOperationChoice.RunBatchConfiguration,
-		["⬅️ Back to Main Menu"] = BatchOperationChoice.BackToMainMenu
-	};
+	/// <summary>
+	/// Gets the name of this menu for navigation purposes.
+	/// </summary>
+	protected override string MenuName => "Batch Operations";
 
 	/// <summary>
 	/// Handles batch operations.
@@ -29,12 +26,19 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	{
 		ShowMenuTitle("Batch Operations");
 
+		Dictionary<string, BatchOperationChoice> batchOperationChoices = new()
+		{
+			["📋 List Available Batches"] = BatchOperationChoice.ListAvailableBatches,
+			["▶️ Run Batch Configuration"] = BatchOperationChoice.RunBatchConfiguration,
+			[GetBackMenuText()] = BatchOperationChoice.BackToMainMenu
+		};
+
 		string selection = AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
 				.Title("Select batch operation:")
-				.AddChoices(BatchOperationChoices.Keys));
+				.AddChoices(batchOperationChoices.Keys));
 
-		if (BatchOperationChoices.TryGetValue(selection, out BatchOperationChoice choice))
+		if (batchOperationChoices.TryGetValue(selection, out BatchOperationChoice choice))
 		{
 			switch (choice)
 			{
@@ -53,6 +57,8 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			}
 		}
 	}
+
+
 
 	/// <summary>
 	/// Handles listing available batch configurations.

@@ -14,14 +14,10 @@ using Spectre.Console;
 /// <param name="applicationService">The application service.</param>
 public class CompareFilesMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)
 {
-	// Menu display text to command mappings for compare operations
-	private static readonly Dictionary<string, CompareChoice> CompareChoices = new()
-	{
-		["🔍 Compare Files in Directory"] = CompareChoice.CompareFilesInDirectory,
-		["📁 Compare Two Directories"] = CompareChoice.CompareTwoDirectories,
-		["📄 Compare Two Specific Files"] = CompareChoice.CompareTwoSpecificFiles,
-		["🔙 Back to Main Menu"] = CompareChoice.BackToMainMenu
-	};
+	/// <summary>
+	/// Gets the name of this menu for navigation purposes.
+	/// </summary>
+	protected override string MenuName => "Compare Files";
 
 	/// <summary>
 	/// Handles the compare files operation.
@@ -30,12 +26,20 @@ public class CompareFilesMenuHandler(ApplicationService applicationService) : Ba
 	{
 		ShowMenuTitle("Compare Files");
 
+		Dictionary<string, CompareChoice> compareChoices = new()
+		{
+			["🔍 Compare Files in Directory"] = CompareChoice.CompareFilesInDirectory,
+			["📁 Compare Two Directories"] = CompareChoice.CompareTwoDirectories,
+			["📄 Compare Two Specific Files"] = CompareChoice.CompareTwoSpecificFiles,
+			[GetBackMenuText()] = CompareChoice.BackToMainMenu
+		};
+
 		string selection = AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
 				.Title("[cyan]Select comparison type:[/]")
-				.AddChoices(CompareChoices.Keys));
+				.AddChoices(compareChoices.Keys));
 
-		if (CompareChoices.TryGetValue(selection, out CompareChoice choice))
+		if (compareChoices.TryGetValue(selection, out CompareChoice choice))
 		{
 			switch (choice)
 			{
@@ -56,7 +60,7 @@ public class CompareFilesMenuHandler(ApplicationService applicationService) : Ba
 					break;
 			}
 		}
-	}
+		}
 
 	/// <summary>
 	/// Handles comparing files in a directory.

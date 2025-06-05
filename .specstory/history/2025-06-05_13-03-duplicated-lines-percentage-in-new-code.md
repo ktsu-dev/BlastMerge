@@ -915,3 +915,426 @@ _**Assistant**_
 
 ---
 
+You're absolutely right! The issue is that `GC.GetTotalMemory(false)` returns the **allocated managed memory** by the .NET garbage collector, not the **available system memory**. 3 MB is actually reasonable for a small console application's managed heap, but the label "Available Memory" is misleading.
+
+Let me fix this by either changing the label to be more accurate or showing actual system memory information. Let me check what would be more useful:
+
+---
+
+
+
+---
+
+Perfect! I've fixed the memory display to be much more accurate and informative. Now the statistics menu will show:
+
+## What each memory value means:
+
+1. **Managed Memory** (~3 MB): Memory allocated by .NET's garbage collector - this is what was showing before
+2. **Working Set** (likely 20-50 MB): Total physical memory currently used by the BlastMerge process
+3. **Total Available** (likely several GB): Total system memory available to applications
+
+## Why the original was wrong:
+
+- `GC.GetTotalMemory()` only shows **managed heap memory** used by .NET objects
+- It doesn't include native memory, stack memory, or memory used by the runtime itself
+- The label "Available Memory" was misleading since it showed **used** memory, not **available** memory
+
+Now you'll see something more realistic like:
+- **Managed Memory:** 3 MB (this is correct for a small console app)
+- **Working Set:** 25 MB (total memory used by the process)  
+- **Total Available:** 8,192 MB (total system memory available)
+
+This gives a much better picture of both the application's memory footprint and the system's memory capacity!
+
+---
+
+_**User**_
+
+implement a navigation stack so that we can go back to where we were instead of back to the main menu
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+Great idea! A navigation stack will provide much better user experience by allowing users to go back to the previous menu they came from instead of always returning to the main menu. Let me implement this navigation system.
+
+First, let me examine the current menu structure:
+
+---
+
+Read file: BlastMerge.ConsoleApp/Services/MenuHandlers/BaseMenuHandler.cs
+
+---
+
+Now let me look at how menus are currently structured by examining the main application service:
+
+---
+
+<details>
+            <summary>Grep search for "class.*MenuHandler" • **7** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/SettingsMenuHandler.cs` | L13 | `public class SettingsMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/IterativeMergeMenuHandler.cs` | L12 | `public class IterativeMergeMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/HelpMenuHandler.cs` | L13 | `public class HelpMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/FindFilesMenuHandler.cs` | L14 | `public class FindFilesMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/CompareFilesMenuHandler.cs` | L14 | `public class CompareFilesMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L14 | `public class BatchOperationsMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BaseMenuHandler.cs` | L15 | `public abstract class BaseMenuHandler(ApplicationService applicationService) : IMenuHandler` |
+
+</details>
+
+---
+
+Let me also check the main menu structure:
+
+---
+
+<details>
+            <summary>Grep search for "ShowMainMenu|new.*MenuHandler" • **1** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L498 | `MenuChoice choice = ShowMainMenu();` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L551 | `private static MenuChoice ShowMainMenu()` |
+
+</details>
+
+---
+
+Read file: BlastMerge.ConsoleApp/ConsoleApplicationService.cs
+
+---
+
+Now I can see how the menu system works. Let me implement a navigation stack system. I'll need to:
+
+1. Create a navigation stack service
+2. Update BaseMenuHandler to support navigation
+3. Update individual menu handlers to use the navigation stack
+
+Let me start by creating the navigation stack service:
+
+---
+
+```diff
+- 
++ // Copyright (c) ktsu.dev
++ // All rights reserved.
++ // Licensed under the MIT license.
++ 
++ namespace ktsu.BlastMerge.ConsoleApp.Services.Common;
++ 
++ /// <summary>
++ /// Manages navigation history for menu systems.
++ /// </summary>
++ public static class NavigationStack
++ {
++ 	private static readonly Stack<string> _navigationHistory = new();
++ 
++ 	/// <summary>
++ 	/// Pushes a new menu name onto the navigation stack.
++ 	/// </summary>
++ 	/// <param name="menuName">The name of the menu being navigated to.</param>
++ 	public static void Push(string menuName)
++ 	{
++ 		ArgumentNullException.ThrowIfNull(menuName);
++ 		_navigationHistory.Push(menuName);
++ 	}
++ 
++ 	/// <summary>
++ 	/// Pops the most recent menu from the navigation stack.
++ 	/// </summary>
++ 	/// <returns>The name of the previous menu, or null if the stack is empty.</returns>
++ 	public static string? Pop()
++ 	{
++ 		return _navigationHistory.Count > 0 ? _navigationHistory.Pop() : null;
++ 	}
++ 
++ 	/// <summary>
++ 	/// Peeks at the most recent menu without removing it from the stack.
++ 	/// </summary>
++ 	/// <returns>The name of the previous menu, or null if the stack is empty.</returns>
++ 	public static string? Peek()
++ 	{
++ 		return _navigationHistory.Count > 0 ? _navigationHistory.Peek() : null;
++ 	}
++ 
++ 	/// <summary>
++ 	/// Gets the number of items in the navigation stack.
++ 	/// </summary>
++ 	public static int Count => _navigationHistory.Count;
++ 
++ 	/// <summary>
++ 	/// Clears the navigation stack.
++ 	/// </summary>
++ 	public static void Clear()
++ 	{
++ 		_navigationHistory.Clear();
++ 	}
++ 
++ 	/// <summary>
++ 	/// Gets an appropriate back menu text based on the navigation stack.
++ 	/// </summary>
++ 	/// <returns>A string describing where the back action will go.</returns>
++ 	public static string GetBackMenuText()
++ 	{
++ 		string? previousMenu = Peek();
++ 		return previousMenu switch
++ 		{
++ 			null => "🔙 Back to Main Menu",
++ 			"Main Menu" => "🔙 Back to Main Menu",
++ 			_ => $"🔙 Back to {previousMenu}"
++ 		};
++ 	}
++ 
++ 	/// <summary>
++ 	/// Determines if the back action should go to main menu.
++ 	/// </summary>
++ 	/// <returns>True if should go to main menu, false otherwise.</returns>
++ 	public static bool ShouldGoToMainMenu()
++ 	{
++ 		return Count == 0 || Peek() == "Main Menu";
++ 	}
++ } 
+```
+
+---
+
+Let me fix the linter errors:
+
+---
+
+
+
+---
+
+Good! Now let me update the BaseMenuHandler to support navigation:
+
+---
+
+
+
+---
+
+
+
+---
+
+Now I need to update each menu handler to implement the MenuName property and use the new navigation system. Let me start with the SettingsMenuHandler:
+
+---
+
+
+
+---
+
+
+
+---
+
+Now let me update the other menu handlers. Let me check what menu handlers exist and update them:
+
+---
+
+Read file: BlastMerge.ConsoleApp/Services/MenuHandlers/CompareFilesMenuHandler.cs
+
+---
+
+Let me update the CompareFilesMenuHandler:
+
+---
+
+
+
+---
+
+
+
+---
+
+I made an error - I duplicated the Handle method. Let me fix this by removing the duplicated content:
+
+---
+
+
+
+---
+
+
+
+---
+
+Let me fix the blank line issue:
+
+---
+
+
+
+---
+
+
+
+---
+
+Since I'm on my third attempt with linter errors for this file, let me move on to updating the other menu handlers and come back to this one if needed. Let me update the other menu handlers:
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+Now let me update the remaining menu handlers. Let me check which ones still need updates:
+
+---
+
+<details>
+            <summary>Grep search for "Back to Main Menu" • **5** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/HelpMenuHandler.cs` | L31 | `["🔙 Back to Main Menu"] = HelpChoice.BackToMainMenu` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L21 | `["⬅️ Back to Main Menu"] = BatchOperationChoice.BackToMainMenu` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/Common/NavigationStack.cs` | L54 | `null => "🔙 Back to Main Menu",` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/Common/NavigationStack.cs` | L55 | `"Main Menu" => "🔙 Back to Main Menu",` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L54 | `["🔙 Back to Main Menu"] = CompareChoice.BackToMainMenu` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L756 | `["⬅️ Back to Main Menu"] = BatchOperationChoice.BackToMainMenu` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/HelpMenuHandler.cs` | L31 | `["🔙 Back to Main Menu"] = HelpChoice.BackToMainMenu` |
+
+</details>
+
+---
+
+
+
+---
+
+Let me update the HelpMenuHandler and BatchOperationsMenuHandler:
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+Now let me update the BatchOperationsMenuHandler:
+
+---
+
+Read file: BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+_**User**_
+
+there is no menus for creating new batch operations
+
+---
+
+_**Assistant**_
+
+
+
+---
+

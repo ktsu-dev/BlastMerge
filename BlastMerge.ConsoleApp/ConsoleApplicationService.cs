@@ -567,18 +567,37 @@ public class ConsoleApplicationService : ApplicationService
 	/// <param name="choice">The menu choice to execute.</param>
 	private void ExecuteMenuChoice(MenuChoice choice)
 	{
-		Action menuAction = choice switch
+		// Clear navigation history when starting from main menu
+		NavigationHistory.Clear();
+		NavigationHistory.Push("Main Menu");
+
+		switch (choice)
 		{
-			MenuChoice.FindFiles => HandleFindFiles,
-			MenuChoice.IterativeMerge => HandleIterativeMerge,
-			MenuChoice.CompareFiles => HandleCompareFiles,
-			MenuChoice.BatchOperations => HandleBatchOperations,
-			MenuChoice.Settings => HandleSettings,
-			MenuChoice.Help => HandleHelp,
-			MenuChoice.Exit => HandleHelp, // This should never be called since Exit is handled in the main loop
-			_ => HandleHelp
-		};
-		menuAction();
+			case MenuChoice.FindFiles:
+				HandleFindFiles();
+				break;
+			case MenuChoice.IterativeMerge:
+				HandleIterativeMerge();
+				break;
+			case MenuChoice.CompareFiles:
+				new CompareFilesMenuHandler(this).Enter();
+				break;
+			case MenuChoice.BatchOperations:
+				new BatchOperationsMenuHandler(this).Enter();
+				break;
+			case MenuChoice.Settings:
+				new SettingsMenuHandler(this).Enter();
+				break;
+			case MenuChoice.Help:
+				new HelpMenuHandler(this).Enter();
+				break;
+			case MenuChoice.Exit:
+				HandleHelp(); // This should never be called since Exit is handled in the main loop
+				break;
+			default:
+				new HelpMenuHandler(this).Enter();
+				break;
+		}
 	}
 
 	/// <summary>

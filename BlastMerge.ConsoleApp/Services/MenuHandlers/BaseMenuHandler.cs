@@ -26,9 +26,39 @@ public abstract class BaseMenuHandler(ApplicationService applicationService) : I
 	protected ApplicationService ApplicationService { get; } = applicationService ?? throw new ArgumentNullException(nameof(applicationService));
 
 	/// <summary>
+	/// Gets the name of this menu for navigation purposes.
+	/// </summary>
+	protected abstract string MenuName { get; }
+
+	/// <summary>
 	/// Handles the menu operation and user interaction.
 	/// </summary>
 	public abstract void Handle();
+
+	/// <summary>
+	/// Enters this menu, adding it to the navigation history.
+	/// </summary>
+	public void Enter()
+	{
+		NavigationHistory.Push(MenuName);
+		Handle();
+	}
+
+	/// <summary>
+	/// Goes back to the previous menu in navigation history.
+	/// </summary>
+	/// <returns>True if navigation occurred, false if should exit.</returns>
+	protected static bool GoBack()
+	{
+		NavigationHistory.Pop(); // Remove current menu
+		return NavigationHistory.Count > 0;
+	}
+
+	/// <summary>
+	/// Gets the appropriate back menu text for display.
+	/// </summary>
+	/// <returns>Text describing where back will go.</returns>
+	protected static string GetBackMenuText() => NavigationHistory.GetBackMenuText();
 
 	/// <summary>
 	/// Shows a press any key prompt and waits for input.

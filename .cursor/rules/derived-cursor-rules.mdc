@@ -282,6 +282,7 @@ globs: *
 -   During the iterative merge, when saving the result, the content of every file that has those versions should be replaced.
 -   Improve the interactive mode with a TUI menu for accessing the features.
 -   Use `UIHelper` class for common UI operations and standardized display methods.
+-   Implement a navigation stack so that users can go back to where they were instead of back to the main menu.
 
 ## PROJECT RENAMING
 
@@ -374,4 +375,4 @@ globs: *
   - The `FileFinder.FindFiles()` method recursively searches directories and returns a collection of all matching files.
   - Supports patterns like `*.txt`, `*.cs`, etc.
   - Can search recursively through subdirectories.
-- When finding files, skip git submodules. Git submodules are identified by the presence of a `.git` file (not directory) in the subdirectory, which contains a reference to
+- When finding files, skip git submodules. Git sub

@@ -14,6 +14,10 @@ using Spectre.Console;
 public class HelpMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)
 {
 	/// <summary>
+	/// Gets the name of this menu for navigation purposes.
+	/// </summary>
+	protected override string MenuName => "Help";
+	/// <summary>
 	/// Handles the help menu operation.
 	/// </summary>
 	public override void Handle()
@@ -25,7 +29,7 @@ public class HelpMenuHandler(ApplicationService applicationService) : BaseMenuHa
 			["📖 Application Overview"] = HelpChoice.ApplicationOverview,
 			["🎯 Feature Guide"] = HelpChoice.FeatureGuide,
 			["⌨️ Keyboard Shortcuts"] = HelpChoice.KeyboardShortcuts,
-			["🔙 Back to Main Menu"] = HelpChoice.BackToMainMenu
+			[GetBackMenuText()] = HelpChoice.BackToMainMenu
 		};
 
 		string selection = AnsiConsole.Prompt(

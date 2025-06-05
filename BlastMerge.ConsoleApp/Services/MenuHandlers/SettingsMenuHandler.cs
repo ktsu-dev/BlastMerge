@@ -14,6 +14,10 @@ using Spectre.Console;
 public class SettingsMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)
 {
 	/// <summary>
+	/// Gets the name of this menu for navigation purposes.
+	/// </summary>
+	protected override string MenuName => "Settings";
+	/// <summary>
 	/// Handles the settings menu operation.
 	/// </summary>
 	public override void Handle()
@@ -25,7 +29,7 @@ public class SettingsMenuHandler(ApplicationService applicationService) : BaseMe
 			["📁 View Configuration Paths"] = SettingsChoice.ViewConfigurationPaths,
 			["🧹 Clear Input History"] = SettingsChoice.ClearInputHistory,
 			["📊 View Statistics"] = SettingsChoice.ViewStatistics,
-			["🔙 Back to Main Menu"] = SettingsChoice.BackToMainMenu
+			[GetBackMenuText()] = SettingsChoice.BackToMainMenu
 		};
 
 		string selection = AnsiConsole.Prompt(
