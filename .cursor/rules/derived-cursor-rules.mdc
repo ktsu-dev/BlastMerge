@@ -128,6 +128,7 @@ globs: *
 -   When refactoring, follow the Single Responsibility Principle by breaking down large methods into smaller, focused methods, each with a single, well-defined purpose.
 -   When displaying file paths during iterative merge, and files have the same relative path in different repositories, show the unique parts of the path to distinguish between the files.
 -   In `PopulateTableWithDiffLines` method, ensure that the side-by-side diff implementation correctly pairs lines based on the DiffPlex model, rather than assuming a one-to-one mapping by array index.
+-   When generating insert and delete choices during iterative merge, use `FileDisplayService.GetDistinguishingLabels()` instead of `FileDisplayService.GetRelativeDirectoryName()` to provide meaningful labels that help distinguish between different versions of files from different directories/repositories.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -173,6 +174,9 @@ globs: *
 -   Refactor the `ShowSideBySideDiff` method to reduce its cognitive complexity to below 15.
 -   Refactor the `GenerateChangeSummaryDiff` method to reduce its cognitive complexity to below 15.
 -   In `PopulateTableWithDiffLines` method, ensure that the side-by-side diff implementation correctly pairs lines based on the DiffPlex model, rather than assuming a one-to-one mapping by array index.
+-   Ensure that diff blocks are combined to reduce the number of piecemeal changes that have to be viewed. This happens in two different parts of the system:
+    -   For Interactive Merging (Block-by-block choices), in the `BlockMerger.cs` service, the `ConvertDifferencesToBlocks` method specifically combines contiguous changes into logical blocks. The `IsContiguousDifference` method defines contiguous as differences within 1 line of each other.
+    -   For Side-by-Side Display, the side-by-side diff display also uses intelligent pairing logic to reduce visual clutter by properly aligning and grouping related changes.
 
 ## DEBUGGING
 
@@ -368,9 +372,3 @@ globs: *
 - Use `using var parser = new Parser(...)` to ensure proper disposal of the parser object.
 
 ## HISTORY INPUT
-- The `HistoryInput.cs` file must handle cases where it cannot create a directory in `ApplicationData`, and should fall back to a temporary directory or the current directory.
-
-## CHANGELOG GENERATION
-
-- In `PSBuild.psm1`, when the `git log` command fails or returns an error during changelog generation, ensure the `$rawCommits` variable handles the error object appropriately, especially when accessing its `.Count` property. Improve error handling and the `ConvertTo-ArraySafe` function to handle these edge cases. The `ConvertTo-ArraySafe` function should handle `null`, empty inputs, PowerShell error objects, empty strings, and whitespace-only strings. Add try-catch protection around array conversion. After calling `ConvertTo-ArraySafe`, explicitly check that the result has a `Count` property before using it, and create an empty array if it does not.
-- In `PS

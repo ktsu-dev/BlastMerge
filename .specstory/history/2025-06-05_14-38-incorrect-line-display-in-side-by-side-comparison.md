@@ -745,6 +745,50 @@ C:\dev\ktsu-dev\BlastMerge>
 
 ---
 
+Excellent! The build succeeded. Now the labeling issue has been fixed. Here's what I changed:
+
+## Summary of the Fix
+
+The issue was that the `GetInsertChoice` and `GetDeleteChoice` methods were using `FileDisplayService.GetRelativeDirectoryName()` which just provides a simple relative path like `.github\workflows\dotnet.yml`. This doesn't help distinguish between different versions of files from different repositories or directories.
+
+### What I Fixed:
+
+1. **Updated `GetInsertChoice` method**:
+   - Now takes both `rightFile` and `leftFile` as parameters
+   - Uses `FileDisplayService.GetDistinguishingLabels(leftFile, rightFile)` to get proper labels
+   - Extracts the `rightLabel` to show which specific version/directory the content comes from
+
+2. **Updated `GetDeleteChoice` method**:
+   - Now takes both `leftFile` and `rightFile` as parameters  
+   - Uses `FileDisplayService.GetDistinguishingLabels(leftFile, rightFile)` to get proper labels
+   - Extracts the `leftLabel` to show which specific version/directory the content exists in
+
+3. **Updated the method calls**:
+   - Modified `GetBlockChoice` to pass both file paths to the choice methods
+
+### Result:
+Instead of seeing generic messages like:
+> "This content exists only in .github\workflows\dotnet.yml"
+
+You'll now see more meaningful, distinguished labels like:
+> "This content exists only in AppDataStorage/.github/workflows/dotnet.yml"
+> 
+> or
+> 
+> "This content exists only in BlastMerge/.github/workflows/dotnet.yml"
+
+This makes it much clearer which version/repository/directory each piece of content comes from, helping you make better merge decisions during the iterative merge process.
+
+---
+
+_**User**_
+
+why are we missing line 9 here, it seems like line 8 on the left has been split into line 9 and 10 on the right, but 9 isnt shown on the right
+
+---
+
+_**Assistant**_
+
 
 
 ---
