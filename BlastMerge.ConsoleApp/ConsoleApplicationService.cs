@@ -36,6 +36,7 @@ public class ConsoleApplicationService : ApplicationService
 		["📊 Compare Files"] = MenuChoice.CompareFiles,
 		["🔄 Iterative Merge"] = MenuChoice.IterativeMerge,
 		["📦 Batch Operations"] = MenuChoice.BatchOperations,
+		["⚡ Run Recent Batch"] = MenuChoice.RunRecentBatch,
 		["⚙️ Configuration & Settings"] = MenuChoice.Settings,
 		["❓ Help & Information"] = MenuChoice.Help,
 		["🚪 Exit"] = MenuChoice.Exit
@@ -139,6 +140,9 @@ public class ConsoleApplicationService : ApplicationService
 		{
 			return;
 		}
+
+		// Record this batch as recently used
+		RecentBatchTracker.RecordBatchUsage(batchName);
 
 		ShowBatchHeader(batch, directory);
 		(int totalPatternsProcessed, int totalFilesFound) = ProcessAllPatterns(directory, batch);
@@ -641,14 +645,26 @@ public class ConsoleApplicationService : ApplicationService
 	/// <returns>The selected menu choice.</returns>
 	private static MenuChoice ShowMainMenu()
 	{
+		// Create a dynamic menu with recent batch info
+		Dictionary<string, MenuChoice> dynamicMenuChoices = new(MainMenuChoices);
+
+		// Update the recent batch menu text if there's a recent batch
+		string? recentBatch = GetMostRecentBatch();
+		if (!string.IsNullOrEmpty(recentBatch))
+		{
+			// Remove the old entry and add the updated one with batch name
+			dynamicMenuChoices.Remove("⚡ Run Recent Batch");
+			dynamicMenuChoices[$"⚡ Run Recent Batch ({recentBatch})"] = MenuChoice.RunRecentBatch;
+		}
+
 		string selection = AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
 				.Title("[bold cyan]Main Menu[/] - Select an option:")
 				.PageSize(10)
 				.MoreChoicesText("[grey](Move up and down to reveal more options)[/]")
-				.AddChoices(MainMenuChoices.Keys));
+				.AddChoices(dynamicMenuChoices.Keys));
 
-		return MainMenuChoices.TryGetValue(selection, out MenuChoice command) ? command : MenuChoice.Help;
+		return dynamicMenuChoices.TryGetValue(selection, out MenuChoice command) ? command : MenuChoice.Help;
 	}
 
 	/// <summary>
@@ -675,6 +691,9 @@ public class ConsoleApplicationService : ApplicationService
 			case MenuChoice.BatchOperations:
 				new BatchOperationsMenuHandler(this).Enter();
 				break;
+			case MenuChoice.RunRecentBatch:
+				HandleRunRecentBatch();
+				break;
 			case MenuChoice.Settings:
 				new SettingsMenuHandler(this).Enter();
 				break;
@@ -689,6 +708,55 @@ public class ConsoleApplicationService : ApplicationService
 				break;
 		}
 	}
+
+	/// <summary>
+	/// Handles running the most recently used batch configuration.
+	/// </summary>
+	private void HandleRunRecentBatch()
+	{
+		string? recentBatch = GetMostRecentBatch();
+
+		if (string.IsNullOrEmpty(recentBatch))
+		{
+			AnsiConsole.MarkupLine("[yellow]No recent batch configurations found.[/]");
+			AnsiConsole.MarkupLine("[dim]Run a batch configuration first to use this shortcut.[/]");
+			Console.WriteLine();
+			Console.WriteLine(PressAnyKeyMessage);
+			Console.ReadKey(true);
+			return;
+		}
+
+		string directory;
+		try
+		{
+			directory = HistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
+			if (string.IsNullOrWhiteSpace(directory))
+			{
+				AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
+				return;
+			}
+		}
+		catch (InputCancelledException)
+		{
+			return;
+		}
+
+		AnsiConsole.MarkupLine($"[cyan]Running recent batch '{recentBatch}' in '{directory}'[/]");
+		AnsiConsole.WriteLine();
+
+		ProcessBatch(directory, recentBatch);
+
+		AnsiConsole.MarkupLine("[green]Batch operation completed.[/]");
+		Console.WriteLine();
+		Console.WriteLine(PressAnyKeyMessage);
+		Console.ReadKey(true);
+	}
+
+	/// <summary>
+	/// Gets the most recently used batch configuration name.
+	/// </summary>
+	/// <returns>The name of the most recent batch, or null if none found.</returns>
+	private static string? GetMostRecentBatch() => RecentBatchTracker.GetMostRecentBatch();
 
 	/// <summary>
 	/// Handles help and information display.

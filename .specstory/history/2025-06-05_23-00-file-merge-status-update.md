@@ -517,3 +517,90 @@ The terminology is now consistent and accurately reflects what's happening: mult
 
 ---
 
+_**User**_
+
+can you give me a shortcut on the main menu to run the most recently used batch?
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+Absolutely! That's a great UX improvement. Let me add a "Run Most Recent Batch" option to the main menu. First, let me find where the main menu is defined:
+
+---
+
+<details>
+            <summary>Searched codebase "main menu choices dictionary" • **18** results</summary>
+        
+| File | Lines |
+|------|-------|
+| `BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L1-43 |
+| `BlastMerge.ConsoleApp/MenuChoice.cs` | L1-47 |
+| `BlastMerge.ConsoleApp/BatchOperationChoice.cs` | L1-27 |
+| `BlastMerge.ConsoleApp/HelpMenuChoice.cs` | L1-32 |
+| `BlastMerge.ConsoleApp/Services/MenuHandlers/SettingsMenuHandler.cs` | L1-69 |
+| `BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L637-702 |
+| `BlastMerge.ConsoleApp/Services/MenuHandlers/HelpMenuHandler.cs` | L1-69 |
+| `BlastMerge.ConsoleApp/CompareChoice.cs` | L1-32 |
+| `BlastMerge.ConsoleApp/Services/MenuHandlers/CompareFilesMenuHandler.cs` | L1-64 |
+| `BlastMerge.ConsoleApp/ProcessFileActionChoice.cs` | L1-37 |
+| `BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L1-49 |
+| `BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L49-102 |
+| `BlastMerge.ConsoleApp/Services/MenuHandlers/HelpMenuHandler.cs` | L133-170 |
+| `BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L90-147 |
+| `BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L284-327 |
+| `BlastMerge.ConsoleApp/Services/MenuHandlers/SettingsMenuHandler.cs` | L139-214 |
+| `BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L520-587 |
+| `BlastMerge.ConsoleApp/BatchActionChoice.cs` | L1-27 |
+
+</details>
+
+---
+
+Perfect! Now I can see the main menu structure. Let me add the "Run Most Recent Batch" option to the main menu. I'll need to:
+
+1. Add a new menu choice to the enum
+2. Add it to the main menu dictionary 
+3. Implement the handler logic
+4. Track the most recently used batch
+
+Let me start:
+
+---
+
+
+
+---
+
+Now let me add it to the main menu choices dictionary:
+
+---
+
+
+
+---
+
+I need to add the case for the new menu choice in the switch statement. Let me find and update the ExecuteMenuChoice method:
+
+---
+
+Read file: BlastMerge.ConsoleApp/ConsoleApplicationService.cs
+
+---
+
+Now I need to add the case for RunRecentBatch and create the functionality to track and run the most recent batch. Let me add the case to the switch statement:
+
+---
+
+
+
+---
+
+
+
+---
+

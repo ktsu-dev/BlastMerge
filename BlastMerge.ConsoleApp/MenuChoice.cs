@@ -30,6 +30,11 @@ public enum MenuChoice
 	BatchOperations,
 
 	/// <summary>
+	/// Run the most recently used batch configuration
+	/// </summary>
+	RunRecentBatch,
+
+	/// <summary>
 	/// Settings and configuration
 	/// </summary>
 	Settings,
