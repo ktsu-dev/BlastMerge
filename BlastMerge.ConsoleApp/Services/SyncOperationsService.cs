@@ -4,6 +4,7 @@
 
 namespace ktsu.BlastMerge.ConsoleApp.Services;
 
+using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.Core.Models;
 using ktsu.BlastMerge.Core.Services;
 using Spectre.Console;
@@ -30,7 +31,7 @@ public static class SyncOperationsService
 
 		if (groupsWithMultipleFiles.Count == 0)
 		{
-			AnsiConsole.MarkupLine("[yellow]No groups with multiple files to sync.[/]");
+			UIHelper.ShowWarning("No groups with multiple files to sync.");
 			return;
 		}
 
@@ -79,7 +80,7 @@ public static class SyncOperationsService
 
 		if (!confirm)
 		{
-			AnsiConsole.MarkupLine("[yellow]Sync cancelled.[/]");
+			UIHelper.ShowWarning("Sync cancelled.");
 			return;
 		}
 
@@ -149,12 +150,12 @@ public static class SyncOperationsService
 		}
 		catch (IOException ex)
 		{
-			AnsiConsole.MarkupLine($"[red]Failed to sync {targetFile}: {ex.Message}[/]");
+			UIHelper.ShowError($"Failed to sync {targetFile}: {ex.Message}");
 			return 0;
 		}
 		catch (UnauthorizedAccessException ex)
 		{
-			AnsiConsole.MarkupLine($"[red]Access denied when syncing {targetFile}: {ex.Message}[/]");
+			UIHelper.ShowError($"Access denied when syncing {targetFile}: {ex.Message}");
 			return 0;
 		}
 	}
@@ -166,11 +167,8 @@ public static class SyncOperationsService
 	/// <param name="syncedGroups">Number of groups processed.</param>
 	private static void ShowNewestVersionSyncResult(int syncedFiles, int syncedGroups)
 	{
-		AnsiConsole.MarkupLine($"[green]Sync completed! {syncedFiles} files synchronized across {syncedGroups} groups.[/]");
-
-		AnsiConsole.WriteLine();
-		AnsiConsole.MarkupLine("[dim]Press any key to continue...[/]");
-		Console.ReadKey();
+		UIHelper.ShowSuccess($"Sync completed! {syncedFiles} files synchronized across {syncedGroups} groups.");
+		UIHelper.WaitForKeyPress();
 	}
 
 	/// <summary>
@@ -268,22 +266,22 @@ public static class SyncOperationsService
 				{
 					FileDiffer.SyncFile(referenceFile, file);
 					syncedFiles++;
-					AnsiConsole.MarkupLine($"[green]✓ Synced {Path.GetFileName(file)}[/]");
+					UIHelper.ShowSuccess($"✓ Synced {Path.GetFileName(file)}");
 				}
 				catch (IOException ex)
 				{
-					AnsiConsole.MarkupLine($"[red]✗ Failed to sync {Path.GetFileName(file)}: {ex.Message}[/]");
+					UIHelper.ShowError($"✗ Failed to sync {Path.GetFileName(file)}: {ex.Message}");
 				}
 				catch (UnauthorizedAccessException ex)
 				{
-					AnsiConsole.MarkupLine($"[red]✗ Access denied when syncing {Path.GetFileName(file)}: {ex.Message}[/]");
+					UIHelper.ShowError($"✗ Access denied when syncing {Path.GetFileName(file)}: {ex.Message}");
 				}
 			}
 		}
 
 		if (syncedFiles == 0)
 		{
-			AnsiConsole.MarkupLine("[yellow]Skipped this group.[/]");
+			UIHelper.ShowWarning("Skipped this group.");
 		}
 
 		return syncedFiles;
@@ -295,12 +293,8 @@ public static class SyncOperationsService
 	/// <param name="syncedFiles">The total number of files synchronized.</param>
 	private static void ShowSyncCompletionMessage(int syncedFiles)
 	{
-		AnsiConsole.WriteLine();
-		AnsiConsole.MarkupLine($"[green]Sync completed! {syncedFiles} files synchronized.[/]");
-
-		AnsiConsole.WriteLine();
-		AnsiConsole.MarkupLine("[dim]Press any key to continue...[/]");
-		Console.ReadKey();
+		UIHelper.ShowSuccess($"Sync completed! {syncedFiles} files synchronized.");
+		UIHelper.WaitForKeyPress();
 	}
 
 	/// <summary>

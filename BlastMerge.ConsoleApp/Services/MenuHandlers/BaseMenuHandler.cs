@@ -5,6 +5,7 @@
 namespace ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 
 using ktsu.BlastMerge.ConsoleApp.Contracts;
+using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.Core.Services;
 using Spectre.Console;
 
@@ -32,11 +33,13 @@ public abstract class BaseMenuHandler(ApplicationService applicationService) : I
 	/// <summary>
 	/// Shows a press any key prompt and waits for input.
 	/// </summary>
-	protected static void WaitForKeyPress()
-	{
-		AnsiConsole.WriteLine(PressAnyKeyMessage);
-		Console.ReadKey();
-	}
+	protected static void WaitForKeyPress() => UIHelper.WaitForKeyPress();
+
+	/// <summary>
+	/// Shows a press any key prompt with custom message and waits for input.
+	/// </summary>
+	/// <param name="message">The custom message to display.</param>
+	protected static void WaitForKeyPress(string message) => UIHelper.WaitForKeyPress(message);
 
 	/// <summary>
 	/// Clears the console and shows a menu title.
@@ -53,21 +56,17 @@ public abstract class BaseMenuHandler(ApplicationService applicationService) : I
 	/// Shows an error message and waits for user input.
 	/// </summary>
 	/// <param name="message">The error message.</param>
-	protected static void ShowError(string message)
-	{
-		AnsiConsole.MarkupLine($"[red]{message}[/]");
-		WaitForKeyPress();
-	}
+	protected static void ShowError(string message) => UIHelper.ShowErrorAndWait(message);
 
 	/// <summary>
 	/// Shows a success message.
 	/// </summary>
 	/// <param name="message">The success message.</param>
-	protected static void ShowSuccess(string message) => AnsiConsole.MarkupLine($"[green]{message}[/]");
+	protected static void ShowSuccess(string message) => UIHelper.ShowSuccess(message);
 
 	/// <summary>
 	/// Shows a warning message.
 	/// </summary>
 	/// <param name="message">The warning message.</param>
-	protected static void ShowWarning(string message) => AnsiConsole.MarkupLine($"[yellow]{message}[/]");
+	protected static void ShowWarning(string message) => UIHelper.ShowWarning(message);
 }

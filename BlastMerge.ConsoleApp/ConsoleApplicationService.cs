@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 using ktsu.BlastMerge.Core.Models;
 using ktsu.BlastMerge.Core.Services;
@@ -76,7 +77,7 @@ public class ConsoleApplicationService : ApplicationService
 
 		if (filePaths.Count == 0)
 		{
-			AnsiConsole.MarkupLine("[yellow]No files found matching the pattern.[/]");
+			UIHelper.ShowWarning("No files found matching the pattern.");
 			return;
 		}
 
@@ -85,7 +86,7 @@ public class ConsoleApplicationService : ApplicationService
 
 		if (fileGroups.Count == 0)
 		{
-			AnsiConsole.MarkupLine("[yellow]No files to compare.[/]");
+			UIHelper.ShowWarning("No files to compare.");
 			return;
 		}
 
@@ -190,8 +191,8 @@ public class ConsoleApplicationService : ApplicationService
 
 		if (batch == null)
 		{
-			AnsiConsole.MarkupLine($"[red]Batch configuration '[yellow]{batchName}[/]' not found.[/]");
-			AnsiConsole.MarkupLine("[dim]Use the 'List Batches' option to see available configurations.[/]");
+			UIHelper.ShowError($"Batch configuration '{batchName}' not found.");
+			UIHelper.ShowInfo("Use the 'List Batches' option to see available configurations.");
 		}
 
 		return batch;
@@ -883,7 +884,7 @@ public class ConsoleApplicationService : ApplicationService
 				};
 				AnsiConsole.Write(rule);
 
-				FileDisplayService.ShowChangeSummary(file1, file2);
+				FileComparisonDisplayService.ShowChangeSummary(file1, file2);
 			}
 		}
 	}
@@ -925,15 +926,15 @@ public class ConsoleApplicationService : ApplicationService
 
 		if (diffFormat.Contains("📊"))
 		{
-			FileDisplayService.ShowChangeSummary(file1, file2);
+			FileComparisonDisplayService.ShowChangeSummary(file1, file2);
 		}
 		else if (diffFormat.Contains("🔧"))
 		{
-			FileDisplayService.ShowGitStyleDiff(file1, file2);
+			FileComparisonDisplayService.ShowGitStyleDiff(file1, file2);
 		}
 		else if (diffFormat.Contains("🎨"))
 		{
-			FileDisplayService.ShowSideBySideDiff(file1, file2);
+			FileComparisonDisplayService.ShowSideBySideDiff(file1, file2);
 		}
 	}
 

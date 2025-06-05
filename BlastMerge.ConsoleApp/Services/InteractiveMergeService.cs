@@ -5,6 +5,7 @@
 namespace ktsu.BlastMerge.ConsoleApp.Services;
 
 using System.Text;
+using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.Core.Models;
 using ktsu.BlastMerge.Core.Services;
 using Spectre.Console;
@@ -31,11 +32,11 @@ public static class InteractiveMergeService
 
 		if (groupsWithMultipleFiles.Count == 0)
 		{
-			AnsiConsole.MarkupLine("[yellow]No groups with multiple files to merge.[/]");
+			UIHelper.ShowWarning("No groups with multiple files to merge.");
 			return;
 		}
 
-		AnsiConsole.MarkupLine($"[cyan]Found {groupsWithMultipleFiles.Count} groups with multiple versions that can be merged.[/]");
+		UIHelper.ShowInfo($"Found {groupsWithMultipleFiles.Count} groups with multiple versions that can be merged.");
 		AnsiConsole.WriteLine();
 
 		foreach (FileGroup group in groupsWithMultipleFiles)
@@ -51,7 +52,7 @@ public static class InteractiveMergeService
 	private static void PerformGroupMerge(FileGroup group)
 	{
 		List<string> remainingFiles = [.. group.FilePaths];
-		AnsiConsole.MarkupLine($"[cyan]Starting iterative merge for {remainingFiles.Count} files...[/]");
+		UIHelper.ShowInfo($"Starting iterative merge for {remainingFiles.Count} files...");
 
 		while (remainingFiles.Count > 1)
 		{
@@ -74,7 +75,7 @@ public static class InteractiveMergeService
 		FileSimilarity? mostSimilar = FindMostSimilarInGroup(remainingFiles);
 		if (mostSimilar == null)
 		{
-			AnsiConsole.MarkupLine("[red]Could not find similar files to merge.[/]");
+			UIHelper.ShowError("Could not find similar files to merge.");
 			return false;
 		}
 
@@ -105,16 +106,16 @@ public static class InteractiveMergeService
 	{
 		if (mergeResult.Conflicts.Count == 0)
 		{
-			AnsiConsole.MarkupLine("[green]Clean merge - no conflicts detected![/]");
+			UIHelper.ShowSuccess("Clean merge - no conflicts detected!");
 			return true;
 		}
 
-		AnsiConsole.MarkupLine("[yellow]Merge has conflicts. Displaying merge with conflict markers...[/]");
+		UIHelper.ShowWarning("Merge has conflicts. Displaying merge with conflict markers...");
 		ShowMergePreview(mergeResult);
 
 		if (!AnsiConsole.Confirm("[yellow]Accept this merge (with conflict markers)?[/]"))
 		{
-			AnsiConsole.MarkupLine("[yellow]Merge cancelled. Skipping this group.[/]");
+			UIHelper.ShowWarning("Merge cancelled. Skipping this group.");
 			return false;
 		}
 
@@ -138,7 +139,7 @@ public static class InteractiveMergeService
 			UpdateMatchingFiles(remainingFiles, similarity, mergedContent);
 			remainingFiles.Remove(similarity.FilePath2);
 
-			AnsiConsole.MarkupLine($"[green]Merged successfully! Versions reduced by 1. ({remainingFiles.Count} remaining)[/]");
+			UIHelper.ShowSuccess($"Merged successfully! Versions reduced by 1. ({remainingFiles.Count} remaining)");
 			if (remainingFiles.Count > 1)
 			{
 				AnsiConsole.MarkupLine("[dim]Continuing to next merge step...[/]");
@@ -148,12 +149,12 @@ public static class InteractiveMergeService
 		}
 		catch (IOException ex)
 		{
-			AnsiConsole.MarkupLine($"[red]Failed to save merge result: {ex.Message}[/]");
+			UIHelper.ShowError($"Failed to save merge result: {ex.Message}");
 			return false;
 		}
 		catch (UnauthorizedAccessException ex)
 		{
-			AnsiConsole.MarkupLine($"[red]Access denied when saving merge result: {ex.Message}[/]");
+			UIHelper.ShowError($"Access denied when saving merge result: {ex.Message}");
 			return false;
 		}
 	}
@@ -184,12 +185,10 @@ public static class InteractiveMergeService
 	{
 		if (remainingFiles.Count == 1)
 		{
-			AnsiConsole.MarkupLine("[green]Final merged result is saved in the remaining file.[/]");
+			UIHelper.ShowSuccess("Final merged result is saved in the remaining file.");
 		}
 
-		AnsiConsole.WriteLine();
-		AnsiConsole.MarkupLine("[dim]Press any key to continue...[/]");
-		Console.ReadKey();
+		UIHelper.WaitForKeyPress();
 	}
 
 	/// <summary>

@@ -402,8 +402,8 @@ public static class FileDiffer
 		}
 
 		// Create temporary files to use DiffPlex for similarity calculation
-		string tempFile1 = Path.GetTempFileName();
-		string tempFile2 = Path.GetTempFileName();
+		string tempFile1 = SecureTempFileHelper.CreateTempFile();
+		string tempFile2 = SecureTempFileHelper.CreateTempFile();
 
 		try
 		{
@@ -429,14 +429,7 @@ public static class FileDiffer
 		finally
 		{
 			// Clean up temporary files
-			if (File.Exists(tempFile1))
-			{
-				File.Delete(tempFile1);
-			}
-			if (File.Exists(tempFile2))
-			{
-				File.Delete(tempFile2);
-			}
+			SecureTempFileHelper.SafeDeleteTempFiles(tempFile1, tempFile2);
 		}
 	}
 
@@ -512,8 +505,8 @@ public static class FileDiffer
 		ArgumentNullException.ThrowIfNull(lines1);
 		ArgumentNullException.ThrowIfNull(lines2);
 
-		string tempFile1 = Path.GetTempFileName();
-		string tempFile2 = Path.GetTempFileName();
+		string tempFile1 = SecureTempFileHelper.CreateTempFile();
+		string tempFile2 = SecureTempFileHelper.CreateTempFile();
 
 		try
 		{
@@ -521,7 +514,7 @@ public static class FileDiffer
 		}
 		finally
 		{
-			CleanupTempFiles(tempFile1, tempFile2);
+			SecureTempFileHelper.SafeDeleteTempFiles(tempFile1, tempFile2);
 		}
 	}
 
@@ -669,21 +662,6 @@ public static class FileDiffer
 		{
 			mergedLines.Add(lines2[line2Index]);
 			line2Index++;
-		}
-	}
-
-	/// <summary>
-	/// Cleans up temporary files
-	/// </summary>
-	private static void CleanupTempFiles(string tempFile1, string tempFile2)
-	{
-		if (File.Exists(tempFile1))
-		{
-			File.Delete(tempFile1);
-		}
-		if (File.Exists(tempFile2))
-		{
-			File.Delete(tempFile2);
 		}
 	}
 }

@@ -112,6 +112,13 @@ globs: *
 -   Follow SonarLint suggestions where applicable (e.g., making methods static where appropriate, simplifying loops, extracting nested ternary operations).
 -   Make methods static if they do not access instance data.
 -   Extract nested ternary operations into independent statements for improved readability.
+-   Duplication percentage should be minimized, and code should be refactored to reduce duplication.
+-   Centralize console UI patterns using methods in `BaseMenuHandler` or a dedicated `UIHelper` class.
+-   Consolidate duplicate file comparison logic (`ShowChangeSummary`, `ShowGitStyleDiff`, `ShowSideBySideDiff`) into a common service.
+-   Standardize wait-for-key patterns (e.g., "Press any key to continue...") using a common utility method.
+-   Centralize error handling patterns to avoid repeated exception handling code.
+-   Consolidate file validation patterns (e.g., file/directory existence checks) into reusable methods.
+-   'Path.GetTempFileName()' is insecure. Use 'Path.GetRandomFileName()' instead. but also address collision potential.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -268,6 +275,7 @@ globs: *
 -   During the iterative merge, the version search should be performed again between every iteration.
 -   During the iterative merge, when saving the result, the content of every file that has those versions should be replaced.
 -   Improve the interactive mode with a TUI menu for accessing the features.
+-   Use `UIHelper` class for common UI operations and standardized display methods.
 
 ## PROJECT RENAMING
 
@@ -374,13 +382,4 @@ globs: *
     - `FilePatterns` (List<string>, required): The list of file patterns to process.
     - `CreatedDate` (DateTime): The created date.
     - `LastModified` (DateTime): The last modified date.
-    - `SkipEmptyPatterns` (bool): Whether to skip patterns that don't find any files (default: true).
-    - `PromptBeforeEachPattern` (bool): Whether to prompt before processing each pattern (default: false).
-- Add a `CreateDefault()` method to the `BatchConfiguration` class that returns a default batch configuration for common repository files (e.g., `.gitignore`, `.gitattributes`, `.editorconfig`, `*.yml`, `*.yaml`, `.mailmap`, `LICENSE`, `LICENSE.md`, `LICENSE.txt`).
-- Add an `IsValid()` method to the `BatchConfiguration` class that validates the batch configuration.
-
-## PROJECT STRUCTURE
-
-- Use a Contracts, Models, Services directory layout in the ConsoleApp project.
-- The `Program.cs` in `BlastMerge.ConsoleApp` should be simplified, only handling application bootstrapping and instantiating services. Business logic should be delegated to the Core library and implemented in the Services directory.
-- When using a Contracts,
+    - `SkipEmptyPatterns` (bool): Whether to skip patterns that don't

@@ -56,8 +56,8 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	public void AreFilesIdentical_IdenticalFiles_ReturnsTrue()
 	{
 		// Create temporary real files for testing since DiffPlexDiffer uses real file system
-		string tempFile1 = Path.GetTempFileName();
-		string tempFile2 = Path.GetTempFileName();
+		string tempFile1 = SecureTempFileHelper.CreateTempFile();
+		string tempFile2 = SecureTempFileHelper.CreateTempFile();
 
 		try
 		{
@@ -69,15 +69,7 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 		}
 		finally
 		{
-			if (File.Exists(tempFile1))
-			{
-				File.Delete(tempFile1);
-			}
-
-			if (File.Exists(tempFile2))
-			{
-				File.Delete(tempFile2);
-			}
+			SecureTempFileHelper.SafeDeleteTempFiles(tempFile1, tempFile2);
 		}
 	}
 
@@ -88,8 +80,8 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	public void AreFilesIdentical_DifferentFiles_ReturnsFalse()
 	{
 		// Create temporary real files for testing since DiffPlexDiffer uses real file system
-		string tempFile1 = Path.GetTempFileName();
-		string tempFile2 = Path.GetTempFileName();
+		string tempFile1 = SecureTempFileHelper.CreateTempFile();
+		string tempFile2 = SecureTempFileHelper.CreateTempFile();
 
 		try
 		{
@@ -101,15 +93,7 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 		}
 		finally
 		{
-			if (File.Exists(tempFile1))
-			{
-				File.Delete(tempFile1);
-			}
-
-			if (File.Exists(tempFile2))
-			{
-				File.Delete(tempFile2);
-			}
+			SecureTempFileHelper.SafeDeleteTempFiles(tempFile1, tempFile2);
 		}
 	}
 

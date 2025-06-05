@@ -76,8 +76,8 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 		string[] lines2 = _fileSystem.File.ReadAllLines(file2Path);
 
 		// Create temporary files
-		string tempFile1 = Path.GetTempFileName();
-		string tempFile2 = Path.GetTempFileName();
+		string tempFile1 = SecureTempFileHelper.CreateTempFile();
+		string tempFile2 = SecureTempFileHelper.CreateTempFile();
 
 		try
 		{
@@ -89,15 +89,7 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 		finally
 		{
 			// Clean up temporary files
-			if (File.Exists(tempFile1))
-			{
-				File.Delete(tempFile1);
-			}
-
-			if (File.Exists(tempFile2))
-			{
-				File.Delete(tempFile2);
-			}
+			SecureTempFileHelper.SafeDeleteTempFiles(tempFile1, tempFile2);
 		}
 	}
 
@@ -125,8 +117,8 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 		string[] lines2 = _fileSystem.File.ReadAllLines(file2Path);
 
 		// Create temporary files
-		string tempFile1 = Path.GetTempFileName();
-		string tempFile2 = Path.GetTempFileName();
+		string tempFile1 = SecureTempFileHelper.CreateTempFile();
+		string tempFile2 = SecureTempFileHelper.CreateTempFile();
 
 		try
 		{
@@ -138,15 +130,7 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 		finally
 		{
 			// Clean up temporary files
-			if (File.Exists(tempFile1))
-			{
-				File.Delete(tempFile1);
-			}
-
-			if (File.Exists(tempFile2))
-			{
-				File.Delete(tempFile2);
-			}
+			SecureTempFileHelper.SafeDeleteTempFiles(tempFile1, tempFile2);
 		}
 	}
 
