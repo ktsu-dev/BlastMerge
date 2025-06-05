@@ -32,26 +32,26 @@ public static class MenuDisplayService
 			.AddColumn(new TableColumn("").Width(80).Centered());
 
 		welcomeTable.AddRow(new Markup(
-			"[bold blue]🚀 CROSS-REPOSITORY FILE SYNCHRONIZATION TOOL 🚀[/]\n\n" +
-			"[yellow]⚡ Lightning-fast intelligent merging[/]\n" +
-			"[green]🔄 Multi-repository synchronization[/]\n" +
-			"[cyan]📊 Advanced diff visualization[/]\n" +
-			"[magenta]🎯 Whitespace-aware comparisons[/]\n" +
-			"[red]🛠️ Iterative merge resolution[/]\n\n" +
-			"[bold white on blue] POWERED BY DIFFPLEX & SPECTRE.CONSOLE [/]\n\n" +
-			"[dim]Navigate: [/][yellow]↑ ↓ Arrow Keys[/] [dim]• Select: [/][green]Enter[/] [dim]• Exit: [/][red]Escape[/]"
+			"[bold red]💥 EXPLOSIVE FILE SYNCHRONIZATION WEAPON 💥[/]\n\n" +
+			"[yellow]🧨 Detonates merge conflicts into harmony[/]\n" +
+			"[green]💣 Nuclear-powered repository blasting[/]\n" +
+			"[cyan]🔥 Incendiary diff visualization[/]\n" +
+			"[magenta]⚡ High-voltage whitespace demolition[/]\n" +
+			"[red]🚀 Shockwave iterative resolution[/]\n\n" +
+			"[bold white on red] FUSION-POWERED BY DIFFPLEX & SPECTRE.CONSOLE [/]\n\n" +
+			"[dim]Arm weapon: [/][yellow]↑ ↓ Arrow Keys[/] [dim]• Fire: [/][green]Enter[/] [dim]• Abort: [/][red]Escape[/]"
 		));
 
 		Panel welcomePanel = new Panel(welcomeTable)
-			.Header(new PanelHeader("[bold yellow]🌟 WELCOME TO THE FUTURE OF FILE MERGING 🌟[/]", Justify.Center))
+			.Header(new PanelHeader("[bold red]💥 WELCOME TO THE BLAST ZONE - MERGING NEVER FELT SO EXPLOSIVE 💥[/]", Justify.Center))
 			.Border(BoxBorder.Double)
-			.BorderColor(Color.Blue);
+			.BorderColor(Color.Red);
 
 		AnsiConsole.Write(welcomePanel);
 
 		// Add a status bar
-		Rule rule = new Rule("[dim]Ready to merge the impossible[/]")
-			.RuleStyle("cyan")
+		Rule rule = new Rule("[dim]Explosives armed and ready to blast... 🧨[/]")
+			.RuleStyle("red")
 			.LeftJustified();
 
 		AnsiConsole.Write(rule);
@@ -85,26 +85,26 @@ public static class MenuDisplayService
 			.AddColumn(new TableColumn("").Width(70).Centered());
 
 		goodbyeTable.AddRow(new Markup(
-			"[bold green]🎉 MISSION ACCOMPLISHED! 🎉[/]\n\n" +
-			"[yellow]✨ Your files have been perfectly synchronized[/]\n" +
-			"[cyan]🔥 Changes merged with surgical precision[/]\n" +
-			"[magenta]🚀 Repository harmony restored[/]\n\n" +
-			"[bold white on purple] POWERED BY THE KTSU DEVELOPMENT TEAM [/]\n\n" +
-			"[dim]Visit us for updates and new features:[/]\n" +
+			"[bold red]💥 DETONATION SUCCESSFUL! TARGET OBLITERATED! 💥[/]\n\n" +
+			"[yellow]🧨 Your merge conflicts have been atomized[/]\n" +
+			"[cyan]🔥 Files blasted into perfect harmony[/]\n" +
+			"[magenta]💣 Repository chaos neutralized with extreme prejudice[/]\n\n" +
+			"[bold white on red] EXPLOSIVE ENGINEERING BY KTSU DEMOLITION SQUAD [/]\n\n" +
+			"[dim]Reload for more carnage at:[/]\n" +
 			"[link=https://github.com/ktsu-dev/BlastMerge]🌐 https://github.com/ktsu-dev/BlastMerge[/]\n\n" +
-			"[bold blue]Until next time, keep merging! 🛡️[/]"
+			"[bold blue]Until next blast, keep the fireworks coming! 🎆[/]"
 		));
 
 		Panel goodbyePanel = new Panel(goodbyeTable)
-			.Header(new PanelHeader("[bold gold1]🏆 SESSION COMPLETE - YOU'RE A MERGE MASTER! 🏆[/]", Justify.Center))
+			.Header(new PanelHeader("[bold gold1]🧨 DEMOLITION COMPLETE - YOU'RE A BLAST MASTER! 🧨[/]", Justify.Center))
 			.Border(BoxBorder.Double)
-			.BorderColor(Color.Green);
+			.BorderColor(Color.Red);
 
 		AnsiConsole.Write(goodbyePanel);
 
 		// Add epic final message
-		Rule finalRule = new Rule("[bold yellow]⭐ May your diffs be ever in your favor ⭐[/]")
-			.RuleStyle("gold1")
+		Rule finalRule = new Rule("[bold yellow]💥 May your merges always go out with a BANG! 💥[/]")
+			.RuleStyle("red")
 			.Centered();
 
 		AnsiConsole.Write(finalRule);
