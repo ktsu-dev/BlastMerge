@@ -15,6 +15,7 @@ using Spectre.Console;
 /// <summary>
 /// Console-specific implementation of the application service that adds UI functionality.
 /// </summary>
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "<Pending>")]
 public class ConsoleApplicationService : ApplicationService
 {
 	/// <summary>
@@ -237,7 +238,16 @@ public class ConsoleApplicationService : ApplicationService
 		}
 
 		IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(directory, fileName);
-		return (IReadOnlyDictionary<string, IReadOnlyCollection<string>>)FileDiffer.GroupFilesByHash(filePaths);
+		IReadOnlyCollection<FileGroup> fileGroups = FileDiffer.GroupFilesByHash(filePaths);
+
+		// Convert FileGroup collection to Dictionary<string, IReadOnlyCollection<string>>
+		Dictionary<string, IReadOnlyCollection<string>> result = [];
+		foreach (FileGroup group in fileGroups)
+		{
+			result[group.Hash] = group.FilePaths;
+		}
+
+		return result.AsReadOnly();
 	}
 
 	/// <summary>
@@ -368,7 +378,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// <summary>
 	/// Shows the welcome screen with application information.
 	/// </summary>
-	private static void ShowWelcomeScreen()
+	private void ShowWelcomeScreen()
 	{
 		AnsiConsole.Clear();
 
@@ -394,7 +404,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// Shows the main menu and returns the user's choice.
 	/// </summary>
 	/// <returns>The selected menu choice.</returns>
-	private static string ShowMainMenu()
+	private string ShowMainMenu()
 	{
 		string[] choices =
 		[
@@ -462,7 +472,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// <summary>
 	/// Handles the find files operation.
 	/// </summary>
-	private static void HandleFindFiles()
+	private void HandleFindFiles()
 	{
 		AnsiConsole.Clear();
 		AnsiConsole.MarkupLine("[bold cyan]Find & Process Files[/]");
@@ -642,7 +652,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// <summary>
 	/// Handles listing available batch configurations.
 	/// </summary>
-	private static void HandleListBatches()
+	private void HandleListBatches()
 	{
 		AnsiConsole.Clear();
 		AnsiConsole.MarkupLine("[bold cyan]Available Batch Configurations[/]");
@@ -725,7 +735,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// <summary>
 	/// Handles configuration and settings.
 	/// </summary>
-	private static void HandleSettings()
+	private void HandleSettings()
 	{
 		AnsiConsole.Clear();
 		AnsiConsole.MarkupLine("[bold cyan]Configuration & Settings[/]");
@@ -751,7 +761,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// <summary>
 	/// Handles help and information display.
 	/// </summary>
-	private static void HandleHelp()
+	private void HandleHelp()
 	{
 		AnsiConsole.Clear();
 		AnsiConsole.MarkupLine("[bold cyan]Help & Information[/]");
@@ -789,7 +799,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// <summary>
 	/// Shows application overview information.
 	/// </summary>
-	private static void ShowApplicationOverview()
+	private void ShowApplicationOverview()
 	{
 		AnsiConsole.Clear();
 		AnsiConsole.MarkupLine("[bold cyan]Application Overview[/]");
@@ -816,7 +826,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// <summary>
 	/// Shows feature guide information.
 	/// </summary>
-	private static void ShowFeatureGuide()
+	private void ShowFeatureGuide()
 	{
 		AnsiConsole.Clear();
 		AnsiConsole.MarkupLine("[bold cyan]Feature Guide[/]");
@@ -852,7 +862,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// <summary>
 	/// Shows keyboard shortcuts information.
 	/// </summary>
-	private static void ShowKeyboardShortcuts()
+	private void ShowKeyboardShortcuts()
 	{
 		AnsiConsole.Clear();
 		AnsiConsole.MarkupLine("[bold cyan]Keyboard Shortcuts[/]");
@@ -879,7 +889,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// <summary>
 	/// Shows the goodbye screen when exiting.
 	/// </summary>
-	private static void ShowGoodbyeScreen()
+	private void ShowGoodbyeScreen()
 	{
 		AnsiConsole.Clear();
 
@@ -898,7 +908,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// Shows a detailed list of files grouped by hash.
 	/// </summary>
 	/// <param name="fileGroups">The file groups to display.</param>
-	private static void ShowDetailedFileList(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
+	private void ShowDetailedFileList(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
 	{
 		AnsiConsole.Clear();
 		AnsiConsole.MarkupLine("[bold cyan]Detailed File List[/]");
@@ -1063,7 +1073,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// Callback to ask if the user wants to continue merging.
 	/// </summary>
 	/// <returns>True to continue, false to stop.</returns>
-	private static bool ContinueMergeCallback()
+	private bool ContinueMergeCallback()
 	{
 		Console.Write("Continue with next merge? (y/n): ");
 		string? response = Console.ReadLine();

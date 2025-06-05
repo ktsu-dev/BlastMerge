@@ -13,44 +13,21 @@ using ktsu.BlastMerge.Core.Models;
 /// <summary>
 /// Implementation of the main application service that handles business logic.
 /// </summary>
-public class ApplicationService : IApplicationService
+public abstract class ApplicationService : IApplicationService
 {
 	/// <summary>
 	/// Processes files in a directory with a specified filename pattern.
 	/// </summary>
 	/// <param name="directory">The directory to process.</param>
 	/// <param name="fileName">The filename pattern to search for.</param>
-	public virtual void ProcessFiles(string directory, string fileName)
-	{
-		ArgumentNullException.ThrowIfNull(directory);
-		ArgumentNullException.ThrowIfNull(fileName);
-
-		if (!Directory.Exists(directory))
-		{
-			throw new DirectoryNotFoundException($"Directory '{directory}' does not exist.");
-		}
-
-		IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(directory, fileName);
-		// Process files as needed
-	}
+	public abstract void ProcessFiles(string directory, string fileName);
 
 	/// <summary>
 	/// Processes a batch configuration in a specified directory.
 	/// </summary>
 	/// <param name="directory">The directory to process.</param>
 	/// <param name="batchName">The name of the batch configuration.</param>
-	public virtual void ProcessBatch(string directory, string batchName)
-	{
-		ArgumentNullException.ThrowIfNull(directory);
-		ArgumentNullException.ThrowIfNull(batchName);
-
-		if (!Directory.Exists(directory))
-		{
-			throw new DirectoryNotFoundException($"Directory '{directory}' does not exist.");
-		}
-
-		// Process batch configuration
-	}
+	public abstract void ProcessBatch(string directory, string batchName);
 
 	/// <summary>
 	/// Compares files in a directory and returns file groups.
@@ -69,7 +46,16 @@ public class ApplicationService : IApplicationService
 		}
 
 		IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(directory, fileName);
-		return (IReadOnlyDictionary<string, IReadOnlyCollection<string>>)FileDiffer.GroupFilesByHash(filePaths);
+		IReadOnlyCollection<FileGroup> fileGroups = FileDiffer.GroupFilesByHash(filePaths);
+
+		// Convert FileGroup collection to Dictionary<string, IReadOnlyCollection<string>>
+		Dictionary<string, IReadOnlyCollection<string>> result = [];
+		foreach (FileGroup group in fileGroups)
+		{
+			result[group.Hash] = group.FilePaths;
+		}
+
+		return result.AsReadOnly();
 	}
 
 	/// <summary>
@@ -77,85 +63,16 @@ public class ApplicationService : IApplicationService
 	/// </summary>
 	/// <param name="directory">The directory containing files to merge.</param>
 	/// <param name="fileName">The filename pattern to search for.</param>
-	public virtual void RunIterativeMerge(string directory, string fileName)
-	{
-		ArgumentNullException.ThrowIfNull(directory);
-		ArgumentNullException.ThrowIfNull(fileName);
-
-		if (!Directory.Exists(directory))
-		{
-			throw new DirectoryNotFoundException($"Directory '{directory}' does not exist.");
-		}
-
-		// Prepare file groups for merging
-		IReadOnlyCollection<FileGroup>? fileGroups = IterativeMergeOrchestrator.PrepareFileGroupsForMerging(directory, fileName);
-
-		if (fileGroups == null)
-		{
-			return; // No files found or insufficient unique versions to merge
-		}
-
-		// Start iterative merge process with default callbacks
-		MergeCompletionResult result = IterativeMergeOrchestrator.StartIterativeMergeProcess(
-			fileGroups,
-			DefaultMergeCallback,
-			DefaultStatusCallback,
-			DefaultContinueCallback);
-	}
+	public abstract void RunIterativeMerge(string directory, string fileName);
 
 	/// <summary>
 	/// Lists all available batch configurations.
 	/// </summary>
-	public virtual void ListBatches()
-	{
-		IReadOnlyCollection<string> batchNames = BatchManager.ListBatches();
-		IReadOnlyCollection<BatchConfiguration> allBatches = BatchManager.GetAllBatches();
-
-		// Core implementation - no UI dependencies
-		// The data is available, UI layer will handle display
-	}
+	public abstract void ListBatches();
 
 	/// <summary>
 	/// Starts the interactive mode for user input.
 	/// This method is UI-specific and should be overridden in the ConsoleApp layer.
 	/// </summary>
-	public virtual void StartInteractiveMode()
-	{
-		// Core implementation - no UI dependencies
-		// ConsoleApp will override this with UI-specific implementation
-	}
-
-	/// <summary>
-	/// Default callback to perform merge operation between two files.
-	/// </summary>
-	/// <param name="file1">First file path.</param>
-	/// <param name="file2">Second file path.</param>
-	/// <param name="existingContent">Existing merged content.</param>
-	/// <returns>Merge result or null if cancelled.</returns>
-	private static MergeResult? DefaultMergeCallback(string file1, string file2, string? existingContent)
-	{
-		// Default automatic merge - use version 1
-		return IterativeMergeOrchestrator.PerformMergeWithConflictResolution(
-			file1,
-			file2,
-			existingContent,
-			(block, context, index) => BlockChoice.UseVersion1);
-	}
-
-	/// <summary>
-	/// Default callback to report merge status.
-	/// </summary>
-	/// <param name="status">Current merge session status.</param>
-	private static void DefaultStatusCallback(MergeSessionStatus status)
-	{
-		// No output in core - UI layer will handle this
-	}
-
-	/// <summary>
-	/// Default callback to determine if merge should continue.
-	/// </summary>
-	/// <returns>True to continue, false to stop.</returns>
-	private static bool DefaultContinueCallback() =>
-		// Default to continue
-		true;
+	public abstract void StartInteractiveMode();
 }

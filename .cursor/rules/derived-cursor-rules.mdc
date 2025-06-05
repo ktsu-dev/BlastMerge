@@ -359,3 +359,4 @@ globs: *
 ## EXCEPTION HANDLING
 
 - In `ShowDetailedFileList` method, replace the general `catch (Exception)` block with more specific exception types like `IOException`, `UnauthorizedAccessException`, `ArgumentException`, and `PathTooLongException`.
+- In the `ShowDetailedFileList` method, catch specific exception types in the following order: `UnauthorizedAccessException`, `DirectoryNotFoundException`, `FileNotFoundException`, `PathTooLongException`, `ArgumentException`, and `IOException`.
