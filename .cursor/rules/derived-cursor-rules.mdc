@@ -140,6 +140,16 @@ globs: *
 -   When using glob patterns, ensure that files of different names are not compared with each other.
 -   The `FindMostSimilarFiles` method must only compare files with the same filename.
 -   Change this condition so that it does not always evaluate to 'True'. Some code paths are unreachable.
+-   When multiple identical copies of a file are found during iterative merge, it means that the files have exactly the same content, they share the same hash value, all copies are functionally equivalent and there are no differences between them, and they are candidates for consolidation. In this scenario, "no action is needed" from a functional perspective because the files are already fully synchronized and there are no conflicts to resolve. The merging would simply consolidate duplicate files, not resolve differences. BlastMerge will typically offer choices such as:
+    -   🔄 Run iterative merge - Consolidate the identical files into one
+    -   ⏭️ Skip this pattern - Leave the files as-is
+    -   🛑 Stop processing - Exit batch processing
+-   If `fileGroups.Count == 1` AND `groupsWithMultipleFiles == 1` in `HandlePatternWithMultipleVersions`, automatically skip with a message like: `"All files for pattern '{pattern}' are identical - skipping merge."`. Only prompt the user when there are multiple groups with different content.
+-   In `HandlePatternWithMultipleVersions`, if there are some unique files (each in their own group) AND one group with multiple identical files, automatically skip with a message like: `"All duplicate files for pattern '{pattern}' are identical - skipping merge (no action needed)."`.
+    The corrected logic now checks `groupsWithMultipleFiles == 1`, which means:
+    - There's exactly 1 group that contains multiple files
+    - All the duplicate files in that group are identical (same hash)
+    - No user action is needed since there are no conflicts to resolve
 
 ## FILE & DIRECTORY HANDLING
 
@@ -198,6 +208,9 @@ globs: *
     -   Show deleted lines (red) only on the left with their correct line numbers.
     -   Show inserted lines (green) only on the right with their correct line numbers.
     -   Add visual separators between different diff blocks.
+-   Whitespace characters must be visualized in diffs, including spaces (·), tabs (→), returns (↵), and newlines (¶).
+-   Trailing whitespace should be highlighted with a red background.
+-   A legend explaining the whitespace symbols should be displayed.
 -   Whitespace characters must be visualized in diffs, including spaces (·), tabs (→), returns (↵), and newlines (¶).
 -   Trailing whitespace should be highlighted with a red background.
 -   A legend explaining the whitespace symbols should be displayed.
@@ -332,30 +345,4 @@ globs: *
     The `Peek()` returns "Compare Files" (the current menu), but the back button should go to "Main Menu" (the previous menu). Modify the `GetBackMenuText()` method to look at the menu below the current one.
 -   Display the full welcome message when returning to the main menu every time.
 -   There must not be a "press any key" prompt on the goodbye screen.
--   Make the ASCII arts left aligned.
--   The application should visualize whitespace characters in diffs.
--   Whitespace characters must be visualized in diffs, including spaces (·), tabs (→), returns (↵), and newlines (¶).
--   Trailing whitespace should be highlighted with a red background.
--   A legend explaining the whitespace symbols should be displayed.
--   Custom ASCII art should be clean, compact, and compatible with the Spectre.Console layout.
--   In this case it might be nice to show the summary of each file found
--   When displaying the file comparison results, the table should:
-    -   Show the relative file path and hash.
-    -   Be sorted by filename so that similar files are proximal.
-    -   Replace the phrase "Multiple versions" with "Multiple identical copies" when the files are identical.
--   All menus presenting choices should have nice emoji icons for each menu item.
--   When displaying the file comparison results, the table should show the filename and hash, and be sorted by filename so that similar files are proximal.
--   Where there is a prompt requesting input, pressing escape should back out of the current operation to the previous menu.
--   When iterative merge is run, the table showing the file comparison results should be displayed before beginning merges. The table should:
-    -   Show the filename.
-    -   Show the hash.
-    -   Be sorted by filename so that similar files are proximal.
-    -   Replace the phrase "Multiple versions" with "Multiple identical copies" when the files are identical.
-
-## PROJECT RENAMING
-
--   The project has been renamed from "DiffMore" to "BlastMerge". All references to "DiffMore" in the codebase, documentation, and project files must be updated to "BlastMerge".
-
-## NEW PRIMARY FEATURE
-
-- The primary feature of the
+-   Make

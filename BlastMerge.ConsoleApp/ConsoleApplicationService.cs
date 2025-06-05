@@ -254,7 +254,8 @@ public class ConsoleApplicationService : ApplicationService
 	}
 
 	/// <summary>
-	/// Handles patterns that have multiple identical copies requiring user action.
+	/// Handles patterns that have multiple identical copies, automatically skipping when all files are identical.
+	/// Only prompts for user action when there are multiple different versions that need merging.
 	/// </summary>
 	/// <param name="directory">The directory being processed.</param>
 	/// <param name="pattern">The file pattern.</param>
@@ -270,7 +271,14 @@ public class ConsoleApplicationService : ApplicationService
 			return new BatchActionResult { ShouldStop = false };
 		}
 
-		AnsiConsole.MarkupLine($"[yellow]Found {groupsWithMultipleFiles} groups with multiple identical copies that could be merged.[/]");
+		// If there's only one group with multiple files, all duplicate files are identical - auto-skip
+		if (groupsWithMultipleFiles == 1)
+		{
+			AnsiConsole.MarkupLine($"[green]All duplicate files for pattern '{pattern}' are identical - skipping merge (no action needed).[/]");
+			return new BatchActionResult { ShouldStop = false };
+		}
+
+		AnsiConsole.MarkupLine($"[yellow]Found {groupsWithMultipleFiles} different versions that could be merged.[/]");
 		return GetUserActionForPattern(directory, pattern);
 	}
 
@@ -291,7 +299,7 @@ public class ConsoleApplicationService : ApplicationService
 
 		string selection = AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
-				.Title($"Multiple identical copies found for pattern '{pattern}'. What would you like to do?")
+				.Title($"Multiple different versions found for pattern '{pattern}'. What would you like to do?")
 				.AddChoices(choices.Keys));
 
 		return choices.TryGetValue(selection, out BatchActionChoice choice)

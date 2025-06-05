@@ -37,8 +37,8 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 
 		Dictionary<string, BatchOperationChoice> batchOperationChoices = new()
 		{
-			["⚙️ Manage Batch Configurations"] = BatchOperationChoice.ManageBatchConfigurations,
 			["▶️ Run Batch Configuration"] = BatchOperationChoice.RunBatchConfiguration,
+			["⚙️ Manage Batch Configurations"] = BatchOperationChoice.ManageBatchConfigurations,
 			[GetBackMenuText()] = BatchOperationChoice.BackToMainMenu
 		};
 
