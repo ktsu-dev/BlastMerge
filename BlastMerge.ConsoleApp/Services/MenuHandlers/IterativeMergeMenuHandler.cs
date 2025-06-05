@@ -40,5 +40,6 @@ public class IterativeMergeMenuHandler(ApplicationService applicationService) : 
 
 		ApplicationService.RunIterativeMerge(directory, fileName);
 		WaitForKeyPress();
+		GoBack();
 	}
 }

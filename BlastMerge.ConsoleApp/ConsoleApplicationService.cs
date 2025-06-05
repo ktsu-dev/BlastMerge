@@ -467,8 +467,6 @@ public class ConsoleApplicationService : ApplicationService
 	/// </summary>
 	public override void StartInteractiveMode()
 	{
-		ShowWelcomeScreen();
-
 		while (true)
 		{
 			try
@@ -476,6 +474,7 @@ public class ConsoleApplicationService : ApplicationService
 				// Check navigation stack to determine what menu to show
 				if (NavigationHistory.ShouldGoToMainMenu())
 				{
+					ShowWelcomeScreen();
 					MenuChoice choice = ShowMainMenu();
 
 					if (choice == MenuChoice.Exit)

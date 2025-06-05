@@ -86,7 +86,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 				["🗑️ Delete Batch"] = "delete",
 				["📤 Export Batches"] = "export",
 				["📥 Import Batches"] = "import",
-				[GetBackMenuText()] = "back"
+				["🔙 Back to Batch Operations"] = "back"
 			};
 
 			string selection = AnsiConsole.Prompt(

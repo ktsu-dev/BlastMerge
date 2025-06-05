@@ -1689,3 +1689,384 @@ _**Assistant**_
 
 ---
 
+You're right! I fixed the text display but not the actual navigation logic. Let me check how the back action is supposed to work in the navigation system.
+
+---
+
+Read file: BlastMerge.ConsoleApp/ConsoleApplicationService.cs
+
+---
+
+I see the issue! The problem is in the `NavigateBasedOnStack()` method. When the user selects "Back to Main Menu" in the Compare Files menu, the menu handler just returns, and then `NavigateBasedOnStack()` is called. However, it's peeking at the stack and seeing "Compare Files" is still there, so it calls the Compare Files handler again, creating a loop.
+
+The issue is that when a user chooses "Back", we need to **pop** the current menu from the stack before navigating. Let me check how the BaseMenuHandler handles the GoBack functionality:
+
+---
+
+Read file: BlastMerge.ConsoleApp/Services/MenuHandlers/BaseMenuHandler.cs
+
+---
+
+Perfect! I see the issue now. The `BaseMenuHandler` has a `GoBack()` method that properly pops the current menu from the stack, but the menu handlers aren't using it when the user selects "Back to Main Menu".
+
+Looking at the `CompareFilesMenuHandler`, when the user selects `CompareChoice.BackToMainMenu`, it just breaks out of the switch and returns. It should call `GoBack()` instead.
+
+Let me fix this in the CompareFilesMenuHandler:
+
+---
+
+
+
+---
+
+Now I need to check if other menu handlers have the same issue. Let me search for similar back menu patterns:
+
+---
+
+<details>
+            <summary>Grep search for "BackToMainMenu|Back.*Menu" • **11** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/SyncOperationsService.cs` | L44 | `["🔙 Back to previous menu"] = SyncChoice.Back` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/SettingsMenuHandler.cs` | L31 | `[GetBackMenuText()] = SettingsChoice.BackToMainMenu` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/SettingsMenuHandler.cs` | L52 | `case SettingsChoice.BackToMainMenu:` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/SettingsMenuHandler.cs` | L210 | `BackToMainMenu` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/HelpMenuHandler.cs` | L31 | `[GetBackMenuText()] = HelpChoice.BackToMainMenu` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/HelpMenuHandler.cs` | L52 | `case HelpChoice.BackToMainMenu:` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/HelpMenuHandler.cs` | L166 | `BackToMainMenu` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/CompareFilesMenuHandler.cs` | L33 | `[GetBackMenuText()] = CompareChoice.BackToMainMenu` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/CompareFilesMenuHandler.cs` | L54 | `case CompareChoice.BackToMainMenu:` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L41 | `[GetBackMenuText()] = BatchOperationChoice.BackToMainMenu` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L59 | `case BatchOperationChoice.BackToMainMenu:` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L88 | `[GetBackMenuText()] = "back"` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BaseMenuHandler.cs` | L47 | `/// Goes back to the previous menu in navigation history.` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BaseMenuHandler.cs` | L57 | `/// Gets the appropriate back menu text for display.` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BaseMenuHandler.cs` | L60 | `protected static string GetBackMenuText() => NavigationHistory.GetBackMenuText();` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/Common/NavigationStack.cs` | L46 | `/// Gets an appropriate back menu text based on the navigation stack.` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/Common/NavigationStack.cs` | L50 | `public static string GetBackMenuText()` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/Common/NavigationStack.cs` | L54 | `return "🔙 Back to Main Menu";` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/Common/NavigationStack.cs` | L64 | `"Main Menu" => "🔙 Back to Main Menu",` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/Common/NavigationStack.cs` | L65 | `_ => $"🔙 Back to {previousMenu}"` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/Common/NavigationStack.cs` | L69 | `return "🔙 Back to Main Menu";` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/Common/NavigationStack.cs` | L73 | `/// Determines if the back action should go to main menu.` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/HelpMenuChoice.cs` | L29 | `BackToMainMenu` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/CompareChoice.cs` | L29 | `BackToMainMenu` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/BatchOperationChoice.cs` | L24 | `BackToMainMenu` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/CompareFilesMenuHandler.cs` | L33 | `[GetBackMenuText()] = CompareChoice.BackToMainMenu` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/CompareFilesMenuHandler.cs` | L54 | `case CompareChoice.BackToMainMenu:` |
+
+</details>
+
+---
+
+I need to fix the same issue in other menu handlers. Let me check and fix them:
+
+---
+
+Read file: BlastMerge.ConsoleApp/Services/MenuHandlers/SettingsMenuHandler.cs
+
+---
+
+
+
+---
+
+Read file: BlastMerge.ConsoleApp/Services/MenuHandlers/HelpMenuHandler.cs
+
+---
+
+
+
+---
+
+Read file: BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs
+
+---
+
+
+
+---
+
+Now let me check if there are any other menu handlers that might have the same issue. Let me search for any other "Handle" methods or menu handlers that might not be calling GoBack():
+
+---
+
+<details>
+            <summary>Grep search for "FindFilesMenuHandler|IterativeMergeMenuHandler"" • **3** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/FindFilesMenuHandler.cs` | L14 | `public class FindFilesMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L572 | `new FindFilesMenuHandler(this).Enter();` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L630 | `new FindFilesMenuHandler(this).Handle();` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L572 | `new FindFilesMenuHandler(this).Enter();` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L630 | `new FindFilesMenuHandler(this).Handle();` |
+
+</details>
+
+---
+
+Let me check these handlers to see if they have back menu functionality:
+
+---
+
+Read file: BlastMerge.ConsoleApp/Services/MenuHandlers/FindFilesMenuHandler.cs
+
+---
+
+Read file: BlastMerge.ConsoleApp/Services/MenuHandlers/IterativeMergeMenuHandler.cs
+
+---
+
+Good! These two handlers (FindFilesMenuHandler and IterativeMergeMenuHandler) don't have explicit back menu options - they just perform their operation and wait for a key press, then return. The navigation system will handle going back automatically.
+
+Now let me build and test the navigation to make sure it works correctly:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+C:\dev\ktsu-dev\BlastMerge>dotnet build
+
+  C:\dev\ktsu-dev\BlastMerge\BlastMerge.sln                                                              Restore (0.0s)
+Restore complete (0.8s)
+  BlastMerge.Core succeeded (0.5s) → BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll
+  BlastMerge.ConsoleApp succeeded (0.4s) → BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.BlastMerge.ConsoleApp.dll
+  BlastMerge.Test succeeded (0.2s) → BlastMerge.Test\bin\Debug\net9.0\ktsu.BlastMerge.Test.dll
+
+Build succeeded in 2.3s
+
+C:\dev\ktsu-dev\BlastMerge>
+```
+
+---
+
+Perfect! The build succeeded. Now let me run the tests to make sure everything still works:
+
+---
+
+```bash
+dotnet test
+```
+
+```
+C:\dev\ktsu-dev\BlastMerge>dotnet test
+
+  C:\dev\ktsu-dev\BlastMerge\BlastMerge.sln                                                              Restore (0.0s)
+Restore complete (0.8s)
+  BlastMerge.Core succeeded (0.2s) → BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll
+  BlastMerge.ConsoleApp succeeded (0.1s) → BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.BlastMerge.ConsoleApp.dll
+  BlastMerge.Test succeeded (0.1s) → BlastMerge.Test\bin\Debug\net9.0\ktsu.BlastMerge.Test.dll
+  BlastMerge.Test test succeeded (1.1s)
+
+Test summary: total: 56, failed: 0, succeeded: 56, skipped: 0, duration: 0.7s
+Build succeeded in 2.5s
+
+C:\dev\ktsu-dev\BlastMerge>
+```
+
+---
+
+Excellent! All tests pass. Now the navigation should work correctly. Let me summarize what I've fixed:
+
+## Navigation Stack Back Action Fix
+
+### **Problem Identified:**
+The back menu text was correctly showing "🔙 Back to Main Menu", but when users selected that option, they weren't actually navigating back - they were stuck in a loop in the same menu.
+
+### **Root Cause:**
+Menu handlers weren't calling the `GoBack()` method when users selected the back option. They were just returning from the `Handle()` method, which left the current menu still on the navigation stack. The navigation system would then see the same menu at the top of the stack and route back to it, creating an infinite loop.
+
+### **Solution Applied:**
+Fixed all menu handlers to properly call `GoBack()` when the user selects "Back to Main Menu":
+
+1. **CompareFilesMenuHandler**: Fixed `CompareChoice.BackToMainMenu` case
+2. **SettingsMenuHandler**: Fixed `SettingsChoice.BackToMainMenu` case  
+3. **HelpMenuHandler**: Fixed `HelpChoice.BackToMainMenu` case
+4. **BatchOperationsMenuHandler**: Fixed `BatchOperationChoice.BackToMainMenu` case
+
+### **How GoBack() Works:**
+```csharp
+protected static bool GoBack()
+{
+    NavigationHistory.Pop(); // Remove current menu from stack
+    return NavigationHistory.Count > 0;
+}
+```
+
+When `GoBack()` is called:
+1. It **pops** the current menu from the navigation stack
+2. The main loop then checks `NavigationHistory.ShouldGoToMainMenu()`
+3. If stack is empty or contains "Main Menu", it shows the main menu
+4. Otherwise, it calls `NavigateBasedOnStack()` which routes to the appropriate parent menu
+
+### **Result:**
+Now when users:
+1. Go to "Compare Files" menu
+2. Select "🔙 Back to Main Menu"  
+3. **They actually return to the main menu** ✅
+
+The navigation system now works as expected - users can properly navigate back through the menu hierarchy instead of getting stuck in loops!
+
+---
+
+_**User**_
+
+I think I want to display the full welcome when returning to the main menu every time
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+I understand! You want the full welcome screen to appear every time users return to the main menu, not just at the application start. This will make the navigation feel more consistent and remind users of the application context.
+
+Let me modify the main loop in `StartInteractiveMode()` to show the welcome screen each time we return to the main menu:
+
+---
+
+Read file: BlastMerge.ConsoleApp/ConsoleApplicationService.cs
+
+---
+
+Now I'll modify the main loop to show the welcome screen every time we return to the main menu:
+
+---
+
+
+
+---
+
+Perfect! Now let me build and test this change:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+C:\dev\ktsu-dev\BlastMerge>dotnet build
+
+  C:\dev\ktsu-dev\BlastMerge\BlastMerge.sln                                                              Restore (0.0s)
+                                                                                                                 (0.1s)
+Restore complete (0.7s)
+  BlastMerge.Core succeeded (0.5s) → BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll
+  BlastMerge.ConsoleApp succeeded (0.3s) → BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.BlastMerge.ConsoleApp.dll
+  BlastMerge.Test succeeded (0.3s) → BlastMerge.Test\bin\Debug\net9.0\ktsu.BlastMerge.Test.dll
+
+Build succeeded in 2.2s
+
+C:\dev\ktsu-dev\BlastMerge>
+```
+
+---
+
+Great! Let me run the tests to make sure this change doesn't break anything:
+
+---
+
+```bash
+dotnet test
+```
+
+```
+C:\dev\ktsu-dev\BlastMerge>dotnet test
+
+  C:\dev\ktsu-dev\BlastMerge\BlastMerge.sln                                                              Restore (0.0s)
+Restore complete (0.7s)
+  BlastMerge.Core succeeded (0.2s) → BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll
+  BlastMerge.ConsoleApp succeeded (0.1s) → BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.BlastMerge.ConsoleApp.dll
+  BlastMerge.Test succeeded (0.1s) → BlastMerge.Test\bin\Debug\net9.0\ktsu.BlastMerge.Test.dll
+  BlastMerge.Test test succeeded (1.1s)
+
+Test summary: total: 56, failed: 0, succeeded: 56, skipped: 0, duration: 0.8s
+Build succeeded in 2.7s
+
+C:\dev\ktsu-dev\BlastMerge>
+```
+
+---
+
+Perfect! All tests pass. Now let me also check what the welcome screen looks like by examining the MenuDisplayService:
+
+---
+
+<details>
+            <summary>Searched codebase "ShowWelcomeScreen MenuDisplayService" • **19** results</summary>
+        
+| File | Lines |
+|------|-------|
+| `BlastMerge.ConsoleApp/Services/MenuDisplayService.cs` | L1-68 |
+| `BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L493-543 |
+| `BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L608-658 |
+| `BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L444-493 |
+| `BlastMerge.ConsoleApp/Services/MenuHandlers/BaseMenuHandler.cs` | L62-103 |
+| `BlastMerge.ConsoleApp/Services/MenuHandlers/BaseMenuHandler.cs` | L1-62 |
+| `BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L246-314 |
+| `BlastMerge.ConsoleApp/Services/MenuHandlers/HelpMenuHandler.cs` | L1-69 |
+| `BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L1-51 |
+| `BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L98-149 |
+| `BlastMerge.ConsoleApp/Services/MenuHandlers/SettingsMenuHandler.cs` | L1-69 |
+| `BlastMerge.ConsoleApp/Services/Common/ComparisonOperationsService.cs` | L1-67 |
+| `BlastMerge.ConsoleApp/Services/Common/UIHelper.cs` | L1-57 |
+| `BlastMerge.ConsoleApp/ConsoleApplicationService.cs` | L543-608 |
+| `BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L102-188 |
+| `BlastMerge.ConsoleApp/Services/FileDisplayService.cs` | L58-111 |
+| `BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L1-49 |
+| `BlastMerge.ConsoleApp/Services/MenuHandlers/HelpMenuHandler.cs` | L69-133 |
+| `BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L755-782 |
+
+</details>
+
+---
+
+Perfect! Now I can see that the welcome screen contains a beautiful ASCII art "BlastMerge" title and a nice informational panel. This will provide a great visual experience every time users return to the main menu.
+
+## Summary
+
+I've successfully implemented the change you requested! Now the **full welcome screen will be displayed every time users return to the main menu**, not just at application startup.
+
+### **What the Welcome Screen Contains:**
+- **ASCII Art Title**: "BlastMerge" in large cyan letters using Figlet text
+- **Information Panel**: 
+  - "Cross-Repository File Synchronization Tool" 
+  - Description: "Efficiently merge and synchronize files across multiple repositories"
+  - Navigation tip: "Navigate using arrow keys, press Enter to select"
+  - Styled with rounded borders in blue
+
+### **When Users Will See It:**
+- ✅ **Application startup** (as before)
+- ✅ **Every time they return to main menu** from any sub-menu (NEW!)
+- ✅ **After completing operations** like compare files, settings, help, etc.
+- ✅ **When navigation errors occur** and users are returned to main menu
+
+### **User Experience Benefits:**
+1. **Consistent branding**: Users always see the BlastMerge identity
+2. **Clear context**: Reminds users what the application does 
+3. **Visual consistency**: Professional look with every navigation
+4. **Navigation cues**: Reinforces how to use the interface
+
+The navigation experience is now much more polished and consistent! Users will get the full welcome experience every time they navigate back to the main menu, making the application feel more cohesive and professional.
+
+---
+
+_**User**_
+
+the batch management menu says back to main menu instead if back to Batch Operations
+
+---
+
+_**Assistant**_
+
+
+
+---
+

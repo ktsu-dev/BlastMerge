@@ -72,5 +72,6 @@ public class FindFilesMenuHandler(ApplicationService applicationService) : BaseM
 			});
 
 		WaitForKeyPress();
+		GoBack();
 	}
 }
