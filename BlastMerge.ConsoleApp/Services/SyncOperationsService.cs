@@ -83,6 +83,17 @@ public static class SyncOperationsService
 			return;
 		}
 
+		(int syncedFiles, int syncedGroups) = PerformSyncOperation(groups);
+		ShowNewestVersionSyncResult(syncedFiles, syncedGroups);
+	}
+
+	/// <summary>
+	/// Performs the actual sync operation for all groups.
+	/// </summary>
+	/// <param name="groups">The file groups to sync.</param>
+	/// <returns>A tuple containing the number of synced files and groups.</returns>
+	private static (int syncedFiles, int syncedGroups) PerformSyncOperation(List<FileGroup> groups)
+	{
 		int syncedGroups = 0;
 		int syncedFiles = 0;
 
@@ -91,32 +102,70 @@ public static class SyncOperationsService
 			{
 				foreach (FileGroup group in groups)
 				{
-					string newestFile = GetNewestFile(group.FilePaths);
-
-					foreach (string file in group.FilePaths)
-					{
-						if (file != newestFile)
-						{
-							try
-							{
-								ctx.Status($"Syncing [yellow]{Path.GetFileName(file)}[/]...");
-								FileDiffer.SyncFile(newestFile, file);
-								syncedFiles++;
-							}
-							catch (IOException ex)
-							{
-								AnsiConsole.MarkupLine($"[red]Failed to sync {file}: {ex.Message}[/]");
-							}
-							catch (UnauthorizedAccessException ex)
-							{
-								AnsiConsole.MarkupLine($"[red]Access denied when syncing {file}: {ex.Message}[/]");
-							}
-						}
-					}
+					syncedFiles += SyncGroupToNewest(group, ctx);
 					syncedGroups++;
 				}
 			});
 
+		return (syncedFiles, syncedGroups);
+	}
+
+	/// <summary>
+	/// Syncs all files in a group to the newest file.
+	/// </summary>
+	/// <param name="group">The file group to sync.</param>
+	/// <param name="ctx">The status context for updates.</param>
+	/// <returns>The number of files successfully synced.</returns>
+	private static int SyncGroupToNewest(FileGroup group, StatusContext ctx)
+	{
+		string newestFile = GetNewestFile(group.FilePaths);
+		int syncedFiles = 0;
+
+		foreach (string file in group.FilePaths)
+		{
+			if (file != newestFile)
+			{
+				syncedFiles += TrySyncFile(newestFile, file, ctx);
+			}
+		}
+
+		return syncedFiles;
+	}
+
+	/// <summary>
+	/// Attempts to sync a single file with error handling.
+	/// </summary>
+	/// <param name="sourceFile">The source file to copy from.</param>
+	/// <param name="targetFile">The target file to sync.</param>
+	/// <param name="ctx">The status context for updates.</param>
+	/// <returns>1 if successful, 0 if failed.</returns>
+	private static int TrySyncFile(string sourceFile, string targetFile, StatusContext ctx)
+	{
+		try
+		{
+			ctx.Status($"Syncing [yellow]{Path.GetFileName(targetFile)}[/]...");
+			FileDiffer.SyncFile(sourceFile, targetFile);
+			return 1;
+		}
+		catch (IOException ex)
+		{
+			AnsiConsole.MarkupLine($"[red]Failed to sync {targetFile}: {ex.Message}[/]");
+			return 0;
+		}
+		catch (UnauthorizedAccessException ex)
+		{
+			AnsiConsole.MarkupLine($"[red]Access denied when syncing {targetFile}: {ex.Message}[/]");
+			return 0;
+		}
+	}
+
+	/// <summary>
+	/// Shows the result of the newest version sync operation.
+	/// </summary>
+	/// <param name="syncedFiles">Number of files synced.</param>
+	/// <param name="syncedGroups">Number of groups processed.</param>
+	private static void ShowNewestVersionSyncResult(int syncedFiles, int syncedGroups)
+	{
 		AnsiConsole.MarkupLine($"[green]Sync completed! {syncedFiles} files synchronized across {syncedGroups} groups.[/]");
 
 		AnsiConsole.WriteLine();
@@ -134,75 +183,118 @@ public static class SyncOperationsService
 
 		for (int i = 0; i < groups.Count; i++)
 		{
-			FileGroup group = groups[i];
+			syncedFiles += ProcessSingleGroup(groups[i], i + 1, groups.Count);
+		}
 
-			AnsiConsole.WriteLine();
-			AnsiConsole.MarkupLine($"[cyan]Group {i + 1} of {groups.Count}[/]");
-			AnsiConsole.WriteLine();
+		ShowSyncCompletionMessage(syncedFiles);
+	}
 
-			Table table = new Table()
-				.Border(TableBorder.Rounded)
-				.AddColumn("[bold]File[/]")
-				.AddColumn("[bold]Size[/]")
-				.AddColumn("[bold]Modified[/]");
+	/// <summary>
+	/// Processes a single file group for reference file selection and synchronization.
+	/// </summary>
+	/// <param name="group">The file group to process.</param>
+	/// <param name="groupNumber">The current group number.</param>
+	/// <param name="totalGroups">The total number of groups.</param>
+	/// <returns>The number of files synchronized in this group.</returns>
+	private static int ProcessSingleGroup(FileGroup group, int groupNumber, int totalGroups)
+	{
+		AnsiConsole.WriteLine();
+		AnsiConsole.MarkupLine($"[cyan]Group {groupNumber} of {totalGroups}[/]");
+		AnsiConsole.WriteLine();
 
-			foreach (string file in group.FilePaths)
+		Table table = CreateFileInfoTable(group.FilePaths);
+		AnsiConsole.Write(table);
+
+		string referenceFile = AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("[cyan]Choose the reference file to sync others to:[/]")
+				.AddChoices(group.FilePaths));
+
+		bool confirmGroup = AnsiConsole.Confirm($"[yellow]Sync all other files in this group to match {Path.GetFileName(referenceFile)}?[/]");
+
+		return confirmGroup ? SyncGroupToReference(group, referenceFile) : 0;
+	}
+
+	/// <summary>
+	/// Creates a table displaying file information for a group.
+	/// </summary>
+	/// <param name="filePaths">The file paths to display.</param>
+	/// <returns>A formatted table with file information.</returns>
+	private static Table CreateFileInfoTable(IReadOnlyCollection<string> filePaths)
+	{
+		Table table = new Table()
+			.Border(TableBorder.Rounded)
+			.AddColumn("[bold]File[/]")
+			.AddColumn("[bold]Size[/]")
+			.AddColumn("[bold]Modified[/]");
+
+		foreach (string file in filePaths)
+		{
+			try
 			{
-				try
-				{
-					FileInfo fileInfo = new(file);
-					table.AddRow(
-						$"[green]{file}[/]",
-						$"[dim]{fileInfo.Length:N0} bytes[/]",
-						$"[dim]{fileInfo.LastWriteTime:yyyy-MM-dd HH:mm:ss}[/]");
-				}
-				catch (IOException)
-				{
-					table.AddRow(
-						$"[red]{file}[/]",
-						"[red]Error[/]",
-						"[red]Error[/]");
-				}
+				FileInfo fileInfo = new(file);
+				table.AddRow(
+					$"[green]{file}[/]",
+					$"[dim]{fileInfo.Length:N0} bytes[/]",
+					$"[dim]{fileInfo.LastWriteTime:yyyy-MM-dd HH:mm:ss}[/]");
 			}
-
-			AnsiConsole.Write(table);
-
-			string referenceFile = AnsiConsole.Prompt(
-				new SelectionPrompt<string>()
-					.Title("[cyan]Choose the reference file to sync others to:[/]")
-					.AddChoices(group.FilePaths));
-
-			bool confirmGroup = AnsiConsole.Confirm($"[yellow]Sync all other files in this group to match {Path.GetFileName(referenceFile)}?[/]");
-
-			if (confirmGroup)
+			catch (IOException)
 			{
-				foreach (string file in group.FilePaths)
-				{
-					if (file != referenceFile)
-					{
-						try
-						{
-							FileDiffer.SyncFile(referenceFile, file);
-							syncedFiles++;
-							AnsiConsole.MarkupLine($"[green]✓ Synced {Path.GetFileName(file)}[/]");
-						}
-						catch (IOException ex)
-						{
-							AnsiConsole.MarkupLine($"[red]✗ Failed to sync {Path.GetFileName(file)}: {ex.Message}[/]");
-						}
-						catch (UnauthorizedAccessException ex)
-						{
-							AnsiConsole.MarkupLine($"[red]✗ Access denied when syncing {Path.GetFileName(file)}: {ex.Message}[/]");
-						}
-					}
-				}
-			}
-			else
-			{
-				AnsiConsole.MarkupLine("[yellow]Skipped this group.[/]");
+				table.AddRow(
+					$"[red]{file}[/]",
+					"[red]Error[/]",
+					"[red]Error[/]");
 			}
 		}
 
+		return table;
+	}
+
+	/// <summary>
+	/// Synchronizes all files in a group to match the reference file.
+	/// </summary>
+	/// <param name="group">The file group to synchronize.</param>
+	/// <param name="referenceFile">The reference file to sync to.</param>
+	/// <returns>The number of files successfully synchronized.</returns>
+	private static int SyncGroupToReference(FileGroup group, string referenceFile)
+	{
+		int syncedFiles = 0;
+
+		foreach (string file in group.FilePaths)
+		{
+			if (file != referenceFile)
+			{
+				try
+				{
+					FileDiffer.SyncFile(referenceFile, file);
+					syncedFiles++;
+					AnsiConsole.MarkupLine($"[green]✓ Synced {Path.GetFileName(file)}[/]");
+				}
+				catch (IOException ex)
+				{
+					AnsiConsole.MarkupLine($"[red]✗ Failed to sync {Path.GetFileName(file)}: {ex.Message}[/]");
+				}
+				catch (UnauthorizedAccessException ex)
+				{
+					AnsiConsole.MarkupLine($"[red]✗ Access denied when syncing {Path.GetFileName(file)}: {ex.Message}[/]");
+				}
+			}
+		}
+
+		if (syncedFiles == 0)
+		{
+			AnsiConsole.MarkupLine("[yellow]Skipped this group.[/]");
+		}
+
+		return syncedFiles;
+	}
+
+	/// <summary>
+	/// Shows the completion message after synchronization.
+	/// </summary>
+	/// <param name="syncedFiles">The total number of files synchronized.</param>
+	private static void ShowSyncCompletionMessage(int syncedFiles)
+	{
 		AnsiConsole.WriteLine();
 		AnsiConsole.MarkupLine($"[green]Sync completed! {syncedFiles} files synchronized.[/]");
 
@@ -235,7 +327,6 @@ public static class SyncOperationsService
 			catch (IOException)
 			{
 				// If we can't get the file time, skip this file
-				continue;
 			}
 		}
 

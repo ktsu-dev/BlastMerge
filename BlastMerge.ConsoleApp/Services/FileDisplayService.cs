@@ -105,12 +105,12 @@ public static class FileDisplayService
 				string diffFormat = AnsiConsole.Prompt(
 					new SelectionPrompt<string>()
 						.Title("[cyan]Choose diff format:[/]")
-						.AddChoices([
+						.AddChoices(
 							"📊 Change Summary (Added/Removed lines only)",
 							"🔧 Git-style Diff (Full context)",
 							"🎨 Side-by-Side Diff (Rich formatting)",
 							"⏭️ Skip this group"
-						]));
+						));
 
 				if (diffFormat.Contains("📊"))
 				{
@@ -306,7 +306,7 @@ public static class FileDisplayService
 	/// </summary>
 	/// <param name="filePath">The file path.</param>
 	/// <returns>The relative directory name.</returns>
-	private static string GetRelativeDirectoryName(string filePath)
+	public static string GetRelativeDirectoryName(string filePath)
 	{
 		try
 		{

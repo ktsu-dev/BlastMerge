@@ -51,84 +51,137 @@ public static class InteractiveMergeService
 	private static void PerformGroupMerge(FileGroup group)
 	{
 		List<string> remainingFiles = [.. group.FilePaths];
-
 		AnsiConsole.MarkupLine($"[cyan]Starting iterative merge for {remainingFiles.Count} files...[/]");
 
 		while (remainingFiles.Count > 1)
 		{
-			// Find the two most similar files
-			FileSimilarity? mostSimilar = FindMostSimilarInGroup(remainingFiles);
-
-			if (mostSimilar == null)
+			if (!ProcessSingleMergeStep(remainingFiles))
 			{
-				AnsiConsole.MarkupLine("[red]Could not find similar files to merge.[/]");
-				break;
-			}
-
-			AnsiConsole.WriteLine();
-			AnsiConsole.MarkupLine($"[yellow]Merging most similar files ({mostSimilar.SimilarityScore:P1} similar):[/]");
-			AnsiConsole.MarkupLine($"  [green]{mostSimilar.FilePath1}[/]");
-			AnsiConsole.MarkupLine($"  [green]{mostSimilar.FilePath2}[/]");
-
-			// Perform the merge
-			MergeResult mergeResult = FileDiffer.MergeFiles(mostSimilar.FilePath1, mostSimilar.FilePath2);
-
-			if (mergeResult.Conflicts.Count > 0)
-			{
-				AnsiConsole.MarkupLine("[yellow]Merge has conflicts. Displaying merge with conflict markers...[/]");
-				ShowMergePreview(mergeResult);
-
-				bool acceptMerge = AnsiConsole.Confirm("[yellow]Accept this merge (with conflict markers)?[/]");
-
-				if (!acceptMerge)
-				{
-					AnsiConsole.MarkupLine("[yellow]Merge cancelled. Skipping this group.[/]");
-					return;
-				}
-			}
-			else
-			{
-				AnsiConsole.MarkupLine("[green]Clean merge - no conflicts detected![/]");
-			}
-
-			// Save the merged result to the first file
-			try
-			{
-				string mergedContent = string.Join('\n', mergeResult.MergedLines);
-				File.WriteAllText(mostSimilar.FilePath1, mergedContent);
-
-				// Replace content in all files that had the same content as file2
-				string file2Content = File.ReadAllText(mostSimilar.FilePath2);
-				foreach (string file in remainingFiles)
-				{
-					if (file != mostSimilar.FilePath1 && File.ReadAllText(file) == file2Content)
-					{
-						File.WriteAllText(file, mergedContent);
-					}
-				}
-
-				// Remove the second file from our list
-				remainingFiles.Remove(mostSimilar.FilePath2);
-
-				AnsiConsole.MarkupLine($"[green]Merged successfully! Versions reduced by 1. ({remainingFiles.Count} remaining)[/]");
-
-				if (remainingFiles.Count > 1)
-				{
-					AnsiConsole.MarkupLine("[dim]Continuing to next merge step...[/]");
-				}
-			}
-			catch (IOException ex)
-			{
-				AnsiConsole.MarkupLine($"[red]Failed to save merge result: {ex.Message}[/]");
-				break;
-			}
-			catch (UnauthorizedAccessException ex)
-			{
-				AnsiConsole.MarkupLine($"[red]Access denied when saving merge result: {ex.Message}[/]");
 				break;
 			}
 		}
 
+		ShowFinalResult(remainingFiles);
+	}
+
+	/// <summary>
+	/// Processes a single merge step between the most similar files.
+	/// </summary>
+	/// <param name="remainingFiles">List of remaining files to merge.</param>
+	/// <returns>True if merge step was successful, false if should stop.</returns>
+	private static bool ProcessSingleMergeStep(List<string> remainingFiles)
+	{
+		FileSimilarity? mostSimilar = FindMostSimilarInGroup(remainingFiles);
+		if (mostSimilar == null)
+		{
+			AnsiConsole.MarkupLine("[red]Could not find similar files to merge.[/]");
+			return false;
+		}
+
+		ShowMergeInfo(mostSimilar);
+		MergeResult mergeResult = FileDiffer.MergeFiles(mostSimilar.FilePath1, mostSimilar.FilePath2);
+
+		return HandleMergeConflicts(mergeResult) && ApplyMergeResult(mergeResult, mostSimilar, remainingFiles);
+	}
+
+	/// <summary>
+	/// Shows information about the files being merged.
+	/// </summary>
+	/// <param name="similarity">The file similarity information.</param>
+	private static void ShowMergeInfo(FileSimilarity similarity)
+	{
+		AnsiConsole.WriteLine();
+		AnsiConsole.MarkupLine($"[yellow]Merging most similar files ({similarity.SimilarityScore:P1} similar):[/]");
+		AnsiConsole.MarkupLine($"  [green]{similarity.FilePath1}[/]");
+		AnsiConsole.MarkupLine($"  [green]{similarity.FilePath2}[/]");
+	}
+
+	/// <summary>
+	/// Handles merge conflicts by showing preview and getting user confirmation.
+	/// </summary>
+	/// <param name="mergeResult">The merge result to handle.</param>
+	/// <returns>True if user accepts merge, false otherwise.</returns>
+	private static bool HandleMergeConflicts(MergeResult mergeResult)
+	{
+		if (mergeResult.Conflicts.Count == 0)
+		{
+			AnsiConsole.MarkupLine("[green]Clean merge - no conflicts detected![/]");
+			return true;
+		}
+
+		AnsiConsole.MarkupLine("[yellow]Merge has conflicts. Displaying merge with conflict markers...[/]");
+		ShowMergePreview(mergeResult);
+
+		if (!AnsiConsole.Confirm("[yellow]Accept this merge (with conflict markers)?[/]"))
+		{
+			AnsiConsole.MarkupLine("[yellow]Merge cancelled. Skipping this group.[/]");
+			return false;
+		}
+
+		return true;
+	}
+
+	/// <summary>
+	/// Applies the merge result by saving files and updating the remaining files list.
+	/// </summary>
+	/// <param name="mergeResult">The merge result to apply.</param>
+	/// <param name="similarity">The file similarity information.</param>
+	/// <param name="remainingFiles">List of remaining files to update.</param>
+	/// <returns>True if application was successful, false otherwise.</returns>
+	private static bool ApplyMergeResult(MergeResult mergeResult, FileSimilarity similarity, List<string> remainingFiles)
+	{
+		try
+		{
+			string mergedContent = string.Join('\n', mergeResult.MergedLines);
+			File.WriteAllText(similarity.FilePath1, mergedContent);
+
+			UpdateMatchingFiles(remainingFiles, similarity, mergedContent);
+			remainingFiles.Remove(similarity.FilePath2);
+
+			AnsiConsole.MarkupLine($"[green]Merged successfully! Versions reduced by 1. ({remainingFiles.Count} remaining)[/]");
+			if (remainingFiles.Count > 1)
+			{
+				AnsiConsole.MarkupLine("[dim]Continuing to next merge step...[/]");
+			}
+
+			return true;
+		}
+		catch (IOException ex)
+		{
+			AnsiConsole.MarkupLine($"[red]Failed to save merge result: {ex.Message}[/]");
+			return false;
+		}
+		catch (UnauthorizedAccessException ex)
+		{
+			AnsiConsole.MarkupLine($"[red]Access denied when saving merge result: {ex.Message}[/]");
+			return false;
+		}
+	}
+
+	/// <summary>
+	/// Updates all files that have the same content as the second file.
+	/// </summary>
+	/// <param name="remainingFiles">List of remaining files.</param>
+	/// <param name="similarity">The file similarity information.</param>
+	/// <param name="mergedContent">The merged content to write.</param>
+	private static void UpdateMatchingFiles(List<string> remainingFiles, FileSimilarity similarity, string mergedContent)
+	{
+		string file2Content = File.ReadAllText(similarity.FilePath2);
+		foreach (string file in remainingFiles)
+		{
+			if (file != similarity.FilePath1 && File.ReadAllText(file) == file2Content)
+			{
+				File.WriteAllText(file, mergedContent);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Shows the final result of the merge process.
+	/// </summary>
+	/// <param name="remainingFiles">List of remaining files.</param>
+	private static void ShowFinalResult(List<string> remainingFiles)
+	{
 		if (remainingFiles.Count == 1)
 		{
 			AnsiConsole.MarkupLine("[green]Final merged result is saved in the remaining file.[/]");
@@ -171,7 +224,6 @@ public static class InteractiveMergeService
 				catch (IOException)
 				{
 					// Skip files that can't be read
-					continue;
 				}
 			}
 		}
@@ -220,7 +272,7 @@ public static class InteractiveMergeService
 				break;
 			}
 
-			string formattedLine = line;
+			string formattedLine;
 
 			// Highlight conflict markers
 			if (line.StartsWith("<<<<<<<"))

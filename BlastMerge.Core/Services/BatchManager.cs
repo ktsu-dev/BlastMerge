@@ -39,17 +39,7 @@ public static class BatchManager
 		}
 		catch (Exception ex) when (ex is System.Security.SecurityException or PlatformNotSupportedException)
 		{
-			// Fall through to temp directory
-		}
-
-		try
-		{
-			string tempPath = Path.GetTempPath();
-			return Path.Combine(tempPath, "BlastMerge", "Batches");
-		}
-		catch (Exception ex) when (ex is System.Security.SecurityException or PlatformNotSupportedException)
-		{
-			// Final fallback - use current directory
+			// Fall through
 		}
 
 		return Path.Combine(".", "blastmerge_batches");

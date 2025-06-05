@@ -512,114 +512,178 @@ public static class FileDiffer
 		ArgumentNullException.ThrowIfNull(lines1);
 		ArgumentNullException.ThrowIfNull(lines2);
 
-		// Create temporary files to use DiffPlex
 		string tempFile1 = Path.GetTempFileName();
 		string tempFile2 = Path.GetTempFileName();
 
 		try
 		{
-			File.WriteAllLines(tempFile1, lines1);
-			File.WriteAllLines(tempFile2, lines2);
-
-			IReadOnlyCollection<LineDifference> differences = DiffPlexDiffer.FindDifferences(tempFile1, tempFile2);
-			List<string> mergedLines = [];
-			List<MergeConflict> conflicts = [];
-
-			int line1Index = 0;
-			int line2Index = 0;
-
-			foreach (LineDifference diff in differences)
-			{
-				// Add unchanged lines before this difference
-				while (line1Index < diff.LineNumber1 - 1 && line2Index < diff.LineNumber2 - 1)
-				{
-					mergedLines.Add(lines1[line1Index]);
-					line1Index++;
-					line2Index++;
-				}
-
-				// Handle the difference
-				if (diff.LineNumber1 > 0 && diff.LineNumber2 > 0)
-				{
-					// Both files have content at this line - this is a conflict
-					conflicts.Add(new MergeConflict(mergedLines.Count + 1, diff.Content1, diff.Content2, null, false));
-
-					// For now, add a conflict marker
-					mergedLines.Add(ConflictMarkerStart);
-					mergedLines.Add(diff.Content1 ?? "");
-					mergedLines.Add(ConflictMarkerSeparator);
-					mergedLines.Add(diff.Content2 ?? "");
-					mergedLines.Add(ConflictMarkerEnd);
-				}
-				else if (diff.LineNumber1 > 0)
-				{
-					// Line only in first file - treat as deletion, add a conflict
-					conflicts.Add(new MergeConflict(mergedLines.Count + 1, diff.Content1, null, null, false));
-
-					// Add conflict marker for deletion
-					mergedLines.Add(ConflictMarkerDeleted);
-					mergedLines.Add(diff.Content1 ?? "");
-					mergedLines.Add(ConflictMarkerSeparator);
-					mergedLines.Add(ConflictMarkerDeletedEnd);
-				}
-				else if (diff.LineNumber2 > 0)
-				{
-					// Line only in second file - treat as addition, add a conflict
-					conflicts.Add(new MergeConflict(mergedLines.Count + 1, null, diff.Content2, null, false));
-
-					// Add conflict marker for addition
-					mergedLines.Add(ConflictMarkerAdded);
-					mergedLines.Add(ConflictMarkerSeparator);
-					mergedLines.Add(diff.Content2 ?? "");
-					mergedLines.Add(ConflictMarkerAddedEnd);
-				}
-
-				// Update indices based on difference type
-				if (diff.LineNumber1.HasValue && diff.LineNumber1 > 0)
-				{
-					line1Index = diff.LineNumber1.Value;
-				}
-
-				if (diff.LineNumber2.HasValue && diff.LineNumber2 > 0)
-				{
-					line2Index = diff.LineNumber2.Value;
-				}
-			}
-
-			// Add any remaining unchanged lines
-			while (line1Index < lines1.Length && line2Index < lines2.Length)
-			{
-				mergedLines.Add(lines1[line1Index]);
-				line1Index++;
-				line2Index++;
-			}
-
-			// Add remaining lines from either file
-			while (line1Index < lines1.Length)
-			{
-				mergedLines.Add(lines1[line1Index]);
-				line1Index++;
-			}
-
-			while (line2Index < lines2.Length)
-			{
-				mergedLines.Add(lines2[line2Index]);
-				line2Index++;
-			}
-
-			return new MergeResult(mergedLines.AsReadOnly(), conflicts.AsReadOnly());
+			return PerformMergeWithTempFiles(lines1, lines2, tempFile1, tempFile2);
 		}
 		finally
 		{
-			// Clean up temporary files
-			if (File.Exists(tempFile1))
-			{
-				File.Delete(tempFile1);
-			}
-			if (File.Exists(tempFile2))
-			{
-				File.Delete(tempFile2);
-			}
+			CleanupTempFiles(tempFile1, tempFile2);
+		}
+	}
+
+	/// <summary>
+	/// Performs the actual merge operation using temporary files
+	/// </summary>
+	private static MergeResult PerformMergeWithTempFiles(string[] lines1, string[] lines2, string tempFile1, string tempFile2)
+	{
+		File.WriteAllLines(tempFile1, lines1);
+		File.WriteAllLines(tempFile2, lines2);
+
+		IReadOnlyCollection<LineDifference> differences = DiffPlexDiffer.FindDifferences(tempFile1, tempFile2);
+		List<string> mergedLines = [];
+		List<MergeConflict> conflicts = [];
+
+		return ProcessDifferences(differences, lines1, lines2, mergedLines, conflicts);
+	}
+
+	/// <summary>
+	/// Processes all differences and builds the merged result
+	/// </summary>
+	private static MergeResult ProcessDifferences(IReadOnlyCollection<LineDifference> differences, string[] lines1, string[] lines2, List<string> mergedLines, List<MergeConflict> conflicts)
+	{
+		int line1Index = 0;
+		int line2Index = 0;
+
+		foreach (LineDifference diff in differences)
+		{
+			AddUnchangedLinesBeforeDifference(lines1, mergedLines, ref line1Index, ref line2Index, diff);
+			ProcessSingleDifference(diff, mergedLines, conflicts, ref line1Index, ref line2Index);
+		}
+
+		AddRemainingLines(lines1, lines2, mergedLines, line1Index, line2Index);
+		return new MergeResult(mergedLines.AsReadOnly(), conflicts.AsReadOnly());
+	}
+
+	/// <summary>
+	/// Adds unchanged lines before processing a difference
+	/// </summary>
+	private static void AddUnchangedLinesBeforeDifference(string[] lines1, List<string> mergedLines, ref int line1Index, ref int line2Index, LineDifference diff)
+	{
+		while (line1Index < diff.LineNumber1 - 1 && line2Index < diff.LineNumber2 - 1)
+		{
+			mergedLines.Add(lines1[line1Index]);
+			line1Index++;
+			line2Index++;
+		}
+	}
+
+	/// <summary>
+	/// Processes a single difference and updates merge state
+	/// </summary>
+	private static void ProcessSingleDifference(LineDifference diff, List<string> mergedLines, List<MergeConflict> conflicts, ref int line1Index, ref int line2Index)
+	{
+		if (diff.LineNumber1 > 0 && diff.LineNumber2 > 0)
+		{
+			HandleBothFilesConflict(diff, mergedLines, conflicts);
+		}
+		else if (diff.LineNumber1 > 0)
+		{
+			HandleDeletionConflict(diff, mergedLines, conflicts);
+		}
+		else if (diff.LineNumber2 > 0)
+		{
+			HandleAdditionConflict(diff, mergedLines, conflicts);
+		}
+
+		UpdateLineIndices(diff, ref line1Index, ref line2Index);
+	}
+
+	/// <summary>
+	/// Handles conflicts where both files have different content
+	/// </summary>
+	private static void HandleBothFilesConflict(LineDifference diff, List<string> mergedLines, List<MergeConflict> conflicts)
+	{
+		conflicts.Add(new MergeConflict(mergedLines.Count + 1, diff.Content1, diff.Content2, null, false));
+		mergedLines.Add(ConflictMarkerStart);
+		mergedLines.Add(diff.Content1 ?? "");
+		mergedLines.Add(ConflictMarkerSeparator);
+		mergedLines.Add(diff.Content2 ?? "");
+		mergedLines.Add(ConflictMarkerEnd);
+	}
+
+	/// <summary>
+	/// Handles conflicts for deleted lines
+	/// </summary>
+	private static void HandleDeletionConflict(LineDifference diff, List<string> mergedLines, List<MergeConflict> conflicts)
+	{
+		conflicts.Add(new MergeConflict(mergedLines.Count + 1, diff.Content1, null, null, false));
+		mergedLines.Add(ConflictMarkerDeleted);
+		mergedLines.Add(diff.Content1 ?? "");
+		mergedLines.Add(ConflictMarkerSeparator);
+		mergedLines.Add(ConflictMarkerDeletedEnd);
+	}
+
+	/// <summary>
+	/// Handles conflicts for added lines
+	/// </summary>
+	private static void HandleAdditionConflict(LineDifference diff, List<string> mergedLines, List<MergeConflict> conflicts)
+	{
+		conflicts.Add(new MergeConflict(mergedLines.Count + 1, null, diff.Content2, null, false));
+		mergedLines.Add(ConflictMarkerAdded);
+		mergedLines.Add(ConflictMarkerSeparator);
+		mergedLines.Add(diff.Content2 ?? "");
+		mergedLines.Add(ConflictMarkerAddedEnd);
+	}
+
+	/// <summary>
+	/// Updates line indices based on difference type
+	/// </summary>
+	private static void UpdateLineIndices(LineDifference diff, ref int line1Index, ref int line2Index)
+	{
+		if (diff.LineNumber1.HasValue && diff.LineNumber1 > 0)
+		{
+			line1Index = diff.LineNumber1.Value;
+		}
+
+		if (diff.LineNumber2.HasValue && diff.LineNumber2 > 0)
+		{
+			line2Index = diff.LineNumber2.Value;
+		}
+	}
+
+	/// <summary>
+	/// Adds any remaining lines from both files
+	/// </summary>
+	private static void AddRemainingLines(string[] lines1, string[] lines2, List<string> mergedLines, int line1Index, int line2Index)
+	{
+		// Add any remaining unchanged lines
+		while (line1Index < lines1.Length && line2Index < lines2.Length)
+		{
+			mergedLines.Add(lines1[line1Index]);
+			line1Index++;
+			line2Index++;
+		}
+
+		// Add remaining lines from either file
+		while (line1Index < lines1.Length)
+		{
+			mergedLines.Add(lines1[line1Index]);
+			line1Index++;
+		}
+
+		while (line2Index < lines2.Length)
+		{
+			mergedLines.Add(lines2[line2Index]);
+			line2Index++;
+		}
+	}
+
+	/// <summary>
+	/// Cleans up temporary files
+	/// </summary>
+	private static void CleanupTempFiles(string tempFile1, string tempFile2)
+	{
+		if (File.Exists(tempFile1))
+		{
+			File.Delete(tempFile1);
+		}
+		if (File.Exists(tempFile2))
+		{
+			File.Delete(tempFile2);
 		}
 	}
 }
