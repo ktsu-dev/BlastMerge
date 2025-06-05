@@ -26,11 +26,102 @@ public static class FileDiffer
 	private const string ConflictMarkerAdded = "<<<<<<< Version 1 (not present)";
 	private const string ConflictMarkerAddedEnd = ">>>>>>> Version 2 (added)";
 	/// <summary>
-	/// Groups files by their hash to identify unique versions
+	/// Groups files by their hash to identify unique versions.
+	///
+	/// IMPORTANT: This method has been updated to prevent files with different names from being
+	/// compared/merged together when using glob patterns. Previously, a glob pattern like "*.config"
+	/// could match files such as "app.config", "web.config", and "database.config", and the system
+	/// would attempt to merge these unrelated files if they had different content hashes.
+	///
+	/// The fix ensures that files are first grouped by filename (basename without path), then by
+	/// content hash within each filename group. This prevents unrelated files that happen to match
+	/// the same glob pattern from being incorrectly grouped for comparison or merging.
+	///
+	/// Example:
+	/// - Before fix: *.config might group app.config, web.config, database.config together for merging
+	/// - After fix: Only files with identical names (e.g., multiple app.config files) are considered for merging
 	/// </summary>
 	/// <param name="filePaths">List of file paths to group</param>
 	/// <returns>A collection of file groups where each group contains identical files</returns>
 	public static IReadOnlyCollection<FileGroup> GroupFilesByHash(IReadOnlyCollection<string> filePaths)
+	{
+		ArgumentNullException.ThrowIfNull(filePaths);
+
+		// Use the safer grouping method that considers both filename and content
+		return GroupFilesByFilenameAndHash(filePaths);
+	}
+
+	/// <summary>
+	/// Groups files by their filename (without path) first, then by content hash within each filename group.
+	/// This prevents files with different names from being compared/merged together.
+	/// </summary>
+	/// <param name="filePaths">List of file paths to group</param>
+	/// <returns>A collection of file groups where each group contains files with the same name and identical content</returns>
+	public static IReadOnlyCollection<FileGroup> GroupFilesByFilenameAndHash(IReadOnlyCollection<string> filePaths)
+	{
+		ArgumentNullException.ThrowIfNull(filePaths);
+
+		// First group by filename (basename without path)
+		Dictionary<string, List<string>> filenameGroups = [];
+
+		foreach (string filePath in filePaths)
+		{
+			string filename = Path.GetFileName(filePath);
+
+			if (!filenameGroups.TryGetValue(filename, out List<string>? pathsWithSameName))
+			{
+				pathsWithSameName = [];
+				filenameGroups[filename] = pathsWithSameName;
+			}
+
+			pathsWithSameName.Add(filePath);
+		}
+
+		// Then group by content hash within each filename group
+		List<FileGroup> allGroups = [];
+
+		foreach (KeyValuePair<string, List<string>> filenameGroup in filenameGroups)
+		{
+			if (filenameGroup.Value.Count == 1)
+			{
+				// Single file with this name - create a group for it
+				string hash = FileHasher.ComputeFileHash(filenameGroup.Value[0]);
+				FileGroup group = new() { Hash = hash };
+				group.AddFilePath(filenameGroup.Value[0]);
+				allGroups.Add(group);
+			}
+			else
+			{
+				// Multiple files with same name - group by content hash
+				Dictionary<string, FileGroup> hashGroups = [];
+
+				foreach (string filePath in filenameGroup.Value)
+				{
+					string hash = FileHasher.ComputeFileHash(filePath);
+
+					if (!hashGroups.TryGetValue(hash, out FileGroup? group))
+					{
+						group = new FileGroup { Hash = hash };
+						hashGroups[hash] = group;
+					}
+
+					group.AddFilePath(filePath);
+				}
+
+				allGroups.AddRange(hashGroups.Values);
+			}
+		}
+
+		return allGroups.AsReadOnly();
+	}
+
+	/// <summary>
+	/// Groups files by content hash only (legacy behavior - may group files with different names).
+	/// Use GroupFilesByFilenameAndHash for safer grouping that prevents unrelated files from being merged.
+	/// </summary>
+	/// <param name="filePaths">List of file paths to group</param>
+	/// <returns>A collection of file groups where each group contains identical files (regardless of filename)</returns>
+	public static IReadOnlyCollection<FileGroup> GroupFilesByHashOnly(IReadOnlyCollection<string> filePaths)
 	{
 		ArgumentNullException.ThrowIfNull(filePaths);
 

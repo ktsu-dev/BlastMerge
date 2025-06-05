@@ -186,6 +186,100 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 	}
 
 	/// <summary>
+	/// Groups files by their filename (without path) first, then by content hash within each filename group.
+	/// This prevents files with different names from being compared/merged together.
+	/// </summary>
+	/// <param name="filePaths">List of file paths to group</param>
+	/// <returns>A collection of file groups where each group contains files with the same name and identical content</returns>
+	public IReadOnlyCollection<FileGroup> GroupFilesByFilenameAndHash(IReadOnlyCollection<string> filePaths)
+	{
+		ArgumentNullException.ThrowIfNull(filePaths);
+
+		// First group by filename (basename without path)
+		Dictionary<string, List<string>> filenameGroups = [];
+
+		foreach (string filePath in filePaths)
+		{
+			string filename = _fileSystem.Path.GetFileName(filePath);
+
+			if (!filenameGroups.TryGetValue(filename, out List<string>? pathsWithSameName))
+			{
+				pathsWithSameName = [];
+				filenameGroups[filename] = pathsWithSameName;
+			}
+
+			pathsWithSameName.Add(filePath);
+		}
+
+		// Then group by content hash within each filename group
+		List<FileGroup> allGroups = [];
+		FileHasherAdapter fileHasher = new(_fileSystem);
+
+		foreach (KeyValuePair<string, List<string>> filenameGroup in filenameGroups)
+		{
+			if (filenameGroup.Value.Count == 1)
+			{
+				// Single file with this name - create a group for it
+				string hash = fileHasher.ComputeFileHash(filenameGroup.Value[0]);
+				FileGroup group = new() { Hash = hash };
+				group.AddFilePath(filenameGroup.Value[0]);
+				allGroups.Add(group);
+			}
+			else
+			{
+				// Multiple files with same name - group by content hash
+				Dictionary<string, FileGroup> hashGroups = [];
+
+				foreach (string filePath in filenameGroup.Value)
+				{
+					string hash = fileHasher.ComputeFileHash(filePath);
+
+					if (!hashGroups.TryGetValue(hash, out FileGroup? group))
+					{
+						group = new FileGroup { Hash = hash };
+						hashGroups[hash] = group;
+					}
+
+					group.AddFilePath(filePath);
+				}
+
+				allGroups.AddRange(hashGroups.Values);
+			}
+		}
+
+		return allGroups.AsReadOnly();
+	}
+
+	/// <summary>
+	/// Groups files by content hash only (legacy behavior - may group files with different names).
+	/// Use GroupFilesByFilenameAndHash for safer grouping that prevents unrelated files from being merged.
+	/// </summary>
+	/// <param name="filePaths">List of file paths to group</param>
+	/// <returns>A collection of file groups where each group contains identical files (regardless of filename)</returns>
+	public IReadOnlyCollection<FileGroup> GroupFilesByHashOnly(IReadOnlyCollection<string> filePaths)
+	{
+		ArgumentNullException.ThrowIfNull(filePaths);
+
+		Dictionary<string, FileGroup> groups = [];
+		FileHasherAdapter fileHasher = new(_fileSystem);
+
+		foreach (string filePath in filePaths)
+		{
+			string hash = fileHasher.ComputeFileHash(filePath);
+
+			if (!groups.TryGetValue(hash, out FileGroup? group))
+			{
+				group = new FileGroup { Hash = hash };
+				groups[hash] = group;
+			}
+
+			group.AddFilePath(filePath);
+		}
+
+		return [.. groups.Values];
+	}
+
+	/// <summary>
 	/// Internal implementation of FindDifferences that works with string arrays
 	/// </summary>
 	/// <param name="lines1">Lines from the first file</param>

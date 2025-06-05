@@ -136,6 +136,7 @@ globs: *
 -   Whitespace characters must be visualized in diffs, including spaces (·), tabs (→), returns (↵), and newlines (¶).
 -   Trailing whitespace should be highlighted with a red background.
 -   A legend explaining the whitespace symbols should be displayed.
+-   When using glob patterns, ensure that files of different names are not compared with each other.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -363,5 +364,4 @@ globs: *
 -   A PowerShell script (`scripts/update-winget-manifests.ps1`) should be created to automate the winget submission process.
 -   A comprehensive README (`winget/README.md`) should be created for the winget distribution setup.
 -   A quick-start guide (`docs/winget-quick-start.md`) should be created for the entire winget distribution process.
--   The `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` should have only one `dotnet publish` step, consolidating the previous separate steps for general application and winget package publishing.
--   The executable name in the wing
+-   The `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` should have only one `dotnet publish` step, consolidating the
