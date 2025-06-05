@@ -1,6 +1,8 @@
-## v1.0.19
+## v1.0.20 (patch)
 
 Changes since v1.0.19:
+
+- Refactor variable declarations to use explicit types in multiple files ([@matt-edmondson](https://github.com/matt-edmondson))
 ## v1.0.19 (patch)
 
 Changes since v1.0.18:
