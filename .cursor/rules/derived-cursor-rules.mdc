@@ -119,6 +119,7 @@ globs: *
 -   Centralize error handling patterns to avoid repeated exception handling code.
 -   Consolidate file validation patterns (e.g., file/directory existence checks) into reusable methods.
 -   'Path.GetTempFileName()' is insecure. Use 'Path.GetRandomFileName()' instead. but also address collision potential.
+-   Replace `Path.GetTempFileName()` with `SecureTempFileHelper.CreateTempFile()` to enhance security and handle potential file collisions. Use `SecureTempFileHelper.SafeDeleteTempFiles()` for cleanup.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -159,6 +160,7 @@ globs: *
 -   When creating `DiffBlock` instances, ensure the `BlockType` parameter is correctly specified.
 -   When using records with init-only properties, create new instances with the correct values instead of modifying the property after creation.
 -   Add constants for merge conflict markers: `ConflictMarkerStart`, `ConflictMarkerSeparator`, `ConflictMarkerEnd`, `ConflictMarkerDeleted`, `ConflictMarkerDeletedEnd`, `ConflictMarkerAdded`, `ConflictMarkerAddedEnd`.
+-   Enhance the side-by-side diff implementation to include line numbers, dynamic file headers, detailed statistics, and a color-coded legend for improved readability.
 
 ## DEBUGGING
 
@@ -252,6 +254,7 @@ globs: *
 -   Ensure that the `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` has only one `dotnet publish` step, consolidating the previous separate steps for general application and winget package publishing.
 -   The build script `PSBuild.psm1` must respect the "should release" flag and not push files to package repos from a branch build.
 -   The GitHub release creation in `Invoke-ReleaseWorkflow` must check the `ShouldRelease` flag and only create releases when `ShouldRelease` is true (main branch + not tagged + official repo).
+-   When a `fatal: remote error: upload-pack: not our ref` error occurs in GitHub Actions workflows, investigate issues with Git references, especially common with SonarQube analysis. If the SonarQube job needs to run against a specific commit (e.g., `release_hash`), ensure that the commit reference is available and accessible within the Git context of the workflow. If necessary, adjust the workflow to fetch the specific commit or use the current HEAD.
 
 ## DIRECTORY COMPARISON
 
@@ -370,16 +373,4 @@ globs: *
   - Can search recursively through subdirectories.
 - When finding files, skip git submodules. Git submodules are identified by the presence of a `.git` file (not directory) in the subdirectory, which contains a reference to the actual git directory.
 - In `FileFinder.cs`, add a method `IsGitSubmodule` to determine if a directory is a git submodule. This method should check for the existence of a `.git` file (not directory) in the given directory path.
-- The `IsGitSubmodule` method should handle potential exceptions like `UnauthorizedAccessException`, `DirectoryNotFoundException`, `IOException`, `ArgumentException`, and `PathTooLongException` by returning `false`.
-- BlastMerge does not support submitting multiple file patterns in a single operation. Run the iterative merge process separately for each file pattern.
-
-## BATCH CONFIGURATION
-
-- Add a `BatchConfiguration` class to `BlastMerge.Core` to represent a batch configuration for processing multiple file patterns.
-- The `BatchConfiguration` class should have the following properties:
-    - `Name` (string, required): The name of the batch configuration.
-    - `Description` (string): The description of the batch configuration.
-    - `FilePatterns` (List<string>, required): The list of file patterns to process.
-    - `CreatedDate` (DateTime): The created date.
-    - `LastModified` (DateTime): The last modified date.
-    - `SkipEmptyPatterns` (bool): Whether to skip patterns that don't
+- The `IsGitSubmodule` method should handle potential exceptions like `UnauthorizedAccessException`, `DirectoryNotFoundException`, `IOException`, `ArgumentException`, and `PathTooLongException` by returning `
