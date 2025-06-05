@@ -313,14 +313,12 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			return;
 		}
 
-		AnsiConsole.Status()
-			.Start($"Running batch '{batchName}'...", ctx =>
-			{
-				ApplicationService.ProcessBatch(directory, batchName);
-				ctx.Refresh();
-				ShowSuccess("Batch operation completed.");
-			});
+		AnsiConsole.MarkupLine($"[cyan]Processing batch configuration '{batchName}' in '{directory}'[/]");
+		AnsiConsole.WriteLine();
 
+		ApplicationService.ProcessBatch(directory, batchName);
+
+		ShowSuccess("Batch operation completed.");
 		WaitForKeyPress();
 	}
 
