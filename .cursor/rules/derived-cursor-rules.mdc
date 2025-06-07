@@ -156,8 +156,7 @@ globs: *
 -   Properties `ContextBefore1`, `ContextAfter1`, `ContextBefore2`, and `ContextAfter2` in `BlockContext.cs` must be initialized to empty collections instead of null.
 -   Batch configurations should include search paths and path exclusion patterns.
 -   If there is only whitespace changes in a line, ensure the formatting works properly and displays correctly. The `WhitespaceVisualizer.ProcessLineForDisplay()` method returns strings containing markup tags like `[on red]········[/]` for trailing whitespace. Calling `.EscapeMarkup()` on this already-formatted string escapes the markup tags, causing them to display as literal text instead of formatting. Use `ProcessLineForMarkupDisplay()` instead of `ProcessLineForDisplay()` and remove the subsequent `.EscapeMarkup()` calls since the new method handles escaping internally. Add Spectre.Console package reference to the Core project since the new method uses `Markup.Escape()`.
--   When showing diffs, can we do character level visualization where we put a different background behind changed/unchanged characters so we can easily read changes on similar lines. Use DiffPlex character-level diffing and the `CreateCharacterDiffs` method. Use `DiffPiece` objects which have a `SubPieces` property for character-level details.
--   For similar lines, use character-level highlighting with red background for deleted characters and green background for added characters. Use the `CharacterLevelDiffer` service for character-level diffing.
+-   When showing diffs, can we do character level visualization where we put a different background behind changed/unchanged characters so we can easily read changes on similar lines. Use DiffPlex character-level diffing and the `CreateCharacterDiffs` method. Use `DiffPiece` objects which have a `SubPieces` property for character-level details. For similar lines, use character-level highlighting with red background for deleted characters and green background for added characters. Use the `CharacterLevelDiffer` service for character-level diffing.
 -   Use the `CharacterLevelDiffer.CreateSideBySideCharacterDiff` method to create a character-level diff for display in side-by-side format.
 -   If lines are not similar, use the standard line-based diffing.
 -   Use the `CharacterLevelDiffer.AreLinesSimilar` method to determine if lines are similar enough for character-level diffing.
@@ -165,6 +164,12 @@ globs: *
     -   For patterns like `*/bin/*`, the pattern should match paths that have "bin" as a directory component.
     -   For patterns like `temp*`, check if any path component starts with "temp".
     -   For patterns like `*node_modules*`, the pattern should match any path that contains "node_modules" anywhere in it.
+-   If the host console window doesn't have enough width to display the ASCII art titles, then just use plain text titles at that time.
+-   When the same "Multiple different versions found..." message is displayed multiple times in the console application, it indicates a potential issue with the menu handling or loop logic. Ensure that the message is displayed only once per pattern or group of files being processed.
+-   When using `AnsiConsole.Prompt` with `SelectionPrompt<string>`, ensure consistent ordering and avoid any potential duplication issues by using an explicit list of choices instead of `choices.Keys`.
+-   When using `SelectionPrompt<string>`, add `.PageSize(10)` and `.MoreChoicesText("")` to ensure the menu is displayed properly and doesn't have scrolling behavior that might cause duplication.
+-   When using `SelectionPrompt<string>`, add a line break before the prompt to ensure proper spacing and separation from previous output.
+-   Make messages terse in the output.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -229,6 +234,21 @@ globs: *
 -   A legend explaining the whitespace symbols should be displayed.
 -   The `GroupFilesByHash` method has been updated to prevent files with different names from being compared/merged together when using glob patterns. Previously, a glob pattern like "*.config" could match files such as "app.config", "web.config", and "database.config", and the system would attempt to merge these unrelated files if they had different content hashes. The fix ensures that files are first grouped by filename (basename without path), then by content hash within each filename group. This prevents unrelated files that happen to match the same glob pattern from being incorrectly grouped for comparison or merging.
 -   The `FindMostSimilarFiles` method must only compare files with the same filename.
+-   Change this condition so that it does not always evaluate to 'True'. Some code paths are unreachable.
+-   When multiple identical copies of a file are found during iterative merge, it means that the files have exactly the same content, they share the same hash value, all copies are functionally equivalent and there are no differences between them, and they are candidates for consolidation. In this scenario, "no action is needed" from a functional perspective because the files are already fully synchronized and there are no conflicts to resolve. The merging would simply consolidate duplicate files, not resolve differences. BlastMerge will typically offer choices such as:
+    -   🔄 Run iterative merge - Consolidate the identical files into one
+    -   ⏭️ Skip this pattern - Leave the files as-is
+    -   🛑 Stop processing - Exit batch processing
+-   If `fileGroups.Count == 1` AND `groupsWithMultipleFiles == 1` in `HandlePatternWithMultipleVersions`, automatically skip with a message like: `"All files for pattern '{pattern}' are identical - skipping merge."`. Only prompt the user when there are multiple groups with different content.
+-   In `HandlePatternWithMultipleVersions`, if there are some unique files (each in their own group) AND one group with multiple identical files, automatically skip with a message like: `"All duplicate files for pattern '{pattern}' are identical - skipping merge (no action needed)."`.
+    The corrected logic now checks `groupsWithMultipleFiles == 1`, which means:
+    - There's exactly 1 group that contains multiple files
+    - All the duplicate files in that group are identical (same hash)
+    - No user action is needed since there are no conflicts to resolve
+-   When there are multiple groups with multiple files, it means there are multiple different versions (with different content), not just identical copies. The message should indicate that there are **different versions** that need merging, not just identical copies.
+-   Refactor the `BlastMerge.Core/Services/ApplicationService.cs`, `BlastMerge.ConsoleApp/ConsoleApplicationService.cs`, and `BlastMerge.ConsoleApp/Services/InteractiveMergeService.cs` to reduce code duplication.
+-   Properties `ContextBefore1`, `ContextAfter1`, `ContextBefore2`, and `ContextAfter2` in `BlockContext.cs` must be initialized to empty collections instead of null.
+-   Batch configurations should include search paths and path exclusion patterns.
 -   If there is only whitespace changes in a line, ensure the formatting works properly and displays correctly. The `WhitespaceVisualizer.ProcessLineForDisplay()` method returns strings containing markup tags like `[on red]········[/]` for trailing whitespace. Calling `.EscapeMarkup()` on this already-formatted string escapes the markup tags, causing them to display as literal text instead of formatting. Use `ProcessLineForMarkupDisplay()` instead of `ProcessLineForDisplay()` and remove the subsequent `.EscapeMarkup()` calls since the new method handles escaping internally. Add Spectre.Console package reference to the Core project since the new method uses `Markup.Escape()`.
 -   When showing diffs, can we do character level visualization where we put a different background behind changed/unchanged characters so we can easily read changes on similar lines. Use DiffPlex character-level diffing and the `CreateCharacterDiffs` method. Use `DiffPiece` objects which have a `SubPieces` property for character-level details. For similar lines, use character-level highlighting with red background for deleted characters and green background for added characters. Use the `CharacterLevelDiffer` service for character-level diffing.
 -   Use the `CharacterLevelDiffer.CreateSideBySideCharacterDiff` method to create a character-level diff for display in side-by-side format.
@@ -238,6 +258,11 @@ globs: *
     -   For patterns like `*/bin/*`, the pattern should match paths that have "bin" as a directory component.
     -   For patterns like `temp*`, check if any path component starts with "temp".
     -   For patterns like `*node_modules*`, the pattern should match any path that contains "node_modules" anywhere in it.
+-   If the host console window doesn't have enough width to display the ASCII art titles, then just use plain text titles at that time.
+-   When the same "Multiple different versions found..." message is displayed multiple times in the console application, it indicates a potential issue with the menu handling or loop logic. Ensure that the message is displayed only once per pattern or group of files being processed.
+-   When using `AnsiConsole.Prompt` with `SelectionPrompt<string>`, ensure consistent ordering and avoid any potential duplication issues by using an explicit list of choices instead of `choices.Keys`.
+-   When using `SelectionPrompt<string>`, add `.PageSize(10)` and `.MoreChoicesText("")` to ensure the menu is displayed properly and doesn't have scrolling behavior that might cause duplication.
+-   When using `SelectionPrompt<string>`, add a line break before the prompt to ensure proper spacing and separation from previous output.
 
 ## DEBUGGING
 
@@ -246,6 +271,7 @@ globs: *
 -   When using Spectre.Console, avoid running interactive functions (e.g., prompts, progress displays) concurrently to prevent `System.InvalidOperationException`.
 -   When tests fail, analyze the test failures by exploring the codebase structure and examining the failing tests to understand what's going wrong.
 -   In `PSBuild.psm1`, when the `git log` command fails or returns an error, ensure the `$rawCommits` variable handles the error object appropriately, especially when accessing its `.Count` property. Improve error handling and the `ConvertTo-ArraySafe` function to handle these edge cases.
+-   When the same "Multiple different versions found..." message is displayed multiple times in the console application, it indicates a potential issue with the menu handling or loop logic. Ensure that the message is displayed only once per pattern or group of files being processed.
 
 ## UNIT TESTING
 
@@ -268,59 +294,4 @@ globs: *
 -   When tests use a mock file system, initialize adapters (e.g. `FileFinderAdapter`) in the `InitializeFileSystem` override within the derived test class.
 -   When tests use a mock file system, initialize file and directory paths in the `InitializeFileSystem` override within the derived test class using the `CreateFile` and `CreateDirectory` methods provided by `MockFileSystemTestBase`.
 -   Ensure that test files include `using ktsu.DiffMore.Core;`
--   When writing tests, ensure proper instantiation of static classes. Do not attempt to create instances of static classes directly; instead, access their members directly using the class name.
--   When tests use classes implementing `IDisposable`, ensure the `Dispose` method is properly implemented. The `Dispose` method should call `Dispose(true)`, then call `GC.SuppressFinalize` on the current object instance (`this` or `Me` in Visual Basic), and then return.
--   Use MSTest framework for unit tests.
--   When tests fail due to missing assembly references, add the necessary package references to the test project file (.csproj).
--   If a test project references a namespace from another project, ensure to add a project reference to the corresponding project in the test project file (.csproj).
--   Focus tests on the core library.
--   Remove failing tests until more test coverage is added.
--   Use the `Testable.IO.Abstractions` libraries to enable testing file access properly.
--   When using `FileFinderAdapter` in tests, be aware that `Directory.GetFiles()` returns absolute paths. Ensure consistency in path handling by converting paths to relative paths, if necessary, especially in tests using a mock file system.
--   If a test uses the real file system, it can cause problems with parallel test execution because multiple tests are trying to access the same real files simultaneously. Convert the test to use the mock file system.
--   For performance tests, use unique temp directories per test instance to avoid conflicts during parallel execution while still testing real file I/O.
--   Update tests to work with new record structures.
--   Reorder import statements in test files for consistency (project imports before framework imports).
--   Update test adapter classes to use new record constructors.
--   When testing `FileFinder`, ensure comprehensive tests are added for the new `FindFiles` overload that handles search paths and exclusion patterns.
--   When adding new test files in `InitializeFileSystem()`, update the expected counts in existing tests to account for the new test files.
--   When a test fails related to file exclusion patterns, specifically in `FileFinderTests.cs`, ensure that the exclusion patterns are correctly implemented and that files from excluded directories (e.g., "Subdir1" or "temp directories") are properly filtered out.
--   Add `using System.Linq;` to test files that use LINQ methods like `Any()`.
-
-## WORKFLOW & RELEASE RULES
-
--   Ensure that all tests pass before releasing a new version.
--   Enable parallel execution for tests to improve performance. This can be configured in the `.runsettings` file by setting `<MaxCpuCount>` to `0` and enabling parallelization in the MSTest adapter:
-    ```xml
-    <MSTest>
-        <Parallelize>
-            <Workers>0</Workers>
-            <Scope>MethodLevel</Scope>
-        </Parallelize>
-    </MSTest>
-    ```
--   Suppress NuGet warnings `NU1604`, `NU1602`, `NU1701`, and `NU1504` in all project files by adding a `Directory.Build.props` file at the solution root with the following property group:
-
-    ```xml
-    <Project>
-      <PropertyGroup>
-        <!-- Treat package dependency warnings as warnings instead of errors -->
-        <WarningsAsErrors />
-        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-
-        <!-- Suppress specific NuGet warnings that are coming from the ktsu.Sdk packages -->
-        <NoWarn>$(NoWarn);NU1604;NU1701;NU1602;NU1504</NoWarn>
-        <!-- NU1604: Project dependency does not contain an inclusive lower bound -->
-        <!-- NU1701: Package was restored using a different target framework -->
-        <!-- NU1602: Does not provide an inclusive lower bound for dependency -->
-	    <!-- NU1504: Duplicate PackageReference -->
-      </PropertyGroup>
-    </Project>
-    ```
--   Suppress Spectre Console analyzer errors `Spectre1000` in the CLI project by adding it to the `NoWarn` property in the `Directory.Build.props` file:
-
-    ```xml
-        <NoWarn>$(NoWarn);NU1604;NU1602;NU1701;Spectre1000</NoWarn>
-    ```
--   The application should have a TUI using Spectre.Console.
--   Implement an iterative merge feature for multiple file versions, where the two most similar versions
+-   When writing tests, ensure proper instantiation of static classes. Do not attempt to create instances of static classes directly; instead, access their

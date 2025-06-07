@@ -278,7 +278,7 @@ public class ConsoleApplicationService : ApplicationService
 		// If there's only one group with multiple files, all duplicate files are identical - auto-skip
 		if (groupsWithMultipleFiles == 1)
 		{
-			AnsiConsole.MarkupLine($"[green]All duplicate files for pattern '{pattern}' are identical - skipping merge (no action needed).[/]");
+			AnsiConsole.MarkupLine($"[green]Pattern '{pattern}': All files identical - skipped.[/]");
 			return new BatchActionResult { ShouldStop = false };
 		}
 
@@ -286,7 +286,7 @@ public class ConsoleApplicationService : ApplicationService
 		if (filenameGroupsWithMultipleVersions == 0)
 		{
 			AnsiConsole.MarkupLine($"[green]All files for pattern '{pattern}' have different names - skipping merge (no action needed).[/]");
-			AnsiConsole.MarkupLine($"[dim]Safety rule: Only files with identical names can be merged together.[/]");
+
 			return new BatchActionResult { ShouldStop = false };
 		}
 
@@ -386,6 +386,13 @@ public class ConsoleApplicationService : ApplicationService
 	/// <returns>The user's action choice result.</returns>
 	private BatchActionResult GetUserActionForPattern(string directory, string pattern, BatchConfiguration batch)
 	{
+		// Create a list to ensure consistent ordering and avoid duplicates
+		List<string> choicesList = [
+			"🔄 Run iterative merge",
+			"⏭️  Skip this pattern",
+			"🛑 Stop processing remaining patterns"
+		];
+
 		Dictionary<string, BatchActionChoice> choices = new()
 		{
 			["🔄 Run iterative merge"] = BatchActionChoice.RunIterativeMerge,
@@ -393,10 +400,14 @@ public class ConsoleApplicationService : ApplicationService
 			["🛑 Stop processing remaining patterns"] = BatchActionChoice.StopBatchProcessing
 		};
 
+		// Clear console and show prompt once to prevent duplicate display
+		AnsiConsole.WriteLine();
 		string selection = AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
 				.Title($"Multiple different versions found for pattern '{pattern}'. What would you like to do?")
-				.AddChoices(choices.Keys));
+				.PageSize(10)
+				.MoreChoicesText("")
+				.AddChoices(choicesList));
 
 		return choices.TryGetValue(selection, out BatchActionChoice choice)
 			? choice switch

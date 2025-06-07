@@ -2904,6 +2904,67 @@ C:\dev\ktsu-dev\BlastMerge>
 
 ---
 
+Perfect! All tests are now passing. Let me also run the full build to make sure everything is working correctly:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+C:\dev\ktsu-dev\BlastMerge>dotnet build
+Restore complete (0.8s)
+  BlastMerge.Core succeeded (0.2s) → BlastMerge.Core\bin\Debug\net9.0\ktsu.BlastMerge.Core.dll
+  BlastMerge.ConsoleApp succeeded (0.1s) → BlastMerge.ConsoleApp\bin\Debug\net9.0\ktsu.BlastMerge.ConsoleApp.dll
+  BlastMerge.Test succeeded (0.4s) → BlastMerge.Test\bin\Debug\net9.0\ktsu.BlastMerge.Test.dll
+
+Build succeeded in 1.8s
+
+C:\dev\ktsu-dev\BlastMerge>
+```
+
+---
+
+Excellent! The build is successful and all tests are passing.
+
+## Summary
+
+I successfully fixed the failing tests in the BlastMerge project. The issue was in the `MatchesGlobPattern` method in both the test adapter (`BlastMerge.Test/Adapters/FileFinderAdapter.cs`) and the core implementation (`BlastMerge.Core/Services/FileFinder.cs`).
+
+### The Problem
+The exclusion pattern matching logic had a critical flaw where the conditions for different pattern types were not mutually exclusive. Specifically:
+
+1. Pattern `*node_modules*` was incorrectly matching the condition `pattern.EndsWith('*') && !pattern.Contains('/')` 
+2. This caused it to be treated as a "prefix match" pattern (like `temp*`) instead of a "contains" pattern
+3. The logic would try to match path components that start with `*node_modules` instead of components that contain `node_modules`
+
+### The Solution
+I reordered the pattern matching conditions and made them mutually exclusive using `else if` statements:
+
+1. **First**: `*/directory/*` patterns (like `*/bin/*`)
+2. **Second**: `*substring*` patterns (like `*node_modules*`) 
+3. **Third**: `prefix*` patterns (like `temp*`)
+
+This ensures that patterns like `*node_modules*` are correctly identified as "contains" patterns and properly exclude files in directories containing "node_modules".
+
+### Tests Fixed
+- `FindFiles_WithComplexExclusionPattern_ExcludesCorrectly` - Now correctly excludes files from `Subdir1` and `temp` directories
+- `FindFiles_WithExclusionPatterns_ExcludesMatchingPaths` - Now correctly excludes files from `bin`, `obj`, and `temp` directories  
+- `FindFiles_WithWildcardExclusion_ExcludesMatchingPaths` - Now correctly excludes files from `node_modules` directory
+
+All 67 tests are now passing, and the build is successful.
+
+---
+
+_**User**_
+
+if the host console window doesnt have enough width to display the ASCII art titles, then just use plain text titles at that time
+
+---
+
+_**Assistant**_
+
 
 
 ---

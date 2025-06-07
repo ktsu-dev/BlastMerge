@@ -12,12 +12,98 @@ using Spectre.Console;
 public static class MenuDisplayService
 {
 	/// <summary>
+	/// Minimum console width required to display the welcome ASCII art.
+	/// </summary>
+	private const int MinimumWelcomeAsciiWidth = 100;
+
+	/// <summary>
+	/// Minimum console width required to display the goodbye ASCII art.
+	/// </summary>
+	private const int MinimumGoodbyeAsciiWidth = 80;
+
+	/// <summary>
 	/// Shows the welcome screen with application information.
 	/// </summary>
 	public static void ShowWelcomeScreen()
 	{
 		AnsiConsole.Clear();
 
+		if (CanDisplayWelcomeAscii())
+		{
+			ShowWelcomeWithAscii();
+		}
+		else
+		{
+			ShowWelcomeWithPlainText();
+		}
+	}
+
+	/// <summary>
+	/// Shows the goodbye screen when exiting the application.
+	/// </summary>
+	public static void ShowGoodbyeScreen()
+	{
+		AnsiConsole.Clear();
+
+		if (CanDisplayGoodbyeAscii())
+		{
+			ShowGoodbyeWithAscii();
+		}
+		else
+		{
+			ShowGoodbyeWithPlainText();
+		}
+	}
+
+	/// <summary>
+	/// Determines if the console is wide enough to display the welcome ASCII art.
+	/// </summary>
+	/// <returns>True if the console can display the ASCII art, false otherwise.</returns>
+	private static bool CanDisplayWelcomeAscii()
+	{
+		try
+		{
+			return Console.WindowWidth >= MinimumWelcomeAsciiWidth;
+		}
+		catch (IOException)
+		{
+			// If we can't get console width (e.g., redirected output), default to plain text
+			return false;
+		}
+		catch (ArgumentOutOfRangeException)
+		{
+			// Console.WindowWidth can throw this exception in some scenarios
+			return false;
+		}
+	}
+
+	/// <summary>
+	/// Determines if the console is wide enough to display the goodbye ASCII art.
+	/// </summary>
+	/// <returns>True if the console can display the ASCII art, false otherwise.</returns>
+	private static bool CanDisplayGoodbyeAscii()
+	{
+		try
+		{
+			return Console.WindowWidth >= MinimumGoodbyeAsciiWidth;
+		}
+		catch (IOException)
+		{
+			// If we can't get console width (e.g., redirected output), default to plain text
+			return false;
+		}
+		catch (ArgumentOutOfRangeException)
+		{
+			// Console.WindowWidth can throw this exception in some scenarios
+			return false;
+		}
+	}
+
+	/// <summary>
+	/// Shows the welcome screen with ASCII art.
+	/// </summary>
+	private static void ShowWelcomeWithAscii()
+	{
 		// Epic explosive ASCII art title
 		string blastMergeArt = @"
 [red]██████  ██       █████   ███████ ████████    ███    ███ ███████ ██████   ██████  ███████[/]
@@ -30,6 +116,30 @@ public static class MenuDisplayService
 
 		AnsiConsole.Write(new Markup(blastMergeArt));
 
+		ShowWelcomeContent();
+	}
+
+	/// <summary>
+	/// Shows the welcome screen with plain text title.
+	/// </summary>
+	private static void ShowWelcomeWithPlainText()
+	{
+		// Plain text title for narrow consoles
+		AnsiConsole.Write(new Rule("[bold red]BLAST MERGE[/]")
+		{
+			Style = Style.Parse("red"),
+			Justification = Justify.Center
+		});
+		AnsiConsole.WriteLine();
+
+		ShowWelcomeContent();
+	}
+
+	/// <summary>
+	/// Shows the welcome content panel (common for both ASCII and plain text versions).
+	/// </summary>
+	private static void ShowWelcomeContent()
+	{
 		// Create an epic welcome panel with rich content
 		Table welcomeTable = new Table()
 			.BorderColor(Color.Purple)
@@ -59,12 +169,10 @@ public static class MenuDisplayService
 	}
 
 	/// <summary>
-	/// Shows the goodbye screen when exiting the application.
+	/// Shows the goodbye screen with ASCII art.
 	/// </summary>
-	public static void ShowGoodbyeScreen()
+	private static void ShowGoodbyeWithAscii()
 	{
-		AnsiConsole.Clear();
-
 		// Epic explosive goodbye ASCII art
 		string explosionArt = @"
 
@@ -78,6 +186,30 @@ public static class MenuDisplayService
 
 		AnsiConsole.Write(new Markup(explosionArt));
 
+		ShowGoodbyeContent();
+	}
+
+	/// <summary>
+	/// Shows the goodbye screen with plain text title.
+	/// </summary>
+	private static void ShowGoodbyeWithPlainText()
+	{
+		// Plain text title for narrow consoles
+		AnsiConsole.Write(new Rule("[bold red]GOODBYE[/]")
+		{
+			Style = Style.Parse("red"),
+			Justification = Justify.Center
+		});
+		AnsiConsole.WriteLine();
+
+		ShowGoodbyeContent();
+	}
+
+	/// <summary>
+	/// Shows the goodbye content panel (common for both ASCII and plain text versions).
+	/// </summary>
+	private static void ShowGoodbyeContent()
+	{
 		// Create epic goodbye content
 		Table goodbyeTable = new Table()
 			.BorderColor(Color.Gold1)
