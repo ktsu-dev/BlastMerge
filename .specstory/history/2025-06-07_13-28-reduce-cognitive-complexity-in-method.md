@@ -473,3 +473,258 @@ _**Assistant**_
 
 ---
 
+Looking at the `ApplyDiffBlockChoice` method, it has high cognitive complexity due to the large switch statement with nested loops. Here's a concise fix that extracts helper methods:
+
+---
+
+```diff
+  		{
+  			case BlockChoice.UseVersion1:
+- 				// Take the deleted lines from the left (original) version
+- 				for (int i = diffBlock.DeleteStartA; i < diffBlock.DeleteStartA + diffBlock.DeleteCountA && i < lines1.Length; i++)
+- 				{
+- 					mergedLines.Add(lines1[i]);
+- 				}
++ 				ApplyUseVersion1(lines1, diffBlock, mergedLines);
+  				break;
+  
+  			case BlockChoice.UseVersion2:
+- 				// Take the inserted lines from the right (new) version
+- 				for (int i = diffBlock.InsertStartB; i < diffBlock.InsertStartB + diffBlock.InsertCountB && i < lines2.Length; i++)
+- 				{
+- 					mergedLines.Add(lines2[i]);
+- 				}
++ 				ApplyUseVersion2(lines2, diffBlock, mergedLines);
+  				break;
+  
+  			case BlockChoice.UseBoth:
+- 				// Take deleted lines first, then inserted lines
+- 				for (int i = diffBlock.DeleteStartA; i < diffBlock.DeleteStartA + diffBlock.DeleteCountA && i < lines1.Length; i++)
+- 				{
+- 					mergedLines.Add(lines1[i]);
+- 				}
+- 				for (int i = diffBlock.InsertStartB; i < diffBlock.InsertStartB + diffBlock.InsertCountB && i < lines2.Length; i++)
+- 				{
+- 					mergedLines.Add(lines2[i]);
+- 				}
++ 				ApplyUseBoth(lines1, lines2, diffBlock, mergedLines);
+  				break;
+  
+```
+
+```diff
+  			default:
+  				// For compatibility with other block types, default to UseVersion2
++ 				ApplyUseVersion2(lines2, diffBlock, mergedLines);
++ 				break;
++ 		}
++ 	}
++ 
++ 	/// <summary>
++ 	/// Applies UseVersion1 choice - takes deleted lines from the left version
++ 	/// </summary>
++ 	private static void ApplyUseVersion1(string[] lines1, DiffPlex.Model.DiffBlock diffBlock, List<string> mergedLines)
++ 	{
++ 		for (int i = diffBlock.DeleteStartA; i < diffBlock.DeleteStartA + diffBlock.DeleteCountA && i < lines1.Length; i++)
++ 		{
++ 			mergedLines.Add(lines1[i]);
++ 		}
++ 	}
++ 
++ 	/// <summary>
++ 	/// Applies UseVersion2 choice - takes inserted lines from the right version
++ 	/// </summary>
++ 	private static void ApplyUseVersion2(string[] lines2, DiffPlex.Model.DiffBlock diffBlock, List<string> mergedLines)
++ 	{
+  		for (int i = diffBlock.InsertStartB; i < diffBlock.InsertStartB + diffBlock.InsertCountB && i < lines2.Length; i++)
+  		{
+  			mergedLines.Add(lines2[i]);
+  		}
+- 				break;
+- 		}
++ 	}
++ 
++ 	/// <summary>
++ 	/// Applies UseBoth choice - takes deleted lines first, then inserted lines
++ 	/// </summary>
++ 	private static void ApplyUseBoth(string[] lines1, string[] lines2, DiffPlex.Model.DiffBlock diffBlock, List<string> mergedLines)
++ 	{
++ 		ApplyUseVersion1(lines1, diffBlock, mergedLines);
++ 		ApplyUseVersion2(lines2, diffBlock, mergedLines);
+  	}
+  }
+```
+
+---
+
+Perfect! I've successfully reduced the cognitive complexity of the `ApplyDiffBlockChoice` method by:
+
+1. **Extracting helper methods** for each choice type:
+   - `ApplyUseVersion1` - handles deleted lines from the left version
+   - `ApplyUseVersion2` - handles inserted lines from the right version  
+   - `ApplyUseBoth` - combines both operations by reusing the other methods
+
+2. **Eliminating nested loops** from the main method - the switch statement now only contains simple method calls
+
+3. **Reusing code** - the `ApplyUseBoth` method reuses the other two methods instead of duplicating the loop logic
+
+This refactoring reduces cognitive complexity by:
+- Breaking down one complex method into multiple focused methods
+- Each method has a single, clear responsibility
+- Removing nested control structures from the main method
+- Making the code more readable and maintainable
+
+The functionality remains identical while being much easier to understand and test.
+
+---
+
+_**User**_
+
+For the code present, we get this error:
+```
+Refactor this method to reduce its Cognitive Complexity from 17 to the 15 allowed. [+9 locations]
+```
+How can I resolve this? If you propose a fix, please make it concise.
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+Looking at the `CreateCharacterLevelDiff` method, it has high cognitive complexity due to multiple nested loops and complex index tracking. Here's a concise fix that extracts helper methods:
+
+---
+
+```diff
+  		foreach (DiffBlock block in charDiff.DiffBlocks)
+  		{
+- 			// Add unchanged characters before this block (dim white)
+- 			while (oldIndex < block.DeleteStartA)
+- 			{
+- 				string charText = EscapeForMarkup(oldText[oldIndex].ToString());
+- 				oldHighlighted.Append($"[dim white]{charText}[/]");
+- 				oldIndex++;
+- 			}
+- 
+- 			while (newIndex < block.InsertStartB)
++ 			// Add unchanged characters before this block
++ 			oldIndex = AddUnchangedCharactersBefore(oldText, oldHighlighted, oldIndex, block.DeleteStartA);
++ 			newIndex = AddUnchangedCharactersBefore(newText, newHighlighted, newIndex, block.InsertStartB);
++ 
++ 			// Handle deleted and inserted characters
++ 			oldIndex = AddDeletedCharacters(oldText, oldHighlighted, oldIndex, block.DeleteCountA);
++ 			newIndex = AddInsertedCharacters(newText, newHighlighted, newIndex, block.InsertCountB);
++ 		}
++ 
++ 		// Add any remaining unchanged characters
++ 		AddRemainingUnchangedCharacters(oldText, oldHighlighted, oldIndex);
++ 		AddRemainingUnchangedCharacters(newText, newHighlighted, newIndex);
++ 
++ 		return (oldHighlighted.ToString(), newHighlighted.ToString());
++ 	}
++ 
++ 	/// <summary>
++ 	/// Adds unchanged characters before a diff block
++ 	/// </summary>
++ 	private static int AddUnchangedCharactersBefore(string text, StringBuilder highlighted, int currentIndex, int endIndex)
++ 	{
++ 		while (currentIndex < endIndex)
+  		{
+- 				string charText = EscapeForMarkup(newText[newIndex].ToString());
+- 				newHighlighted.Append($"[dim white]{charText}[/]");
+- 				newIndex++;
+- 			}
+- 
+- 			// Handle deleted characters (red text)
+- 			for (int i = 0; i < block.DeleteCountA; i++)
++ 			string charText = EscapeForMarkup(text[currentIndex].ToString());
++ 			highlighted.Append($"[dim white]{charText}[/]");
++ 			currentIndex++;
++ 		}
++ 		return currentIndex;
++ 	}
++ 
++ 	/// <summary>
++ 	/// Adds deleted characters with red highlighting
++ 	/// </summary>
++ 	private static int AddDeletedCharacters(string text, StringBuilder highlighted, int currentIndex, int count)
++ 	{
++ 		for (int i = 0; i < count; i++)
+  		{
+- 				if (oldIndex < oldText.Length)
++ 			if (currentIndex < text.Length)
+  			{
+- 					string charText = EscapeForMarkup(oldText[oldIndex].ToString());
+- 					oldHighlighted.Append($"[red]{charText}[/]");
+- 					oldIndex++;
++ 				string charText = EscapeForMarkup(text[currentIndex].ToString());
++ 				highlighted.Append($"[red]{charText}[/]");
++ 				currentIndex++;
+  			}
+- 			}
+- 
+- 			// Handle inserted characters (green text)
+- 			for (int i = 0; i < block.InsertCountB; i++)
++ 		}
++ 		return currentIndex;
++ 	}
++ 
++ 	/// <summary>
++ 	/// Adds inserted characters with green highlighting
++ 	/// </summary>
++ 	private static int AddInsertedCharacters(string text, StringBuilder highlighted, int currentIndex, int count)
++ 	{
++ 		for (int i = 0; i < count; i++)
+  		{
+- 				if (newIndex < newText.Length)
++ 			if (currentIndex < text.Length)
+  			{
+- 					string charText = EscapeForMarkup(newText[newIndex].ToString());
+- 					newHighlighted.Append($"[green]{charText}[/]");
+- 					newIndex++;
++ 				string charText = EscapeForMarkup(text[currentIndex].ToString());
++ 				highlighted.Append($"[green]{charText}[/]");
++ 				currentIndex++;
+  			}
+  		}
++ 		return currentIndex;
+  	}
+  
+- 		// Add any remaining unchanged characters (dim white)
+- 		while (oldIndex < oldText.Length)
+- 		{
+- 			string charText = EscapeForMarkup(oldText[oldIndex].ToString());
+- 			oldHighlighted.Append($"[dim white]{charText}[/]");
+- 			oldIndex++;
+- 		}
+- 
+- 		while (newIndex < newText.Length)
++ 	/// <summary>
++ 	/// Adds remaining unchanged characters at the end
++ 	/// </summary>
++ 	private static void AddRemainingUnchangedCharacters(string text, StringBuilder highlighted, int startIndex)
++ 	{
++ 		while (startIndex < text.Length)
+  		{
+- 			string charText = EscapeForMarkup(newText[newIndex].ToString());
+- 			newHighlighted.Append($"[dim white]{charText}[/]");
+- 			newIndex++;
++ 			string charText = EscapeForMarkup(text[startIndex].ToString());
++ 			highlighted.Append($"[dim white]{charText}[/]");
++ 			startIndex++;
+  		}
+- 
+- 		return (oldHighlighted.ToString(), newHighlighted.ToString());
+  	}
+  
+```
+
+---
+
+
+
+---
+

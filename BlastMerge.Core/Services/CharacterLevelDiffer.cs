@@ -39,60 +39,81 @@ public static class CharacterLevelDiffer
 
 		foreach (DiffBlock block in charDiff.DiffBlocks)
 		{
-			// Add unchanged characters before this block (dim white)
-			while (oldIndex < block.DeleteStartA)
-			{
-				string charText = EscapeForMarkup(oldText[oldIndex].ToString());
-				oldHighlighted.Append($"[dim white]{charText}[/]");
-				oldIndex++;
-			}
+			// Add unchanged characters before this block
+			oldIndex = AddUnchangedCharactersBefore(oldText, oldHighlighted, oldIndex, block.DeleteStartA);
+			newIndex = AddUnchangedCharactersBefore(newText, newHighlighted, newIndex, block.InsertStartB);
 
-			while (newIndex < block.InsertStartB)
-			{
-				string charText = EscapeForMarkup(newText[newIndex].ToString());
-				newHighlighted.Append($"[dim white]{charText}[/]");
-				newIndex++;
-			}
-
-			// Handle deleted characters (red text)
-			for (int i = 0; i < block.DeleteCountA; i++)
-			{
-				if (oldIndex < oldText.Length)
-				{
-					string charText = EscapeForMarkup(oldText[oldIndex].ToString());
-					oldHighlighted.Append($"[red]{charText}[/]");
-					oldIndex++;
-				}
-			}
-
-			// Handle inserted characters (green text)
-			for (int i = 0; i < block.InsertCountB; i++)
-			{
-				if (newIndex < newText.Length)
-				{
-					string charText = EscapeForMarkup(newText[newIndex].ToString());
-					newHighlighted.Append($"[green]{charText}[/]");
-					newIndex++;
-				}
-			}
+			// Handle deleted and inserted characters
+			oldIndex = AddDeletedCharacters(oldText, oldHighlighted, oldIndex, block.DeleteCountA);
+			newIndex = AddInsertedCharacters(newText, newHighlighted, newIndex, block.InsertCountB);
 		}
 
-		// Add any remaining unchanged characters (dim white)
-		while (oldIndex < oldText.Length)
-		{
-			string charText = EscapeForMarkup(oldText[oldIndex].ToString());
-			oldHighlighted.Append($"[dim white]{charText}[/]");
-			oldIndex++;
-		}
-
-		while (newIndex < newText.Length)
-		{
-			string charText = EscapeForMarkup(newText[newIndex].ToString());
-			newHighlighted.Append($"[dim white]{charText}[/]");
-			newIndex++;
-		}
+		// Add any remaining unchanged characters
+		AddRemainingUnchangedCharacters(oldText, oldHighlighted, oldIndex);
+		AddRemainingUnchangedCharacters(newText, newHighlighted, newIndex);
 
 		return (oldHighlighted.ToString(), newHighlighted.ToString());
+	}
+
+	/// <summary>
+	/// Adds unchanged characters before a diff block
+	/// </summary>
+	private static int AddUnchangedCharactersBefore(string text, StringBuilder highlighted, int currentIndex, int endIndex)
+	{
+		while (currentIndex < endIndex)
+		{
+			string charText = EscapeForMarkup(text[currentIndex].ToString());
+			highlighted.Append($"[dim white]{charText}[/]");
+			currentIndex++;
+		}
+		return currentIndex;
+	}
+
+	/// <summary>
+	/// Adds deleted characters with red highlighting
+	/// </summary>
+	private static int AddDeletedCharacters(string text, StringBuilder highlighted, int currentIndex, int count)
+	{
+		for (int i = 0; i < count; i++)
+		{
+			if (currentIndex < text.Length)
+			{
+				string charText = EscapeForMarkup(text[currentIndex].ToString());
+				highlighted.Append($"[red]{charText}[/]");
+				currentIndex++;
+			}
+		}
+		return currentIndex;
+	}
+
+	/// <summary>
+	/// Adds inserted characters with green highlighting
+	/// </summary>
+	private static int AddInsertedCharacters(string text, StringBuilder highlighted, int currentIndex, int count)
+	{
+		for (int i = 0; i < count; i++)
+		{
+			if (currentIndex < text.Length)
+			{
+				string charText = EscapeForMarkup(text[currentIndex].ToString());
+				highlighted.Append($"[green]{charText}[/]");
+				currentIndex++;
+			}
+		}
+		return currentIndex;
+	}
+
+	/// <summary>
+	/// Adds remaining unchanged characters at the end
+	/// </summary>
+	private static void AddRemainingUnchangedCharacters(string text, StringBuilder highlighted, int startIndex)
+	{
+		while (startIndex < text.Length)
+		{
+			string charText = EscapeForMarkup(text[startIndex].ToString());
+			highlighted.Append($"[dim white]{charText}[/]");
+			startIndex++;
+		}
 	}
 
 	/// <summary>

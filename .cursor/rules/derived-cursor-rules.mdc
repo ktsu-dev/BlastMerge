@@ -114,7 +114,7 @@ globs: *
 -   In externally visible methods, validate parameter is non-null before using it. If appropriate, throw an 'ArgumentNullException' when the argument is 'null'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1062)
 -   Use `string.Contains(char)` instead of `string.Contains(string)` when searching for a single character (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1847)
 -   Use string comparison instead of unicode emoji characters in switch statements.
--   Ensure switch statements are populated (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0072)
+-   Ensure switch statements are populated (https://learn.microsoft.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0072)
 -   Use primary constructors (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0290)
 -   Change return type of method 'FindDifferences' from 'System.Collections.Generic.IReadOnlyCollection<ktsu.DiffMore.Core.LineDifference>' to 'System.Collections.ObjectModel.ReadOnlyCollection<ktsu.DiffMore.Core.LineDifference>' for improved performance (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1859)
 -   'MakeConflictColumnLayout' has a cyclomatic complexity of '49'. Refactor the code to decrease its complexity.
@@ -307,12 +307,10 @@ globs: *
 -   Define a constant instead of using the literal 'Merge completed successfully' multiple times.
 -   When processing a single file pattern, display file paths as they're discovered as user feedback.
 -   When the `ProcessLineForMarkupDisplay` method has high cognitive complexity, extract helper methods to reduce it.
-
-## FILE & DIRECTORY HANDLING
-
--   Always ensure that file paths are valid before attempting to access files.
--   Create target directories before copying files.
--   When copying files, handle potential `IOExceptions` and `UnauthorizedAccessException`.
--   Be aware that binary files will be treated as text and should show differences.
--   When finding files, skip git submodules. Git submodules are identified by the presence of a `.git` file (not directory) in the subdirectory, which contains a reference to the actual git directory.
--   In `FileFinder.cs`, add a method `IsGitSubmodule` to determine if a directory is a git submodule. This method should check for the existence of
+-   Refactor the `MatchesGlobPattern` method to reduce cognitive complexity by:
+    -   Extract pattern detection logic into simple helper methods (`IsDirectoryContainsPattern`, `IsWildcardContainsPattern`, `IsPrefixPattern`)
+    -   Extract pattern matching logic into focused methods (`MatchesDirectoryContainsPattern`, `MatchesWildcardContainsPattern`, `MatchesPrefixPattern`, `MatchesRegexPattern`)
+    -   Eliminate complex if-else chains by using early returns and single-purpose methods
+    -   Using expression body syntax for simple condition checks
+-   Merge the `ChangeType.Unchanged` case with the `default` case in `FindDifferences` since they have identical implementations.
+-   When

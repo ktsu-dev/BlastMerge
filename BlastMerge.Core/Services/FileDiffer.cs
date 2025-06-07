@@ -80,14 +80,14 @@ public static class FileDiffer
 		// Then group by content hash within each filename group
 		List<FileGroup> allGroups = [];
 
-		foreach (KeyValuePair<string, List<string>> filenameGroup in filenameGroups)
+		foreach (List<string> pathsWithSameName in filenameGroups.Values)
 		{
-			if (filenameGroup.Value.Count == 1)
+			if (pathsWithSameName.Count == 1)
 			{
 				// Single file with this name - create a group for it
-				string hash = FileHasher.ComputeFileHash(filenameGroup.Value[0]);
+				string hash = FileHasher.ComputeFileHash(pathsWithSameName[0]);
 				FileGroup group = new() { Hash = hash };
-				group.AddFilePath(filenameGroup.Value[0]);
+				group.AddFilePath(pathsWithSameName[0]);
 				allGroups.Add(group);
 			}
 			else
@@ -95,7 +95,7 @@ public static class FileDiffer
 				// Multiple files with same name - group by content hash
 				Dictionary<string, FileGroup> hashGroups = [];
 
-				foreach (string filePath in filenameGroup.Value)
+				foreach (string filePath in pathsWithSameName)
 				{
 					string hash = FileHasher.ComputeFileHash(filePath);
 

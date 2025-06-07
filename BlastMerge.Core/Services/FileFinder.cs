@@ -47,16 +47,10 @@ public static class FileFinder
 			}
 
 			// Search in subdirectories
-			foreach (string directory in Directory.GetDirectories(rootDirectory))
+			foreach (string directory in Directory.GetDirectories(rootDirectory).Where(dir => !IsGitSubmodule(dir)))
 			{
 				try
 				{
-					// Skip git submodules
-					if (IsGitSubmodule(directory))
-					{
-						continue;
-					}
-
 					IReadOnlyCollection<string> filesInSubDir = FindFiles(directory, fileName, progressCallback);
 					result.AddRange(filesInSubDir);
 				}
@@ -119,14 +113,9 @@ public static class FileFinder
 		// Use search paths if provided, otherwise use the root directory
 		IEnumerable<string> directoriesToSearch = searchPaths.Count > 0 ? searchPaths : [rootDirectory];
 
-		foreach (string searchPath in directoriesToSearch)
-		{
-			if (Directory.Exists(searchPath))
-			{
-				ReadOnlyCollection<string> filesInPath = FindFilesWithExclusions(searchPath, fileName, pathExclusionPatterns, progressCallback);
-				result.AddRange(filesInPath);
-			}
-		}
+		result.AddRange(directoriesToSearch
+			.Where(Directory.Exists)
+			.SelectMany(searchPath => FindFilesWithExclusions(searchPath, fileName, pathExclusionPatterns, progressCallback)));
 
 		return result.AsReadOnly();
 	}
@@ -170,48 +159,8 @@ public static class FileFinder
 				return new ReadOnlyCollection<string>(result);
 			}
 
-			// Search in current directory
-			string[] filesInCurrentDir = Directory.GetFiles(rootDirectory, fileName, SearchOption.TopDirectoryOnly);
-
-			// Filter files based on exclusion patterns
-			foreach (string file in filesInCurrentDir)
-			{
-				if (!ShouldExcludePath(file, pathExclusionPatterns))
-				{
-					result.Add(file);
-					progressCallback?.Invoke(file);
-				}
-			}
-
-			// Search in subdirectories
-			foreach (string directory in Directory.GetDirectories(rootDirectory))
-			{
-				try
-				{
-					// Skip git submodules
-					if (IsGitSubmodule(directory))
-					{
-						continue;
-					}
-
-					// Skip excluded directories
-					if (ShouldExcludePath(directory, pathExclusionPatterns))
-					{
-						continue;
-					}
-
-					ReadOnlyCollection<string> filesInSubDir = FindFilesWithExclusions(directory, fileName, pathExclusionPatterns, progressCallback);
-					result.AddRange(filesInSubDir);
-				}
-				catch (UnauthorizedAccessException)
-				{
-					// Skip directories we don't have access to
-				}
-				catch (DirectoryNotFoundException)
-				{
-					// Skip directories that may have been deleted during enumeration
-				}
-			}
+			ProcessCurrentDirectory(rootDirectory, fileName, pathExclusionPatterns, progressCallback, result);
+			ProcessSubdirectories(rootDirectory, fileName, pathExclusionPatterns, progressCallback, result);
 		}
 		catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException)
 		{
@@ -220,6 +169,59 @@ public static class FileFinder
 
 		return result.AsReadOnly();
 	}
+
+	/// <summary>
+	/// Processes files in the current directory
+	/// </summary>
+	private static void ProcessCurrentDirectory(
+		string rootDirectory,
+		string fileName,
+		IReadOnlyCollection<string> pathExclusionPatterns,
+		Action<string>? progressCallback,
+		List<string> result)
+	{
+		string[] filesInCurrentDir = Directory.GetFiles(rootDirectory, fileName, SearchOption.TopDirectoryOnly);
+
+		foreach (string file in filesInCurrentDir.Where(file => !ShouldExcludePath(file, pathExclusionPatterns)))
+		{
+			result.Add(file);
+			progressCallback?.Invoke(file);
+		}
+	}
+
+	/// <summary>
+	/// Processes subdirectories recursively
+	/// </summary>
+	private static void ProcessSubdirectories(
+		string rootDirectory,
+		string fileName,
+		IReadOnlyCollection<string> pathExclusionPatterns,
+		Action<string>? progressCallback,
+		List<string> result)
+	{
+		foreach (string directory in Directory.GetDirectories(rootDirectory).Where(dir => !ShouldSkipDirectory(dir, pathExclusionPatterns)))
+		{
+			try
+			{
+				ReadOnlyCollection<string> filesInSubDir = FindFilesWithExclusions(directory, fileName, pathExclusionPatterns, progressCallback);
+				result.AddRange(filesInSubDir);
+			}
+			catch (UnauthorizedAccessException)
+			{
+				// Skip directories we don't have access to
+			}
+			catch (DirectoryNotFoundException)
+			{
+				// Skip directories that may have been deleted during enumeration
+			}
+		}
+	}
+
+	/// <summary>
+	/// Determines if a directory should be skipped
+	/// </summary>
+	private static bool ShouldSkipDirectory(string directory, IReadOnlyCollection<string> pathExclusionPatterns) =>
+		IsGitSubmodule(directory) || ShouldExcludePath(directory, pathExclusionPatterns);
 
 	/// <summary>
 	/// Determines if a path should be excluded based on exclusion patterns
@@ -236,35 +238,24 @@ public static class FileFinder
 
 		string normalizedPath = Path.GetFullPath(path).Replace(Path.DirectorySeparatorChar, '/');
 
-		foreach (string pattern in exclusionPatterns)
-		{
-			if (string.IsNullOrWhiteSpace(pattern))
+		return exclusionPatterns
+			.Where(p => !string.IsNullOrWhiteSpace(p))
+			.Any(pattern =>
 			{
-				continue;
-			}
+				// Support simple glob patterns
+				string normalizedPattern = pattern.Replace('\\', '/');
 
-			// Support simple glob patterns
-			string normalizedPattern = pattern.Replace('\\', '/');
-
-			// Convert simple glob patterns to regex-like matching
-			if (normalizedPattern.Contains('*') || normalizedPattern.Contains('?'))
-			{
-				if (MatchesGlobPattern(normalizedPath, normalizedPattern))
+				// Convert simple glob patterns to regex-like matching
+				if (normalizedPattern.Contains('*') || normalizedPattern.Contains('?'))
 				{
-					return true;
+					return MatchesGlobPattern(normalizedPath, normalizedPattern);
 				}
-			}
-			else
-			{
-				// Exact match or contains check
-				if (normalizedPath.Contains(normalizedPattern, StringComparison.OrdinalIgnoreCase))
+				else
 				{
-					return true;
+					// Exact match or contains check
+					return normalizedPath.Contains(normalizedPattern, StringComparison.OrdinalIgnoreCase);
 				}
-			}
-		}
-
-		return false;
+			});
 	}
 
 	/// <summary>

@@ -148,7 +148,6 @@ public static class SecureTempFileHelper
 			catch (IOException)
 			{
 				// Directory creation failed, try again with a new random name
-				continue;
 			}
 		}
 

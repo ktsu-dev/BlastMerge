@@ -38,9 +38,8 @@ public static class BlockMerger
 		List<MergeConflict> conflicts = [];
 		int blockNumber = 1;
 
-		// Track current position in both files
+		// Track current position in file 1
 		int currentPos1 = 0;
-		int currentPos2 = 0;
 
 		foreach (DiffPlex.Model.DiffBlock diffBlock in diffResult.DiffBlocks)
 		{
@@ -66,9 +65,8 @@ public static class BlockMerger
 			// Apply the user's choice using DiffPlexHelper
 			ApplyDiffBlockChoice(lines1, lines2, diffBlock, choice, mergedLines);
 
-			// Update current positions
+			// Update current position
 			currentPos1 = diffBlock.DeleteStartA + diffBlock.DeleteCountA;
-			currentPos2 = diffBlock.InsertStartB + diffBlock.InsertCountB;
 
 			blockNumber++;
 		}
