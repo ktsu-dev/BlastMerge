@@ -160,7 +160,7 @@ public static class AppDataBatchManager
 
 		try
 		{
-			AppData.RecentBatch = new BlastMergeAppData.RecentBatchInfo
+			AppData.RecentBatch = new RecentBatchInfo
 			{
 				BatchName = batchName,
 				LastUsed = DateTime.UtcNow

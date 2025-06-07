@@ -4,7 +4,6 @@
 
 namespace ktsu.BlastMerge.Core.Models;
 
-using System;
 using System.Collections.Generic;
 using ktsu.AppDataStorage;
 
@@ -32,41 +31,4 @@ public class BlastMergeAppData : AppData<BlastMergeAppData>
 	/// Gets or sets application settings and preferences.
 	/// </summary>
 	public ApplicationSettings Settings { get; set; } = new();
-
-	/// <summary>
-	/// Represents information about the most recently used batch configuration.
-	/// </summary>
-	public class RecentBatchInfo
-	{
-		/// <summary>
-		/// Gets or sets the name of the most recent batch.
-		/// </summary>
-		public string BatchName { get; set; } = string.Empty;
-
-		/// <summary>
-		/// Gets or sets when the batch was last used.
-		/// </summary>
-		public DateTime LastUsed { get; set; }
-	}
-
-	/// <summary>
-	/// Represents application-wide settings and preferences.
-	/// </summary>
-	public class ApplicationSettings
-	{
-		/// <summary>
-		/// Gets or sets the maximum number of history entries to keep per prompt type.
-		/// </summary>
-		public int MaxHistoryEntriesPerPrompt { get; set; } = 50;
-
-		/// <summary>
-		/// Gets or sets whether to automatically save configuration changes.
-		/// </summary>
-		public bool AutoSaveEnabled { get; set; } = true;
-
-		/// <summary>
-		/// Gets or sets the last configuration schema version.
-		/// </summary>
-		public string ConfigurationVersion { get; set; } = "1.0.0";
-	}
 }

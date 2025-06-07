@@ -313,4 +313,4 @@ globs: *
     -   Eliminate complex if-else chains by using early returns and single-purpose methods
     -   Using expression body syntax for simple condition checks
 -   Merge the `ChangeType.Unchanged` case with the `default` case in `FindDifferences` since they have identical implementations.
--   Loop should
+-   For loops

@@ -4,6 +4,7 @@
 
 namespace ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 
+using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.Core.Services;
 using Spectre.Console;
 
@@ -164,16 +165,5 @@ public class HelpMenuHandler(ApplicationService applicationService) : BaseMenuHa
 
 		AnsiConsole.Write(table);
 		WaitForKeyPress();
-	}
-
-	/// <summary>
-	/// Help menu choices.
-	/// </summary>
-	private enum HelpChoice
-	{
-		ApplicationOverview,
-		FeatureGuide,
-		KeyboardShortcuts,
-		BackToMainMenu
 	}
 }

@@ -168,7 +168,7 @@ public class ConsoleApplicationService : ApplicationService
 
 		// Record this batch as recently used
 		BlastMergeAppData appData = BlastMergeAppData.Get();
-		appData.RecentBatch = new BlastMergeAppData.RecentBatchInfo
+		appData.RecentBatch = new RecentBatchInfo
 		{
 			BatchName = batchName,
 			LastUsed = DateTime.UtcNow

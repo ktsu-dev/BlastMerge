@@ -4,6 +4,7 @@
 
 namespace ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 
+using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.Core.Services;
 using Spectre.Console;
 
@@ -191,16 +192,5 @@ public class SettingsMenuHandler(ApplicationService applicationService) : BaseMe
 
 		AnsiConsole.Write(statistics);
 		WaitForKeyPress();
-	}
-
-	/// <summary>
-	/// Settings menu choices.
-	/// </summary>
-	private enum SettingsChoice
-	{
-		ViewConfigurationPaths,
-		ClearInputHistory,
-		ViewStatistics,
-		BackToMainMenu
 	}
 }

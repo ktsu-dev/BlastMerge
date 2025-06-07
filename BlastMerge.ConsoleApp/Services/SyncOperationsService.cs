@@ -4,6 +4,7 @@
 
 namespace ktsu.BlastMerge.ConsoleApp.Services;
 
+using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.Core.Models;
 using ktsu.BlastMerge.Core.Services;
@@ -325,15 +326,5 @@ public static class SyncOperationsService
 		}
 
 		return newestFile;
-	}
-
-	/// <summary>
-	/// Sync operation choices.
-	/// </summary>
-	private enum SyncChoice
-	{
-		SyncToNewest,
-		ChooseReference,
-		Back
 	}
 }
