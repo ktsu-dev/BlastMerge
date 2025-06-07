@@ -8,8 +8,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using ktsu.BlastMerge.Core.Text;
 using ktsu.BlastMerge.Core.Models;
+using ktsu.BlastMerge.Core.Text;
 
 /// <summary>
 /// Parameters for pattern processing operations
