@@ -490,7 +490,7 @@ public class ConsoleApplicationService : ApplicationService
 		{
 			try
 			{
-				if (ProcessInteractiveMenuLoop())
+				if (ProcessInteractiveMenuLoop(this))
 				{
 					break;
 				}
@@ -507,17 +507,18 @@ public class ConsoleApplicationService : ApplicationService
 	/// <summary>
 	/// Processes a single iteration of the interactive menu loop.
 	/// </summary>
+	/// <param name="instance">The console application service instance.</param>
 	/// <returns>True if the user chose to exit, false to continue.</returns>
-	private bool ProcessInteractiveMenuLoop()
+	private static bool ProcessInteractiveMenuLoop(ConsoleApplicationService instance)
 	{
 		// Check navigation stack to determine what menu to show
 		if (NavigationHistory.ShouldGoToMainMenu())
 		{
-			return ProcessMainMenuInteraction();
+			return instance.ProcessMainMenuInteraction();
 		}
 
 		// Navigate back based on navigation stack
-		NavigateBasedOnStack();
+		NavigateBasedOnStack(instance);
 		return false;
 	}
 
@@ -640,7 +641,7 @@ public class ConsoleApplicationService : ApplicationService
 				new BatchOperationsMenuHandler(this).Enter();
 				break;
 			case MenuChoice.RunRecentBatch:
-				HandleRunRecentBatch();
+				HandleRunRecentBatch(this);
 				break;
 			case MenuChoice.Settings:
 				new SettingsMenuHandler(this).Enter();
@@ -656,7 +657,8 @@ public class ConsoleApplicationService : ApplicationService
 	/// <summary>
 	/// Handles running the most recently used batch configuration.
 	/// </summary>
-	private void HandleRunRecentBatch()
+	/// <param name="instance">The console application service instance.</param>
+	private static void HandleRunRecentBatch(ConsoleApplicationService instance)
 	{
 		string? recentBatch = GetMostRecentBatch();
 
@@ -681,7 +683,7 @@ public class ConsoleApplicationService : ApplicationService
 		}
 
 		ShowRunningBatchMessage(selectedBatch, recentBatch, directory);
-		ProcessBatch(directory, recentBatch);
+		instance.ProcessBatch(directory, recentBatch);
 		ShowCompletionMessage();
 	}
 
@@ -790,7 +792,8 @@ public class ConsoleApplicationService : ApplicationService
 	/// <summary>
 	/// Navigates based on the current navigation stack.
 	/// </summary>
-	private void NavigateBasedOnStack()
+	/// <param name="instance">The console application service instance.</param>
+	private static void NavigateBasedOnStack(ConsoleApplicationService instance)
 	{
 		string? currentMenu = NavigationHistory.Peek();
 
@@ -800,7 +803,7 @@ public class ConsoleApplicationService : ApplicationService
 			return;
 		}
 
-		NavigateToMenuHandler(currentMenu);
+		instance.NavigateToMenuHandler(currentMenu);
 	}
 
 	/// <summary>
