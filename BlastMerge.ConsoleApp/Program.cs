@@ -6,6 +6,7 @@ namespace ktsu.BlastMerge.ConsoleApp;
 
 using System;
 using System.Text;
+using ktsu.BlastMerge.ConsoleApp.CLI;
 using ktsu.BlastMerge.ConsoleApp.Services;
 
 /// <summary>

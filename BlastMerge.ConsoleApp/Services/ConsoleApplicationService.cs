@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 using ktsu.BlastMerge.Core.Models;

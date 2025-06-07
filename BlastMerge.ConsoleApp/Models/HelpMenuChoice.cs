@@ -2,12 +2,12 @@
 // All rights reserved.
 // Licensed under the MIT license.
 
-namespace ktsu.BlastMerge.ConsoleApp;
+namespace ktsu.BlastMerge.ConsoleApp.Models;
 
 /// <summary>
 /// Represents the available choices in the help menu
 /// </summary>
-public enum HelpChoice
+public enum HelpMenuChoice
 {
 	/// <summary>
 	/// Show application overview information

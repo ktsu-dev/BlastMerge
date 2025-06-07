@@ -2,7 +2,7 @@
 // All rights reserved.
 // Licensed under the MIT license.
 
-namespace ktsu.BlastMerge.ConsoleApp;
+namespace ktsu.BlastMerge.ConsoleApp.CLI;
 
 using System.Collections.Generic;
 using CommandLine;

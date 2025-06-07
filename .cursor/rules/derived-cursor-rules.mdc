@@ -202,7 +202,7 @@ globs: *
 -   Refactor the `BlastMerge.Core/Services/ApplicationService.cs`, `BlastMerge.ConsoleApp/ConsoleApplicationService.cs`, and `BlastMerge.ConsoleApp/Services/InteractiveMergeService.cs` to reduce code duplication.
 -   Properties `ContextBefore1`, `ContextAfter1`, `ContextBefore2`, and `ContextAfter2` in `BlockContext.cs` must be initialized to empty collections instead of null.
 -   Batch configurations should include search paths and path exclusion patterns.
--   If there is only whitespace changes in a line, ensure the formatting works properly and displays correctly. The `WhitespaceVisualizer.ProcessLineForDisplay()` method returns strings containing markup tags like `[on red]········[/]` for trailing whitespace. Calling `.EscapeMarkup()` on this already-formatted string escapes the markup tags, causing them to display as literal text instead of formatting. Use `ProcessLineForMarkupDisplay()` instead of `ProcessLineForDisplay()` and remove the subsequent `.EscapeMarkup()` calls since the new method uses `Markup.Escape()`. Add Spectre.Console package reference to the Core project since the new method uses `Markup.Escape()`.
+-   If there is only whitespace changes in a line, ensure the formatting works properly and displays correctly. The `WhitespaceVisualizer.ProcessLineForDisplay()` method returns strings containing markup tags like `[on red]········[/]` for trailing whitespace. Calling `.EscapeMarkup()` on this already-formatted string escapes the markup tags, causing them to display as literal text instead of formatting. Use `ProcessLineForMarkupDisplay()` instead of `ProcessLineForDisplay()` and remove the subsequent `.EscapeMarkup()` calls since the new method uses `Markup.Escape()`. Add Spectre.Console package reference to the Core project since the new method uses `Markup.Escape()`
 -   When showing diffs, can we do character level visualization where we put a different background behind changed/unchanged characters so we can easily read changes on similar lines. Use DiffPlex character-level diffing and the `CreateCharacterDiffs` method. Use `DiffPiece` objects which have a `SubPieces` property for character-level details. For similar lines, use character-level highlighting with red background for deleted characters and green background for added characters. Use the `CharacterLevelDiffer` service for character-level diffing.
 -   Use the `CharacterLevelDiffer.CreateSideBySideCharacterDiff` method to create a character-level diff for display in side-by-side format.
 -   If lines are not similar, use the standard line-based diffing.
@@ -313,4 +313,4 @@ globs: *
     -   Eliminate complex if-else chains by using early returns and single-purpose methods
     -   Using expression body syntax for simple condition checks
 -   Merge the `ChangeType.Unchanged` case with the `default` case in `FindDifferences` since they have identical implementations.
--   Reduce the
+-   Reduce the cognitive

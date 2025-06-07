@@ -2,7 +2,7 @@
 // All rights reserved.
 // Licensed under the MIT license.
 
-namespace ktsu.BlastMerge.ConsoleApp;
+namespace ktsu.BlastMerge.ConsoleApp.Models;
 
 /// <summary>
 /// Represents the available choices when multiple identical copies are found for a batch pattern

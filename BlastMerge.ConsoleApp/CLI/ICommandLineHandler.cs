@@ -2,7 +2,7 @@
 // All rights reserved.
 // Licensed under the MIT license.
 
-namespace ktsu.BlastMerge.ConsoleApp.Contracts;
+namespace ktsu.BlastMerge.ConsoleApp.CLI;
 
 /// <summary>
 /// Interface for handling command line argument processing.

@@ -2,13 +2,12 @@
 // All rights reserved.
 // Licensed under the MIT license.
 
-namespace ktsu.BlastMerge.ConsoleApp.Services;
+namespace ktsu.BlastMerge.ConsoleApp.CLI;
 
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using CommandLine;
-using ktsu.BlastMerge.ConsoleApp.Contracts;
 
 /// <summary>
 /// Handles command line argument processing and delegates to appropriate operations.
