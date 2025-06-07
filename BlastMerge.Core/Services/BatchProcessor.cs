@@ -12,6 +12,19 @@ using ktsu.BlastMerge.Core.Constants;
 using ktsu.BlastMerge.Core.Models;
 
 /// <summary>
+/// Parameters for pattern processing operations
+/// </summary>
+/// <param name="Pattern">The file pattern to process</param>
+/// <param name="SearchPaths">The search paths to use</param>
+/// <param name="Directory">The default directory to search in</param>
+/// <param name="PathExclusionPatterns">Path exclusion patterns to apply</param>
+public record PatternProcessingParameters(
+	string Pattern,
+	IReadOnlyCollection<string> SearchPaths,
+	string Directory,
+	IReadOnlyCollection<string> PathExclusionPatterns);
+
+/// <summary>
 /// Callback functions for batch processing operations
 /// </summary>
 /// <param name="MergeCallback">Callback function to perform individual merges</param>
@@ -562,115 +575,18 @@ public static partial class BatchProcessor
 	}
 
 	/// <summary>
-	/// Processes a single file pattern with search paths and exclusion patterns
+	/// Core method that processes a single file pattern with all options
 	/// </summary>
-	/// <param name="pattern">The file pattern to process</param>
-	/// <param name="searchPaths">The search paths to use. If empty, uses the directory parameter.</param>
-	/// <param name="directory">The default directory to search in</param>
-	/// <param name="pathExclusionPatterns">Path exclusion patterns to apply</param>
-	/// <param name="mergeCallback">Callback function to perform individual merges</param>
-	/// <param name="statusCallback">Callback function to report merge status</param>
-	/// <param name="continuationCallback">Callback function to ask whether to continue</param>
-	/// <returns>The pattern processing result</returns>
-	public static PatternResult ProcessSinglePatternWithPaths(
-		string pattern,
-		IReadOnlyCollection<string> searchPaths,
-		string directory,
-		IReadOnlyCollection<string> pathExclusionPatterns,
-		Func<string, string, string?, MergeResult?> mergeCallback,
-		Action<MergeSessionStatus> statusCallback,
-		Func<bool> continuationCallback)
-	{
-		ArgumentNullException.ThrowIfNull(pattern);
-		ArgumentNullException.ThrowIfNull(searchPaths);
-		ArgumentNullException.ThrowIfNull(directory);
-		ArgumentNullException.ThrowIfNull(pathExclusionPatterns);
-		ArgumentNullException.ThrowIfNull(mergeCallback);
-		ArgumentNullException.ThrowIfNull(statusCallback);
-		ArgumentNullException.ThrowIfNull(continuationCallback);
-
-		PatternResult result = new()
-		{
-			Pattern = pattern,
-			Success = false
-		};
-
-		try
-		{
-			// Find files matching the pattern using search paths and exclusions
-			IReadOnlyCollection<string> files = FileFinder.FindFiles(searchPaths, directory, pattern, pathExclusionPatterns);
-			result.FilesFound = files.Count;
-
-			if (files.Count == 0)
-			{
-				result.Message = NoFilesFoundMessage;
-				return result;
-			}
-
-			if (files.Count == 1)
-			{
-				result.Success = true;
-				result.UniqueVersions = 1;
-				result.Message = OnlyOneFileFoundMessage;
-				return result;
-			}
-
-			// Group files by hash to find unique versions
-			IReadOnlyCollection<FileGroup> fileGroups = FileDiffer.GroupFilesByHash(files);
-			result.UniqueVersions = fileGroups.Count;
-
-			if (fileGroups.Count == 1)
-			{
-				result.Success = true;
-				result.Message = AllFilesIdenticalMessage;
-				return result;
-			}
-
-			// Perform iterative merge
-			MergeCompletionResult mergeResult = IterativeMergeOrchestrator.StartIterativeMergeProcess(
-				fileGroups,
-				mergeCallback,
-				statusCallback,
-				continuationCallback);
-
-			result.MergeResult = mergeResult;
-			result.Success = mergeResult.IsSuccessful;
-			result.Message = mergeResult.IsSuccessful ? MergeCompletedSuccessfullyMessage : $"Merge failed: {mergeResult.OriginalFileName}";
-
-			return result;
-		}
-		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-		{
-			result.Message = $"Error processing pattern: {ex.Message}";
-			return result;
-		}
-	}
-
-	/// <summary>
-	/// Processes a single file pattern with search paths, exclusion patterns, and progress reporting
-	/// </summary>
-	/// <param name="pattern">The file pattern to process</param>
-	/// <param name="searchPaths">The search paths to use. If empty, uses the directory parameter.</param>
-	/// <param name="directory">The default directory to search in</param>
-	/// <param name="pathExclusionPatterns">Path exclusion patterns to apply</param>
-	/// <param name="callbacks">Processing callbacks for merge operations and progress reporting</param>
-	/// <returns>The pattern processing result</returns>
-	public static PatternResult ProcessSinglePatternWithPaths(
-		string pattern,
-		IReadOnlyCollection<string> searchPaths,
-		string directory,
-		IReadOnlyCollection<string> pathExclusionPatterns,
+	private static PatternResult ProcessSinglePatternCore(
+		PatternProcessingParameters parameters,
 		ProcessingCallbacks callbacks)
 	{
-		ArgumentNullException.ThrowIfNull(pattern);
-		ArgumentNullException.ThrowIfNull(searchPaths);
-		ArgumentNullException.ThrowIfNull(directory);
-		ArgumentNullException.ThrowIfNull(pathExclusionPatterns);
+		ArgumentNullException.ThrowIfNull(parameters);
 		ArgumentNullException.ThrowIfNull(callbacks);
 
 		PatternResult result = new()
 		{
-			Pattern = pattern,
+			Pattern = parameters.Pattern,
 			Success = false
 		};
 
@@ -682,7 +598,7 @@ public static partial class BatchProcessor
 				: null;
 
 			// Find files matching the pattern using search paths and exclusions
-			IReadOnlyCollection<string> files = FileFinder.FindFiles(searchPaths, directory, pattern, pathExclusionPatterns, fileDiscoveryCallback);
+			IReadOnlyCollection<string> files = FileFinder.FindFiles(parameters.SearchPaths, parameters.Directory, parameters.Pattern, parameters.PathExclusionPatterns, fileDiscoveryCallback);
 			result.FilesFound = files.Count;
 
 			if (files.Count == 0)
@@ -731,6 +647,48 @@ public static partial class BatchProcessor
 	}
 
 	/// <summary>
+	/// Processes a single file pattern with search paths and exclusion patterns
+	/// </summary>
+	/// <param name="pattern">The file pattern to process</param>
+	/// <param name="searchPaths">The search paths to use. If empty, uses the directory parameter.</param>
+	/// <param name="directory">The default directory to search in</param>
+	/// <param name="pathExclusionPatterns">Path exclusion patterns to apply</param>
+	/// <param name="mergeCallback">Callback function to perform individual merges</param>
+	/// <param name="statusCallback">Callback function to report merge status</param>
+	/// <param name="continuationCallback">Callback function to ask whether to continue</param>
+	/// <returns>The pattern processing result</returns>
+	public static PatternResult ProcessSinglePatternWithPaths(
+		string pattern,
+		IReadOnlyCollection<string> searchPaths,
+		string directory,
+		IReadOnlyCollection<string> pathExclusionPatterns,
+		Func<string, string, string?, MergeResult?> mergeCallback,
+		Action<MergeSessionStatus> statusCallback,
+		Func<bool> continuationCallback) =>
+		ProcessSinglePatternCore(
+			new PatternProcessingParameters(pattern, searchPaths, directory, pathExclusionPatterns),
+			new ProcessingCallbacks(mergeCallback, statusCallback, continuationCallback));
+
+	/// <summary>
+	/// Processes a single file pattern with search paths, exclusion patterns, and progress reporting
+	/// </summary>
+	/// <param name="pattern">The file pattern to process</param>
+	/// <param name="searchPaths">The search paths to use. If empty, uses the directory parameter.</param>
+	/// <param name="directory">The default directory to search in</param>
+	/// <param name="pathExclusionPatterns">Path exclusion patterns to apply</param>
+	/// <param name="callbacks">Processing callbacks for merge operations and progress reporting</param>
+	/// <returns>The pattern processing result</returns>
+	public static PatternResult ProcessSinglePatternWithPaths(
+		string pattern,
+		IReadOnlyCollection<string> searchPaths,
+		string directory,
+		IReadOnlyCollection<string> pathExclusionPatterns,
+		ProcessingCallbacks callbacks) =>
+		ProcessSinglePatternCore(
+			new PatternProcessingParameters(pattern, searchPaths, directory, pathExclusionPatterns),
+			callbacks);
+
+	/// <summary>
 	/// Processes a single file pattern
 	/// </summary>
 	/// <param name="pattern">The file pattern to process</param>
@@ -744,70 +702,10 @@ public static partial class BatchProcessor
 		string directory,
 		Func<string, string, string?, MergeResult?> mergeCallback,
 		Action<MergeSessionStatus> statusCallback,
-		Func<bool> continuationCallback)
-	{
-		ArgumentNullException.ThrowIfNull(pattern);
-		ArgumentNullException.ThrowIfNull(directory);
-		ArgumentNullException.ThrowIfNull(mergeCallback);
-		ArgumentNullException.ThrowIfNull(statusCallback);
-		ArgumentNullException.ThrowIfNull(continuationCallback);
-
-		PatternResult result = new()
-		{
-			Pattern = pattern,
-			Success = false
-		};
-
-		try
-		{
-			// Find files matching the pattern - use empty collections as default for search paths and exclusions
-			IReadOnlyCollection<string> files = FileFinder.FindFiles([], directory, pattern, []);
-			result.FilesFound = files.Count;
-
-			if (files.Count == 0)
-			{
-				result.Message = NoFilesFoundMessage;
-				return result;
-			}
-
-			if (files.Count == 1)
-			{
-				result.Success = true;
-				result.UniqueVersions = 1;
-				result.Message = OnlyOneFileFoundMessage;
-				return result;
-			}
-
-			// Group files by hash to find unique versions
-			IReadOnlyCollection<FileGroup> fileGroups = FileDiffer.GroupFilesByHash(files);
-			result.UniqueVersions = fileGroups.Count;
-
-			if (fileGroups.Count == 1)
-			{
-				result.Success = true;
-				result.Message = AllFilesIdenticalMessage;
-				return result;
-			}
-
-			// Perform iterative merge
-			MergeCompletionResult mergeResult = IterativeMergeOrchestrator.StartIterativeMergeProcess(
-				fileGroups,
-				mergeCallback,
-				statusCallback,
-				continuationCallback);
-
-			result.MergeResult = mergeResult;
-			result.Success = mergeResult.IsSuccessful;
-			result.Message = mergeResult.IsSuccessful ? MergeCompletedSuccessfullyMessage : $"Merge failed: {mergeResult.OriginalFileName}";
-
-			return result;
-		}
-		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-		{
-			result.Message = $"Error processing pattern: {ex.Message}";
-			return result;
-		}
-	}
+		Func<bool> continuationCallback) =>
+		ProcessSinglePatternCore(
+			new PatternProcessingParameters(pattern, [], directory, []),
+			new ProcessingCallbacks(mergeCallback, statusCallback, continuationCallback));
 
 	/// <summary>
 	/// Processes a single file pattern with progress reporting
@@ -825,75 +723,10 @@ public static partial class BatchProcessor
 		Func<string, string, string?, MergeResult?> mergeCallback,
 		Action<MergeSessionStatus> statusCallback,
 		Func<bool> continuationCallback,
-		Action<string>? progressCallback)
-	{
-		ArgumentNullException.ThrowIfNull(pattern);
-		ArgumentNullException.ThrowIfNull(directory);
-		ArgumentNullException.ThrowIfNull(mergeCallback);
-		ArgumentNullException.ThrowIfNull(statusCallback);
-		ArgumentNullException.ThrowIfNull(continuationCallback);
-
-		PatternResult result = new()
-		{
-			Pattern = pattern,
-			Success = false
-		};
-
-		try
-		{
-			// Create a wrapper for the progress callback to show file paths as they're discovered
-			Action<string>? fileDiscoveryCallback = progressCallback != null
-				? filePath => progressCallback($"📄 Found: {filePath}")
-				: null;
-
-			// Find files matching the pattern - use empty collections as default for search paths and exclusions
-			IReadOnlyCollection<string> files = FileFinder.FindFiles([], directory, pattern, [], fileDiscoveryCallback);
-			result.FilesFound = files.Count;
-
-			if (files.Count == 0)
-			{
-				result.Message = NoFilesFoundMessage;
-				return result;
-			}
-
-			if (files.Count == 1)
-			{
-				result.Success = true;
-				result.UniqueVersions = 1;
-				result.Message = OnlyOneFileFoundMessage;
-				return result;
-			}
-
-			// Group files by hash to find unique versions
-			IReadOnlyCollection<FileGroup> fileGroups = FileDiffer.GroupFilesByHash(files);
-			result.UniqueVersions = fileGroups.Count;
-
-			if (fileGroups.Count == 1)
-			{
-				result.Success = true;
-				result.Message = AllFilesIdenticalMessage;
-				return result;
-			}
-
-			// Perform iterative merge
-			MergeCompletionResult mergeResult = IterativeMergeOrchestrator.StartIterativeMergeProcess(
-				fileGroups,
-				mergeCallback,
-				statusCallback,
-				continuationCallback);
-
-			result.MergeResult = mergeResult;
-			result.Success = mergeResult.IsSuccessful;
-			result.Message = mergeResult.IsSuccessful ? MergeCompletedSuccessfullyMessage : $"Merge failed: {mergeResult.OriginalFileName}";
-
-			return result;
-		}
-		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-		{
-			result.Message = $"Error processing pattern: {ex.Message}";
-			return result;
-		}
-	}
+		Action<string>? progressCallback) =>
+		ProcessSinglePatternCore(
+			new PatternProcessingParameters(pattern, [], directory, []),
+			new ProcessingCallbacks(mergeCallback, statusCallback, continuationCallback, progressCallback));
 
 	/// <summary>
 	/// Creates a custom batch configuration from a list of patterns

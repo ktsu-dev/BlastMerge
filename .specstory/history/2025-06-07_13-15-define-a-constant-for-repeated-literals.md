@@ -320,3 +320,410 @@ This follows the same pattern as the other constants in the file (`OnlyOneFileFo
 
 ---
 
+_**User**_
+
+Duplicated Lines (%) on New Code
+2.0%
+Duplicated Lines (%) on New Code
+Duplicated Lines on New Code
+
+BlastMerge.Core/Services/BatchProcessor.cs
+22.9%
+211
+
+BlastMerge.ConsoleApp/Services/InteractiveMergeService.cs
+8.9%
+32
+
+BlastMerge.ConsoleApp/ConsoleApplicationService.cs
+3.1%
+32
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+I can see significant code duplication in your codebase, particularly in `BatchProcessor.cs` with 22.9% duplication. Let me analyze the duplicated patterns and suggest refactoring strategies.
+
+---
+
+Read file: BlastMerge.Core/Services/BatchProcessor.cs
+
+---
+
+I can see the major duplication issue: there are multiple `ProcessSinglePattern` methods with nearly identical logic. Let me refactor this by creating a core method and having the overloads delegate to it:
+
+---
+
+```diff
+  
+  	/// <summary>
+- 	/// Processes a single file pattern with search paths and exclusion patterns
++ 	/// Core method that processes a single file pattern with all options
+  	/// </summary>
+- 	/// <param name="pattern">The file pattern to process</param>
+- 	/// <param name="searchPaths">The search paths to use. If empty, uses the directory parameter.</param>
+- 	/// <param name="directory">The default directory to search in</param>
+- 	/// <param name="pathExclusionPatterns">Path exclusion patterns to apply</param>
+- 	/// <param name="mergeCallback">Callback function to perform individual merges</param>
+- 	/// <param name="statusCallback">Callback function to report merge status</param>
+- 	/// <param name="continuationCallback">Callback function to ask whether to continue</param>
+- 	/// <returns>The pattern processing result</returns>
+- 	public static PatternResult ProcessSinglePatternWithPaths(
++ 	private static PatternResult ProcessSinglePatternCore(
+  		string pattern,
+  		IReadOnlyCollection<string> searchPaths,
+```
+
+```diff
+  		Func<string, string, string?, MergeResult?> mergeCallback,
+  		Action<MergeSessionStatus> statusCallback,
+- 		Func<bool> continuationCallback)
++ 		Func<bool> continuationCallback,
++ 		Action<string>? progressCallback = null)
+  	{
+  		ArgumentNullException.ThrowIfNull(pattern);
+```
+
+```diff
+  		try
+  		{
++ 			// Create a wrapper for the progress callback to show file paths as they're discovered
++ 			Action<string>? fileDiscoveryCallback = progressCallback != null
++ 				? filePath => progressCallback($"📄 Found: {filePath}")
++ 				: null;
++ 
+  			// Find files matching the pattern using search paths and exclusions
+- 			IReadOnlyCollection<string> files = FileFinder.FindFiles(searchPaths, directory, pattern, pathExclusionPatterns);
++ 			IReadOnlyCollection<string> files = FileFinder.FindFiles(searchPaths, directory, pattern, pathExclusionPatterns, fileDiscoveryCallback);
+  			result.FilesFound = files.Count;
+  
+```
+
+```diff
+  	}
+  
++ 	/// <summary>
++ 	/// Processes a single file pattern with search paths and exclusion patterns
++ 	/// </summary>
++ 	/// <param name="pattern">The file pattern to process</param>
++ 	/// <param name="searchPaths">The search paths to use. If empty, uses the directory parameter.</param>
++ 	/// <param name="directory">The default directory to search in</param>
++ 	/// <param name="pathExclusionPatterns">Path exclusion patterns to apply</param>
++ 	/// <param name="mergeCallback">Callback function to perform individual merges</param>
++ 	/// <param name="statusCallback">Callback function to report merge status</param>
++ 	/// <param name="continuationCallback">Callback function to ask whether to continue</param>
++ 	/// <returns>The pattern processing result</returns>
++ 	public static PatternResult ProcessSinglePatternWithPaths(
++ 		string pattern,
++ 		IReadOnlyCollection<string> searchPaths,
++ 		string directory,
++ 		IReadOnlyCollection<string> pathExclusionPatterns,
++ 		Func<string, string, string?, MergeResult?> mergeCallback,
++ 		Action<MergeSessionStatus> statusCallback,
++ 		Func<bool> continuationCallback) =>
++ 		ProcessSinglePatternCore(pattern, searchPaths, directory, pathExclusionPatterns, mergeCallback, statusCallback, continuationCallback);
++ 
+  	/// <summary>
+  	/// Processes a single file pattern with search paths, exclusion patterns, and progress reporting
+```
+
+```diff
+  		ProcessingCallbacks callbacks)
+  	{
+- 		ArgumentNullException.ThrowIfNull(pattern);
+- 		ArgumentNullException.ThrowIfNull(searchPaths);
+- 		ArgumentNullException.ThrowIfNull(directory);
+- 		ArgumentNullException.ThrowIfNull(pathExclusionPatterns);
+  		ArgumentNullException.ThrowIfNull(callbacks);
+- 
+- 		PatternResult result = new()
+- 		{
+- 			Pattern = pattern,
+- 			Success = false
+- 		};
+- 
+- 		try
+- 		{
+- 			// Create a wrapper for the progress callback to show file paths as they're discovered
+- 			Action<string>? fileDiscoveryCallback = callbacks.ProgressCallback != null
+- 				? filePath => callbacks.ProgressCallback($"📄 Found: {filePath}")
+- 				: null;
+- 
+- 			// Find files matching the pattern using search paths and exclusions
+- 			IReadOnlyCollection<string> files = FileFinder.FindFiles(searchPaths, directory, pattern, pathExclusionPatterns, fileDiscoveryCallback);
+- 			result.FilesFound = files.Count;
+- 
+- 			if (files.Count == 0)
+- 			{
+- 				result.Message = NoFilesFoundMessage;
+- 				return result;
+- 			}
+- 
+- 			if (files.Count == 1)
+- 			{
+- 				result.Success = true;
+- 				result.UniqueVersions = 1;
+- 				result.Message = OnlyOneFileFoundMessage;
+- 				return result;
+- 			}
+- 
+- 			// Group files by hash to find unique versions
+- 			IReadOnlyCollection<FileGroup> fileGroups = FileDiffer.GroupFilesByHash(files);
+- 			result.UniqueVersions = fileGroups.Count;
+- 
+- 			if (fileGroups.Count == 1)
+- 			{
+- 				result.Success = true;
+- 				result.Message = AllFilesIdenticalMessage;
+- 				return result;
+- 			}
+- 
+- 			// Perform iterative merge
+- 			MergeCompletionResult mergeResult = IterativeMergeOrchestrator.StartIterativeMergeProcess(
+- 				fileGroups,
+- 				callbacks.MergeCallback,
+- 				callbacks.StatusCallback,
+- 				callbacks.ContinuationCallback);
+- 
+- 			result.MergeResult = mergeResult;
+- 			result.Success = mergeResult.IsSuccessful;
+- 			result.Message = mergeResult.IsSuccessful ? MergeCompletedSuccessfullyMessage : $"Merge failed: {mergeResult.OriginalFileName}";
+- 
+- 			return result;
+- 		}
+- 		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+- 		{
+- 			result.Message = $"Error processing pattern: {ex.Message}";
+- 			return result;
+- 		}
++ 		return ProcessSinglePatternCore(pattern, searchPaths, directory, pathExclusionPatterns, 
++ 			callbacks.MergeCallback, callbacks.StatusCallback, callbacks.ContinuationCallback, callbacks.ProgressCallback);
+  	}
+  
+```
+
+```diff
+  		Func<string, string, string?, MergeResult?> mergeCallback,
+  		Action<MergeSessionStatus> statusCallback,
+- 		Func<bool> continuationCallback)
+- 	{
+- 		ArgumentNullException.ThrowIfNull(pattern);
+- 		ArgumentNullException.ThrowIfNull(directory);
+- 		ArgumentNullException.ThrowIfNull(mergeCallback);
+- 		ArgumentNullException.ThrowIfNull(statusCallback);
+- 		ArgumentNullException.ThrowIfNull(continuationCallback);
+- 
+- 		PatternResult result = new()
+- 		{
+- 			Pattern = pattern,
+- 			Success = false
+- 		};
+- 
+- 		try
+- 		{
+- 			// Find files matching the pattern - use empty collections as default for search paths and exclusions
+- 			IReadOnlyCollection<string> files = FileFinder.FindFiles([], directory, pattern, []);
+- 			result.FilesFound = files.Count;
+- 
+- 			if (files.Count == 0)
+- 			{
+- 				result.Message = NoFilesFoundMessage;
+- 				return result;
+- 			}
+- 
+- 			if (files.Count == 1)
+- 			{
+- 				result.Success = true;
+- 				result.UniqueVersions = 1;
+- 				result.Message = OnlyOneFileFoundMessage;
+- 				return result;
+- 			}
+- 
+- 			// Group files by hash to find unique versions
+- 			IReadOnlyCollection<FileGroup> fileGroups = FileDiffer.GroupFilesByHash(files);
+- 			result.UniqueVersions = fileGroups.Count;
+- 
+- 			if (fileGroups.Count == 1)
+- 			{
+- 				result.Success = true;
+- 				result.Message = AllFilesIdenticalMessage;
+- 				return result;
+- 			}
+- 
+- 			// Perform iterative merge
+- 			MergeCompletionResult mergeResult = IterativeMergeOrchestrator.StartIterativeMergeProcess(
+- 				fileGroups,
+- 				mergeCallback,
+- 				statusCallback,
+- 				continuationCallback);
+- 
+- 			result.MergeResult = mergeResult;
+- 			result.Success = mergeResult.IsSuccessful;
+- 			result.Message = mergeResult.IsSuccessful ? MergeCompletedSuccessfullyMessage : $"Merge failed: {mergeResult.OriginalFileName}";
+- 
+- 			return result;
+- 		}
+- 		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+- 		{
+- 			result.Message = $"Error processing pattern: {ex.Message}";
+- 			return result;
+- 		}
+- 	}
++ 		Func<bool> continuationCallback) =>
++ 		ProcessSinglePatternCore(pattern, [], directory, [], mergeCallback, statusCallback, continuationCallback);
+  
+  	/// <summary>
+```
+
+```diff
+  		Action<MergeSessionStatus> statusCallback,
+  		Func<bool> continuationCallback,
+- 		Action<string>? progressCallback)
+- 	{
+- 		ArgumentNullException.ThrowIfNull(pattern);
+- 		ArgumentNullException.ThrowIfNull(directory);
+- 		ArgumentNullException.ThrowIfNull(mergeCallback);
+- 		ArgumentNullException.ThrowIfNull(statusCallback);
+- 		ArgumentNullException.ThrowIfNull(continuationCallback);
+- 
+- 		PatternResult result = new()
+- 		{
+- 			Pattern = pattern,
+- 			Success = false
+- 		};
+- 
+- 		try
+- 		{
+- 			// Create a wrapper for the progress callback to show file paths as they're discovered
+- 			Action<string>? fileDiscoveryCallback = progressCallback != null
+- 				? filePath => progressCallback($"📄 Found: {filePath}")
+- 				: null;
+- 
+- 			// Find files matching the pattern - use empty collections as default for search paths and exclusions
+- 			IReadOnlyCollection<string> files = FileFinder.FindFiles([], directory, pattern, [], fileDiscoveryCallback);
+- 			result.FilesFound = files.Count;
+- 
+- 			if (files.Count == 0)
+- 			{
+- 				result.Message = NoFilesFoundMessage;
+- 				return result;
+- 			}
+- 
+- 			if (files.Count == 1)
+- 			{
+- 				result.Success = true;
+- 				result.UniqueVersions = 1;
+- 				result.Message = OnlyOneFileFoundMessage;
+- 				return result;
+- 			}
+- 
+- 			// Group files by hash to find unique versions
+- 			IReadOnlyCollection<FileGroup> fileGroups = FileDiffer.GroupFilesByHash(files);
+- 			result.UniqueVersions = fileGroups.Count;
+- 
+- 			if (fileGroups.Count == 1)
+- 			{
+- 				result.Success = true;
+- 				result.Message = AllFilesIdenticalMessage;
+- 				return result;
+- 			}
+- 
+- 			// Perform iterative merge
+- 			MergeCompletionResult mergeResult = IterativeMergeOrchestrator.StartIterativeMergeProcess(
+- 				fileGroups,
+- 				mergeCallback,
+- 				statusCallback,
+- 				continuationCallback);
+- 
+- 			result.MergeResult = mergeResult;
+- 			result.Success = mergeResult.IsSuccessful;
+- 			result.Message = mergeResult.IsSuccessful ? MergeCompletedSuccessfullyMessage : $"Merge failed: {mergeResult.OriginalFileName}";
+- 
+- 			return result;
+- 		}
+- 		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+- 		{
+- 			result.Message = $"Error processing pattern: {ex.Message}";
+- 			return result;
+- 		}
+- 	}
++ 		Action<string>? progressCallback) =>
++ 		ProcessSinglePatternCore(pattern, [], directory, [], mergeCallback, statusCallback, continuationCallback, progressCallback);
+  
+  	/// <summary>
+```
+
+---
+
+Perfect! I've successfully refactored the `BatchProcessor.cs` to eliminate the major code duplication by:
+
+## ✅ **Refactoring Summary**
+
+1. **Created a core method**: `ProcessSinglePatternCore` that contains all the shared logic
+2. **Converted overloads to delegates**: All 4 `ProcessSinglePattern` methods now delegate to the core method
+3. **Eliminated ~150+ lines of duplicated code**: Reduced from multiple full implementations to simple delegation calls
+
+## **Before vs After**
+- **Before**: 4 methods with nearly identical 40-60 line implementations
+- **After**: 1 core method + 4 lightweight delegate methods using expression bodies
+
+## **Benefits**
+- ✅ **Dramatically reduced duplication** from 22.9% 
+- ✅ **Single source of truth** for pattern processing logic
+- ✅ **Easier maintenance** - changes only need to be made in one place
+- ✅ **Preserved all existing APIs** - no breaking changes
+- ✅ **Clear intent** - overloads show exactly what parameters they're defaulting
+
+This refactoring should significantly reduce your code duplication percentage. The pattern can be applied to other files showing duplication like `InteractiveMergeService.cs` and `ConsoleApplicationService.cs` using similar extraction techniques.
+
+---
+
+_**User**_
+
+For the code present, we get this error:
+```
+Method has 8 parameters, which is greater than the 7 authorized.
+```
+How can I resolve this? If you propose a fix, please make it concise.
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+The `ProcessSinglePatternCore` method has 8 parameters, which exceeds the 7-parameter limit. I'll create a parameter object to group related parameters together.
+
+---
+
+
+
+---
+
+Now I'll update the `ProcessSinglePatternCore` method to use the new parameter object:
+
+---
+
+
+
+---
+
+Now I need to update the method body to use the record properties and update all the calling methods:
+
+---
+
+
+
+---
+
+
+
+---
+

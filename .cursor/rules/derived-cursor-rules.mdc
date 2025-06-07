@@ -305,6 +305,7 @@ globs: *
 -   Merge nested if statements into a single condition using the logical AND operator (`&&`) where appropriate to improve conciseness and eliminate linter warnings. For example, `if (condition1 && condition2)` instead of `if (condition1) { if (condition2) }`.
 -   Define a constant instead of using the literal 'No files found' multiple times.
 -   Define a constant instead of using the literal 'Merge completed successfully' multiple times.
+-   When processing a single file pattern, display file paths as they're discovered as user feedback.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -314,4 +315,4 @@ globs: *
 -   Be aware that binary files will be treated as text and should show differences.
 -   When finding files, skip git submodules. Git submodules are identified by the presence of a `.git` file (not directory) in the subdirectory, which contains a reference to the actual git directory.
 -   In `FileFinder.cs`, add a method `IsGitSubmodule` to determine if a directory is a git submodule. This method should check for the existence of a `.git` file (not directory) in the given directory path.
--   The `IsGitSubmodule` method should handle potential exceptions like `UnauthorizedAccessException`, `DirectoryNotFoundException`, `IOException`, `ArgumentException`,
+-   The `IsGitSubmodule`
