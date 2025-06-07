@@ -633,3 +633,94 @@ The method now efficiently performs asynchronous file discovery and hashing in p
 
 ---
 
+_**User**_
+
+Pass a timeout to limit the execution time.
+Not specifying a timeout for regular expressions can lead to a Denial-of-Service attack. Pass a timeout when using System.Text.RegularExpressions to process untrusted input because a malicious user might craft a value for which the evaluation lasts excessively long.
+Recommended Secure Coding Practices
+It is recommended to specify a matchTimeout when executing a regular expression.
+Make sure regular expressions are not vulnerable to Denial-of-Service attacks by reviewing the patterns.
+Consider using a non-backtracking algorithm by specifying RegexOptions.NonBacktracking.
+
+			return Regex.IsMatch(path, regexPattern, RegexOptions.IgnoreCase);
+
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+I'll help you fix the regular expression timeout vulnerability. Let me first locate the code that uses `Regex.IsMatch` without a timeout.
+
+---
+
+<details>
+            <summary>Grep search for "Regex\.IsMatch\(path, regexPattern, RegexOptions\.IgnoreCase\)" • **1** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileFinder.cs` | L307 | `return Regex.IsMatch(path, regexPattern, RegexOptions.IgnoreCase);` |
+
+</details>
+
+---
+
+Found it! Let me examine the context around this line to understand how to properly fix it:
+
+---
+
+Read file: BlastMerge.Core/Services/FileFinder.cs
+
+---
+
+Now I can see the vulnerable `Regex.IsMatch` call is in the `MatchesGlobPattern` method at line 307. Let me fix this by adding a timeout and considering the security recommendations:
+
+---
+
+```diff
+  		try
+  		{
+- 			return Regex.IsMatch(path, regexPattern, RegexOptions.IgnoreCase);
++ 			// Use a 1-second timeout and non-backtracking algorithm to prevent ReDoS attacks
++ 			return Regex.IsMatch(path, regexPattern, RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, TimeSpan.FromSeconds(1));
+  		}
+  		catch (ArgumentException)
+```
+
+```diff
+  			return path.Contains(pattern.Replace("*", "").Replace("?", ""), StringComparison.OrdinalIgnoreCase);
+  		}
++ 		catch (RegexMatchTimeoutException)
++ 		{
++ 			// If regex times out, fall back to simple contains check to avoid DoS
++ 			return path.Contains(pattern.Replace("*", "").Replace("?", ""), StringComparison.OrdinalIgnoreCase);
++ 		}
+  	}
+  
+```
+
+---
+
+Now let me verify that the build still works with these changes:
+
+---
+
+```bash
+dotnet build --verbosity quiet
+```
+
+```
+C:\dev\ktsu-dev\BlastMerge>dotnet build --verbosity quiet
+
+C:\dev\ktsu-dev\BlastMerge>
+```
+
+---
+
+
+
+---
+

@@ -305,11 +305,17 @@ public static class FileFinder
 
 		try
 		{
-			return Regex.IsMatch(path, regexPattern, RegexOptions.IgnoreCase);
+			// Use a 1-second timeout and non-backtracking algorithm to prevent ReDoS attacks
+			return Regex.IsMatch(path, regexPattern, RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, TimeSpan.FromSeconds(1));
 		}
 		catch (ArgumentException)
 		{
 			// If regex fails, fall back to simple contains check
+			return path.Contains(pattern.Replace("*", "").Replace("?", ""), StringComparison.OrdinalIgnoreCase);
+		}
+		catch (RegexMatchTimeoutException)
+		{
+			// If regex times out, fall back to simple contains check to avoid DoS
 			return path.Contains(pattern.Replace("*", "").Replace("?", ""), StringComparison.OrdinalIgnoreCase);
 		}
 	}
