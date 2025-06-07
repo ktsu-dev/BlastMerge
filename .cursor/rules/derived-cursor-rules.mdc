@@ -299,6 +299,12 @@ globs: *
 -   Refactor methods to reduce cognitive complexity.
 -   If `GroupFilesByHashOnly` has an identical implementation to `GroupFilesByHash`, make `GroupFilesByHashOnly` delegate to `GroupFilesByHash`.
 -   When a method has more than 7 parameters, group related parameters into a single object (e.g., a record) to reduce the number of parameters.
+-   All 'ProcessSinglePattern' method overloads should be adjacent.
+-   Define a constant instead of using the literal 'Only one file found, no merge needed' multiple times.
+-   Define a constant instead of using the literal 'All files are identical' multiple times.
+-   Merge nested if statements into a single condition using the logical AND operator (`&&`) where appropriate to improve conciseness and eliminate linter warnings. For example, `if (condition1 && condition2)` instead of `if (condition1) { if (condition2) }`.
+-   Define a constant instead of using the literal 'No files found' multiple times.
+-   Define a constant instead of using the literal 'Merge completed successfully' multiple times.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -308,13 +314,4 @@ globs: *
 -   Be aware that binary files will be treated as text and should show differences.
 -   When finding files, skip git submodules. Git submodules are identified by the presence of a `.git` file (not directory) in the subdirectory, which contains a reference to the actual git directory.
 -   In `FileFinder.cs`, add a method `IsGitSubmodule` to determine if a directory is a git submodule. This method should check for the existence of a `.git` file (not directory) in the given directory path.
--   The `IsGitSubmodule` method should handle potential exceptions like `UnauthorizedAccessException`, `DirectoryNotFoundException`, `IOException`, `ArgumentException`, and `PathTooLongException` by returning `false`.
--   Batch configurations should include search paths and path exclusion patterns.
--   When using a batch configuration, if a search path is configured in the batch configuration, the application should use that path and not prompt the user for a directory path.
--   When using `FileFinder.FindFiles` in `CompareDirectoriesAsync`, use the correct 2-argument signature (`directory, pattern`).
-
-## HASHING
-
--   Use FNV-1a (64-bit version) as the hashing algorithm for file identification.
--   Handle files with different encodings.
--   Hashes are compared per filename pattern. BlastMerge will NOT compare `a.json` vs `b.json
+-   The `IsGitSubmodule` method should handle potential exceptions like `UnauthorizedAccessException`, `DirectoryNotFoundException`, `IOException`, `ArgumentException`,

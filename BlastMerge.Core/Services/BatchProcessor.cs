@@ -29,6 +29,10 @@ public record ProcessingCallbacks(
 /// </summary>
 public static partial class BatchProcessor
 {
+	private const string OnlyOneFileFoundMessage = "Only one file found, no merge needed";
+	private const string AllFilesIdenticalMessage = "All files are identical";
+	private const string NoFilesFoundMessage = "No files found";
+	private const string MergeCompletedSuccessfullyMessage = "Merge completed successfully";
 
 	/// <summary>
 	/// Processes a batch configuration with search paths and exclusion patterns
@@ -70,19 +74,16 @@ public static partial class BatchProcessor
 		foreach (string pattern in batch.FilePatterns)
 		{
 			// Check if user wants to skip this pattern (if callback provided)
-			if (batch.PromptBeforeEachPattern && patternCallback != null)
+			if (batch.PromptBeforeEachPattern && patternCallback != null && !patternCallback(pattern))
 			{
-				if (!patternCallback(pattern))
+				PatternResult skippedResult = new()
 				{
-					PatternResult skippedResult = new()
-					{
-						Pattern = pattern,
-						Success = true,
-						Message = "Skipped by user"
-					};
-					result.PatternResults.Add(skippedResult);
-					continue;
-				}
+					Pattern = pattern,
+					Success = true,
+					Message = "Skipped by user"
+				};
+				result.PatternResults.Add(skippedResult);
+				continue;
 			}
 
 			PatternResult patternResult = ProcessSinglePatternWithPaths(
@@ -390,7 +391,7 @@ public static partial class BatchProcessor
 		switch (resolutionItem.ResolutionType)
 		{
 			case ResolutionType.Empty:
-				result.Message = "No files found";
+				result.Message = NoFilesFoundMessage;
 				break;
 
 			case ResolutionType.SingleFile:
@@ -411,7 +412,7 @@ public static partial class BatchProcessor
 
 				result.MergeResult = mergeResult;
 				result.Success = mergeResult.IsSuccessful;
-				result.Message = mergeResult.IsSuccessful ? "Merge completed successfully" : $"Merge failed: {mergeResult.OriginalFileName}";
+				result.Message = mergeResult.IsSuccessful ? MergeCompletedSuccessfullyMessage : $"Merge failed: {mergeResult.OriginalFileName}";
 				break;
 			default:
 				break;
@@ -602,7 +603,7 @@ public static partial class BatchProcessor
 
 			if (files.Count == 0)
 			{
-				result.Message = "No files found";
+				result.Message = NoFilesFoundMessage;
 				return result;
 			}
 
@@ -610,7 +611,7 @@ public static partial class BatchProcessor
 			{
 				result.Success = true;
 				result.UniqueVersions = 1;
-				result.Message = "Only one file found, no merge needed";
+				result.Message = OnlyOneFileFoundMessage;
 				return result;
 			}
 
@@ -621,7 +622,7 @@ public static partial class BatchProcessor
 			if (fileGroups.Count == 1)
 			{
 				result.Success = true;
-				result.Message = "All files are identical";
+				result.Message = AllFilesIdenticalMessage;
 				return result;
 			}
 
@@ -634,86 +635,7 @@ public static partial class BatchProcessor
 
 			result.MergeResult = mergeResult;
 			result.Success = mergeResult.IsSuccessful;
-			result.Message = mergeResult.IsSuccessful ? "Merge completed successfully" : $"Merge failed: {mergeResult.OriginalFileName}";
-
-			return result;
-		}
-		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-		{
-			result.Message = $"Error processing pattern: {ex.Message}";
-			return result;
-		}
-	}
-
-	/// <summary>
-	/// Processes a single file pattern
-	/// </summary>
-	/// <param name="pattern">The file pattern to process</param>
-	/// <param name="directory">The directory to search in</param>
-	/// <param name="mergeCallback">Callback function to perform individual merges</param>
-	/// <param name="statusCallback">Callback function to report merge status</param>
-	/// <param name="continuationCallback">Callback function to ask whether to continue</param>
-	/// <returns>The pattern processing result</returns>
-	public static PatternResult ProcessSinglePattern(
-		string pattern,
-		string directory,
-		Func<string, string, string?, MergeResult?> mergeCallback,
-		Action<MergeSessionStatus> statusCallback,
-		Func<bool> continuationCallback)
-	{
-		ArgumentNullException.ThrowIfNull(pattern);
-		ArgumentNullException.ThrowIfNull(directory);
-		ArgumentNullException.ThrowIfNull(mergeCallback);
-		ArgumentNullException.ThrowIfNull(statusCallback);
-		ArgumentNullException.ThrowIfNull(continuationCallback);
-
-		PatternResult result = new()
-		{
-			Pattern = pattern,
-			Success = false
-		};
-
-		try
-		{
-			// Find files matching the pattern - use empty collections as default for search paths and exclusions
-			IReadOnlyCollection<string> files = FileFinder.FindFiles([], directory, pattern, []);
-			result.FilesFound = files.Count;
-
-			if (files.Count == 0)
-			{
-				result.Message = "No files found";
-				return result;
-			}
-
-			if (files.Count == 1)
-			{
-				result.Success = true;
-				result.UniqueVersions = 1;
-				result.Message = "Only one file found, no merge needed";
-				return result;
-			}
-
-			// Group files by hash to find unique versions
-			IReadOnlyCollection<FileGroup> fileGroups = FileDiffer.GroupFilesByHash(files);
-			result.UniqueVersions = fileGroups.Count;
-
-			if (fileGroups.Count == 1)
-			{
-				result.Success = true;
-				result.Message = "All files are identical";
-				return result;
-			}
-
-			// Perform iterative merge
-			MergeCompletionResult mergeResult = IterativeMergeOrchestrator.StartIterativeMergeProcess(
-				fileGroups,
-				mergeCallback,
-				statusCallback,
-				continuationCallback);
-
-			result.MergeResult = mergeResult;
-			result.Success = mergeResult.IsSuccessful;
-			result.Message = mergeResult.IsSuccessful ? "Merge completed successfully" : $"Merge failed: {mergeResult.OriginalFileName}";
+			result.Message = mergeResult.IsSuccessful ? MergeCompletedSuccessfullyMessage : $"Merge failed: {mergeResult.OriginalFileName}";
 
 			return result;
 		}
@@ -765,7 +687,7 @@ public static partial class BatchProcessor
 
 			if (files.Count == 0)
 			{
-				result.Message = "No files found";
+				result.Message = NoFilesFoundMessage;
 				return result;
 			}
 
@@ -773,7 +695,7 @@ public static partial class BatchProcessor
 			{
 				result.Success = true;
 				result.UniqueVersions = 1;
-				result.Message = "Only one file found, no merge needed";
+				result.Message = OnlyOneFileFoundMessage;
 				return result;
 			}
 
@@ -784,7 +706,7 @@ public static partial class BatchProcessor
 			if (fileGroups.Count == 1)
 			{
 				result.Success = true;
-				result.Message = "All files are identical";
+				result.Message = AllFilesIdenticalMessage;
 				return result;
 			}
 
@@ -797,7 +719,86 @@ public static partial class BatchProcessor
 
 			result.MergeResult = mergeResult;
 			result.Success = mergeResult.IsSuccessful;
-			result.Message = mergeResult.IsSuccessful ? "Merge completed successfully" : $"Merge failed: {mergeResult.OriginalFileName}";
+			result.Message = mergeResult.IsSuccessful ? MergeCompletedSuccessfullyMessage : $"Merge failed: {mergeResult.OriginalFileName}";
+
+			return result;
+		}
+		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+		{
+			result.Message = $"Error processing pattern: {ex.Message}";
+			return result;
+		}
+	}
+
+	/// <summary>
+	/// Processes a single file pattern
+	/// </summary>
+	/// <param name="pattern">The file pattern to process</param>
+	/// <param name="directory">The directory to search in</param>
+	/// <param name="mergeCallback">Callback function to perform individual merges</param>
+	/// <param name="statusCallback">Callback function to report merge status</param>
+	/// <param name="continuationCallback">Callback function to ask whether to continue</param>
+	/// <returns>The pattern processing result</returns>
+	public static PatternResult ProcessSinglePattern(
+		string pattern,
+		string directory,
+		Func<string, string, string?, MergeResult?> mergeCallback,
+		Action<MergeSessionStatus> statusCallback,
+		Func<bool> continuationCallback)
+	{
+		ArgumentNullException.ThrowIfNull(pattern);
+		ArgumentNullException.ThrowIfNull(directory);
+		ArgumentNullException.ThrowIfNull(mergeCallback);
+		ArgumentNullException.ThrowIfNull(statusCallback);
+		ArgumentNullException.ThrowIfNull(continuationCallback);
+
+		PatternResult result = new()
+		{
+			Pattern = pattern,
+			Success = false
+		};
+
+		try
+		{
+			// Find files matching the pattern - use empty collections as default for search paths and exclusions
+			IReadOnlyCollection<string> files = FileFinder.FindFiles([], directory, pattern, []);
+			result.FilesFound = files.Count;
+
+			if (files.Count == 0)
+			{
+				result.Message = NoFilesFoundMessage;
+				return result;
+			}
+
+			if (files.Count == 1)
+			{
+				result.Success = true;
+				result.UniqueVersions = 1;
+				result.Message = OnlyOneFileFoundMessage;
+				return result;
+			}
+
+			// Group files by hash to find unique versions
+			IReadOnlyCollection<FileGroup> fileGroups = FileDiffer.GroupFilesByHash(files);
+			result.UniqueVersions = fileGroups.Count;
+
+			if (fileGroups.Count == 1)
+			{
+				result.Success = true;
+				result.Message = AllFilesIdenticalMessage;
+				return result;
+			}
+
+			// Perform iterative merge
+			MergeCompletionResult mergeResult = IterativeMergeOrchestrator.StartIterativeMergeProcess(
+				fileGroups,
+				mergeCallback,
+				statusCallback,
+				continuationCallback);
+
+			result.MergeResult = mergeResult;
+			result.Success = mergeResult.IsSuccessful;
+			result.Message = mergeResult.IsSuccessful ? MergeCompletedSuccessfullyMessage : $"Merge failed: {mergeResult.OriginalFileName}";
 
 			return result;
 		}
@@ -851,7 +852,7 @@ public static partial class BatchProcessor
 
 			if (files.Count == 0)
 			{
-				result.Message = "No files found";
+				result.Message = NoFilesFoundMessage;
 				return result;
 			}
 
@@ -859,7 +860,7 @@ public static partial class BatchProcessor
 			{
 				result.Success = true;
 				result.UniqueVersions = 1;
-				result.Message = "Only one file found, no merge needed";
+				result.Message = OnlyOneFileFoundMessage;
 				return result;
 			}
 
@@ -870,7 +871,7 @@ public static partial class BatchProcessor
 			if (fileGroups.Count == 1)
 			{
 				result.Success = true;
-				result.Message = "All files are identical";
+				result.Message = AllFilesIdenticalMessage;
 				return result;
 			}
 
@@ -883,7 +884,7 @@ public static partial class BatchProcessor
 
 			result.MergeResult = mergeResult;
 			result.Success = mergeResult.IsSuccessful;
-			result.Message = mergeResult.IsSuccessful ? "Merge completed successfully" : $"Merge failed: {mergeResult.OriginalFileName}";
+			result.Message = mergeResult.IsSuccessful ? MergeCompletedSuccessfullyMessage : $"Merge failed: {mergeResult.OriginalFileName}";
 
 			return result;
 		}
