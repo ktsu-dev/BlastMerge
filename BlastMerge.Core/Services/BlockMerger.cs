@@ -123,9 +123,6 @@ public static class BlockMerger
 				// Skip both - don't add any lines from this block
 				break;
 
-			case BlockChoice.Include:
-			case BlockChoice.Keep:
-			case BlockChoice.Remove:
 			default:
 				// For compatibility with other block types, default to UseVersion2
 				ApplyUseVersion2(lines2, diffBlock, mergedLines);

@@ -377,7 +377,6 @@ public static class DiffPlexDiffer
 					// Imaginary lines are used for padding, skip them
 					break;
 
-				case ChangeType.Unchanged:
 				default:
 					// Skip unchanged lines but track line numbers
 					line1Number++;
