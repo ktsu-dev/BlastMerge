@@ -740,10 +740,8 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		}
 		else
 		{
-			for (int i = 0; i < batch.PathExclusionPatterns.Count; i++)
-			{
-				AnsiConsole.MarkupLine($"  {i + 1}. [red]{batch.PathExclusionPatterns[i]}[/]");
-			}
+			batch.PathExclusionPatterns.WithIndex().ForEach(item =>
+				AnsiConsole.MarkupLine($"  {item.index + 1}. [red]{item.item}[/]"));
 		}
 
 		bool modifyExclusions = AnsiConsole.Confirm("[cyan]Modify exclusion patterns?[/]");

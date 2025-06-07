@@ -248,11 +248,25 @@ public class FileFinderAdapter(IFileSystem fileSystem)
 	/// <param name="path">The path to check</param>
 	/// <param name="pattern">The glob pattern</param>
 	/// <returns>True if the path matches the pattern, false otherwise</returns>
-	private static bool MatchesGlobPattern(string path, string pattern) =>
-		pattern.StartsWith("*/") && pattern.EndsWith("/*") ? MatchesDirectoryPattern(path, pattern) :
-		pattern.StartsWith('*') && pattern.EndsWith('*') && !pattern.Contains('/') ? MatchesSubstringPattern(path, pattern) :
-		pattern.EndsWith('*') && !pattern.Contains('/') ? MatchesPrefixPattern(path, pattern) :
-		MatchesRegexPattern(path, pattern);
+	private static bool MatchesGlobPattern(string path, string pattern)
+	{
+		if (pattern.StartsWith("*/") && pattern.EndsWith("/*"))
+		{
+			return MatchesDirectoryPattern(path, pattern);
+		}
+
+		if (pattern.StartsWith('*') && pattern.EndsWith('*') && !pattern.Contains('/'))
+		{
+			return MatchesSubstringPattern(path, pattern);
+		}
+
+		if (pattern.EndsWith('*') && !pattern.Contains('/'))
+		{
+			return MatchesPrefixPattern(path, pattern);
+		}
+
+		return MatchesRegexPattern(path, pattern);
+	}
 
 	private static bool MatchesDirectoryPattern(string path, string pattern)
 	{

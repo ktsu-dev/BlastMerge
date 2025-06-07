@@ -612,3 +612,359 @@ _**Assistant**_
 
 ---
 
+Good question! Let me search the codebase for other places where we could apply these `ktsu.Extensions` patterns to improve code quality and consistency.
+
+---
+
+<details>
+            <summary>Grep search for "Select\\(.*,.*index.*\\).*new.*\\{" • **0** files</summary>
+        
+No results found
+</details>
+
+---
+
+Model provided invalid arguments to grep tool.
+
+---
+
+Model provided invalid arguments to grep tool.
+
+---
+
+<details>
+            <summary>Grep search for "ToList.*ForEach" • **0** files</summary>
+        
+No results found
+</details>
+
+---
+
+Let me search for some specific patterns that could benefit from ktsu.Extensions:
+
+---
+
+<details>
+            <summary>Grep search for "for.*int.*=.*0.*\\<.*Count.*\\+\\+" • **0** files</summary>
+        
+No results found
+</details>
+
+---
+
+Model provided invalid arguments to grep tool.
+
+---
+
+<details>
+            <summary>Grep search for "for.*int.*0;" • **14** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Test/RecursiveDiffTests.cs` | L93 | `for (int i = 0; i < 3; i++) // Reduced from 10 to 3 for faster testing` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Test/RecursiveDiffTests.cs` | L98 | `for (int j = 0; j < 3; j++) // Reduced from 10 to 3 for faster testing` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Test/RecursiveDiffTests.cs` | L112 | `for (int i = 0; i < 3; i++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Test/RecursiveDiffTests.cs` | L114 | `for (int j = 0; j < 3; j++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Test/PerformanceTests.cs` | L65 | `for (int i = 0; i < lines; i++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Test/PerformanceTests.cs` | L163 | `for (int i = 0; i < 100; i++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Test/Adapters/FileHasherAdapter.cs` | L39 | `for (int i = 0; i < bytesRead; i++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Test/Adapters/FileDifferAdapter.cs` | L280 | `for (int i = 0; i < groups.Count; i++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Test/Adapters/FileDifferAdapter.cs` | L338 | `for (int i = 0; i < maxLines; i++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/WhitespaceVisualizer.cs` | L71 | `for (int i = text.Length - 1; i >= 0; i--)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/WhitespaceVisualizer.cs` | L211 | `for (int i = line.Length - 1; i >= 0; i--)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/SecureTempFileHelper.cs` | L61 | `for (int attempt = 0; attempt < MaxRetries; attempt++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/SecureTempFileHelper.cs` | L97 | `for (int attempt = 0; attempt < MaxRetries; attempt++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/SecureTempFileHelper.cs` | L131 | `for (int attempt = 0; attempt < MaxRetries; attempt++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileHasher.cs` | L30 | `for (int i = 0; i < bytesRead; i++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileHasher.cs` | L56 | `for (int i = 0; i < bytesRead; i++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/CharacterLevelDiffer.cs` | L76 | `for (int i = 0; i < count; i++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/CharacterLevelDiffer.cs` | L93 | `for (int i = 0; i < count; i++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/CharacterLevelDiffer.cs` | L169 | `for (int i = 0; i < maxCommonLength; i++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/CharacterLevelDiffer.cs` | L214 | `for (int i = 0; i < textWithMarkup.Length; i++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/SyncOperationsService.cs` | L183 | `for (int i = 0; i < groups.Count; i++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L742 | `for (int i = 0; i < batch.PathExclusionPatterns.Count; i++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/InteractiveMergeService.cs` | L264 | `for (int i = 0; i < files.Count; i++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/FileDisplayService.cs` | L240 | `for (int i = 0; i < minLength; i++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/FileDisplayService.cs` | L350 | `for (int i = 0; i < components.Length - 1; i++) // Exclude filename from this loop` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/FileDisplayService.cs` | L398 | `for (int i = 0; i < labelParts.Count; i++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/Common/FileComparisonDisplayService.cs` | L279 | `for (int i = 0; i < linesToShow; i++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/Common/FileComparisonDisplayService.cs` | L296 | `for (int i = 0; i < diffBlocks.Count; i++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/Common/FileComparisonDisplayService.cs` | L323 | `for (int offset = 0; offset <= (maxEnd - minStart); offset++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/Common/FileComparisonDisplayService.cs` | L581 | `for (int i = 0; i < maxLines; i++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/Common/FileComparisonDisplayService.cs` | L606 | `for (int i = 0; i < maxLines; i++)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L742 | `for (int i = 0; i < batch.PathExclusionPatterns.Count; i++)` |
+
+</details>
+
+---
+
+Let me also search for patterns where ForEach is used on collections:
+
+---
+
+Model provided invalid arguments to grep tool.
+
+---
+
+<details>
+            <summary>Grep search for "ForEach" • **28** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Test/EdgeCaseTests.cs` | L192 | `foreach (FileGroup group in groups)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Test/Adapters/FileFinderAdapter.cs` | L40 | `foreach (string directory in _fileSystem.Directory.GetDirectories(rootDirectory))` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Test/Adapters/FileFinderAdapter.cs` | L97 | `foreach (string searchPath in directoriesToSearch)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Test/Adapters/FileFinderAdapter.cs` | L156 | `foreach (string file in filesInCurrentDir)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Test/Adapters/FileFinderAdapter.cs` | L174 | `foreach (string directory in _fileSystem.Directory.GetDirectories(rootDirectory))` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Test/Adapters/FileFinderAdapter.cs` | L213 | `foreach (string pattern in exclusionPatterns)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Test/Adapters/FileDifferAdapter.cs` | L171 | `foreach (string filePath in filePaths)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Test/Adapters/FileDifferAdapter.cs` | L200 | `foreach (string filePath in filePaths)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Test/Adapters/FileDifferAdapter.cs` | L217 | `foreach (KeyValuePair<string, List<string>> filenameGroup in filenameGroups)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Test/Adapters/FileDifferAdapter.cs` | L232 | `foreach (string filePath in filenameGroup.Value)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/WhitespaceVisualizer.cs` | L32 | `foreach (char c in text)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/SecureTempFileHelper.cs` | L207 | `foreach (string? filePath in filePaths)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/IterativeMergeOrchestrator.cs` | L108 | `foreach (string filePath in mergedGroup.FilePaths)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileHasher.cs` | L88 | `foreach (string filePath in filePaths)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileHasher.cs` | L130 | `foreach (byte b in bytes)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileFinder.cs` | L42 | `foreach (string file in filesInCurrentDir)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileFinder.cs` | L49 | `foreach (string directory in Directory.GetDirectories(rootDirectory).Where(dir => !IsGitSubmodule(dir)))` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileFinder.cs` | L184 | `foreach (string file in filesInCurrentDir.Where(file => !ShouldExcludePath(file, pathExclusionPatterns)))` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileFinder.cs` | L201 | `foreach (string directory in Directory.GetDirectories(rootDirectory).Where(dir => !ShouldSkipDirectory(dir, pathExclusionPatterns)))` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileDiffer.cs` | L71 | `foreach (List<string> pathsWithSameName in filenameGroups.Values)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileDiffer.cs` | L86 | `foreach (string filePath in pathsWithSameName)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileDiffer.cs` | L118 | `foreach (string filePath in filePaths)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileDiffer.cs` | L177 | `foreach (string? relativePath in commonFiles)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileDiffer.cs` | L248 | `foreach (ColoredDiffLine line in coloredDiff)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileDiffer.cs` | L388 | `foreach (LineDifference diff in differences)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileDiffer.cs` | L486 | `foreach (LineDifference diff in differences)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileDiffer.cs` | L505 | `foreach ((int lineNum, string content) in removedLines)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileDiffer.cs` | L518 | `foreach ((int lineNum, string content) in addedLines)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileDiffer.cs` | L736 | `foreach (LineDifference diff in differences)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/DiffPlexDiffer.cs` | L102 | `foreach (DiffPiece? line in lines)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/DiffPlexDiffer.cs` | L301 | `foreach (DiffPiece? line in diff.Lines)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/DiffPlexDiffer.cs` | L355 | `foreach (DiffPiece? line in inlineDiff.Lines)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/DiffPlexDiffer.cs` | L396 | `foreach (LineDifference? deletion in deletions)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/CharacterLevelDiffer.cs` | L39 | `foreach (DiffBlock block in charDiff.DiffBlocks)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/BlockMerger.cs` | L43 | `foreach (DiffPlex.Model.DiffBlock diffBlock in diffResult.DiffBlocks)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/BatchProcessor.cs` | L86 | `foreach (string pattern in batch.FilePatterns)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/BatchProcessor.cs` | L259 | `foreach ((string pattern, IReadOnlyCollection<string> files) in result)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/BatchProcessor.cs` | L300 | `foreach (IGrouping<string, string> fileNameGroup in fileNameGroups)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/BatchProcessor.cs` | L349 | `foreach (ResolutionItem resolutionItem in resolutionQueue)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/BatchProcessor.cs` | L490 | `Parallel.ForEach(workItems, parallelOptions, workItem =>` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/BatchProcessor.cs` | L531 | `foreach (string pattern in patterns)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/AsyncFileDiffer.cs` | L44 | `foreach (KeyValuePair<string, string> kvp in fileHashes)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/AsyncFileDiffer.cs` | L113 | `foreach (KeyValuePair<string, string> kvp in fileHashes)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/AsyncFileDiffer.cs` | L148 | `foreach (string filePath in filePaths)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/AsyncFileDiffer.cs` | L220 | `foreach ((string source, string target) in copyOperations)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Models/FileGroup.cs` | L30 | `foreach (string filePath in filePaths)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/SyncOperationsService.cs` | L105 | `foreach (FileGroup group in groups)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/SyncOperationsService.cs` | L126 | `foreach (string file in group.FilePaths)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/SyncOperationsService.cs` | L230 | `foreach (string file in filePaths)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/SyncOperationsService.cs` | L262 | `foreach (string file in group.FilePaths)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/SyncOperationsService.cs` | L311 | `foreach (string file in filePaths)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/ProgressReportingService.cs` | L93 | `foreach (MergeOperationSummary operation in result.Operations)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L194 | `foreach (BatchConfiguration batch in allBatches)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L469 | `foreach (string searchPath in selectedBatch.SearchPaths)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L548 | `batch.FilePatterns.WithIndex().ForEach(item =>` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L564 | `batch.SearchPaths.WithIndex().ForEach(item =>` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L584 | `batch.PathExclusionPatterns.WithIndex().ForEach(item =>` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L652 | `batch.FilePatterns.WithIndex().ForEach(item =>` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L699 | `batch.SearchPaths.WithIndex().ForEach(item =>` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L1053 | `foreach (BatchConfiguration batch in batches)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L1070 | `foreach (BatchConfiguration batch in batches)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/FindFilesMenuHandler.cs` | L71 | `foreach (string filePath in filePaths)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/InteractiveMergeService.cs` | L38 | `foreach (FileGroup group in groupsWithMultipleFiles)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/InteractiveMergeService.cs` | L70 | `foreach ((KeyValuePair<string, IReadOnlyCollection<string>> group, int groupIndex) in sortedFileGroups.Select((group, index) => (group, index + 1)))` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/InteractiveMergeService.cs` | L226 | `foreach (string file in remainingFiles)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/InteractiveMergeService.cs` | L321 | `foreach (string line in lines)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/FileDisplayService.cs` | L31 | `foreach (KeyValuePair<string, IReadOnlyCollection<string>> group in fileGroups)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/FileDisplayService.cs` | L37 | `foreach (string filePath in group.Value)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/FileDisplayService.cs` | L77 | `foreach (FileGroup group in groupsWithMultipleFiles)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/FileDisplayService.cs` | L87 | `foreach (string file in group.FilePaths)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/ConsoleApplicationService.cs` | L341 | `foreach (PatternResult patternResult in batchResult.PatternResults)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/ConsoleApplicationService.cs` | L368 | `foreach (PatternResult patternResult in mergeResults)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/ConsoleApplicationService.cs` | L471 | `foreach (BatchConfiguration batch in allBatches)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/ConsoleApplicationService.cs` | L733 | `foreach (string searchPath in selectedBatch.SearchPaths)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/ConsoleApplicationService.cs` | L864 | `foreach ((KeyValuePair<string, IReadOnlyCollection<string>> group, int groupIndex) in sortedFileGroups.Select((group, index) => (group, index + 1)))` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/AsyncApplicationService.cs` | L175 | `foreach (string relativePath in commonFiles)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/AsyncApplicationService.cs` | L314 | `foreach (string pattern in batch.FilePatterns)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/Common/ComparisonOperationsService.cs` | L163 | `foreach (string? file in result.ModifiedFiles.Take(5)) // Limit to first 5` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileDiffer.cs` | L71 | `foreach (List<string> pathsWithSameName in filenameGroups.Values)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileDiffer.cs` | L86 | `foreach (string filePath in pathsWithSameName)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileDiffer.cs` | L118 | `foreach (string filePath in filePaths)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileDiffer.cs` | L177 | `foreach (string? relativePath in commonFiles)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileDiffer.cs` | L248 | `foreach (ColoredDiffLine line in coloredDiff)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileDiffer.cs` | L388 | `foreach (LineDifference diff in differences)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileDiffer.cs` | L486 | `foreach (LineDifference diff in differences)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileDiffer.cs` | L505 | `foreach ((int lineNum, string content) in removedLines)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileDiffer.cs` | L518 | `foreach ((int lineNum, string content) in addedLines)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/FileDiffer.cs` | L736 | `foreach (LineDifference diff in differences)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/DiffPlexDiffer.cs` | L102 | `foreach (DiffPiece? line in lines)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/DiffPlexDiffer.cs` | L301 | `foreach (DiffPiece? line in diff.Lines)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/DiffPlexDiffer.cs` | L355 | `foreach (DiffPiece? line in inlineDiff.Lines)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/DiffPlexDiffer.cs` | L396 | `foreach (LineDifference? deletion in deletions)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/AsyncFileDiffer.cs` | L44 | `foreach (KeyValuePair<string, string> kvp in fileHashes)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/AsyncFileDiffer.cs` | L113 | `foreach (KeyValuePair<string, string> kvp in fileHashes)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/AsyncFileDiffer.cs` | L148 | `foreach (string filePath in filePaths)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.Core/Services/AsyncFileDiffer.cs` | L220 | `foreach ((string source, string target) in copyOperations)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L194 | `foreach (BatchConfiguration batch in allBatches)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L469 | `foreach (string searchPath in selectedBatch.SearchPaths)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L548 | `batch.FilePatterns.WithIndex().ForEach(item =>` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L564 | `batch.SearchPaths.WithIndex().ForEach(item =>` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L584 | `batch.PathExclusionPatterns.WithIndex().ForEach(item =>` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L652 | `batch.FilePatterns.WithIndex().ForEach(item =>` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L699 | `batch.SearchPaths.WithIndex().ForEach(item =>` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L1053 | `foreach (BatchConfiguration batch in batches)` |
+| `file:///c%3A/dev/ktsu-dev/BlastMerge/BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L1070 | `foreach (BatchConfiguration batch in batches)` |
+
+</details>
+
+---
+
+Now let me look at some specific instances that could potentially benefit from ktsu.Extensions. Let me check the remaining for loop in BatchOperationsMenuHandler that we missed:
+
+---
+
+Read file: BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs
+
+---
+
+I found one more instance! Let me fix that for loop:
+
+---
+
+
+
+---
+
+Now let me check some other potentially interesting cases. Let me look at InteractiveMergeService which had a for loop that might benefit:
+
+---
+
+Read file: BlastMerge.ConsoleApp/Services/InteractiveMergeService.cs
+
+---
+
+That's a nested loop for finding similarity, which doesn't seem like a good candidate for ktsu.Extensions due to its complexity. Let me check some other files to see if there are good candidates. Let me look at FileDisplayService:
+
+---
+
+Read file: BlastMerge.ConsoleApp/Services/FileDisplayService.cs
+
+---
+
+The for loop in `ProcessLabelComponents` could potentially be simplified, but it has complex logic with the index checks and ellipsizing, so it's probably better left as-is for readability.
+
+Let me check some of the other places that might benefit. Let me look at FileComparisonDisplayService:
+
+---
+
+Read file: BlastMerge.ConsoleApp/Services/Common/FileComparisonDisplayService.cs
+
+---
+
+The for loops in `AddContextLines` and `AddDiffBlockContent` could be candidates, but they involve complex logic for formatting diffs, so they're probably better left as traditional for loops for clarity.
+
+Let me look at one more place that might benefit - maybe in the console application service:
+
+---
+
+<details>
+            <summary>Searched codebase "Select with index pattern that could use WithIndex" • **17** results</summary>
+        
+| File | Lines |
+|------|-------|
+| `.cursorindexingignore` | L1-4 |
+| `BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L564-616 |
+| `BlastMerge.Core/Services/BatchProcessor.cs` | L523-576 |
+| `BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L725-768 |
+| `BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L616-657 |
+| `BlastMerge.Core/Services/FileFinder.cs` | L287-335 |
+| `BlastMerge.Test/Adapters/FileFinderAdapter.cs` | L271-325 |
+| `BlastMerge.Core/Services/BatchProcessor.cs` | L310-369 |
+| `BlastMerge.Core/Services/FileFinder.cs` | L335-389 |
+| `BlastMerge.Core/Services/FileDiffer.cs` | L638-689 |
+| `.cursor/rules/derived-cursor-rules.mdc` | L136-153 |
+| `BlastMerge.Test/Adapters/FileFinderAdapter.cs` | L223-271 |
+| `BlastMerge.ConsoleApp/Services/MenuHandlers/BatchOperationsMenuHandler.cs` | L657-725 |
+| `BlastMerge.Core/Services/BatchProcessor.cs` | L267-310 |
+| `BlastMerge.Core/Services/DiffPlexHelper.cs` | L90-143 |
+| `BlastMerge.Core/Models/DiffBlock.cs` | L1-44 |
+| `BlastMerge.Core/Models/ResolutionItem.cs` | L1-70 |
+
+</details>
+
+---
+
+
+
+---
+
+I can see from the search results that there's a LINQ pattern in `FileDiffer.cs` that could potentially use `WithIndex()`. Let me examine that:
+
+---
+
+Read file: BlastMerge.Core/Services/FileDiffer.cs
+
+---
+
+
+
+---
+
+That's an interesting pattern using `SelectMany((group1, i) =>` which is actually a good use of index-based selection. However, this is part of a complex comparison algorithm that generates pairs from groups, so it's better left as-is for clarity.
+
+Let me build the project to ensure our changes haven't broken anything:
+
+---
+
+```bash
+dotnet build
+```
+
+```
+C:\dev\ktsu-dev\BlastMerge>dotnet build
+
+  C:\dev\ktsu-dev\BlastMerge\BlastMerge.sln                                                              Restore (0.0s)
+                                                                                                                 (0.1s)
+Restore complete (1.0s)
+```
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+_**User**_
+
+For the code present, we get this error:
+```
+Extract this nested ternary operation into an independent statement.
+```
+How can I resolve this? If you propose a fix, please make it concise.
+
+---
+
+_**Assistant**_
+
+
+
+---
+
