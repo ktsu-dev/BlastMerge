@@ -2,7 +2,7 @@
 // All rights reserved.
 // Licensed under the MIT license.
 
-namespace ktsu.BlastMerge.Core.Constants;
+namespace ktsu.BlastMerge.Core.Text;
 
 /// <summary>
 /// Constants for progress messages used throughout the Core library.

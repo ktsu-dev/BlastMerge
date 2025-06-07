@@ -6,6 +6,7 @@ namespace ktsu.BlastMerge.ConsoleApp.Services;
 
 using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
+using ktsu.BlastMerge.ConsoleApp.Text;
 using ktsu.BlastMerge.Core.Models;
 using ktsu.BlastMerge.Core.Services;
 using Spectre.Console;
@@ -41,9 +42,9 @@ public static class SyncOperationsService
 
 		Dictionary<string, SyncChoice> syncChoices = new()
 		{
-			[MenuNames.SyncOperations.SyncToNewest] = SyncChoice.SyncToNewest,
-			[MenuNames.SyncOperations.ChooseReference] = SyncChoice.ChooseReference,
-			[MenuNames.SyncOperations.BackToPreviousMenu] = SyncChoice.Back
+			[SyncOperationsDisplay.SyncToNewest] = SyncChoice.SyncToNewest,
+			[SyncOperationsDisplay.ChooseReference] = SyncChoice.ChooseReference,
+			[SyncOperationsDisplay.BackToPreviousMenu] = SyncChoice.Back
 		};
 
 		string selection = AnsiConsole.Prompt(

@@ -11,6 +11,7 @@ using System.Linq;
 using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
+using ktsu.BlastMerge.ConsoleApp.Text;
 using ktsu.BlastMerge.Core.Models;
 using ktsu.BlastMerge.Core.Services;
 using Spectre.Console;
@@ -21,8 +22,6 @@ using Spectre.Console;
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "<Pending>")]
 public class ConsoleApplicationService : ApplicationService
 {
-	private const string PressAnyKeyMessage = "Press any key to continue...";
-
 	// Table column names
 	private const string GroupColumnName = "Group";
 	private const string FilesColumnName = "Files";
@@ -33,14 +32,14 @@ public class ConsoleApplicationService : ApplicationService
 	// Menu display text to command mappings
 	private static readonly Dictionary<string, MenuChoice> MainMenuChoices = new()
 	{
-		[MenuNames.Display.FindFiles] = MenuChoice.FindFiles,
-		[MenuNames.Display.CompareFiles] = MenuChoice.CompareFiles,
-		[MenuNames.Display.IterativeMerge] = MenuChoice.IterativeMerge,
-		[MenuNames.Display.BatchOperations] = MenuChoice.BatchOperations,
-		[MenuNames.Display.RunRecentBatch] = MenuChoice.RunRecentBatch,
-		[MenuNames.Display.Settings] = MenuChoice.Settings,
-		[MenuNames.Display.Help] = MenuChoice.Help,
-		[MenuNames.Display.Exit] = MenuChoice.Exit
+		[MainMenuDisplay.FindFiles] = MenuChoice.FindFiles,
+		[MainMenuDisplay.CompareFiles] = MenuChoice.CompareFiles,
+		[MainMenuDisplay.IterativeMerge] = MenuChoice.IterativeMerge,
+		[MainMenuDisplay.BatchOperations] = MenuChoice.BatchOperations,
+		[MainMenuDisplay.RunRecentBatch] = MenuChoice.RunRecentBatch,
+		[MainMenuDisplay.Settings] = MenuChoice.Settings,
+		[MainMenuDisplay.Help] = MenuChoice.Help,
+		[MainMenuDisplay.Exit] = MenuChoice.Exit
 	};
 
 	/// <summary>
@@ -104,11 +103,11 @@ public class ConsoleApplicationService : ApplicationService
 	{
 		Dictionary<string, ProcessFileActionChoice> processFileActionChoices = new()
 		{
-			[MenuNames.Actions.ViewDetailedFileList] = ProcessFileActionChoice.ViewDetailedFileList,
-			[MenuNames.Actions.ShowDifferences] = ProcessFileActionChoice.ShowDifferences,
-			[MenuNames.Actions.RunIterativeMergeOnDuplicates] = ProcessFileActionChoice.RunIterativeMergeOnDuplicates,
-			[MenuNames.Actions.SyncFiles] = ProcessFileActionChoice.SyncFiles,
-			[MenuNames.Actions.ReturnToMainMenu] = ProcessFileActionChoice.ReturnToMainMenu
+			[ActionDisplay.ViewDetailedFileList] = ProcessFileActionChoice.ViewDetailedFileList,
+			[ActionDisplay.ShowDifferences] = ProcessFileActionChoice.ShowDifferences,
+			[ActionDisplay.RunIterativeMergeOnDuplicates] = ProcessFileActionChoice.RunIterativeMergeOnDuplicates,
+			[ActionDisplay.SyncFiles] = ProcessFileActionChoice.SyncFiles,
+			[ActionDisplay.ReturnToMainMenu] = ProcessFileActionChoice.ReturnToMainMenu
 		};
 
 		string selection = AnsiConsole.Prompt(
@@ -327,7 +326,7 @@ public class ConsoleApplicationService : ApplicationService
 		}
 
 		AnsiConsole.WriteLine();
-		AnsiConsole.MarkupLine($"[bold cyan]{MenuNames.Output.BatchProcessingSummary}[/]");
+		AnsiConsole.MarkupLine($"[bold cyan]{OutputDisplay.BatchProcessingSummary}[/]");
 		AnsiConsole.WriteLine();
 
 		// Create summary table
@@ -364,7 +363,7 @@ public class ConsoleApplicationService : ApplicationService
 		if (mergeResults.Count > 0)
 		{
 			AnsiConsole.WriteLine();
-			AnsiConsole.MarkupLine($"[bold cyan]{MenuNames.Output.DetailedMergeOperations}[/]");
+			AnsiConsole.MarkupLine($"[bold cyan]{OutputDisplay.DetailedMergeOperations}[/]");
 			AnsiConsole.WriteLine();
 
 			foreach (PatternResult patternResult in mergeResults)
@@ -562,7 +561,7 @@ public class ConsoleApplicationService : ApplicationService
 	private static void HandleInteractiveModeError(string errorMessage)
 	{
 		AnsiConsole.MarkupLine($"[red]{errorMessage}[/]");
-		AnsiConsole.WriteLine(PressAnyKeyMessage);
+		AnsiConsole.WriteLine(CommonMessages.PressAnyKeyToContinue);
 		Console.ReadKey();
 		// Clear navigation on error to return to main menu
 		NavigationHistory.Clear();
@@ -587,8 +586,8 @@ public class ConsoleApplicationService : ApplicationService
 		if (!string.IsNullOrEmpty(recentBatch))
 		{
 			// Remove the old entry and add the updated one with batch name
-			dynamicMenuChoices.Remove(MenuNames.Display.RunRecentBatch);
-			dynamicMenuChoices[$"{MenuNames.Display.RunRecentBatch} ({recentBatch})"] = MenuChoice.RunRecentBatch;
+			dynamicMenuChoices.Remove(MainMenuDisplay.RunRecentBatch);
+			dynamicMenuChoices[$"{MainMenuDisplay.RunRecentBatch} ({recentBatch})"] = MenuChoice.RunRecentBatch;
 		}
 
 		string selection = AnsiConsole.Prompt(
@@ -695,7 +694,7 @@ public class ConsoleApplicationService : ApplicationService
 		AnsiConsole.MarkupLine("[yellow]No recent batch configurations found.[/]");
 		AnsiConsole.MarkupLine("[dim]Run a batch configuration first to use this shortcut.[/]");
 		Console.WriteLine();
-		Console.WriteLine(PressAnyKeyMessage);
+		Console.WriteLine(CommonMessages.PressAnyKeyToContinue);
 		Console.ReadKey(true);
 	}
 
@@ -707,7 +706,7 @@ public class ConsoleApplicationService : ApplicationService
 	{
 		AnsiConsole.MarkupLine($"[red]Batch configuration '{batchName}' not found.[/]");
 		Console.WriteLine();
-		Console.WriteLine(PressAnyKeyMessage);
+		Console.WriteLine(CommonMessages.PressAnyKeyToContinue);
 		Console.ReadKey(true);
 	}
 
@@ -774,7 +773,7 @@ public class ConsoleApplicationService : ApplicationService
 	{
 		AnsiConsole.MarkupLine("[green]Batch operation completed.[/]");
 		Console.WriteLine();
-		Console.WriteLine(PressAnyKeyMessage);
+		Console.WriteLine(CommonMessages.PressAnyKeyToContinue);
 		Console.ReadKey(true);
 	}
 
@@ -981,7 +980,7 @@ public class ConsoleApplicationService : ApplicationService
 	private static void DisplayBlockHeader(DiffPlex.Model.DiffBlock diffBlock, int blockNumber)
 	{
 		string blockType = DetermineBlockType(diffBlock);
-		AnsiConsole.MarkupLine($"[yellow]{MenuNames.Output.BlockPrefix} {blockNumber} ({blockType})[/]");
+		AnsiConsole.MarkupLine($"[yellow]{OutputDisplay.BlockPrefix} {blockNumber} ({blockType})[/]");
 	}
 
 	/// <summary>
@@ -1115,7 +1114,7 @@ public class ConsoleApplicationService : ApplicationService
 			[
 				$"  Use {leftLabel}",
 				$"  Use {rightLabel}",
-				MenuNames.Actions.UseBoth,
+				ActionDisplay.UseBoth,
 				"❌ Skip Both"
 			]);
 

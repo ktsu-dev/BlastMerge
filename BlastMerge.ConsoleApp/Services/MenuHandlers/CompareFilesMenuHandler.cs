@@ -5,6 +5,7 @@
 namespace ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 
 using ktsu.BlastMerge.ConsoleApp.Models;
+using ktsu.BlastMerge.ConsoleApp.Text;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.Core.Services;
 using Spectre.Console;
@@ -29,9 +30,9 @@ public class CompareFilesMenuHandler(ApplicationService applicationService) : Ba
 
 		Dictionary<string, CompareChoice> compareChoices = new()
 		{
-			[MenuNames.CompareFilesDisplay.CompareFilesInDirectory] = CompareChoice.CompareFilesInDirectory,
-			[MenuNames.CompareFilesDisplay.CompareTwoDirectories] = CompareChoice.CompareTwoDirectories,
-			[MenuNames.CompareFilesDisplay.CompareTwoSpecificFiles] = CompareChoice.CompareTwoSpecificFiles,
+			[CompareFilesDisplay.CompareFilesInDirectory] = CompareChoice.CompareFilesInDirectory,
+			[CompareFilesDisplay.CompareTwoDirectories] = CompareChoice.CompareTwoDirectories,
+			[CompareFilesDisplay.CompareTwoSpecificFiles] = CompareChoice.CompareTwoSpecificFiles,
 			[GetBackMenuText()] = CompareChoice.BackToMainMenu
 		};
 

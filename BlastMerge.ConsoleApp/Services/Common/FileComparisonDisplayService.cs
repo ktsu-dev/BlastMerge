@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using DiffPlex.Model;
+using ktsu.BlastMerge.ConsoleApp.Text;
 using ktsu.BlastMerge.Core.Models;
 using ktsu.BlastMerge.Core.Services;
 using Spectre.Console;
@@ -104,10 +105,10 @@ public static class FileComparisonDisplayService
 			new SelectionPrompt<string>()
 				.Title("[cyan]Choose diff format:[/]")
 				.AddChoices(
-					MenuNames.DiffFormats.ChangeSummary,
-					MenuNames.DiffFormats.GitStyleDiff,
-					MenuNames.DiffFormats.SideBySideDiff,
-					MenuNames.DiffFormats.SkipComparison
+								DiffFormatsDisplay.ChangeSummary,
+			DiffFormatsDisplay.GitStyleDiff,
+			DiffFormatsDisplay.SideBySideDiff,
+			DiffFormatsDisplay.SkipComparison
 				));
 	}
 

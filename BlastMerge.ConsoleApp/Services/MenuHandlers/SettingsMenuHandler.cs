@@ -6,6 +6,7 @@ namespace ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 
 using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.ConsoleApp.Models;
+using ktsu.BlastMerge.ConsoleApp.Text;
 using ktsu.BlastMerge.Core.Services;
 using Spectre.Console;
 
@@ -28,9 +29,9 @@ public class SettingsMenuHandler(ApplicationService applicationService) : BaseMe
 
 		Dictionary<string, SettingsChoice> settingsChoices = new()
 		{
-			[MenuNames.SettingsDisplay.ViewConfigurationPaths] = SettingsChoice.ViewConfigurationPaths,
-			[MenuNames.SettingsDisplay.ClearInputHistory] = SettingsChoice.ClearInputHistory,
-			[MenuNames.SettingsDisplay.ViewStatistics] = SettingsChoice.ViewStatistics,
+			[SettingsDisplay.ViewConfigurationPaths] = SettingsChoice.ViewConfigurationPaths,
+			[SettingsDisplay.ClearInputHistory] = SettingsChoice.ClearInputHistory,
+			[SettingsDisplay.ViewStatistics] = SettingsChoice.ViewStatistics,
 			[GetBackMenuText()] = SettingsChoice.BackToMainMenu
 		};
 

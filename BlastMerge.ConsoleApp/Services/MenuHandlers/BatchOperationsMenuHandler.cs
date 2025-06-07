@@ -6,6 +6,7 @@ namespace ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 
 using System.Text.Json;
 using ktsu.BlastMerge.ConsoleApp.Models;
+using ktsu.BlastMerge.ConsoleApp.Text;
 using ktsu.BlastMerge.Core.Models;
 using ktsu.BlastMerge.Core.Services;
 using Spectre.Console;
@@ -53,8 +54,8 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 
 		Dictionary<string, BatchOperationChoice> batchOperationChoices = new()
 		{
-			[MenuNames.BatchOperationsDisplay.RunBatchConfiguration] = BatchOperationChoice.RunBatchConfiguration,
-			[MenuNames.BatchOperationsDisplay.ManageBatchConfigurations] = BatchOperationChoice.ManageBatchConfigurations,
+			[BatchOperationsDisplay.RunBatchConfiguration] = BatchOperationChoice.RunBatchConfiguration,
+			[BatchOperationsDisplay.ManageBatchConfigurations] = BatchOperationChoice.ManageBatchConfigurations,
 			[GetBackMenuText()] = BatchOperationChoice.BackToMainMenu
 		};
 

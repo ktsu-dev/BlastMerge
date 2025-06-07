@@ -5,6 +5,7 @@
 namespace ktsu.BlastMerge.ConsoleApp.Services;
 
 using System;
+using ktsu.BlastMerge.ConsoleApp.Text;
 using ktsu.BlastMerge.Core.Models;
 using Spectre.Console;
 
@@ -51,7 +52,7 @@ public static class ProgressReportingService
 
 		AnsiConsole.WriteLine();
 		AnsiConsole.MarkupLine("[bold blue]═══════════════════════════════════════════════════════════════════════════════════════[/]");
-		AnsiConsole.MarkupLine($"[bold blue]                           {MenuNames.Output.MergeOperationsSummary}                                   [/]");
+		AnsiConsole.MarkupLine($"[bold blue]                           {OutputDisplay.MergeOperationsSummary}                                   [/]");
 		AnsiConsole.MarkupLine("[bold blue]═══════════════════════════════════════════════════════════════════════════════════════[/]");
 		AnsiConsole.WriteLine();
 

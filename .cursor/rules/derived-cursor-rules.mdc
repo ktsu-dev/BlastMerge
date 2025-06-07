@@ -12,6 +12,7 @@ globs: *
 -   Fix formatting issues.
 -   Before continuing work, always check the current state of the project and run the tests.
 -   One class/type definition per file please
+-   Do not use nested classes; extract them into their own files.
 
 ## TECH STACK
 
@@ -160,7 +161,6 @@ globs: *
 -   Refactor methods with high cognitive complexity by breaking them down into smaller, more manageable methods. Refactor methods like `GenerateUnifiedDiff`, `ShowSideBySideDiff`, and `GenerateChangeSummaryDiff` to reduce cognitive complexity.
 -   Extract nested classes into their own separate files, following the same pattern as the other choice enum files in that directory.
 -   When a literal string is used multiple times, define a constant for it at the class level.
--   Do not use nested classes; extract them into their own files.
 -   Follow SonarLint suggestions where applicable (e.g., making methods static where appropriate, simplifying loops, extracting nested ternary operations).
 -   Make methods static if they do not access instance data.
 -   Extract nested ternary operations into independent statements for improved readability.

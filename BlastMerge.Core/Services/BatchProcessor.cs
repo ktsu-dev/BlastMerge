@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using ktsu.BlastMerge.Core.Constants;
+using ktsu.BlastMerge.Core.Text;
 using ktsu.BlastMerge.Core.Models;
 
 /// <summary>
