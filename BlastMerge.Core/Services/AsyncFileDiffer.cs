@@ -75,32 +75,16 @@ public static class AsyncFileDiffer
 		}
 
 		// First group by filename (basename without path)
-		Dictionary<string, List<string>> filenameGroups = [];
-		foreach (string filePath in filePaths)
-		{
-			string filename = Path.GetFileName(filePath);
-			if (!filenameGroups.TryGetValue(filename, out List<string>? pathsWithSameName))
-			{
-				pathsWithSameName = [];
-				filenameGroups[filename] = pathsWithSameName;
-			}
-			pathsWithSameName.Add(filePath);
-		}
+		Dictionary<string, List<string>> filenameGroups = filePaths
+			.GroupBy(Path.GetFileName)
+			.ToDictionary(g => g.Key!, g => g.ToList());
 
 		// Then group by content hash within each filename group (in parallel)
-		List<FileGroup> allGroups = [];
-		List<Task<List<FileGroup>>> groupTasks = [];
-
-		foreach (KeyValuePair<string, List<string>> filenameGroup in filenameGroups)
-		{
-			groupTasks.Add(ProcessFilenameGroupAsync(filenameGroup.Value, maxDegreeOfParallelism, cancellationToken));
-		}
+		Task<List<FileGroup>>[] groupTasks = [.. filenameGroups.Values
+			.Select(filesWithSameName => ProcessFilenameGroupAsync(filesWithSameName, maxDegreeOfParallelism, cancellationToken))];
 
 		List<FileGroup>[] groupResults = await Task.WhenAll(groupTasks).ConfigureAwait(false);
-		foreach (List<FileGroup> groups in groupResults)
-		{
-			allGroups.AddRange(groups);
-		}
+		List<FileGroup> allGroups = [.. groupResults.SelectMany(groups => groups)];
 
 		return allGroups.AsReadOnly();
 	}

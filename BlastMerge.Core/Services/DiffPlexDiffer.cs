@@ -416,13 +416,7 @@ public static class DiffPlexDiffer
 		}
 
 		// Add remaining additions that weren't paired
-		for (int i = 0; i < additions.Count; i++)
-		{
-			if (!usedAdditions.Contains(i))
-			{
-				finalDifferences.Add(additions[i]);
-			}
-		}
+		finalDifferences.AddRange(additions.Where((_, index) => !usedAdditions.Contains(index)));
 
 		// Add other types (modifications that were already detected)
 		finalDifferences.AddRange(others);

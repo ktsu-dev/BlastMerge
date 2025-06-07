@@ -9,6 +9,7 @@ using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.ConsoleApp.Text;
 using ktsu.BlastMerge.Core.Models;
 using ktsu.BlastMerge.Core.Services;
+using ktsu.Extensions;
 using Spectre.Console;
 
 /// <summary>
@@ -545,10 +546,8 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 				.AddColumn("#")
 				.AddColumn("Pattern");
 
-			for (int i = 0; i < batch.FilePatterns.Count; i++)
-			{
-				patternTable.AddRow($"{i + 1}", $"[yellow]{batch.FilePatterns[i]}[/]");
-			}
+			batch.FilePatterns.WithIndex().ForEach(item =>
+				patternTable.AddRow($"{item.index + 1}", $"[yellow]{item.item}[/]"));
 
 			AnsiConsole.Write(patternTable);
 		}
@@ -563,10 +562,8 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 				.AddColumn("#")
 				.AddColumn("Path");
 
-			for (int i = 0; i < batch.SearchPaths.Count; i++)
-			{
-				searchPathTable.AddRow($"{i + 1}", $"[green]{batch.SearchPaths[i]}[/]");
-			}
+			batch.SearchPaths.WithIndex().ForEach(item =>
+				searchPathTable.AddRow($"{item.index + 1}", $"[green]{item.item}[/]"));
 
 			AnsiConsole.Write(searchPathTable);
 		}
@@ -585,10 +582,8 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 				.AddColumn("#")
 				.AddColumn("Pattern");
 
-			for (int i = 0; i < batch.PathExclusionPatterns.Count; i++)
-			{
-				exclusionTable.AddRow($"{i + 1}", $"[red]{batch.PathExclusionPatterns[i]}[/]");
-			}
+			batch.PathExclusionPatterns.WithIndex().ForEach(item =>
+				exclusionTable.AddRow($"{item.index + 1}", $"[red]{item.item}[/]"));
 
 			AnsiConsole.Write(exclusionTable);
 		}
@@ -655,10 +650,8 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 
 		// Show current patterns
 		AnsiConsole.MarkupLine($"\n[cyan]Current patterns ({batch.FilePatterns.Count}):[/]");
-		for (int i = 0; i < batch.FilePatterns.Count; i++)
-		{
-			AnsiConsole.MarkupLine($"  {i + 1}. [yellow]{batch.FilePatterns[i]}[/]");
-		}
+		batch.FilePatterns.WithIndex().ForEach(item =>
+			AnsiConsole.MarkupLine($"  {item.index + 1}. [yellow]{item.item}[/]"));
 
 		bool modifyPatterns = AnsiConsole.Confirm("[cyan]Modify file patterns?[/]");
 
@@ -704,10 +697,8 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		}
 		else
 		{
-			for (int i = 0; i < batch.SearchPaths.Count; i++)
-			{
-				AnsiConsole.MarkupLine($"  {i + 1}. [green]{batch.SearchPaths[i]}[/]");
-			}
+			batch.SearchPaths.WithIndex().ForEach(item =>
+				AnsiConsole.MarkupLine($"  {item.index + 1}. [green]{item.item}[/]"));
 		}
 
 		bool modifySearchPaths = AnsiConsole.Confirm("[cyan]Modify search paths?[/]");

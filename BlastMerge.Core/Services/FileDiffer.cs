@@ -62,20 +62,9 @@ public static class FileDiffer
 		ArgumentNullException.ThrowIfNull(filePaths);
 
 		// First group by filename (basename without path)
-		Dictionary<string, List<string>> filenameGroups = [];
-
-		foreach (string filePath in filePaths)
-		{
-			string filename = Path.GetFileName(filePath);
-
-			if (!filenameGroups.TryGetValue(filename, out List<string>? pathsWithSameName))
-			{
-				pathsWithSameName = [];
-				filenameGroups[filename] = pathsWithSameName;
-			}
-
-			pathsWithSameName.Add(filePath);
-		}
+		Dictionary<string, List<string>> filenameGroups = filePaths
+			.GroupBy(Path.GetFileName)
+			.ToDictionary(g => g.Key!, g => g.ToList());
 
 		// Then group by content hash within each filename group
 		List<FileGroup> allGroups = [];
@@ -651,31 +640,31 @@ public static class FileDiffer
 		FileSimilarity? mostSimilar = null;
 		double highestSimilarity = -1.0;
 
-		for (int i = 0; i < groups.Count; i++)
-		{
-			for (int j = i + 1; j < groups.Count; j++)
+		var comparisons = groups.SelectMany((group1, i) =>
+			groups.Skip(i + 1).Select(group2 => new { group1, group2 }))
+			.Where(pair =>
 			{
-				string file1 = groups[i].FilePaths.First();
-				string file2 = groups[j].FilePaths.First();
-
-				// CRITICAL SAFETY CHECK: Only compare files with the same filename
-				// This prevents merging unrelated files like update-readme.yml with dotnet-sdk.yml
+				string file1 = pair.group1.FilePaths.First();
+				string file2 = pair.group2.FilePaths.First();
 				string filename1 = Path.GetFileName(file1);
 				string filename2 = Path.GetFileName(file2);
-
-				if (!string.Equals(filename1, filename2, StringComparison.OrdinalIgnoreCase))
-				{
-					continue; // Skip comparison of files with different names
-				}
-
+				return string.Equals(filename1, filename2, StringComparison.OrdinalIgnoreCase);
+			})
+			.Select(pair =>
+			{
+				string file1 = pair.group1.FilePaths.First();
+				string file2 = pair.group2.FilePaths.First();
 				double similarity = CalculateFileSimilarity(file1, file2);
+				return new { file1, file2, similarity };
+			});
 
-				if (similarity > highestSimilarity)
-				{
-					highestSimilarity = similarity;
-					mostSimilar = new FileSimilarity(file1, file2, similarity);
-				}
-			}
+		var bestMatch = comparisons.Where(c => c.similarity > highestSimilarity)
+			.OrderByDescending(c => c.similarity)
+			.FirstOrDefault();
+
+		if (bestMatch != null)
+		{
+			mostSimilar = new FileSimilarity(bestMatch.file1, bestMatch.file2, bestMatch.similarity);
 		}
 
 		return mostSimilar;
