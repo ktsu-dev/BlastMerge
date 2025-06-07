@@ -75,25 +75,25 @@ public static class FileDisplayService
 			return;
 		}
 
-		foreach (FileGroup group in groupsWithMultipleFiles)
+		foreach (IReadOnlyCollection<string> filePaths in groupsWithMultipleFiles.Select(group => group.FilePaths))
 		{
 			AnsiConsole.WriteLine();
-			Rule rule = new($"[bold]Group with {group.FilePaths.Count} files[/]")
+			Rule rule = new($"[bold]Group with {filePaths.Count} files[/]")
 			{
 				Style = Style.Parse("blue")
 			};
 			AnsiConsole.Write(rule);
 
 			// Show all files in the group
-			foreach (string file in group.FilePaths)
+			foreach (string file in filePaths)
 			{
 				AnsiConsole.MarkupLine($"[dim]📁 {file}[/]");
 			}
 
 			// Compare first two files in the group
-			if (group.FilePaths.Count >= 2)
+			if (filePaths.Count >= 2)
 			{
-				string[] firstTwoFiles = [.. group.FilePaths.Take(2)];
+				string[] firstTwoFiles = [.. filePaths.Take(2)];
 				string file1 = firstTwoFiles[0];
 				string file2 = firstTwoFiles[1];
 
