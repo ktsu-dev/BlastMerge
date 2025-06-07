@@ -493,47 +493,40 @@ public class ConsoleApplicationService : ApplicationService
 			}
 			catch (DirectoryNotFoundException ex)
 			{
-				AnsiConsole.MarkupLine($"[red]Directory not found: {ex.Message}[/]");
-				AnsiConsole.WriteLine(PressAnyKeyMessage);
-				Console.ReadKey();
-				// Clear navigation on error to return to main menu
-				NavigationHistory.Clear();
+				HandleInteractiveModeError($"Directory not found: {ex.Message}");
 			}
 			catch (UnauthorizedAccessException ex)
 			{
-				AnsiConsole.MarkupLine($"[red]Access denied: {ex.Message}[/]");
-				AnsiConsole.WriteLine(PressAnyKeyMessage);
-				Console.ReadKey();
-				// Clear navigation on error to return to main menu
-				NavigationHistory.Clear();
+				HandleInteractiveModeError($"Access denied: {ex.Message}");
 			}
 			catch (IOException ex)
 			{
-				AnsiConsole.MarkupLine($"[red]File I/O error: {ex.Message}[/]");
-				AnsiConsole.WriteLine(PressAnyKeyMessage);
-				Console.ReadKey();
-				// Clear navigation on error to return to main menu
-				NavigationHistory.Clear();
+				HandleInteractiveModeError($"File I/O error: {ex.Message}");
 			}
 			catch (ArgumentException ex)
 			{
-				AnsiConsole.MarkupLine($"[red]Invalid input: {ex.Message}[/]");
-				AnsiConsole.WriteLine(PressAnyKeyMessage);
-				Console.ReadKey();
-				// Clear navigation on error to return to main menu
-				NavigationHistory.Clear();
+				HandleInteractiveModeError($"Invalid input: {ex.Message}");
 			}
 			catch (InvalidOperationException ex)
 			{
-				AnsiConsole.MarkupLine($"[red]Operation error: {ex.Message}[/]");
-				AnsiConsole.WriteLine(PressAnyKeyMessage);
-				Console.ReadKey();
-				// Clear navigation on error to return to main menu
-				NavigationHistory.Clear();
+				HandleInteractiveModeError($"Operation error: {ex.Message}");
 			}
 		}
 
 		ShowGoodbyeScreen();
+	}
+
+	/// <summary>
+	/// Handles errors that occur during interactive mode with consistent formatting and cleanup.
+	/// </summary>
+	/// <param name="errorMessage">The error message to display.</param>
+	private static void HandleInteractiveModeError(string errorMessage)
+	{
+		AnsiConsole.MarkupLine($"[red]{errorMessage}[/]");
+		AnsiConsole.WriteLine(PressAnyKeyMessage);
+		Console.ReadKey();
+		// Clear navigation on error to return to main menu
+		NavigationHistory.Clear();
 	}
 
 	/// <summary>

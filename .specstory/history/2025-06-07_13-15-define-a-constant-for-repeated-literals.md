@@ -719,9 +719,152 @@ Now I need to update the method body to use the record properties and update all
 
 ---
 
+```diff
+  		ProcessingCallbacks callbacks)
+  	{
+- 		ArgumentNullException.ThrowIfNull(pattern);
+- 		ArgumentNullException.ThrowIfNull(searchPaths);
+- 		ArgumentNullException.ThrowIfNull(directory);
+- 		ArgumentNullException.ThrowIfNull(pathExclusionPatterns);
+- 		ArgumentNullException.ThrowIfNull(mergeCallback);
+- 		ArgumentNullException.ThrowIfNull(statusCallback);
+- 		ArgumentNullException.ThrowIfNull(continuationCallback);
++ 		ArgumentNullException.ThrowIfNull(parameters);
++ 		ArgumentNullException.ThrowIfNull(callbacks);
+  
+  		PatternResult result = new()
+  		{
+- 			Pattern = pattern,
++ 			Pattern = parameters.Pattern,
+  			Success = false
+  		};
+```
 
+```diff
+  		{
+  			// Create a wrapper for the progress callback to show file paths as they're discovered
+- 			Action<string>? fileDiscoveryCallback = progressCallback != null
+- 				? filePath => progressCallback($"📄 Found: {filePath}")
++ 			Action<string>? fileDiscoveryCallback = callbacks.ProgressCallback != null
++ 				? filePath => callbacks.ProgressCallback($"📄 Found: {filePath}")
+  				: null;
+  
+  			// Find files matching the pattern using search paths and exclusions
+- 			IReadOnlyCollection<string> files = FileFinder.FindFiles(searchPaths, directory, pattern, pathExclusionPatterns, fileDiscoveryCallback);
++ 			IReadOnlyCollection<string> files = FileFinder.FindFiles(parameters.SearchPaths, parameters.Directory, parameters.Pattern, parameters.PathExclusionPatterns, fileDiscoveryCallback);
+  			result.FilesFound = files.Count;
+  
+```
+
+```diff
+  			MergeCompletionResult mergeResult = IterativeMergeOrchestrator.StartIterativeMergeProcess(
+  				fileGroups,
+- 				mergeCallback,
+- 				statusCallback,
+- 				continuationCallback);
++ 				callbacks.MergeCallback,
++ 				callbacks.StatusCallback,
++ 				callbacks.ContinuationCallback);
+  
+  			result.MergeResult = mergeResult;
+```
+
+```diff
+  		Action<MergeSessionStatus> statusCallback,
+  		Func<bool> continuationCallback) =>
+- 		ProcessSinglePatternCore(pattern, searchPaths, directory, pathExclusionPatterns, mergeCallback, statusCallback, continuationCallback);
++ 		ProcessSinglePatternCore(
++ 			new PatternProcessingParameters(pattern, searchPaths, directory, pathExclusionPatterns),
++ 			new ProcessingCallbacks(mergeCallback, statusCallback, continuationCallback));
+  
+  	/// <summary>
+```
+
+```diff
+  		string directory,
+  		IReadOnlyCollection<string> pathExclusionPatterns,
+- 		ProcessingCallbacks callbacks)
+- 	{
+- 		ArgumentNullException.ThrowIfNull(callbacks);
+- 		return ProcessSinglePatternCore(pattern, searchPaths, directory, pathExclusionPatterns,
+- 			callbacks.MergeCallback, callbacks.StatusCallback, callbacks.ContinuationCallback, callbacks.ProgressCallback);
+- 	}
++ 		ProcessingCallbacks callbacks) =>
++ 		ProcessSinglePatternCore(
++ 			new PatternProcessingParameters(pattern, searchPaths, directory, pathExclusionPatterns),
++ 			callbacks);
+  
+  	/// <summary>
+```
+
+```diff
+  		Action<MergeSessionStatus> statusCallback,
+  		Func<bool> continuationCallback) =>
+- 		ProcessSinglePatternCore(pattern, [], directory, [], mergeCallback, statusCallback, continuationCallback);
++ 		ProcessSinglePatternCore(
++ 			new PatternProcessingParameters(pattern, [], directory, []),
++ 			new ProcessingCallbacks(mergeCallback, statusCallback, continuationCallback));
+  
+  	/// <summary>
+```
+
+```diff
+  		Func<bool> continuationCallback,
+  		Action<string>? progressCallback) =>
+- 		ProcessSinglePatternCore(pattern, [], directory, [], mergeCallback, statusCallback, continuationCallback, progressCallback);
++ 		ProcessSinglePatternCore(
++ 			new PatternProcessingParameters(pattern, [], directory, []),
++ 			new ProcessingCallbacks(mergeCallback, statusCallback, continuationCallback, progressCallback));
+  
+  	/// <summary>
+```
 
 ---
+
+Perfect! I've successfully resolved the parameter count issue by:
+
+## ✅ **Solution Summary**
+
+1. **Created `PatternProcessingParameters` record** to group 4 related parameters:
+   - `Pattern`, `SearchPaths`, `Directory`, `PathExclusionPatterns`
+
+2. **Reduced method signature from 8 to 2 parameters**:
+   - `PatternProcessingParameters parameters`
+   - `ProcessingCallbacks callbacks` (already existed)
+
+3. **Updated method body** to use record properties instead of individual parameters
+
+4. **Updated all calling methods** to create the parameter objects
+
+## **Benefits**
+- ✅ **Complies with 7-parameter limit** (now has only 2 parameters)
+- ✅ **Improved readability** - related parameters are logically grouped
+- ✅ **Type safety** - parameters are validated at compile time
+- ✅ **No breaking changes** - all public API methods maintain their signatures
+- ✅ **Consistent pattern** - follows existing `ProcessingCallbacks` design
+
+The refactoring maintains the same functionality while adhering to the coding standards and improving code organization.
+
+---
+
+_**User**_
+
+Duplicated Lines (%) on New Code
+0.5%
+Duplicated Lines (%) on New Code
+Duplicated Lines on New Code
+
+BlastMerge.ConsoleApp/Services/InteractiveMergeService.cs
+8.9%
+32
+
+BlastMerge.ConsoleApp/ConsoleApplicationService.cs
+3.1%
+32
+
+---
+
+_**Assistant**_
 
 
 

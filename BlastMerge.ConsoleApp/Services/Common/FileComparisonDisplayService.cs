@@ -21,6 +21,35 @@ using Spectre.Console;
 public static class FileComparisonDisplayService
 {
 	/// <summary>
+	/// Executes a file operation with standard exception handling for file-related errors.
+	/// </summary>
+	/// <param name="fileOperation">The file operation to execute.</param>
+	/// <returns>True if operation succeeded, false if an exception was caught.</returns>
+	private static bool ExecuteFileOperation(Action fileOperation)
+	{
+		try
+		{
+			fileOperation();
+			return true;
+		}
+		catch (FileNotFoundException ex)
+		{
+			UIHelper.ShowError($"File not found: {ex.Message}");
+			return false;
+		}
+		catch (IOException ex)
+		{
+			UIHelper.ShowError($"IO error: {ex.Message}");
+			return false;
+		}
+		catch (UnauthorizedAccessException ex)
+		{
+			UIHelper.ShowError($"Access denied: {ex.Message}");
+			return false;
+		}
+	}
+
+	/// <summary>
 	/// Compares two files and displays the results with user choice of format.
 	/// </summary>
 	/// <param name="file1">First file path.</param>
@@ -30,7 +59,7 @@ public static class FileComparisonDisplayService
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		try
+		ExecuteFileOperation(() =>
 		{
 			IReadOnlyCollection<LineDifference> differences = FileDiffer.FindDifferences(file1, file2);
 
@@ -43,19 +72,7 @@ public static class FileComparisonDisplayService
 				UIHelper.ShowWarning("📄 Files are different.");
 				ShowFileComparisonOptions(file1, file2);
 			}
-		}
-		catch (FileNotFoundException ex)
-		{
-			UIHelper.ShowError($"File not found: {ex.Message}");
-		}
-		catch (IOException ex)
-		{
-			UIHelper.ShowError($"IO error: {ex.Message}");
-		}
-		catch (UnauthorizedAccessException ex)
-		{
-			UIHelper.ShowError($"Access denied: {ex.Message}");
-		}
+		});
 	}
 
 	/// <summary>
@@ -132,7 +149,7 @@ public static class FileComparisonDisplayService
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		try
+		ExecuteFileOperation(() =>
 		{
 			IReadOnlyCollection<LineDifference> differences = FileDiffer.FindDifferences(file1, file2);
 
@@ -153,19 +170,7 @@ public static class FileComparisonDisplayService
 			};
 
 			AnsiConsole.Write(panel);
-		}
-		catch (FileNotFoundException ex)
-		{
-			UIHelper.ShowError($"File not found: {ex.Message}");
-		}
-		catch (IOException ex)
-		{
-			UIHelper.ShowError($"IO error: {ex.Message}");
-		}
-		catch (UnauthorizedAccessException ex)
-		{
-			UIHelper.ShowError($"Access denied: {ex.Message}");
-		}
+		});
 	}
 
 	/// <summary>
@@ -178,7 +183,7 @@ public static class FileComparisonDisplayService
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		try
+		ExecuteFileOperation(() =>
 		{
 			string[] lines1 = File.ReadAllLines(file1);
 			string[] lines2 = File.ReadAllLines(file2);
@@ -191,19 +196,7 @@ public static class FileComparisonDisplayService
 			};
 
 			AnsiConsole.Write(panel);
-		}
-		catch (FileNotFoundException ex)
-		{
-			UIHelper.ShowError($"File not found: {ex.Message}");
-		}
-		catch (IOException ex)
-		{
-			UIHelper.ShowError($"IO error: {ex.Message}");
-		}
-		catch (UnauthorizedAccessException ex)
-		{
-			UIHelper.ShowError($"Access denied: {ex.Message}");
-		}
+		});
 	}
 
 	/// <summary>
@@ -216,7 +209,7 @@ public static class FileComparisonDisplayService
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		try
+		ExecuteFileOperation(() =>
 		{
 			// Use core DiffPlex API to get DiffResult with DiffBlocks
 			string content1 = File.ReadAllText(file1);
@@ -234,19 +227,7 @@ public static class FileComparisonDisplayService
 			PopulateTableWithDiffBlocks(table, diffResult);
 			DisplayDiffWithDiffBlockStatistics(table, diffResult);
 			ShowDiffLegend();
-		}
-		catch (FileNotFoundException ex)
-		{
-			UIHelper.ShowError($"File not found: {ex.Message}");
-		}
-		catch (IOException ex)
-		{
-			UIHelper.ShowError($"IO error generating side-by-side diff: {ex.Message}");
-		}
-		catch (UnauthorizedAccessException ex)
-		{
-			UIHelper.ShowError($"Access denied: {ex.Message}");
-		}
+		});
 	}
 
 	/// <summary>
