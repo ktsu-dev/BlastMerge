@@ -2,5 +2,6 @@
   <ItemGroup>
     <PackageReference Include="DiffPlex" />
     <PackageReference Include="Spectre.Console" />
+    <PackageReference Include="ktsu.AppDataStorage" />
   </ItemGroup>
 </Project>

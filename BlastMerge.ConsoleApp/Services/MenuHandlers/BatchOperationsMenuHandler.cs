@@ -10,17 +10,32 @@ using ktsu.BlastMerge.Core.Services;
 using Spectre.Console;
 
 /// <summary>
+/// Represents the available batch management choices.
+/// </summary>
+internal enum BatchManagementChoice
+{
+	List,
+	Create,
+	View,
+	Edit,
+	Duplicate,
+	Delete,
+	Export,
+	Import,
+	Back
+}
+
+/// <summary>
 /// Menu handler for batch operations.
 /// </summary>
 /// <param name="applicationService">The application service.</param>
 public class BatchOperationsMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)
 {
-	private const string OperationCancelledMessage = "Operation cancelled.";
 
 	/// <summary>
 	/// Gets the name of this menu for navigation purposes.
 	/// </summary>
-	protected override string MenuName => "Batch Operations";
+	protected override string MenuName => MenuNames.BatchOperations;
 
 	private static JsonSerializerOptions JsonSerializerOptions { get; } = new()
 	{
@@ -33,12 +48,12 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// </summary>
 	public override void Handle()
 	{
-		ShowMenuTitle("Batch Operations");
+		ShowMenuTitle(MenuNames.BatchOperations);
 
 		Dictionary<string, BatchOperationChoice> batchOperationChoices = new()
 		{
-			["▶️ Run Batch Configuration"] = BatchOperationChoice.RunBatchConfiguration,
-			["⚙️ Manage Batch Configurations"] = BatchOperationChoice.ManageBatchConfigurations,
+			[MenuNames.BatchOperationsDisplay.RunBatchConfiguration] = BatchOperationChoice.RunBatchConfiguration,
+			[MenuNames.BatchOperationsDisplay.ManageBatchConfigurations] = BatchOperationChoice.ManageBatchConfigurations,
 			[GetBackMenuText()] = BatchOperationChoice.BackToMainMenu
 		};
 
@@ -74,63 +89,80 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	{
 		while (true)
 		{
-			ShowMenuTitle("Batch Management");
-
-			Dictionary<string, string> managementChoices = new()
-			{
-				["📋 List Batches"] = "list",
-				["➕ Create New Batch"] = "create",
-				["👁️ View Batch Details"] = "view",
-				["✏️ Edit Batch"] = "edit",
-				["📄 Duplicate Batch"] = "duplicate",
-				["🗑️ Delete Batch"] = "delete",
-				["📤 Export Batches"] = "export",
-				["📥 Import Batches"] = "import",
-				["🔙 Back to Batch Operations"] = "back"
-			};
-
-			string selection = AnsiConsole.Prompt(
-				new SelectionPrompt<string>()
-					.Title("[cyan]Select batch management operation:[/]")
-					.PageSize(10)
-					.AddChoices(managementChoices.Keys));
-
-			if (!managementChoices.TryGetValue(selection, out string? action))
+			BatchManagementChoice choice = GetBatchManagementChoice();
+			if (!ExecuteBatchManagementChoice(choice))
 			{
 				return;
 			}
+		}
+	}
 
-			switch (action)
-			{
-				case "list":
-					HandleListBatches();
-					break;
-				case "create":
-					HandleCreateNewBatch();
-					break;
-				case "view":
-					HandleViewBatch();
-					break;
-				case "edit":
-					HandleEditBatch();
-					break;
-				case "duplicate":
-					HandleDuplicateBatch();
-					break;
-				case "delete":
-					HandleDeleteBatch();
-					break;
-				case "export":
-					HandleExportBatches();
-					break;
-				case "import":
-					HandleImportBatches();
-					break;
-				case "back":
-					return;
-				default:
-					return;
-			}
+	/// <summary>
+	/// Gets the user's batch management choice.
+	/// </summary>
+	/// <returns>The selected batch management choice.</returns>
+	private static BatchManagementChoice GetBatchManagementChoice()
+	{
+		ShowMenuTitle("Batch Management");
+
+		Dictionary<string, BatchManagementChoice> managementChoices = new()
+		{
+			["📋 List Batches"] = BatchManagementChoice.List,
+			["➕ Create New Batch"] = BatchManagementChoice.Create,
+			["👁️ View Batch Details"] = BatchManagementChoice.View,
+			["✏️ Edit Batch"] = BatchManagementChoice.Edit,
+			["📄 Duplicate Batch"] = BatchManagementChoice.Duplicate,
+			["🗑️ Delete Batch"] = BatchManagementChoice.Delete,
+			["📤 Export Batches"] = BatchManagementChoice.Export,
+			["📥 Import Batches"] = BatchManagementChoice.Import,
+			["🔙 Back to Batch Operations"] = BatchManagementChoice.Back
+		};
+
+		string selection = AnsiConsole.Prompt(
+			new SelectionPrompt<string>()
+				.Title("[cyan]Select batch management operation:[/]")
+				.PageSize(10)
+				.AddChoices(managementChoices.Keys));
+
+		return managementChoices.TryGetValue(selection, out BatchManagementChoice choice) ? choice : BatchManagementChoice.Back;
+	}
+
+	/// <summary>
+	/// Executes the selected batch management choice.
+	/// </summary>
+	/// <param name="choice">The batch management choice to execute.</param>
+	/// <returns>True to continue, false to exit the loop.</returns>
+	private static bool ExecuteBatchManagementChoice(BatchManagementChoice choice)
+	{
+		switch (choice)
+		{
+			case BatchManagementChoice.List:
+				HandleListBatches();
+				return true;
+			case BatchManagementChoice.Create:
+				HandleCreateNewBatch();
+				return true;
+			case BatchManagementChoice.View:
+				HandleViewBatch();
+				return true;
+			case BatchManagementChoice.Edit:
+				HandleEditBatch();
+				return true;
+			case BatchManagementChoice.Duplicate:
+				HandleDuplicateBatch();
+				return true;
+			case BatchManagementChoice.Delete:
+				HandleDeleteBatch();
+				return true;
+			case BatchManagementChoice.Export:
+				HandleExportBatches();
+				return true;
+			case BatchManagementChoice.Import:
+				HandleImportBatches();
+				return true;
+			case BatchManagementChoice.Back:
+			default:
+				return false;
 		}
 	}
 
@@ -141,7 +173,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	{
 		ShowMenuTitle("Available Batch Configurations");
 
-		IReadOnlyCollection<BatchConfiguration> allBatches = BatchManager.GetAllBatches();
+		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataBatchManager.GetAllBatches();
 
 		if (allBatches.Count == 0)
 		{
@@ -178,145 +210,223 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	{
 		ShowMenuTitle("Create New Batch Configuration");
 
-		string batchName;
-		try
-		{
-			// Get batch name
-			batchName = HistoryInput.AskWithHistory("[cyan]Enter batch name[/]");
-			if (string.IsNullOrWhiteSpace(batchName))
-			{
-				ShowWarning(OperationCancelledMessage);
-				return;
-			}
-		}
-		catch (InputCancelledException)
+		string? batchName = GetValidBatchName();
+		if (batchName == null)
 		{
 			return;
 		}
 
-		// Check if batch already exists
-		BatchConfiguration? existingBatch = BatchManager.LoadBatch(batchName);
+		BatchConfigurationData data = GatherBatchConfigurationData();
+		if (data.Patterns.Count == 0)
+		{
+			ShowWarning("At least one file pattern is required.");
+			return;
+		}
+
+		BatchConfiguration newBatch = CreateBatchConfiguration(batchName, data);
+		SaveAndDisplayBatchResult(newBatch);
+		WaitForKeyPress();
+	}
+
+	/// <summary>
+	/// Gets a valid batch name from the user.
+	/// </summary>
+	/// <returns>The batch name, or null if cancelled.</returns>
+	private static string? GetValidBatchName()
+	{
+		string batchName = AppDataHistoryInput.AskWithHistory("[cyan]Enter batch name[/]");
+		if (string.IsNullOrWhiteSpace(batchName))
+		{
+			ShowWarning(OperationCancelledMessage);
+			return null;
+		}
+
+		BatchConfiguration? existingBatch = AppDataBatchManager.LoadBatch(batchName);
 		if (existingBatch != null)
 		{
 			bool overwrite = AnsiConsole.Confirm($"[yellow]A batch named '{batchName}' already exists. Overwrite it?[/]");
 			if (!overwrite)
 			{
 				ShowWarning(OperationCancelledMessage);
-				return;
+				return null;
 			}
 		}
 
-		// Get description
-		string description;
-		List<string> patterns = [];
-		List<string> searchPaths = [];
-		List<string> exclusionPatterns = [];
+		return batchName;
+	}
 
-		try
-		{
-			description = HistoryInput.AskWithHistory("[cyan]Enter description (optional)[/]");
+	/// <summary>
+	/// Gathers all batch configuration data from the user.
+	/// </summary>
+	/// <returns>The gathered batch configuration data.</returns>
+	private static BatchConfigurationData GatherBatchConfigurationData()
+	{
+		string description = AppDataHistoryInput.AskWithHistory("[cyan]Enter description (optional)[/]");
+		List<string> patterns = GatherFilePatterns();
+		List<string> searchPaths = GatherSearchPaths();
+		List<string> exclusionPatterns = GatherExclusionPatterns();
 
-			// Get file patterns
-			AnsiConsole.MarkupLine("[cyan]Enter file patterns (one per line, empty line to finish):[/]");
-			AnsiConsole.MarkupLine("[dim]Examples: *.txt, .gitignore, README.md, **/*.cs[/]");
-
-			while (true)
-			{
-				string pattern = HistoryInput.AskWithHistory($"[cyan]Pattern {patterns.Count + 1}[/]");
-				if (string.IsNullOrWhiteSpace(pattern))
-				{
-					break;
-				}
-				patterns.Add(pattern.Trim());
-			}
-
-			// Get search paths
-			bool addSearchPaths = AnsiConsole.Confirm("[cyan]Add custom search paths? (If no, uses the directory provided at runtime)[/]", false);
-
-			if (addSearchPaths)
-			{
-				AnsiConsole.MarkupLine("[cyan]Enter search paths (one per line, empty line to finish):[/]");
-				AnsiConsole.MarkupLine("[dim]Examples: C:\\Projects, /home/user/repos, ../other-projects[/]");
-
-				while (true)
-				{
-					string searchPath = HistoryInput.AskWithHistory($"[cyan]Search Path {searchPaths.Count + 1}[/]");
-					if (string.IsNullOrWhiteSpace(searchPath))
-					{
-						break;
-					}
-					searchPaths.Add(searchPath.Trim());
-				}
-			}
-
-			// Get path exclusion patterns
-			bool addExclusions = AnsiConsole.Confirm("[cyan]Add path exclusion patterns?[/]", false);
-
-			if (addExclusions)
-			{
-				AnsiConsole.MarkupLine("[cyan]Enter path exclusion patterns (one per line, empty line to finish):[/]");
-				AnsiConsole.MarkupLine("[dim]Examples: */node_modules/*, */bin/*, */obj/*, .git/*, temp*[/]");
-
-				while (true)
-				{
-					string exclusionPattern = HistoryInput.AskWithHistory($"[cyan]Exclusion Pattern {exclusionPatterns.Count + 1}[/]");
-					if (string.IsNullOrWhiteSpace(exclusionPattern))
-					{
-						break;
-					}
-					exclusionPatterns.Add(exclusionPattern.Trim());
-				}
-			}
-		}
-		catch (InputCancelledException)
-		{
-			return;
-		}
-
-		if (patterns.Count == 0)
-		{
-			ShowWarning("At least one file pattern is required.");
-			return;
-		}
-
-		// Get options
 		bool skipEmptyPatterns = AnsiConsole.Confirm("[cyan]Skip patterns that don't find any files?[/]", true);
 		bool promptBeforeEachPattern = AnsiConsole.Confirm("[cyan]Prompt before processing each pattern?[/]", false);
 
-		// Create batch configuration
-		BatchConfiguration newBatch = new()
+		return new BatchConfigurationData
+		{
+			Description = description,
+			Patterns = patterns,
+			SearchPaths = searchPaths,
+			ExclusionPatterns = exclusionPatterns,
+			SkipEmptyPatterns = skipEmptyPatterns,
+			PromptBeforeEachPattern = promptBeforeEachPattern
+		};
+	}
+
+	/// <summary>
+	/// Gathers file patterns from the user.
+	/// </summary>
+	/// <returns>List of file patterns.</returns>
+	private static List<string> GatherFilePatterns()
+	{
+		List<string> patterns = [];
+		AnsiConsole.MarkupLine("[cyan]Enter file patterns (one per line, empty line to finish):[/]");
+		AnsiConsole.MarkupLine("[dim]Examples: *.txt, .gitignore, README.md, **/*.cs[/]");
+
+		while (true)
+		{
+			string pattern = AppDataHistoryInput.AskWithHistory($"[cyan]Pattern {patterns.Count + 1}[/]");
+			if (string.IsNullOrWhiteSpace(pattern))
+			{
+				break;
+			}
+			patterns.Add(pattern.Trim());
+		}
+
+		return patterns;
+	}
+
+	/// <summary>
+	/// Gathers search paths from the user.
+	/// </summary>
+	/// <returns>List of search paths.</returns>
+	private static List<string> GatherSearchPaths()
+	{
+		List<string> searchPaths = [];
+		bool addSearchPaths = AnsiConsole.Confirm("[cyan]Add custom search paths? (If no, uses the directory provided at runtime)[/]", false);
+
+		if (addSearchPaths)
+		{
+			AnsiConsole.MarkupLine("[cyan]Enter search paths (one per line, empty line to finish):[/]");
+			AnsiConsole.MarkupLine("[dim]Examples: C:\\Projects, /home/user/repos, ../other-projects[/]");
+
+			while (true)
+			{
+				string searchPath = AppDataHistoryInput.AskWithHistory($"[cyan]Search Path {searchPaths.Count + 1}[/]");
+				if (string.IsNullOrWhiteSpace(searchPath))
+				{
+					break;
+				}
+				searchPaths.Add(searchPath.Trim());
+			}
+		}
+
+		return searchPaths;
+	}
+
+	/// <summary>
+	/// Gathers exclusion patterns from the user.
+	/// </summary>
+	/// <returns>List of exclusion patterns.</returns>
+	private static List<string> GatherExclusionPatterns()
+	{
+		List<string> exclusionPatterns = [];
+		bool addExclusions = AnsiConsole.Confirm("[cyan]Add path exclusion patterns?[/]", false);
+
+		if (addExclusions)
+		{
+			AnsiConsole.MarkupLine("[cyan]Enter path exclusion patterns (one per line, empty line to finish):[/]");
+			AnsiConsole.MarkupLine("[dim]Examples: */node_modules/*, */bin/*, */obj/*, .git/*, temp*[/]");
+
+			while (true)
+			{
+				string exclusionPattern = AppDataHistoryInput.AskWithHistory($"[cyan]Exclusion Pattern {exclusionPatterns.Count + 1}[/]");
+				if (string.IsNullOrWhiteSpace(exclusionPattern))
+				{
+					break;
+				}
+				exclusionPatterns.Add(exclusionPattern.Trim());
+			}
+		}
+
+		return exclusionPatterns;
+	}
+
+	/// <summary>
+	/// Creates a batch configuration from the provided data.
+	/// </summary>
+	/// <param name="batchName">The batch name.</param>
+	/// <param name="data">The batch configuration data.</param>
+	/// <returns>The created batch configuration.</returns>
+	private static BatchConfiguration CreateBatchConfiguration(string batchName, BatchConfigurationData data)
+	{
+		return new BatchConfiguration
 		{
 			Name = batchName,
-			Description = description,
-			FilePatterns = [.. patterns],
-			SearchPaths = [.. searchPaths],
-			PathExclusionPatterns = [.. exclusionPatterns],
-			SkipEmptyPatterns = skipEmptyPatterns,
-			PromptBeforeEachPattern = promptBeforeEachPattern,
+			Description = data.Description,
+			FilePatterns = [.. data.Patterns],
+			SearchPaths = [.. data.SearchPaths],
+			PathExclusionPatterns = [.. data.ExclusionPatterns],
+			SkipEmptyPatterns = data.SkipEmptyPatterns,
+			PromptBeforeEachPattern = data.PromptBeforeEachPattern,
 			CreatedDate = DateTime.UtcNow,
 			LastModified = DateTime.UtcNow
 		};
+	}
 
-		// Save the batch
-		bool saved = BatchManager.SaveBatch(newBatch);
+	/// <summary>
+	/// Saves the batch configuration and displays the result.
+	/// </summary>
+	/// <param name="batch">The batch configuration to save.</param>
+	private static void SaveAndDisplayBatchResult(BatchConfiguration batch)
+	{
+		bool saved = AppDataBatchManager.SaveBatch(batch);
 		if (saved)
 		{
-			ShowSuccess($"Batch configuration '{batchName}' created successfully!");
+			// Force save any queued changes to ensure the batch is immediately available
+			AppDataBatchManager.SaveIfRequired();
 
-			// Show summary
-			AnsiConsole.MarkupLine($"\n[bold]Batch Summary:[/]");
-			AnsiConsole.MarkupLine($"[cyan]Name:[/] {newBatch.Name}");
-			AnsiConsole.MarkupLine($"[cyan]Description:[/] {newBatch.Description}");
-			AnsiConsole.MarkupLine($"[cyan]Patterns:[/] {newBatch.FilePatterns.Count}");
-			AnsiConsole.MarkupLine($"[cyan]Skip Empty:[/] {newBatch.SkipEmptyPatterns}");
-			AnsiConsole.MarkupLine($"[cyan]Prompt Before Each:[/] {newBatch.PromptBeforeEachPattern}");
+			ShowSuccess($"Batch configuration '{batch.Name}' created successfully!");
+			DisplayBatchSummary(batch);
 		}
 		else
 		{
-			ShowError($"Failed to save batch configuration '{batchName}'.");
+			ShowError($"Failed to save batch configuration '{batch.Name}'.");
 		}
+	}
 
-		WaitForKeyPress();
+	/// <summary>
+	/// Displays a summary of the batch configuration.
+	/// </summary>
+	/// <param name="batch">The batch configuration to display.</param>
+	private static void DisplayBatchSummary(BatchConfiguration batch)
+	{
+		AnsiConsole.MarkupLine($"\n[bold]Batch Summary:[/]");
+		AnsiConsole.MarkupLine($"[cyan]Name:[/] {batch.Name}");
+		AnsiConsole.MarkupLine($"[cyan]Description:[/] {batch.Description}");
+		AnsiConsole.MarkupLine($"[cyan]Patterns:[/] {batch.FilePatterns.Count}");
+		AnsiConsole.MarkupLine($"[cyan]Skip Empty:[/] {batch.SkipEmptyPatterns}");
+		AnsiConsole.MarkupLine($"[cyan]Prompt Before Each:[/] {batch.PromptBeforeEachPattern}");
+	}
+
+	/// <summary>
+	/// Represents the data needed to create a batch configuration.
+	/// </summary>
+	private sealed class BatchConfigurationData
+	{
+		public string Description { get; set; } = string.Empty;
+		public List<string> Patterns { get; set; } = [];
+		public List<string> SearchPaths { get; set; } = [];
+		public List<string> ExclusionPatterns { get; set; } = [];
+		public bool SkipEmptyPatterns { get; set; }
+		public bool PromptBeforeEachPattern { get; set; }
 	}
 
 	/// <summary>
@@ -326,7 +436,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	{
 		ShowMenuTitle("Run Batch Configuration");
 
-		IReadOnlyCollection<BatchConfiguration> allBatches = BatchManager.GetAllBatches();
+		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataBatchManager.GetAllBatches();
 
 		if (allBatches.Count == 0)
 		{
@@ -340,22 +450,49 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 				.Title("Select batch configuration:")
 				.AddChoices(allBatches.Select(b => b.Name)));
 
-		string directory;
-		try
+		// Load the selected batch to check if it has search paths configured
+		BatchConfiguration? selectedBatch = AppDataBatchManager.LoadBatch(batchName);
+		if (selectedBatch == null)
 		{
-			directory = HistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
+			ShowError($"Batch configuration '{batchName}' not found.");
+			WaitForKeyPress();
+			return;
+		}
+
+		string directory;
+		if (selectedBatch.SearchPaths.Count > 0)
+		{
+			// Batch has search paths configured, no need to ask for directory
+			AnsiConsole.MarkupLine($"[green]Using configured search paths ({selectedBatch.SearchPaths.Count} paths)[/]");
+			foreach (string searchPath in selectedBatch.SearchPaths)
+			{
+				AnsiConsole.MarkupLine($"  [dim]• {searchPath}[/]");
+			}
+			AnsiConsole.WriteLine();
+
+			// Use a placeholder directory since the API still requires it, but it won't be used
+			directory = ".";
+		}
+		else
+		{
+			// No search paths configured, ask for directory
+			AnsiConsole.MarkupLine("[yellow]This batch configuration doesn't have search paths configured.[/]");
+			directory = AppDataHistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
 			if (string.IsNullOrWhiteSpace(directory))
 			{
 				ShowWarning(OperationCancelledMessage);
 				return;
 			}
 		}
-		catch (InputCancelledException)
-		{
-			return;
-		}
 
-		AnsiConsole.MarkupLine($"[cyan]Processing batch configuration '{batchName}' in '{directory}'[/]");
+		if (selectedBatch.SearchPaths.Count > 0)
+		{
+			AnsiConsole.MarkupLine($"[cyan]Processing batch configuration '[yellow]{batchName}[/]' using configured search paths[/]");
+		}
+		else
+		{
+			AnsiConsole.MarkupLine($"[cyan]Processing batch configuration '[yellow]{batchName}[/]' in '[yellow]{directory}[/]'[/]");
+		}
 		AnsiConsole.WriteLine();
 
 		ApplicationService.ProcessBatch(directory, batchName);
@@ -474,146 +611,223 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 
 		ShowMenuTitle($"Edit Batch: {batch.Name}");
 
-		string description;
-		List<string> patterns = [.. batch.FilePatterns];
-		List<string> searchPaths = [.. batch.SearchPaths];
-		List<string> exclusionPatterns = [.. batch.PathExclusionPatterns];
+		EditBatchData editData = GatherEditBatchData(batch);
+		BatchConfiguration updatedBatch = CreateUpdatedBatch(batch, editData);
+		SaveUpdatedBatch(updatedBatch);
+		WaitForKeyPress();
+	}
 
-		try
-		{
-			// For simplicity, we'll recreate the batch with new values
-			description = HistoryInput.AskWithHistory($"[cyan]Enter description[/] (current: {batch.Description ?? ""})", batch.Description ?? "");
-
-			// Show current patterns
-			AnsiConsole.MarkupLine($"\n[cyan]Current patterns ({batch.FilePatterns.Count}):[/]");
-			for (int i = 0; i < batch.FilePatterns.Count; i++)
-			{
-				AnsiConsole.MarkupLine($"  {i + 1}. [yellow]{batch.FilePatterns[i]}[/]");
-			}
-
-			bool modifyPatterns = AnsiConsole.Confirm("[cyan]Modify file patterns?[/]");
-
-			if (modifyPatterns)
-			{
-				patterns.Clear();
-				AnsiConsole.MarkupLine("[cyan]Enter new file patterns (one per line, empty line to finish):[/]");
-
-				while (true)
-				{
-					string pattern = HistoryInput.AskWithHistory($"[cyan]Pattern {patterns.Count + 1}[/]");
-					if (string.IsNullOrWhiteSpace(pattern))
-					{
-						break;
-					}
-					patterns.Add(pattern.Trim());
-				}
-
-				if (patterns.Count == 0)
-				{
-					ShowWarning("At least one file pattern is required. Keeping original patterns.");
-					patterns = [.. batch.FilePatterns];
-				}
-			}
-
-			// Handle search paths
-			AnsiConsole.MarkupLine($"\n[cyan]Current search paths ({batch.SearchPaths.Count}):[/]");
-			if (batch.SearchPaths.Count == 0)
-			{
-				AnsiConsole.MarkupLine("  [dim]None (uses runtime directory)[/]");
-			}
-			else
-			{
-				for (int i = 0; i < batch.SearchPaths.Count; i++)
-				{
-					AnsiConsole.MarkupLine($"  {i + 1}. [green]{batch.SearchPaths[i]}[/]");
-				}
-			}
-
-			bool modifySearchPaths = AnsiConsole.Confirm("[cyan]Modify search paths?[/]");
-
-			if (modifySearchPaths)
-			{
-				searchPaths.Clear();
-				AnsiConsole.MarkupLine("[cyan]Enter new search paths (one per line, empty line to finish):[/]");
-				AnsiConsole.MarkupLine("[dim]Examples: C:\\Projects, /home/user/repos, ../other-projects[/]");
-
-				while (true)
-				{
-					string searchPath = HistoryInput.AskWithHistory($"[cyan]Search Path {searchPaths.Count + 1}[/]");
-					if (string.IsNullOrWhiteSpace(searchPath))
-					{
-						break;
-					}
-					searchPaths.Add(searchPath.Trim());
-				}
-			}
-
-			// Handle exclusion patterns
-			AnsiConsole.MarkupLine($"\n[cyan]Current exclusion patterns ({batch.PathExclusionPatterns.Count}):[/]");
-			if (batch.PathExclusionPatterns.Count == 0)
-			{
-				AnsiConsole.MarkupLine("  [dim]None[/]");
-			}
-			else
-			{
-				for (int i = 0; i < batch.PathExclusionPatterns.Count; i++)
-				{
-					AnsiConsole.MarkupLine($"  {i + 1}. [red]{batch.PathExclusionPatterns[i]}[/]");
-				}
-			}
-
-			bool modifyExclusions = AnsiConsole.Confirm("[cyan]Modify exclusion patterns?[/]");
-
-			if (modifyExclusions)
-			{
-				exclusionPatterns.Clear();
-				AnsiConsole.MarkupLine("[cyan]Enter new exclusion patterns (one per line, empty line to finish):[/]");
-				AnsiConsole.MarkupLine("[dim]Examples: */node_modules/*, */bin/*, */obj/*, .git/*, temp*[/]");
-
-				while (true)
-				{
-					string exclusionPattern = HistoryInput.AskWithHistory($"[cyan]Exclusion Pattern {exclusionPatterns.Count + 1}[/]");
-					if (string.IsNullOrWhiteSpace(exclusionPattern))
-					{
-						break;
-					}
-					exclusionPatterns.Add(exclusionPattern.Trim());
-				}
-			}
-		}
-		catch (InputCancelledException)
-		{
-			return;
-		}
-
+	/// <summary>
+	/// Gathers all edit data from the user for the batch configuration.
+	/// </summary>
+	/// <param name="batch">The batch configuration being edited.</param>
+	/// <returns>The gathered edit data.</returns>
+	private static EditBatchData GatherEditBatchData(BatchConfiguration batch)
+	{
+		string description = AppDataHistoryInput.AskWithHistory($"[cyan]Enter description[/] (current: {batch.Description ?? ""})", batch.Description ?? "");
+		List<string> patterns = HandlePatternEditing(batch);
+		List<string> searchPaths = HandleSearchPathEditing(batch);
+		List<string> exclusionPatterns = HandleExclusionPatternEditing(batch);
 		bool skipEmpty = AnsiConsole.Confirm($"[cyan]Skip patterns that don't find any files?[/] (current: {batch.SkipEmptyPatterns})", batch.SkipEmptyPatterns);
 		bool promptBefore = AnsiConsole.Confirm($"[cyan]Prompt before processing each pattern?[/] (current: {batch.PromptBeforeEachPattern})", batch.PromptBeforeEachPattern);
 
-		// Create updated batch
-		BatchConfiguration updatedBatch = new()
+		return new EditBatchData
 		{
-			Name = batch.Name,
 			Description = description,
-			FilePatterns = [.. patterns],
-			SearchPaths = [.. searchPaths],
-			PathExclusionPatterns = [.. exclusionPatterns],
+			Patterns = patterns,
+			SearchPaths = searchPaths,
+			ExclusionPatterns = exclusionPatterns,
 			SkipEmptyPatterns = skipEmpty,
-			PromptBeforeEachPattern = promptBefore,
-			CreatedDate = batch.CreatedDate,
+			PromptBeforeEachPattern = promptBefore
+		};
+	}
+
+	/// <summary>
+	/// Handles editing of file patterns.
+	/// </summary>
+	/// <param name="batch">The batch configuration being edited.</param>
+	/// <returns>Updated list of patterns.</returns>
+	private static List<string> HandlePatternEditing(BatchConfiguration batch)
+	{
+		List<string> patterns = [.. batch.FilePatterns];
+
+		// Show current patterns
+		AnsiConsole.MarkupLine($"\n[cyan]Current patterns ({batch.FilePatterns.Count}):[/]");
+		for (int i = 0; i < batch.FilePatterns.Count; i++)
+		{
+			AnsiConsole.MarkupLine($"  {i + 1}. [yellow]{batch.FilePatterns[i]}[/]");
+		}
+
+		bool modifyPatterns = AnsiConsole.Confirm("[cyan]Modify file patterns?[/]");
+
+		if (modifyPatterns)
+		{
+			patterns.Clear();
+			AnsiConsole.MarkupLine("[cyan]Enter new file patterns (one per line, empty line to finish):[/]");
+
+			while (true)
+			{
+				string pattern = AppDataHistoryInput.AskWithHistory($"[cyan]Pattern {patterns.Count + 1}[/]");
+				if (string.IsNullOrWhiteSpace(pattern))
+				{
+					break;
+				}
+				patterns.Add(pattern.Trim());
+			}
+
+			if (patterns.Count == 0)
+			{
+				ShowWarning("At least one file pattern is required. Keeping original patterns.");
+				patterns = [.. batch.FilePatterns];
+			}
+		}
+
+		return patterns;
+	}
+
+	/// <summary>
+	/// Handles editing of search paths.
+	/// </summary>
+	/// <param name="batch">The batch configuration being edited.</param>
+	/// <returns>Updated list of search paths.</returns>
+	private static List<string> HandleSearchPathEditing(BatchConfiguration batch)
+	{
+		List<string> searchPaths = [.. batch.SearchPaths];
+
+		// Handle search paths
+		AnsiConsole.MarkupLine($"\n[cyan]Current search paths ({batch.SearchPaths.Count}):[/]");
+		if (batch.SearchPaths.Count == 0)
+		{
+			AnsiConsole.MarkupLine("  [dim]None (uses runtime directory)[/]");
+		}
+		else
+		{
+			for (int i = 0; i < batch.SearchPaths.Count; i++)
+			{
+				AnsiConsole.MarkupLine($"  {i + 1}. [green]{batch.SearchPaths[i]}[/]");
+			}
+		}
+
+		bool modifySearchPaths = AnsiConsole.Confirm("[cyan]Modify search paths?[/]");
+
+		if (modifySearchPaths)
+		{
+			searchPaths.Clear();
+			AnsiConsole.MarkupLine("[cyan]Enter new search paths (one per line, empty line to finish):[/]");
+			AnsiConsole.MarkupLine("[dim]Examples: C:\\Projects, /home/user/repos, ../other-projects[/]");
+
+			while (true)
+			{
+				string searchPath = AppDataHistoryInput.AskWithHistory($"[cyan]Search Path {searchPaths.Count + 1}[/]");
+				if (string.IsNullOrWhiteSpace(searchPath))
+				{
+					break;
+				}
+				searchPaths.Add(searchPath.Trim());
+			}
+		}
+
+		return searchPaths;
+	}
+
+	/// <summary>
+	/// Handles editing of exclusion patterns.
+	/// </summary>
+	/// <param name="batch">The batch configuration being edited.</param>
+	/// <returns>Updated list of exclusion patterns.</returns>
+	private static List<string> HandleExclusionPatternEditing(BatchConfiguration batch)
+	{
+		List<string> exclusionPatterns = [.. batch.PathExclusionPatterns];
+
+		// Handle exclusion patterns
+		AnsiConsole.MarkupLine($"\n[cyan]Current exclusion patterns ({batch.PathExclusionPatterns.Count}):[/]");
+		if (batch.PathExclusionPatterns.Count == 0)
+		{
+			AnsiConsole.MarkupLine("  [dim]None[/]");
+		}
+		else
+		{
+			for (int i = 0; i < batch.PathExclusionPatterns.Count; i++)
+			{
+				AnsiConsole.MarkupLine($"  {i + 1}. [red]{batch.PathExclusionPatterns[i]}[/]");
+			}
+		}
+
+		bool modifyExclusions = AnsiConsole.Confirm("[cyan]Modify exclusion patterns?[/]");
+
+		if (modifyExclusions)
+		{
+			exclusionPatterns.Clear();
+			AnsiConsole.MarkupLine("[cyan]Enter new exclusion patterns (one per line, empty line to finish):[/]");
+			AnsiConsole.MarkupLine("[dim]Examples: */node_modules/*, */bin/*, */obj/*, .git/*, temp*[/]");
+
+			while (true)
+			{
+				string exclusionPattern = AppDataHistoryInput.AskWithHistory($"[cyan]Exclusion Pattern {exclusionPatterns.Count + 1}[/]");
+				if (string.IsNullOrWhiteSpace(exclusionPattern))
+				{
+					break;
+				}
+				exclusionPatterns.Add(exclusionPattern.Trim());
+			}
+		}
+
+		return exclusionPatterns;
+	}
+
+	/// <summary>
+	/// Creates an updated batch configuration from the original and edit data.
+	/// </summary>
+	/// <param name="original">The original batch configuration.</param>
+	/// <param name="editData">The gathered edit data.</param>
+	/// <returns>Updated batch configuration.</returns>
+	private static BatchConfiguration CreateUpdatedBatch(BatchConfiguration original, EditBatchData editData)
+	{
+		return new BatchConfiguration
+		{
+			Name = original.Name,
+			Description = editData.Description,
+			FilePatterns = [.. editData.Patterns],
+			SearchPaths = [.. editData.SearchPaths],
+			PathExclusionPatterns = [.. editData.ExclusionPatterns],
+			SkipEmptyPatterns = editData.SkipEmptyPatterns,
+			PromptBeforeEachPattern = editData.PromptBeforeEachPattern,
+			CreatedDate = original.CreatedDate,
 			LastModified = DateTime.UtcNow
 		};
+	}
 
-		bool saved = BatchManager.SaveBatch(updatedBatch);
+	/// <summary>
+	/// Saves the updated batch configuration and displays the result.
+	/// </summary>
+	/// <param name="batch">The batch configuration to save.</param>
+	private static void SaveUpdatedBatch(BatchConfiguration batch)
+	{
+		bool saved = AppDataBatchManager.SaveBatch(batch);
 		if (saved)
 		{
+			// Force save any queued changes to ensure the batch is immediately available
+			AppDataBatchManager.SaveIfRequired();
+
 			ShowSuccess($"Batch configuration '{batch.Name}' updated successfully!");
 		}
 		else
 		{
 			ShowError($"Failed to save batch configuration '{batch.Name}'.");
 		}
+	}
 
-		WaitForKeyPress();
+	/// <summary>
+	/// Data transfer object for batch edit operations.
+	/// </summary>
+	private sealed class EditBatchData
+	{
+		public string Description { get; set; } = string.Empty;
+		public List<string> Patterns { get; set; } = [];
+		public List<string> SearchPaths { get; set; } = [];
+		public List<string> ExclusionPatterns { get; set; } = [];
+		public bool SkipEmptyPatterns { get; set; }
+		public bool PromptBeforeEachPattern { get; set; }
 	}
 
 	/// <summary>
@@ -627,23 +841,15 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			return;
 		}
 
-		string newName;
-		try
+		string newName = AppDataHistoryInput.AskWithHistory($"[cyan]Enter new name for duplicate[/] (original: {sourceBatch.Name})");
+		if (string.IsNullOrWhiteSpace(newName))
 		{
-			newName = HistoryInput.AskWithHistory($"[cyan]Enter new name for duplicate[/] (original: {sourceBatch.Name})");
-			if (string.IsNullOrWhiteSpace(newName))
-			{
-				ShowWarning(OperationCancelledMessage);
-				return;
-			}
-		}
-		catch (InputCancelledException)
-		{
+			ShowWarning(OperationCancelledMessage);
 			return;
 		}
 
 		// Check if batch already exists
-		BatchConfiguration? existingBatch = BatchManager.LoadBatch(newName);
+		BatchConfiguration? existingBatch = AppDataBatchManager.LoadBatch(newName);
 		if (existingBatch != null)
 		{
 			bool overwrite = AnsiConsole.Confirm($"[yellow]A batch named '{newName}' already exists. Overwrite it?[/]");
@@ -668,9 +874,12 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			LastModified = DateTime.UtcNow
 		};
 
-		bool saved = BatchManager.SaveBatch(duplicateBatch);
+		bool saved = AppDataBatchManager.SaveBatch(duplicateBatch);
 		if (saved)
 		{
+			// Force save any queued changes to ensure the batch is immediately available
+			AppDataBatchManager.SaveIfRequired();
+
 			ShowSuccess($"Batch configuration '{newName}' created as a copy of '{sourceBatch.Name}'!");
 		}
 		else
@@ -707,7 +916,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			return;
 		}
 
-		bool deleted = BatchManager.DeleteBatch(batch.Name);
+		bool deleted = AppDataBatchManager.DeleteBatch(batch.Name);
 		if (deleted)
 		{
 			ShowSuccess($"Batch configuration '{batch.Name}' deleted successfully!");
@@ -727,7 +936,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	{
 		ShowMenuTitle("Export Batch Configurations");
 
-		IReadOnlyCollection<BatchConfiguration> allBatches = BatchManager.GetAllBatches();
+		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataBatchManager.GetAllBatches();
 		if (allBatches.Count == 0)
 		{
 			ShowWarning("No batch configurations to export.");
@@ -736,18 +945,10 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		}
 
 		string defaultFileName = $"BlastMerge_Batches_{DateTime.Now:yyyyMMdd_HHmmss}.json";
-		string exportPath;
-		try
+		string exportPath = AppDataHistoryInput.AskWithHistory($"[cyan]Enter export file path[/] (default: {defaultFileName})");
+		if (string.IsNullOrWhiteSpace(exportPath))
 		{
-			exportPath = HistoryInput.AskWithHistory($"[cyan]Enter export file path[/] (default: {defaultFileName})");
-			if (string.IsNullOrWhiteSpace(exportPath))
-			{
-				exportPath = defaultFileName;
-			}
-		}
-		catch (InputCancelledException)
-		{
-			return;
+			exportPath = defaultFileName;
 		}
 
 		try
@@ -783,19 +984,10 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	{
 		ShowMenuTitle("Import Batch Configurations");
 
-		string importPath;
-		try
+		string importPath = AppDataHistoryInput.AskWithHistory("[cyan]Enter import file path[/]");
+		if (string.IsNullOrWhiteSpace(importPath))
 		{
-			importPath = HistoryInput.AskWithHistory("[cyan]Enter import file path[/]");
-			if (string.IsNullOrWhiteSpace(importPath))
-			{
-				ShowWarning(OperationCancelledMessage);
-				WaitForKeyPress();
-				return;
-			}
-		}
-		catch (InputCancelledException)
-		{
+			ShowWarning(OperationCancelledMessage);
 			WaitForKeyPress();
 			return;
 		}
@@ -920,7 +1112,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// <returns>True if the batch should be skipped, false if it should be processed.</returns>
 	private static bool HandleExistingBatch(BatchConfiguration batch)
 	{
-		BatchConfiguration? existing = BatchManager.LoadBatch(batch.Name);
+		BatchConfiguration? existing = AppDataBatchManager.LoadBatch(batch.Name);
 		if (existing == null)
 		{
 			return false;
@@ -945,7 +1137,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	{
 		batch.CreatedDate = DateTime.UtcNow;
 		batch.LastModified = DateTime.UtcNow;
-		return BatchManager.SaveBatch(batch);
+		return AppDataBatchManager.SaveBatch(batch);
 	}
 
 	/// <summary>
@@ -979,7 +1171,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	{
 		ShowMenuTitle(title);
 
-		IReadOnlyCollection<BatchConfiguration> allBatches = BatchManager.GetAllBatches();
+		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataBatchManager.GetAllBatches();
 		if (allBatches.Count == 0)
 		{
 			ShowWarning("No batch configurations available.");

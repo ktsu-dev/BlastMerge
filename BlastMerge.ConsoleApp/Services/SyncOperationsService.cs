@@ -40,9 +40,9 @@ public static class SyncOperationsService
 
 		Dictionary<string, SyncChoice> syncChoices = new()
 		{
-			["🔄 Sync all files to newest version"] = SyncChoice.SyncToNewest,
-			["📂 Choose a reference file for each group"] = SyncChoice.ChooseReference,
-			["🔙 Back to previous menu"] = SyncChoice.Back
+			[MenuNames.SyncOperations.SyncToNewest] = SyncChoice.SyncToNewest,
+			[MenuNames.SyncOperations.ChooseReference] = SyncChoice.ChooseReference,
+			[MenuNames.SyncOperations.BackToPreviousMenu] = SyncChoice.Back
 		};
 
 		string selection = AnsiConsole.Prompt(

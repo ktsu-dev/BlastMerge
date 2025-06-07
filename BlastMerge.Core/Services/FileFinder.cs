@@ -22,7 +22,17 @@ public static class FileFinder
 	/// <param name="rootDirectory">The root directory to search from</param>
 	/// <param name="fileName">The filename to search for</param>
 	/// <returns>A list of full file paths</returns>
-	public static IReadOnlyCollection<string> FindFiles(string rootDirectory, string fileName)
+	public static IReadOnlyCollection<string> FindFiles(string rootDirectory, string fileName) =>
+		FindFiles(rootDirectory, fileName, null);
+
+	/// <summary>
+	/// Recursively finds all files with the specified filename with progress reporting
+	/// </summary>
+	/// <param name="rootDirectory">The root directory to search from</param>
+	/// <param name="fileName">The filename to search for</param>
+	/// <param name="progressCallback">Optional callback to report discovered file paths</param>
+	/// <returns>A list of full file paths</returns>
+	public static IReadOnlyCollection<string> FindFiles(string rootDirectory, string fileName, Action<string>? progressCallback)
 	{
 		List<string> result = [];
 
@@ -30,7 +40,11 @@ public static class FileFinder
 		{
 			// Search in current directory
 			string[] filesInCurrentDir = Directory.GetFiles(rootDirectory, fileName, SearchOption.TopDirectoryOnly);
-			result.AddRange(filesInCurrentDir);
+			foreach (string file in filesInCurrentDir)
+			{
+				result.Add(file);
+				progressCallback?.Invoke(file);
+			}
 
 			// Search in subdirectories
 			foreach (string directory in Directory.GetDirectories(rootDirectory))
@@ -43,7 +57,7 @@ public static class FileFinder
 						continue;
 					}
 
-					IReadOnlyCollection<string> filesInSubDir = FindFiles(directory, fileName);
+					IReadOnlyCollection<string> filesInSubDir = FindFiles(directory, fileName, progressCallback);
 					result.AddRange(filesInSubDir);
 				}
 				catch (UnauthorizedAccessException)
@@ -76,7 +90,24 @@ public static class FileFinder
 		IReadOnlyCollection<string> searchPaths,
 		string rootDirectory,
 		string fileName,
-		IReadOnlyCollection<string> pathExclusionPatterns)
+		IReadOnlyCollection<string> pathExclusionPatterns) =>
+		FindFiles(searchPaths, rootDirectory, fileName, pathExclusionPatterns, null);
+
+	/// <summary>
+	/// Finds all files matching the specified filename across multiple search paths with exclusion support and progress reporting
+	/// </summary>
+	/// <param name="searchPaths">The search paths (directories) to search from. If empty, uses rootDirectory.</param>
+	/// <param name="rootDirectory">The fallback root directory to search from if searchPaths is empty</param>
+	/// <param name="fileName">The filename to search for</param>
+	/// <param name="pathExclusionPatterns">Path patterns to exclude from the search</param>
+	/// <param name="progressCallback">Optional callback to report discovered file paths</param>
+	/// <returns>A list of full file paths</returns>
+	public static IReadOnlyCollection<string> FindFiles(
+		IReadOnlyCollection<string> searchPaths,
+		string rootDirectory,
+		string fileName,
+		IReadOnlyCollection<string> pathExclusionPatterns,
+		Action<string>? progressCallback)
 	{
 		ArgumentNullException.ThrowIfNull(searchPaths);
 		ArgumentNullException.ThrowIfNull(rootDirectory);
@@ -92,7 +123,7 @@ public static class FileFinder
 		{
 			if (Directory.Exists(searchPath))
 			{
-				ReadOnlyCollection<string> filesInPath = FindFilesWithExclusions(searchPath, fileName, pathExclusionPatterns);
+				ReadOnlyCollection<string> filesInPath = FindFilesWithExclusions(searchPath, fileName, pathExclusionPatterns, progressCallback);
 				result.AddRange(filesInPath);
 			}
 		}
@@ -101,16 +132,33 @@ public static class FileFinder
 	}
 
 	/// <summary>
-	/// Recursively finds all files with the specified filename, applying exclusion patterns
+	/// Recursively finds all files with the specified filename, applying exclusion patterns with progress reporting
 	/// </summary>
 	/// <param name="rootDirectory">The root directory to search from</param>
 	/// <param name="fileName">The filename to search for</param>
 	/// <param name="pathExclusionPatterns">Path patterns to exclude from the search</param>
+	/// <param name="progressCallback">Optional callback to report discovered file paths</param>
+	/// <returns>A list of full file paths</returns>
+	public static IReadOnlyCollection<string> FindFiles(
+		string rootDirectory,
+		string fileName,
+		IReadOnlyCollection<string> pathExclusionPatterns,
+		Action<string>? progressCallback) =>
+		FindFilesWithExclusions(rootDirectory, fileName, pathExclusionPatterns, progressCallback);
+
+	/// <summary>
+	/// Recursively finds all files with the specified filename, applying exclusion patterns with progress reporting
+	/// </summary>
+	/// <param name="rootDirectory">The root directory to search from</param>
+	/// <param name="fileName">The filename to search for</param>
+	/// <param name="pathExclusionPatterns">Path patterns to exclude from the search</param>
+	/// <param name="progressCallback">Optional callback to report discovered file paths</param>
 	/// <returns>A list of full file paths</returns>
 	private static ReadOnlyCollection<string> FindFilesWithExclusions(
 		string rootDirectory,
 		string fileName,
-		IReadOnlyCollection<string> pathExclusionPatterns)
+		IReadOnlyCollection<string> pathExclusionPatterns,
+		Action<string>? progressCallback)
 	{
 		List<string> result = [];
 
@@ -131,6 +179,7 @@ public static class FileFinder
 				if (!ShouldExcludePath(file, pathExclusionPatterns))
 				{
 					result.Add(file);
+					progressCallback?.Invoke(file);
 				}
 			}
 
@@ -151,7 +200,7 @@ public static class FileFinder
 						continue;
 					}
 
-					ReadOnlyCollection<string> filesInSubDir = FindFilesWithExclusions(directory, fileName, pathExclusionPatterns);
+					ReadOnlyCollection<string> filesInSubDir = FindFilesWithExclusions(directory, fileName, pathExclusionPatterns, progressCallback);
 					result.AddRange(filesInSubDir);
 				}
 				catch (UnauthorizedAccessException)

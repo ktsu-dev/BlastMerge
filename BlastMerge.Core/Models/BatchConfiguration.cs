@@ -7,6 +7,7 @@ namespace ktsu.BlastMerge.Core.Models;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 /// <summary>
 /// Represents a batch configuration for processing multiple file patterns

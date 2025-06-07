@@ -149,18 +149,18 @@ public static class MenuDisplayService
 		welcomeTable
 		.HideHeaders()
 		.AddRow(new Markup(
-			"[bold red]💥 EXPLOSIVE FILE SYNCHRONIZATION WEAPON 💥[/]\n\n" +
-			"[yellow]🧨 Detonates merge conflicts into harmony[/]\n" +
-			"[green]💣 Nuclear-powered repository blasting[/]\n" +
-			"[cyan]🔥 Incendiary diff visualization[/]\n" +
-			"[magenta]⚡ High-voltage whitespace demolition[/]\n" +
-			"[red]🚀 Shockwave iterative resolution[/]\n\n" +
+			"[bold red]💥 CROSS-REPOSITORY FILE SYNCHRONIZATION WEAPON 💥[/]\n\n" +
+			"[yellow]🔀 Intelligent iterative merging across repositories[/]\n" +
+			"[green]🎯 Smart discovery of multiple file versions[/]\n" +
+			"[cyan]🧠 Similarity-based optimal merge progression[/]\n" +
+			"[magenta]⚡ Interactive conflict resolution TUI[/]\n" +
+			"[red]🚀 Cross-repository file synchronization[/]\n\n" +
 			"[bold white on red] FUSION-POWERED BY DIFFPLEX & SPECTRE.CONSOLE [/]\n\n" +
-			"[dim]Arm weapon: [/][yellow]↑ ↓ Arrow Keys[/] [dim]• Fire: [/][green]Enter[/] [dim]• Abort: [/][red]Escape[/]"
+			"[dim]Navigate: [/][yellow]↑ ↓ Arrow Keys[/] [dim]• Select: [/][green]Enter[/] [dim]• Cancel: [/][red]Ctrl+C[/]"
 		));
 
 		Panel welcomePanel = new Panel(welcomeTable)
-			.Header(new PanelHeader("[bold red]💥 WELCOME TO THE BLAST ZONE - MERGING NEVER FELT SO EXPLOSIVE 💥[/]", Justify.Center))
+			.Header(new PanelHeader("[bold red]💥 WELCOME TO BLASTMERGE - INTELLIGENT ITERATIVE FILE SYNCHRONIZATION 💥[/]", Justify.Center))
 			.Border(BoxBorder.Double)
 			.BorderColor(Color.Red);
 

@@ -15,7 +15,7 @@ public class IterativeMergeMenuHandler(ApplicationService applicationService) : 
 	/// <summary>
 	/// Gets the name of this menu for navigation purposes.
 	/// </summary>
-	protected override string MenuName => "Iterative Merge";
+	protected override string MenuName => MenuNames.IterativeMerge;
 
 	/// <summary>
 	/// Handles the iterative merge operation.
@@ -27,25 +27,17 @@ public class IterativeMergeMenuHandler(ApplicationService applicationService) : 
 		string directory;
 		string fileName;
 
-		try
+		directory = AppDataHistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
+		if (string.IsNullOrWhiteSpace(directory))
 		{
-			directory = HistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
-			if (string.IsNullOrWhiteSpace(directory))
-			{
-				ShowWarning("Operation cancelled.");
-				return;
-			}
-
-			fileName = HistoryInput.AskWithHistory("[cyan]Enter filename pattern[/]");
-			if (string.IsNullOrWhiteSpace(fileName))
-			{
-				ShowWarning("Operation cancelled.");
-				return;
-			}
+			ShowWarning(OperationCancelledMessage);
+			return;
 		}
-		catch (InputCancelledException)
+
+		fileName = AppDataHistoryInput.AskWithHistory("[cyan]Enter filename pattern[/]");
+		if (string.IsNullOrWhiteSpace(fileName))
 		{
-			GoBack();
+			ShowWarning(OperationCancelledMessage);
 			return;
 		}
 

@@ -12,6 +12,10 @@ using Spectre.Console;
 public static class UIHelper
 {
 	/// <summary>
+	/// Common message for operation cancelled.
+	/// </summary>
+	public const string OperationCancelledMessage = "Operation cancelled.";
+	/// <summary>
 	/// Shows an error message in red color.
 	/// </summary>
 	/// <param name="message">The error message to display.</param>

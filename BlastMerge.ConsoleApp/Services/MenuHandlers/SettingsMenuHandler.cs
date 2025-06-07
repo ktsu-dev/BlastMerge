@@ -26,9 +26,9 @@ public class SettingsMenuHandler(ApplicationService applicationService) : BaseMe
 
 		Dictionary<string, SettingsChoice> settingsChoices = new()
 		{
-			["📁 View Configuration Paths"] = SettingsChoice.ViewConfigurationPaths,
-			["🧹 Clear Input History"] = SettingsChoice.ClearInputHistory,
-			["📊 View Statistics"] = SettingsChoice.ViewStatistics,
+			[MenuNames.SettingsDisplay.ViewConfigurationPaths] = SettingsChoice.ViewConfigurationPaths,
+			[MenuNames.SettingsDisplay.ClearInputHistory] = SettingsChoice.ClearInputHistory,
+			[MenuNames.SettingsDisplay.ViewStatistics] = SettingsChoice.ViewStatistics,
 			[GetBackMenuText()] = SettingsChoice.BackToMainMenu
 		};
 
@@ -82,11 +82,10 @@ public class SettingsMenuHandler(ApplicationService applicationService) : BaseMe
 			$"[dim]{configDir}[/]",
 			Directory.Exists(configDir) ? "[green]Exists[/]" : "[yellow]Not Created[/]");
 
-		string historyFile = Path.Combine(configDir, "input_history.json");
 		table.AddRow(
 			"[cyan]Input History[/]",
-			$"[dim]{historyFile}[/]",
-			File.Exists(historyFile) ? "[green]Exists[/]" : "[yellow]Not Created[/]");
+			"[dim]Stored in AppData[/]",
+			AppDataHistoryInput.GetAllHistory().Count > 0 ? "[green]Has Data[/]" : "[yellow]Empty[/]");
 
 		table.AddRow(
 			"[cyan]Working Directory[/]",
@@ -115,18 +114,12 @@ public class SettingsMenuHandler(ApplicationService applicationService) : BaseMe
 		{
 			try
 			{
-				string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-				string historyFile = Path.Combine(appDataPath, "BlastMerge", "input_history.json");
-
-				if (File.Exists(historyFile))
-				{
-					File.Delete(historyFile);
-					ShowSuccess("Input history cleared successfully.");
-				}
-				else
-				{
-					ShowWarning("No input history file found.");
-				}
+				AppDataHistoryInput.ClearAllHistory();
+				ShowSuccess("Input history cleared successfully.");
+			}
+			catch (InvalidOperationException ex)
+			{
+				ShowError($"Failed to clear input history: {ex.Message}");
 			}
 			catch (UnauthorizedAccessException ex)
 			{
@@ -139,7 +132,7 @@ public class SettingsMenuHandler(ApplicationService applicationService) : BaseMe
 		}
 		else
 		{
-			ShowWarning("Operation cancelled.");
+			ShowWarning(OperationCancelledMessage);
 		}
 
 		WaitForKeyPress();

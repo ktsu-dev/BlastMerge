@@ -15,6 +15,11 @@ public class PatternResult
 	public string Pattern { get; set; } = string.Empty;
 
 	/// <summary>
+	/// Gets or sets the actual filename found (when different from pattern)
+	/// </summary>
+	public string? FileName { get; set; }
+
+	/// <summary>
 	/// Gets or sets whether the pattern processing was successful
 	/// </summary>
 	public bool Success { get; set; }

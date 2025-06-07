@@ -17,7 +17,7 @@ public class FindFilesMenuHandler(ApplicationService applicationService) : BaseM
 	/// <summary>
 	/// Gets the name of this menu for navigation purposes.
 	/// </summary>
-	protected override string MenuName => "Find Files";
+	protected override string MenuName => MenuNames.FindFiles;
 
 	/// <summary>
 	/// Handles the find files operation.
@@ -29,33 +29,30 @@ public class FindFilesMenuHandler(ApplicationService applicationService) : BaseM
 		string directory;
 		string fileName;
 
-		try
+		directory = AppDataHistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
+		if (string.IsNullOrWhiteSpace(directory))
 		{
-			directory = HistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
-			if (string.IsNullOrWhiteSpace(directory))
-			{
-				ShowWarning("Operation cancelled.");
-				return;
-			}
-
-			fileName = HistoryInput.AskWithHistory("[cyan]Enter filename pattern[/]");
-			if (string.IsNullOrWhiteSpace(fileName))
-			{
-				ShowWarning("Operation cancelled.");
-				return;
-			}
+			ShowWarning(OperationCancelledMessage);
+			return;
 		}
-		catch (InputCancelledException)
+
+		fileName = AppDataHistoryInput.AskWithHistory("[cyan]Enter filename pattern[/]");
+		if (string.IsNullOrWhiteSpace(fileName))
 		{
-			GoBack();
+			ShowWarning(OperationCancelledMessage);
 			return;
 		}
 
 		AnsiConsole.Status()
 			.Start("Finding files...", ctx =>
 			{
-				IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(directory, fileName);
+				IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(directory, fileName, path =>
+				{
+					ctx.Status($"Finding files... Found: {Path.GetFileName(path)}");
+					ctx.Refresh();
+				});
 
+				ctx.Status("Finding files... Complete!");
 				ctx.Refresh();
 
 				if (filePaths.Count == 0)

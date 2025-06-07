@@ -68,16 +68,26 @@ public class HelpMenuHandler(ApplicationService applicationService) : BaseMenuHa
 		ShowMenuTitle("Application Overview");
 
 		Panel overview = new("""
-			[bold cyan]BlastMerge[/] is a powerful file comparison and merging tool designed to help you:
+			[bold cyan]BlastMerge[/] is a revolutionary file synchronization tool that uses [bold yellow]intelligent iterative merging[/]
+			to unify multiple versions of files across repositories, directories, and codebases.
 
-			• [green]Find and compare files[/] across directories
-			• [green]Identify duplicates and differences[/] between file versions
-			• [green]Perform iterative merging[/] of text files with conflict resolution
-			• [green]Manage batch operations[/] for processing multiple file sets
-			• [green]Synchronize files[/] to maintain consistency
+			[bold red]🚀 PRIMARY FEATURE: Cross-Repository File Synchronization[/]
+			• [green]Smart Discovery[/]: Automatically finds all versions of a file across directories/repositories
+			• [green]Hash-Based Grouping[/]: Groups identical files and identifies unique versions
+			• [green]Similarity Analysis[/]: Calculates similarity scores between all version pairs
+			• [green]Optimal Merge Order[/]: Progressively merges the most similar versions first to minimize conflicts
+			• [green]Interactive Resolution[/]: Visual TUI for resolving conflicts block-by-block
+			• [green]Cross-Repository Sync[/]: Updates all file locations with the final merged result
 
-			The tool provides both command-line and interactive modes, making it suitable for
-			both scripted automation and manual file management tasks.
+			[bold]Real-World Use Cases:[/]
+			• Multi-repository synchronization (config files across microservices)
+			• Branch consolidation (merge scattered feature branch changes)
+			• Environment alignment (unify deployment scripts across dev/staging/prod)
+			• Code migration (consolidate similar files when merging codebases)
+			• Documentation sync (align README files across related projects)
+
+			Unlike traditional diff tools that handle two-way merges, BlastMerge excels when you have
+			3, 5, or 10+ versions of the same file scattered across different locations.
 			""")
 		{
 			Header = new PanelHeader("[bold]What is BlastMerge?[/]"),
@@ -103,29 +113,29 @@ public class HelpMenuHandler(ApplicationService applicationService) : BaseMenuHa
 			.AddColumn("[bold]Use Case[/]");
 
 		table.AddRow(
-			"[green]Find Files[/]",
-			"Search for files matching patterns",
-			"Locate specific files in large directory trees");
+			"[red]🔀 Iterative Merge[/] [bold](PRIMARY)[/]",
+			"Cross-repository file synchronization using intelligent iterative merging with optimal similarity-based progression",
+			"Sync config files across microservices, consolidate feature branches, align environment files");
 
 		table.AddRow(
-			"[green]Compare Files[/]",
-			"Compare files in directories or specific files",
-			"Identify differences and duplicates");
+			"[green]🔍 Find Files[/]",
+			"Advanced file discovery with pattern matching across directory trees",
+			"Locate specific files in large repository structures");
 
 		table.AddRow(
-			"[green]Iterative Merge[/]",
-			"Merge multiple file versions step by step",
-			"Resolve conflicts in configuration files");
+			"[green]📊 Compare Files[/]",
+			"Comprehensive file comparison with multiple diff formats (Change Summary, Git-style, Side-by-Side)",
+			"Identify differences and duplicates with rich visual formatting");
 
 		table.AddRow(
-			"[green]Batch Operations[/]",
-			"Process multiple file operations at once",
-			"Automate repetitive tasks");
+			"[green]📦 Batch Operations[/]",
+			"Automate multiple file operations with configurable patterns and actions",
+			"Process multiple file sets across repositories systematically");
 
 		table.AddRow(
-			"[green]Sync Files[/]",
-			"Synchronize files to make them identical",
-			"Maintain consistency across environments");
+			"[green]🔁 Sync Files[/]",
+			"Synchronize files to make them identical with version selection options",
+			"Maintain consistency across development environments");
 
 		AnsiConsole.Write(table);
 		WaitForKeyPress();

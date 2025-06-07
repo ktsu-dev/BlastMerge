@@ -45,7 +45,8 @@ public static class AsyncApplicationService
 			{
 				// Step 1: Find files
 				ctx.Status($"[yellow]Finding files...[/]");
-				filePaths = FileFinder.FindFiles(directory, fileName);
+				filePaths = FileFinder.FindFiles(directory, fileName, path =>
+					ctx.Status($"[yellow]Finding files... Found: {Path.GetFileName(path)}[/]"));
 
 				if (filePaths.Count == 0)
 				{
@@ -112,7 +113,7 @@ public static class AsyncApplicationService
 				Task<Dictionary<string, string>> hashesTask2 = FileHasher.ComputeFileHashesAsync(
 					files2, maxDegreeOfParallelism, cancellationToken);
 
-				Dictionary<string, string>[] hashes = await Task.WhenAll(hashesTask1, hashesTask2).ConfigureAwait(false);
+				await Task.WhenAll(hashesTask1, hashesTask2).ConfigureAwait(false);
 
 				// Step 3: Create comparison result using the sync method but with pre-computed hashes
 				ctx.Status($"[yellow]Creating comparison report...[/]");
@@ -213,7 +214,7 @@ public static class AsyncApplicationService
 		ArgumentNullException.ThrowIfNull(directory);
 		ArgumentNullException.ThrowIfNull(batchName);
 
-		BatchConfiguration? batch = BatchManager.LoadBatch(batchName);
+		BatchConfiguration? batch = AppDataBatchManager.LoadBatch(batchName);
 		if (batch == null)
 		{
 			AnsiConsole.MarkupLine($"[red]Error: Batch configuration '{batchName}' not found.[/]");

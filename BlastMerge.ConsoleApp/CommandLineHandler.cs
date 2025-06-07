@@ -151,12 +151,20 @@ public class CommandLineHandler(Core.Contracts.IApplicationService applicationSe
 	{
 		Console.WriteLine("BlastMerge - Cross-Repository File Synchronization Tool");
 		Console.WriteLine();
+		Console.WriteLine("Intelligent iterative merging for multiple file versions across repositories.");
+		Console.WriteLine("Automatically discovers, groups, and merges files using similarity-based progression.");
+		Console.WriteLine();
 		Console.WriteLine("Usage:");
-		Console.WriteLine("  BlastMerge.exe                              Start interactive mode");
+		Console.WriteLine("  BlastMerge.exe                              Start interactive mode (recommended)");
 		Console.WriteLine("  BlastMerge.exe <directory> <filename>       Process files directly");
 		Console.WriteLine("  BlastMerge.exe <directory> -b <batch>       Run batch configuration");
 		Console.WriteLine("  BlastMerge.exe -l                           List batch configurations");
 		Console.WriteLine("  BlastMerge.exe -v                           Show version");
 		Console.WriteLine("  BlastMerge.exe -h                           Show this help");
+		Console.WriteLine();
+		Console.WriteLine("Examples:");
+		Console.WriteLine("  BlastMerge.exe                              Launch interactive menu");
+		Console.WriteLine("  BlastMerge.exe C:\\Projects README.md        Find and merge all README.md files");
+		Console.WriteLine("  BlastMerge.exe C:\\Repos -b \"Config Files\"   Run saved batch configuration");
 	}
 }

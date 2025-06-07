@@ -32,44 +32,34 @@ public static class ComparisonOperationsService
 	{
 		ShowMenuTitle("Compare Two Directories");
 
-		string dir1;
-		string dir2;
-		string pattern;
-
-		try
+		string dir1 = AppDataHistoryInput.AskWithHistory("[cyan]Enter the first directory path:[/]");
+		if (string.IsNullOrWhiteSpace(dir1))
 		{
-			dir1 = HistoryInput.AskWithHistory("[cyan]Enter the first directory path:[/]");
-			if (string.IsNullOrWhiteSpace(dir1))
-			{
-				UIHelper.ShowWarning("Operation cancelled.");
-				return;
-			}
-
-			if (!Directory.Exists(dir1))
-			{
-				UIHelper.ShowError("Error: First directory does not exist!");
-				return;
-			}
-
-			dir2 = HistoryInput.AskWithHistory("[cyan]Enter the second directory path:[/]");
-			if (string.IsNullOrWhiteSpace(dir2))
-			{
-				UIHelper.ShowWarning("Operation cancelled.");
-				return;
-			}
-
-			if (!Directory.Exists(dir2))
-			{
-				UIHelper.ShowError("Error: Second directory does not exist!");
-				return;
-			}
-
-			pattern = HistoryInput.AskWithHistory("[cyan]Enter file pattern (e.g., *.txt, *.cs):[/]", "*.*");
-		}
-		catch (InputCancelledException)
-		{
+			UIHelper.ShowWarning(UIHelper.OperationCancelledMessage);
 			return;
 		}
+
+		if (!Directory.Exists(dir1))
+		{
+			UIHelper.ShowError("Error: First directory does not exist!");
+			return;
+		}
+
+		string dir2 = AppDataHistoryInput.AskWithHistory("[cyan]Enter the second directory path:[/]");
+		if (string.IsNullOrWhiteSpace(dir2))
+		{
+			UIHelper.ShowWarning(UIHelper.OperationCancelledMessage);
+			return;
+		}
+
+		if (!Directory.Exists(dir2))
+		{
+			UIHelper.ShowError("Error: Second directory does not exist!");
+			return;
+		}
+
+		string pattern = AppDataHistoryInput.AskWithHistory("[cyan]Enter file pattern (e.g., *.txt, *.cs):[/]", "*.*");
+
 		bool recursive = AnsiConsole.Confirm("[cyan]Search subdirectories recursively?[/]", false);
 
 		CompareDirectories(dir1, dir2, pattern, recursive);
@@ -83,39 +73,29 @@ public static class ComparisonOperationsService
 	{
 		ShowMenuTitle("Compare Two Specific Files");
 
-		string file1;
-		string file2;
-
-		try
+		string file1 = AppDataHistoryInput.AskWithHistory("[cyan]Enter the first file path:[/]");
+		if (string.IsNullOrWhiteSpace(file1))
 		{
-			file1 = HistoryInput.AskWithHistory("[cyan]Enter the first file path:[/]");
-			if (string.IsNullOrWhiteSpace(file1))
-			{
-				UIHelper.ShowWarning("Operation cancelled.");
-				return;
-			}
-
-			if (!File.Exists(file1))
-			{
-				UIHelper.ShowError("Error: First file does not exist!");
-				return;
-			}
-
-			file2 = HistoryInput.AskWithHistory("[cyan]Enter the second file path:[/]");
-			if (string.IsNullOrWhiteSpace(file2))
-			{
-				UIHelper.ShowWarning("Operation cancelled.");
-				return;
-			}
-
-			if (!File.Exists(file2))
-			{
-				UIHelper.ShowError("Error: Second file does not exist!");
-				return;
-			}
+			UIHelper.ShowWarning(UIHelper.OperationCancelledMessage);
+			return;
 		}
-		catch (InputCancelledException)
+
+		if (!File.Exists(file1))
 		{
+			UIHelper.ShowError("Error: First file does not exist!");
+			return;
+		}
+
+		string file2 = AppDataHistoryInput.AskWithHistory("[cyan]Enter the second file path:[/]");
+		if (string.IsNullOrWhiteSpace(file2))
+		{
+			UIHelper.ShowWarning(UIHelper.OperationCancelledMessage);
+			return;
+		}
+
+		if (!File.Exists(file2))
+		{
+			UIHelper.ShowError("Error: Second file does not exist!");
 			return;
 		}
 

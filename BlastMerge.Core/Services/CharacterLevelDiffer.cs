@@ -8,6 +8,7 @@ using System;
 using System.Text;
 using DiffPlex;
 using DiffPlex.Model;
+using Spectre.Console;
 
 /// <summary>
 /// Provides character-level diff visualization with background highlighting
@@ -38,56 +39,56 @@ public static class CharacterLevelDiffer
 
 		foreach (DiffBlock block in charDiff.DiffBlocks)
 		{
-			// Add unchanged characters before this block
+			// Add unchanged characters before this block (dim white)
 			while (oldIndex < block.DeleteStartA)
 			{
 				string charText = EscapeForMarkup(oldText[oldIndex].ToString());
-				oldHighlighted.Append(charText);
+				oldHighlighted.Append($"[dim white]{charText}[/]");
 				oldIndex++;
 			}
 
 			while (newIndex < block.InsertStartB)
 			{
 				string charText = EscapeForMarkup(newText[newIndex].ToString());
-				newHighlighted.Append(charText);
+				newHighlighted.Append($"[dim white]{charText}[/]");
 				newIndex++;
 			}
 
-			// Handle deleted characters (red background)
+			// Handle deleted characters (red text)
 			for (int i = 0; i < block.DeleteCountA; i++)
 			{
 				if (oldIndex < oldText.Length)
 				{
 					string charText = EscapeForMarkup(oldText[oldIndex].ToString());
-					oldHighlighted.Append($"[on red]{charText}[/]");
+					oldHighlighted.Append($"[red]{charText}[/]");
 					oldIndex++;
 				}
 			}
 
-			// Handle inserted characters (green background)
+			// Handle inserted characters (green text)
 			for (int i = 0; i < block.InsertCountB; i++)
 			{
 				if (newIndex < newText.Length)
 				{
 					string charText = EscapeForMarkup(newText[newIndex].ToString());
-					newHighlighted.Append($"[on green]{charText}[/]");
+					newHighlighted.Append($"[green]{charText}[/]");
 					newIndex++;
 				}
 			}
 		}
 
-		// Add any remaining unchanged characters
+		// Add any remaining unchanged characters (dim white)
 		while (oldIndex < oldText.Length)
 		{
 			string charText = EscapeForMarkup(oldText[oldIndex].ToString());
-			oldHighlighted.Append(charText);
+			oldHighlighted.Append($"[dim white]{charText}[/]");
 			oldIndex++;
 		}
 
 		while (newIndex < newText.Length)
 		{
 			string charText = EscapeForMarkup(newText[newIndex].ToString());
-			newHighlighted.Append(charText);
+			newHighlighted.Append($"[dim white]{charText}[/]");
 			newIndex++;
 		}
 
@@ -170,8 +171,71 @@ public static class CharacterLevelDiffer
 			return text;
 		}
 
-		// Handle special characters that need escaping for Spectre.Console
-		return text.Replace("[", "[[").Replace("]", "]]");
+		// Use Spectre.Console's built-in markup escaping
+		return Markup.Escape(text);
+	}
+
+	/// <summary>
+	/// Applies whitespace visualization to text that already contains markup,
+	/// preserving the existing markup tags while making whitespace visible
+	/// </summary>
+	/// <param name="textWithMarkup">Text that already contains markup tags</param>
+	/// <returns>Text with whitespace visualization applied while preserving markup</returns>
+	private static string ApplyWhitespaceVisualizationToMarkup(string textWithMarkup)
+	{
+		if (string.IsNullOrEmpty(textWithMarkup))
+		{
+			return string.Empty;
+		}
+
+		StringBuilder result = new();
+		bool insideMarkup = false;
+
+		for (int i = 0; i < textWithMarkup.Length; i++)
+		{
+			char c = textWithMarkup[i];
+
+			// Track if we're inside a markup tag
+			if (c == '[' && i + 1 < textWithMarkup.Length && textWithMarkup[i + 1] != '[')
+			{
+				insideMarkup = true;
+				result.Append(c);
+			}
+			else if (c == ']' && insideMarkup)
+			{
+				insideMarkup = false;
+				result.Append(c);
+			}
+			else if (insideMarkup)
+			{
+				// Inside markup tag, don't modify
+				result.Append(c);
+			}
+			else
+			{
+				// Outside markup, apply whitespace visualization
+				switch (c)
+				{
+					case ' ':
+						result.Append('·'); // Middle dot for spaces
+						break;
+					case '\t':
+						result.Append('→'); // Right arrow for tabs
+						break;
+					case '\r':
+						result.Append('↵'); // Return symbol
+						break;
+					case '\n':
+						result.Append('¶'); // Pilcrow for newlines
+						break;
+					default:
+						result.Append(c);
+						break;
+				}
+			}
+		}
+
+		return result.ToString();
 	}
 
 	/// <summary>
@@ -187,9 +251,10 @@ public static class CharacterLevelDiffer
 
 		(string highlightedOld, string highlightedNew) = CreateCharacterLevelDiff(oldLine, newLine);
 
-		// Apply whitespace visualization to the character-level diff results
-		string leftSide = WhitespaceVisualizer.ProcessLineForMarkupDisplay(highlightedOld);
-		string rightSide = WhitespaceVisualizer.ProcessLineForMarkupDisplay(highlightedNew);
+		// Apply whitespace visualization to the original lines before character-level diffing
+		// to preserve the markup from character-level diffing
+		string leftSide = ApplyWhitespaceVisualizationToMarkup(highlightedOld);
+		string rightSide = ApplyWhitespaceVisualizationToMarkup(highlightedNew);
 
 		return (leftSide, rightSide);
 	}

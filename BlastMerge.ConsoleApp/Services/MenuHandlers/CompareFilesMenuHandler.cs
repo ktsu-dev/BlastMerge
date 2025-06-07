@@ -17,20 +17,20 @@ public class CompareFilesMenuHandler(ApplicationService applicationService) : Ba
 	/// <summary>
 	/// Gets the name of this menu for navigation purposes.
 	/// </summary>
-	protected override string MenuName => "Compare Files";
+	protected override string MenuName => MenuNames.CompareFiles;
 
 	/// <summary>
 	/// Handles the compare files operation.
 	/// </summary>
 	public override void Handle()
 	{
-		ShowMenuTitle("Compare Files");
+		ShowMenuTitle(MenuNames.CompareFiles);
 
 		Dictionary<string, CompareChoice> compareChoices = new()
 		{
-			["🔍 Compare Files in Directory"] = CompareChoice.CompareFilesInDirectory,
-			["📁 Compare Two Directories"] = CompareChoice.CompareTwoDirectories,
-			["📄 Compare Two Specific Files"] = CompareChoice.CompareTwoSpecificFiles,
+			[MenuNames.CompareFilesDisplay.CompareFilesInDirectory] = CompareChoice.CompareFilesInDirectory,
+			[MenuNames.CompareFilesDisplay.CompareTwoDirectories] = CompareChoice.CompareTwoDirectories,
+			[MenuNames.CompareFilesDisplay.CompareTwoSpecificFiles] = CompareChoice.CompareTwoSpecificFiles,
 			[GetBackMenuText()] = CompareChoice.BackToMainMenu
 		};
 
@@ -72,24 +72,17 @@ public class CompareFilesMenuHandler(ApplicationService applicationService) : Ba
 		string directory;
 		string fileName;
 
-		try
+		directory = AppDataHistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
+		if (string.IsNullOrWhiteSpace(directory))
 		{
-			directory = HistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
-			if (string.IsNullOrWhiteSpace(directory))
-			{
-				UIHelper.ShowWarning("Operation cancelled.");
-				return;
-			}
-
-			fileName = HistoryInput.AskWithHistory("[cyan]Enter filename pattern[/]");
-			if (string.IsNullOrWhiteSpace(fileName))
-			{
-				UIHelper.ShowWarning("Operation cancelled.");
-				return;
-			}
+			UIHelper.ShowWarning(UIHelper.OperationCancelledMessage);
+			return;
 		}
-		catch (InputCancelledException)
+
+		fileName = AppDataHistoryInput.AskWithHistory("[cyan]Enter filename pattern[/]");
+		if (string.IsNullOrWhiteSpace(fileName))
 		{
+			UIHelper.ShowWarning(UIHelper.OperationCancelledMessage);
 			return;
 		}
 

@@ -21,6 +21,11 @@ public abstract class BaseMenuHandler(ApplicationService applicationService) : I
 	protected const string PressAnyKeyMessage = "Press any key to continue...";
 
 	/// <summary>
+	/// Common message for operation cancelled.
+	/// </summary>
+	protected const string OperationCancelledMessage = "Operation cancelled.";
+
+	/// <summary>
 	/// Gets the application service.
 	/// </summary>
 	protected ApplicationService ApplicationService { get; } = applicationService ?? throw new ArgumentNullException(nameof(applicationService));

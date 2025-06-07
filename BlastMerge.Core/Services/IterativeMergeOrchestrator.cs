@@ -36,6 +36,9 @@ public static class IterativeMergeOrchestrator
 
 		// Create a working copy of file groups that we'll update as we merge
 		List<FileGroup> remainingGroups = [.. fileGroups];
+		List<MergeOperationSummary> operations = [];
+		int initialFileGroups = fileGroups.Count;
+		int totalFilesMerged = fileGroups.Sum(g => g.FilePaths.Count);
 		int mergeCount = 1;
 
 		while (remainingGroups.Count > 1)
@@ -47,19 +50,31 @@ public static class IterativeMergeOrchestrator
 			{
 				// No similar files found - this happens when files have different names and our safety check prevents merging
 				// This is the intended safe behavior, not an error
-				return new MergeCompletionResult(true, null, 0, "All files preserved safely - no merging needed.\nAll files have different names, so they remain separate as intended.");
+				return new MergeCompletionResult(true, null, 0, "All files preserved safely - no merging needed.\nAll files have different names, so they remain separate as intended.")
+				{
+					TotalMergeOperations = 0,
+					InitialFileGroups = initialFileGroups,
+					TotalFilesMerged = totalFilesMerged,
+					Operations = operations.AsReadOnly()
+				};
 			}
-
-			// Report status to UI
-			MergeSessionStatus status = new(mergeCount, remainingGroups.Sum(g => g.FilePaths.Count), mergeCount - 1, similarity);
-			statusCallback(status);
 
 			// Perform the merge
 			MergeResult? mergeResult = mergeCallback(similarity.FilePath1, similarity.FilePath2, null);
 
+			// Report status to UI (after merge UI)
+			MergeSessionStatus status = new(mergeCount, remainingGroups.Sum(g => g.FilePaths.Count), mergeCount - 1, similarity);
+			statusCallback(status);
+
 			if (mergeResult == null)
 			{
-				return new MergeCompletionResult(false, null, 0, "cancelled");
+				return new MergeCompletionResult(false, null, 0, "cancelled")
+				{
+					TotalMergeOperations = mergeCount - 1,
+					InitialFileGroups = initialFileGroups,
+					TotalFilesMerged = totalFilesMerged,
+					Operations = operations.AsReadOnly()
+				};
 			}
 
 			// Update all files with the merged result
@@ -77,6 +92,19 @@ public static class IterativeMergeOrchestrator
 					Hash = FileDiffer.CalculateFileHash(mergedContent)
 				};
 
+				// Track this operation
+				MergeOperationSummary operation = new()
+				{
+					OperationNumber = mergeCount,
+					FilePath1 = similarity.FilePath1,
+					FilePath2 = similarity.FilePath2,
+					SimilarityScore = similarity.SimilarityScore,
+					FilesAffected = group1.FilePaths.Count + group2.FilePaths.Count,
+					ConflictsResolved = mergeResult.Conflicts.Count,
+					MergedLineCount = mergeResult.MergedLines.Count
+				};
+				operations.Add(operation);
+
 				// Update all files in both groups with the merged content
 				foreach (string filePath in mergedGroup.FilePaths)
 				{
@@ -90,11 +118,23 @@ public static class IterativeMergeOrchestrator
 			}
 			catch (IOException ex)
 			{
-				return new MergeCompletionResult(false, mergedContent, mergedContent.Split(Environment.NewLine).Length, $"error: {ex.Message}");
+				return new MergeCompletionResult(false, mergedContent, mergedContent.Split(Environment.NewLine).Length, $"error: {ex.Message}")
+				{
+					TotalMergeOperations = mergeCount - 1,
+					InitialFileGroups = initialFileGroups,
+					TotalFilesMerged = totalFilesMerged,
+					Operations = operations.AsReadOnly()
+				};
 			}
 			catch (UnauthorizedAccessException ex)
 			{
-				return new MergeCompletionResult(false, mergedContent, mergedContent.Split(Environment.NewLine).Length, $"access denied: {ex.Message}");
+				return new MergeCompletionResult(false, mergedContent, mergedContent.Split(Environment.NewLine).Length, $"access denied: {ex.Message}")
+				{
+					TotalMergeOperations = mergeCount - 1,
+					InitialFileGroups = initialFileGroups,
+					TotalFilesMerged = totalFilesMerged,
+					Operations = operations.AsReadOnly()
+				};
 			}
 
 			mergeCount++;
@@ -102,7 +142,13 @@ public static class IterativeMergeOrchestrator
 			// Check if user wants to continue (if there are more groups to merge)
 			if (remainingGroups.Count > 1 && !continuationCallback())
 			{
-				return new MergeCompletionResult(false, mergedContent, mergedContent.Split(Environment.NewLine).Length, "incomplete");
+				return new MergeCompletionResult(false, mergedContent, mergedContent.Split(Environment.NewLine).Length, "incomplete")
+				{
+					TotalMergeOperations = mergeCount - 1,
+					InitialFileGroups = initialFileGroups,
+					TotalFilesMerged = totalFilesMerged,
+					Operations = operations.AsReadOnly()
+				};
 			}
 		}
 
@@ -111,7 +157,13 @@ public static class IterativeMergeOrchestrator
 		string finalContent = File.ReadAllText(finalGroup.FilePaths.First());
 		string[] finalLines = finalContent.Split(Environment.NewLine);
 
-		return new MergeCompletionResult(true, finalContent, finalLines.Length, Path.GetFileName(finalGroup.FilePaths.First()));
+		return new MergeCompletionResult(true, finalContent, finalLines.Length, Path.GetFileName(finalGroup.FilePaths.First()))
+		{
+			TotalMergeOperations = mergeCount - 1,
+			InitialFileGroups = initialFileGroups,
+			TotalFilesMerged = totalFilesMerged,
+			Operations = operations.AsReadOnly()
+		};
 	}
 
 	/// <summary>

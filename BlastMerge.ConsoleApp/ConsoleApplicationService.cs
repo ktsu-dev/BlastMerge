@@ -6,7 +6,6 @@ namespace ktsu.BlastMerge.ConsoleApp.Services;
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
@@ -33,14 +32,14 @@ public class ConsoleApplicationService : ApplicationService
 	// Menu display text to command mappings
 	private static readonly Dictionary<string, MenuChoice> MainMenuChoices = new()
 	{
-		["🔍 Find Files"] = MenuChoice.FindFiles,
-		["📊 Compare Files"] = MenuChoice.CompareFiles,
-		["🔄 Iterative Merge"] = MenuChoice.IterativeMerge,
-		["📦 Batch Operations"] = MenuChoice.BatchOperations,
-		["⚡ Run Recent Batch"] = MenuChoice.RunRecentBatch,
-		["⚙️ Configuration & Settings"] = MenuChoice.Settings,
-		["❓ Help & Information"] = MenuChoice.Help,
-		["🚪 Exit"] = MenuChoice.Exit
+		[MenuNames.Display.FindFiles] = MenuChoice.FindFiles,
+		[MenuNames.Display.CompareFiles] = MenuChoice.CompareFiles,
+		[MenuNames.Display.IterativeMerge] = MenuChoice.IterativeMerge,
+		[MenuNames.Display.BatchOperations] = MenuChoice.BatchOperations,
+		[MenuNames.Display.RunRecentBatch] = MenuChoice.RunRecentBatch,
+		[MenuNames.Display.Settings] = MenuChoice.Settings,
+		[MenuNames.Display.Help] = MenuChoice.Help,
+		[MenuNames.Display.Exit] = MenuChoice.Exit
 	};
 
 	/// <summary>
@@ -55,17 +54,14 @@ public class ConsoleApplicationService : ApplicationService
 		AnsiConsole.MarkupLine($"[cyan]Processing files matching pattern '[yellow]{fileName}[/]' in '[yellow]{directory}[/]'[/]");
 		AnsiConsole.WriteLine();
 
-		IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(directory, fileName);
-
+		List<string> filePaths = DiscoverFiles(directory, fileName);
 		if (filePaths.Count == 0)
 		{
 			UIHelper.ShowWarning("No files found matching the pattern.");
 			return;
 		}
 
-		// Group files by hash to identify duplicates and candidates for merging
 		IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups = CompareFiles(directory, fileName);
-
 		if (fileGroups.Count == 0)
 		{
 			UIHelper.ShowWarning("No files to compare.");
@@ -73,15 +69,45 @@ public class ConsoleApplicationService : ApplicationService
 		}
 
 		ShowFileGroupSummaryTable(fileGroups, directory, filePaths.Count);
+		ExecuteUserSelectedAction(fileGroups);
+	}
 
-		// Ask user what to do with the files
+	/// <summary>
+	/// Discovers files matching the pattern in the directory.
+	/// </summary>
+	/// <param name="directory">The directory to search.</param>
+	/// <param name="fileName">The filename pattern.</param>
+	/// <returns>List of discovered file paths.</returns>
+	private static List<string> DiscoverFiles(string directory, string fileName)
+	{
+		List<string> filePaths = [];
+		AnsiConsole.Status()
+			.Start("Discovering files...", ctx =>
+			{
+				IReadOnlyCollection<string> foundFiles = FileFinder.FindFiles(directory, fileName, path =>
+				{
+					ctx.Status($"Discovering files... Found: {Path.GetFileName(path)}");
+					ctx.Refresh();
+				});
+				filePaths.AddRange(foundFiles);
+				ctx.Status($"Discovery complete! Found {foundFiles.Count} files.");
+			});
+		return filePaths;
+	}
+
+	/// <summary>
+	/// Executes the user-selected action on the file groups.
+	/// </summary>
+	/// <param name="fileGroups">The file groups to process.</param>
+	private static void ExecuteUserSelectedAction(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
+	{
 		Dictionary<string, ProcessFileActionChoice> processFileActionChoices = new()
 		{
-			["📋 View detailed file list"] = ProcessFileActionChoice.ViewDetailedFileList,
-			["🔍 Show differences between versions"] = ProcessFileActionChoice.ShowDifferences,
-			["🔄 Run iterative merge on duplicates"] = ProcessFileActionChoice.RunIterativeMergeOnDuplicates,
-			["🔁 Sync files to make them identical"] = ProcessFileActionChoice.SyncFiles,
-			["🏠 Return to main menu"] = ProcessFileActionChoice.ReturnToMainMenu
+			[MenuNames.Actions.ViewDetailedFileList] = ProcessFileActionChoice.ViewDetailedFileList,
+			[MenuNames.Actions.ShowDifferences] = ProcessFileActionChoice.ShowDifferences,
+			[MenuNames.Actions.RunIterativeMergeOnDuplicates] = ProcessFileActionChoice.RunIterativeMergeOnDuplicates,
+			[MenuNames.Actions.SyncFiles] = ProcessFileActionChoice.SyncFiles,
+			[MenuNames.Actions.ReturnToMainMenu] = ProcessFileActionChoice.ReturnToMainMenu
 		};
 
 		string selection = AnsiConsole.Prompt(
@@ -91,27 +117,35 @@ public class ConsoleApplicationService : ApplicationService
 
 		if (processFileActionChoices.TryGetValue(selection, out ProcessFileActionChoice choice))
 		{
-			switch (choice)
-			{
-				case ProcessFileActionChoice.ViewDetailedFileList:
-					FileDisplayService.ShowDetailedFileList(fileGroups);
-					break;
-				case ProcessFileActionChoice.ShowDifferences:
-					FileDisplayService.ShowDifferences(fileGroups);
-					break;
-				case ProcessFileActionChoice.RunIterativeMergeOnDuplicates:
-					InteractiveMergeService.PerformIterativeMerge(fileGroups);
-					break;
-				case ProcessFileActionChoice.SyncFiles:
-					SyncOperationsService.OfferSyncOptions(fileGroups);
-					break;
-				case ProcessFileActionChoice.ReturnToMainMenu:
-					// Default action - do nothing
-					break;
-				default:
-					// Unknown choice - do nothing
-					break;
-			}
+			ExecuteFileAction(choice, fileGroups);
+		}
+	}
+
+	/// <summary>
+	/// Executes the specific file action.
+	/// </summary>
+	/// <param name="choice">The action choice.</param>
+	/// <param name="fileGroups">The file groups to process.</param>
+	private static void ExecuteFileAction(ProcessFileActionChoice choice, IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
+	{
+		switch (choice)
+		{
+			case ProcessFileActionChoice.ViewDetailedFileList:
+				FileDisplayService.ShowDetailedFileList(fileGroups);
+				break;
+			case ProcessFileActionChoice.ShowDifferences:
+				FileDisplayService.ShowDifferences(fileGroups);
+				break;
+			case ProcessFileActionChoice.RunIterativeMergeOnDuplicates:
+				InteractiveMergeService.PerformIterativeMerge(fileGroups);
+				break;
+			case ProcessFileActionChoice.SyncFiles:
+				SyncOperationsService.OfferSyncOptions(fileGroups);
+				break;
+			case ProcessFileActionChoice.ReturnToMainMenu:
+			default:
+				// Default action - do nothing
+				break;
 		}
 	}
 
@@ -133,11 +167,17 @@ public class ConsoleApplicationService : ApplicationService
 		}
 
 		// Record this batch as recently used
-		RecentBatchTracker.RecordBatchUsage(batchName);
+		BlastMergeAppData appData = BlastMergeAppData.Get();
+		appData.RecentBatch = new BlastMergeAppData.RecentBatchInfo
+		{
+			BatchName = batchName,
+			LastUsed = DateTime.UtcNow
+		};
+		appData.Save();
 
 		ShowBatchHeader(batch, directory);
-		(int totalPatternsProcessed, int totalFilesFound) = ProcessAllPatterns(directory, batch);
-		ShowBatchCompletion(totalPatternsProcessed, totalFilesFound);
+		(int totalPatternsProcessed, int totalFilesFound, BatchResult? batchResult) = ProcessAllPatterns(directory, batch);
+		ShowBatchCompletion(totalPatternsProcessed, totalFilesFound, batchResult);
 	}
 
 	/// <summary>
@@ -147,7 +187,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// <returns>The batch configuration or null if not found.</returns>
 	private static BatchConfiguration? GetBatchConfiguration(string batchName)
 	{
-		IReadOnlyCollection<BatchConfiguration> allBatches = BatchManager.GetAllBatches();
+		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataBatchManager.GetAllBatches();
 		BatchConfiguration? batch = allBatches.FirstOrDefault(b => b.Name.Equals(batchName, StringComparison.OrdinalIgnoreCase));
 
 		if (batch == null)
@@ -178,338 +218,27 @@ public class ConsoleApplicationService : ApplicationService
 	}
 
 	/// <summary>
-	/// Processes all patterns in the batch configuration.
+	/// Processes all patterns in the batch configuration using parallel optimization.
 	/// </summary>
 	/// <param name="directory">The directory to process.</param>
 	/// <param name="batch">The batch configuration.</param>
-	/// <returns>A tuple containing the total patterns processed and total files found.</returns>
-	private (int totalPatternsProcessed, int totalFilesFound) ProcessAllPatterns(string directory, BatchConfiguration batch)
+	/// <returns>A tuple containing the total patterns processed, total files found, and batch result.</returns>
+	private (int totalPatternsProcessed, int totalFilesFound, BatchResult? batchResult) ProcessAllPatterns(string directory, BatchConfiguration batch)
 	{
-		int totalPatternsProcessed = 0;
-		int totalFilesFound = 0;
+		BatchResult? result = null;
 
-		foreach (string pattern in batch.FilePatterns)
-		{
-			BatchPatternResult result = ProcessSinglePattern(directory, pattern, batch);
-
-			if (result.ShouldStop)
-			{
-				break;
-			}
-
-			if (result.WasProcessed)
-			{
-				totalPatternsProcessed++;
-				totalFilesFound += result.FilesFound;
-			}
-		}
-
-		return (totalPatternsProcessed, totalFilesFound);
-	}
-
-	/// <summary>
-	/// Processes a single file pattern in the batch.
-	/// </summary>
-	/// <param name="directory">The directory to process.</param>
-	/// <param name="pattern">The file pattern to process.</param>
-	/// <param name="batch">The batch configuration.</param>
-	/// <returns>The result of processing the pattern.</returns>
-	private BatchPatternResult ProcessSinglePattern(string directory, string pattern, BatchConfiguration batch)
-	{
-		AnsiConsole.MarkupLine($"[cyan]Processing pattern: [yellow]{pattern}[/][/]");
-
-		// Use search paths and exclusion patterns from batch configuration
-		IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(
-			batch.SearchPaths,
+		// Use discrete phases batch processing with better separation of concerns
+		// User interaction only occurs in the resolving phase, avoiding conflicts with progress display
+		result = BatchProcessor.ProcessBatchWithDiscretePhases(
+			batch,
 			directory,
-			pattern,
-			batch.PathExclusionPatterns);
+			ConsoleMergeCallback,
+			ConsoleStatusCallback,
+			ConsoleContinueCallback,
+			(progressMessage) => AnsiConsole.MarkupLine($"[yellow]{progressMessage}[/]")); // Direct output with phase separation
 
-		if (filePaths.Count == 0)
-		{
-			if (!batch.SkipEmptyPatterns)
-			{
-				AnsiConsole.MarkupLine($"[yellow]No files found for pattern '{pattern}'[/]");
-			}
-			return new BatchPatternResult { WasProcessed = false };
-		}
-
-		AnsiConsole.MarkupLine($"[green]Found {filePaths.Count} files matching '{pattern}'[/]");
-
-		if (batch.PromptBeforeEachPattern && !AnsiConsole.Confirm($"Process files for pattern '{pattern}'?"))
-		{
-			AnsiConsole.MarkupLine("[yellow]Skipping pattern.[/]");
-			return new BatchPatternResult { WasProcessed = false };
-		}
-
-		BatchActionResult actionResult = HandlePatternWithMultipleVersions(directory, pattern, batch);
-		AnsiConsole.WriteLine();
-
-		return new BatchPatternResult
-		{
-			WasProcessed = true,
-			FilesFound = filePaths.Count,
-			ShouldStop = actionResult.ShouldStop
-		};
-	}
-
-	/// <summary>
-	/// Handles patterns that have multiple identical copies, automatically skipping when all files are identical.
-	/// Only prompts for user action when there are multiple different versions that need merging.
-	/// </summary>
-	/// <param name="directory">The directory being processed.</param>
-	/// <param name="pattern">The file pattern.</param>
-	/// <param name="batch">The batch configuration containing search paths and exclusion patterns.</param>
-	/// <returns>The result of the user action.</returns>
-	private BatchActionResult HandlePatternWithMultipleVersions(string directory, string pattern, BatchConfiguration batch)
-	{
-		IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups = CompareFilesWithBatch(directory, pattern, batch);
-		int groupsWithMultipleFiles = fileGroups.Count(g => g.Value.Count > 1);
-
-		// Count how many filename groups have multiple different versions
-		int filenameGroupsWithMultipleVersions = CountFilenameGroupsWithMultipleVersions(directory, pattern, batch);
-
-		if (groupsWithMultipleFiles == 0)
-		{
-			AnsiConsole.MarkupLine($"[green]All files for pattern '{pattern}' are unique (no duplicates found).[/]");
-			return new BatchActionResult { ShouldStop = false };
-		}
-
-		// If there's only one group with multiple files, all duplicate files are identical - auto-skip
-		if (groupsWithMultipleFiles == 1)
-		{
-			AnsiConsole.MarkupLine($"[green]Pattern '{pattern}': All files identical - skipped.[/]");
-			return new BatchActionResult { ShouldStop = false };
-		}
-
-		// Only show the merge option if there are actually filename groups with multiple different versions
-		if (filenameGroupsWithMultipleVersions == 0)
-		{
-			AnsiConsole.MarkupLine($"[green]All files for pattern '{pattern}' have different names - skipping merge (no action needed).[/]");
-
-			return new BatchActionResult { ShouldStop = false };
-		}
-
-		AnsiConsole.MarkupLine($"[yellow]Found {filenameGroupsWithMultipleVersions} different versions that could be merged.[/]");
-		return GetUserActionForPattern(directory, pattern, batch);
-	}
-
-	/// <summary>
-	/// Counts how many filename groups have multiple different versions (different hashes).
-	/// This is the actual number of mergeable conflicts, not just duplicate files.
-	/// </summary>
-	/// <param name="directory">The directory being processed.</param>
-	/// <param name="pattern">The file pattern.</param>
-	/// <param name="batch">The batch configuration containing search paths and exclusion patterns.</param>
-	/// <returns>The number of filename groups that have multiple different versions.</returns>
-	private int CountFilenameGroupsWithMultipleVersions(string directory, string pattern, BatchConfiguration batch)
-	{
-		IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(
-			batch.SearchPaths,
-			directory,
-			pattern,
-			batch.PathExclusionPatterns);
-
-		// Group files by filename first
-		Dictionary<string, List<string>> filenameGroups = [];
-		foreach (string filePath in filePaths)
-		{
-			string filename = Path.GetFileName(filePath);
-			if (!filenameGroups.TryGetValue(filename, out List<string>? pathsWithSameName))
-			{
-				pathsWithSameName = [];
-				filenameGroups[filename] = pathsWithSameName;
-			}
-			pathsWithSameName.Add(filePath);
-		}
-
-		// Count how many filename groups have multiple different hashes
-		int filenameGroupsWithMultipleVersions = 0;
-		foreach (KeyValuePair<string, List<string>> filenameGroup in filenameGroups)
-		{
-			if (filenameGroup.Value.Count < 2)
-			{
-				continue; // Only one file with this name, can't have multiple versions
-			}
-
-			// Check if files with the same name have different hashes (different content)
-			HashSet<string> uniqueHashes = [];
-			foreach (string filePath in filenameGroup.Value)
-			{
-				string hash = FileHasher.ComputeFileHash(filePath);
-				uniqueHashes.Add(hash);
-			}
-
-			if (uniqueHashes.Count > 1)
-			{
-				filenameGroupsWithMultipleVersions++;
-			}
-		}
-
-		return filenameGroupsWithMultipleVersions;
-	}
-
-	/// <summary>
-	/// Compares files in a directory using batch configuration search paths and exclusion patterns.
-	/// </summary>
-	/// <param name="directory">The directory containing files to compare.</param>
-	/// <param name="fileName">The filename pattern to search for.</param>
-	/// <param name="batch">The batch configuration containing search paths and exclusion patterns.</param>
-	/// <returns>Dictionary of file groups organized by hash.</returns>
-	private ReadOnlyDictionary<string, IReadOnlyCollection<string>> CompareFilesWithBatch(string directory, string fileName, BatchConfiguration batch)
-	{
-		ValidateDirectoryAndFileName(directory, fileName);
-
-		IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(
-			batch.SearchPaths,
-			directory,
-			fileName,
-			batch.PathExclusionPatterns);
-		IReadOnlyCollection<FileGroup> fileGroups = FileDiffer.GroupFilesByHash(filePaths);
-
-		// Convert FileGroup collection to Dictionary<string, IReadOnlyCollection<string>>
-		Dictionary<string, IReadOnlyCollection<string>> result = [];
-		foreach (FileGroup group in fileGroups)
-		{
-			result[group.Hash] = group.FilePaths;
-		}
-
-		return new ReadOnlyDictionary<string, IReadOnlyCollection<string>>(result);
-	}
-
-	/// <summary>
-	/// Gets the user's action choice for a pattern with multiple identical copies.
-	/// </summary>
-	/// <param name="directory">The directory being processed.</param>
-	/// <param name="pattern">The file pattern.</param>
-	/// <param name="batch">The batch configuration containing search paths and exclusion patterns.</param>
-	/// <returns>The user's action choice result.</returns>
-	private BatchActionResult GetUserActionForPattern(string directory, string pattern, BatchConfiguration batch)
-	{
-		// Create a list to ensure consistent ordering and avoid duplicates
-		List<string> choicesList = [
-			"🔄 Run iterative merge",
-			"⏭️  Skip this pattern",
-			"🛑 Stop processing remaining patterns"
-		];
-
-		Dictionary<string, BatchActionChoice> choices = new()
-		{
-			["🔄 Run iterative merge"] = BatchActionChoice.RunIterativeMerge,
-			["⏭️  Skip this pattern"] = BatchActionChoice.SkipPattern,
-			["🛑 Stop processing remaining patterns"] = BatchActionChoice.StopBatchProcessing
-		};
-
-		// Clear console and show prompt once to prevent duplicate display
-		AnsiConsole.WriteLine();
-		string selection = AnsiConsole.Prompt(
-			new SelectionPrompt<string>()
-				.Title($"Multiple different versions found for pattern '{pattern}'. What would you like to do?")
-				.PageSize(10)
-				.MoreChoicesText("")
-				.AddChoices(choicesList));
-
-		return choices.TryGetValue(selection, out BatchActionChoice choice)
-			? choice switch
-			{
-				BatchActionChoice.RunIterativeMerge => ExecuteIterativeMerge(directory, pattern, batch),
-				BatchActionChoice.SkipPattern => HandleSkipPattern(),
-				BatchActionChoice.StopBatchProcessing => HandleStopProcessing(),
-				_ => new BatchActionResult { ShouldStop = false }
-			}
-			: new BatchActionResult { ShouldStop = false };
-	}
-
-	/// <summary>
-	/// Executes iterative merge for a pattern.
-	/// </summary>
-	/// <param name="directory">The directory being processed.</param>
-	/// <param name="pattern">The file pattern.</param>
-	/// <param name="batch">The batch configuration containing search paths and exclusion patterns.</param>
-	/// <returns>The result of the merge operation.</returns>
-	private BatchActionResult ExecuteIterativeMerge(string directory, string pattern, BatchConfiguration batch)
-	{
-		RunBatchIterativeMerge(directory, pattern, batch);
-		return new BatchActionResult { ShouldStop = false };
-	}
-
-	/// <summary>
-	/// Runs iterative merge for batch processing with the same manual conflict resolution as interactive mode.
-	/// The "batch" aspect refers to automatically processing a preset list of file patterns,
-	/// but conflict resolution still requires user interaction for each merge decision.
-	/// </summary>
-	/// <param name="directory">The directory to process.</param>
-	/// <param name="fileName">The filename pattern to process.</param>
-	/// <param name="batch">The batch configuration containing search paths and exclusion patterns.</param>
-	private void RunBatchIterativeMerge(string directory, string fileName, BatchConfiguration batch) =>
-		RunIterativeMergeWithCallbacks(directory, fileName, batch, ConsoleMergeCallback, ConsoleStatusCallback, ConsoleContinueCallback);
-
-	/// <summary>
-	/// Runs iterative merge with the specified callbacks (batch-aware version).
-	/// </summary>
-	/// <param name="directory">The directory to search.</param>
-	/// <param name="fileName">The file name pattern to match.</param>
-	/// <param name="batch">The batch configuration containing search paths and exclusion patterns.</param>
-	/// <param name="mergeCallback">Callback for handling merge operations.</param>
-	/// <param name="statusCallback">Callback for reporting merge status.</param>
-	/// <param name="continueCallback">Callback for asking whether to continue.</param>
-	private void RunIterativeMergeWithCallbacks(
-		string directory,
-		string fileName,
-		BatchConfiguration batch,
-		Func<string, string, string?, MergeResult?> mergeCallback,
-		Action<MergeSessionStatus> statusCallback,
-		Func<bool> continueCallback)
-	{
-		ValidateDirectoryExists(directory);
-
-		// First get all files for the table display using batch configuration
-		IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups = CompareFilesWithBatch(directory, fileName, batch);
-		int totalFiles = fileGroups.Sum(g => g.Value.Count);
-
-		// Show the improved table summary first
-		ShowFileGroupSummaryTable(fileGroups, directory, totalFiles);
-
-		// Check if there are any groups with multiple files that can be merged
-		int groupsWithMultipleFiles = fileGroups.Count(g => g.Value.Count > 1);
-		if (groupsWithMultipleFiles == 0)
-		{
-			// Table already showed this information, so just return
-			return;
-		}
-
-		// Prepare file groups for merging using batch configuration
-		IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(
-			batch.SearchPaths,
-			directory,
-			fileName,
-			batch.PathExclusionPatterns);
-
-		if (filePaths.Count < 2)
-		{
-			AnsiConsole.MarkupLine("[yellow]No files found or insufficient unique versions to merge.[/]");
-			return;
-		}
-
-		// Group files by hash to find unique versions
-		IReadOnlyCollection<FileGroup> coreFileGroups = FileDiffer.GroupFilesByHash(filePaths);
-		List<FileGroup> uniqueGroups = [.. coreFileGroups.Where(g => g.FilePaths.Count >= 1)];
-
-		if (uniqueGroups.Count < 2)
-		{
-			AnsiConsole.MarkupLine("[yellow]All files are identical - no merging needed.[/]");
-			return;
-		}
-
-		// Start iterative merge process with provided callbacks
-		MergeCompletionResult result = IterativeMergeOrchestrator.StartIterativeMergeProcess(
-			uniqueGroups,
-			mergeCallback,
-			statusCallback,
-			continueCallback);
-
-		// Handle result
-		ProgressReportingService.ReportCompletionResult(result);
+		int totalFilesFound = result?.PatternResults.Sum(pr => pr.FilesFound) ?? 0;
+		return (result?.TotalPatternsProcessed ?? 0, totalFilesFound, result);
 	}
 
 	/// <summary>
@@ -562,26 +291,9 @@ public class ConsoleApplicationService : ApplicationService
 
 		// Handle result
 		ProgressReportingService.ReportCompletionResult(result);
-	}
 
-	/// <summary>
-	/// Handles skipping the current pattern.
-	/// </summary>
-	/// <returns>The result indicating to continue processing.</returns>
-	private BatchActionResult HandleSkipPattern()
-	{
-		AnsiConsole.MarkupLine("[yellow]Skipping pattern.[/]");
-		return new BatchActionResult { ShouldStop = false };
-	}
-
-	/// <summary>
-	/// Handles stopping batch processing.
-	/// </summary>
-	/// <returns>The result indicating to stop processing.</returns>
-	private BatchActionResult HandleStopProcessing()
-	{
-		AnsiConsole.MarkupLine("[yellow]Stopping batch processing.[/]");
-		return new BatchActionResult { ShouldStop = true };
+		// Show detailed summary of all operations
+		ProgressReportingService.ShowDetailedMergeSummary(result);
 	}
 
 	/// <summary>
@@ -589,10 +301,128 @@ public class ConsoleApplicationService : ApplicationService
 	/// </summary>
 	/// <param name="totalPatternsProcessed">Total patterns processed.</param>
 	/// <param name="totalFilesFound">Total files found.</param>
-	private static void ShowBatchCompletion(int totalPatternsProcessed, int totalFilesFound)
+	/// <param name="batchResult">The batch result containing merge details.</param>
+	private static void ShowBatchCompletion(int totalPatternsProcessed, int totalFilesFound, BatchResult? batchResult = null)
 	{
 		AnsiConsole.MarkupLine($"[green]Batch processing completed![/]");
 		AnsiConsole.MarkupLine($"[dim]Processed {totalPatternsProcessed} patterns, found {totalFilesFound} total files.[/]");
+
+		// Show detailed summary for all patterns processed
+		if (batchResult != null)
+		{
+			ShowBatchDetailedSummary(batchResult);
+		}
+	}
+
+	/// <summary>
+	/// Shows detailed summary for all patterns in the batch, including those without merge operations.
+	/// </summary>
+	/// <param name="batchResult">The batch result containing pattern results.</param>
+	private static void ShowBatchDetailedSummary(BatchResult batchResult)
+	{
+		if (batchResult.PatternResults.Count == 0)
+		{
+			return; // No patterns to show
+		}
+
+		AnsiConsole.WriteLine();
+		AnsiConsole.MarkupLine($"[bold cyan]{MenuNames.Output.BatchProcessingSummary}[/]");
+		AnsiConsole.WriteLine();
+
+		// Create summary table
+		Table summaryTable = new Table()
+			.Border(TableBorder.Rounded)
+			.BorderColor(Color.Blue)
+			.AddColumn("[bold]Pattern[/]")
+			.AddColumn("[bold]Files Found[/]")
+			.AddColumn("[bold]Unique Versions[/]")
+			.AddColumn("[bold]Status[/]")
+			.AddColumn("[bold]Result[/]");
+
+		foreach (PatternResult patternResult in batchResult.PatternResults)
+		{
+			string status = patternResult.Success ? "[green]✓[/]" : "[red]✗[/]";
+			string result = GetPatternResultDescription(patternResult);
+			string displayName = GetDisplayName(patternResult);
+
+			summaryTable.AddRow(
+				$"[yellow]{displayName}[/]",
+				patternResult.FilesFound.ToString(),
+				patternResult.UniqueVersions.ToString(),
+				status,
+				result
+			);
+		}
+
+		AnsiConsole.Write(summaryTable);
+
+		// Show detailed merge summaries for patterns that had actual merge operations
+		List<PatternResult> mergeResults = [.. batchResult.PatternResults
+			.Where(pr => pr.MergeResult != null)];
+
+		if (mergeResults.Count > 0)
+		{
+			AnsiConsole.WriteLine();
+			AnsiConsole.MarkupLine($"[bold cyan]{MenuNames.Output.DetailedMergeOperations}[/]");
+			AnsiConsole.WriteLine();
+
+			foreach (PatternResult patternResult in mergeResults)
+			{
+				if (patternResult.MergeResult != null)
+				{
+					AnsiConsole.MarkupLine($"[bold yellow]Pattern: {patternResult.Pattern}[/]");
+					ProgressReportingService.ShowDetailedMergeSummary(patternResult.MergeResult);
+				}
+			}
+		}
+	}
+
+	/// <summary>
+	/// Gets a descriptive result for a pattern result.
+	/// </summary>
+	/// <param name="patternResult">The pattern result.</param>
+	/// <returns>A formatted description of the result.</returns>
+	private static string GetPatternResultDescription(PatternResult patternResult)
+	{
+		return !patternResult.Success
+			? $"[red]{patternResult.Message}[/]"
+			: patternResult.FilesFound == 0
+			? "[dim]No files[/]"
+			: patternResult.FilesFound == 1
+			? "[green]Single file[/]"
+			: patternResult.UniqueVersions == 1
+			? "[green]Identical[/]"
+			: patternResult.MergeResult == null
+			? "[yellow]Multiple versions[/]"
+			: patternResult.MergeResult.IsSuccessful ? "[green]Merged[/]" : "[red]Failed[/]";
+	}
+
+	/// <summary>
+	/// Gets the display name for a pattern result, showing filename with pattern in parentheses if it's a glob.
+	/// </summary>
+	/// <param name="patternResult">The pattern result.</param>
+	/// <returns>A formatted display name.</returns>
+	private static string GetDisplayName(PatternResult patternResult)
+	{
+		// If no filename is available, fall back to pattern
+		if (string.IsNullOrEmpty(patternResult.FileName))
+		{
+			return patternResult.Pattern;
+		}
+
+		// If pattern equals filename, it's not a glob pattern
+		if (patternResult.Pattern.Equals(patternResult.FileName, StringComparison.OrdinalIgnoreCase))
+		{
+			return patternResult.FileName;
+		}
+
+		// Check if pattern contains glob characters
+		bool isGlobPattern = patternResult.Pattern.Contains('*') ||
+			patternResult.Pattern.Contains('?') ||
+			patternResult.Pattern.Contains('[') ||
+			patternResult.Pattern.Contains('{');
+
+		return isGlobPattern ? $"{patternResult.FileName} ({patternResult.Pattern})" : patternResult.FileName;
 	}
 
 	// CompareFiles method removed - using base class implementation since it's identical
@@ -610,8 +440,8 @@ public class ConsoleApplicationService : ApplicationService
 	/// </summary>
 	public override void ListBatches()
 	{
-		IReadOnlyCollection<string> batchNames = BatchManager.ListBatches();
-		IReadOnlyCollection<BatchConfiguration> allBatches = BatchManager.GetAllBatches();
+		IReadOnlyCollection<string> batchNames = AppDataBatchManager.ListBatches();
+		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataBatchManager.GetAllBatches();
 
 		Console.WriteLine("Available batch configurations:");
 
@@ -725,8 +555,8 @@ public class ConsoleApplicationService : ApplicationService
 		if (!string.IsNullOrEmpty(recentBatch))
 		{
 			// Remove the old entry and add the updated one with batch name
-			dynamicMenuChoices.Remove("⚡ Run Recent Batch");
-			dynamicMenuChoices[$"⚡ Run Recent Batch ({recentBatch})"] = MenuChoice.RunRecentBatch;
+			dynamicMenuChoices.Remove(MenuNames.Display.RunRecentBatch);
+			dynamicMenuChoices[$"{MenuNames.Display.RunRecentBatch} ({recentBatch})"] = MenuChoice.RunRecentBatch;
 		}
 
 		string selection = AnsiConsole.Prompt(
@@ -745,10 +575,25 @@ public class ConsoleApplicationService : ApplicationService
 	/// <param name="choice">The menu choice to execute.</param>
 	private void ExecuteMenuChoice(MenuChoice choice)
 	{
-		// Clear navigation history when starting from main menu
-		NavigationHistory.Clear();
-		NavigationHistory.Push("Main Menu");
+		InitializeMenuNavigation();
+		ExecuteSpecificMenuChoice(choice);
+	}
 
+	/// <summary>
+	/// Initializes navigation for menu execution.
+	/// </summary>
+	private static void InitializeMenuNavigation()
+	{
+		NavigationHistory.Clear();
+		NavigationHistory.Push(MenuNames.MainMenu);
+	}
+
+	/// <summary>
+	/// Executes the specific menu choice action.
+	/// </summary>
+	/// <param name="choice">The menu choice to execute.</param>
+	private void ExecuteSpecificMenuChoice(MenuChoice choice)
+	{
 		switch (choice)
 		{
 			case MenuChoice.FindFiles:
@@ -770,11 +615,7 @@ public class ConsoleApplicationService : ApplicationService
 				new SettingsMenuHandler(this).Enter();
 				break;
 			case MenuChoice.Help:
-				new HelpMenuHandler(this).Enter();
-				break;
 			case MenuChoice.Exit:
-				HandleHelp(); // This should never be called since Exit is handled in the main loop
-				break;
 			default:
 				new HelpMenuHandler(this).Enter();
 				break;
@@ -798,22 +639,51 @@ public class ConsoleApplicationService : ApplicationService
 			return;
 		}
 
-		string directory;
-		try
+		// Load the batch configuration to check if it has search paths configured
+		BatchConfiguration? selectedBatch = GetBatchConfiguration(recentBatch);
+		if (selectedBatch == null)
 		{
-			directory = HistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
+			AnsiConsole.MarkupLine($"[red]Batch configuration '{recentBatch}' not found.[/]");
+			Console.WriteLine();
+			Console.WriteLine(PressAnyKeyMessage);
+			Console.ReadKey(true);
+			return;
+		}
+
+		string directory;
+		if (selectedBatch.SearchPaths.Count > 0)
+		{
+			// Batch has search paths configured, no need to ask for directory
+			AnsiConsole.MarkupLine($"[green]Using configured search paths ({selectedBatch.SearchPaths.Count} paths)[/]");
+			foreach (string searchPath in selectedBatch.SearchPaths)
+			{
+				AnsiConsole.MarkupLine($"  [dim]• {searchPath}[/]");
+			}
+			AnsiConsole.WriteLine();
+
+			// Use a placeholder directory since the API still requires it, but it won't be used
+			directory = ".";
+		}
+		else
+		{
+			// No search paths configured, ask for directory
+			AnsiConsole.MarkupLine("[yellow]This batch configuration doesn't have search paths configured.[/]");
+			directory = AppDataHistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
 			if (string.IsNullOrWhiteSpace(directory))
 			{
 				AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
 				return;
 			}
 		}
-		catch (InputCancelledException)
-		{
-			return;
-		}
 
-		AnsiConsole.MarkupLine($"[cyan]Running recent batch '{recentBatch}' in '{directory}'[/]");
+		if (selectedBatch.SearchPaths.Count > 0)
+		{
+			AnsiConsole.MarkupLine($"[cyan]Running recent batch '{recentBatch}' using configured search paths[/]");
+		}
+		else
+		{
+			AnsiConsole.MarkupLine($"[cyan]Running recent batch '{recentBatch}' in '{directory}'[/]");
+		}
 		AnsiConsole.WriteLine();
 
 		ProcessBatch(directory, recentBatch);
@@ -828,17 +698,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// Gets the most recently used batch configuration name.
 	/// </summary>
 	/// <returns>The name of the most recent batch, or null if none found.</returns>
-	private static string? GetMostRecentBatch() => RecentBatchTracker.GetMostRecentBatch();
-
-	/// <summary>
-	/// Handles help and information display.
-	/// </summary>
-	private void HandleHelp()
-	{
-		AnsiConsole.Clear();
-		HelpMenuHandler helpHandler = new(this);
-		helpHandler.Handle();
-	}
+	private static string? GetMostRecentBatch() => BlastMergeAppData.Get().RecentBatch?.BatchName;
 
 	/// <summary>
 	/// Shows the goodbye screen when exiting.
@@ -861,22 +721,22 @@ public class ConsoleApplicationService : ApplicationService
 		// Route to the appropriate menu handler based on navigation stack
 		switch (currentMenu)
 		{
-			case "Find Files":
+			case MenuNames.FindFiles:
 				new FindFilesMenuHandler(this).Handle();
 				break;
-			case "Iterative Merge":
+			case MenuNames.IterativeMerge:
 				new IterativeMergeMenuHandler(this).Handle();
 				break;
-			case "Compare Files":
+			case MenuNames.CompareFiles:
 				new CompareFilesMenuHandler(this).Handle();
 				break;
-			case "Batch Operations":
+			case MenuNames.BatchOperations:
 				new BatchOperationsMenuHandler(this).Handle();
 				break;
-			case "Settings":
+			case MenuNames.Settings:
 				new SettingsMenuHandler(this).Handle();
 				break;
-			case "Help":
+			case MenuNames.Help:
 				new HelpMenuHandler(this).Handle();
 				break;
 			default:
@@ -902,7 +762,7 @@ public class ConsoleApplicationService : ApplicationService
 
 		// Sort fileGroups by the first filename in each group for better organization
 		List<KeyValuePair<string, IReadOnlyCollection<string>>> sortedFileGroups = [.. fileGroups
-			.OrderBy(g => Path.GetFileName(g.Value.First()))];
+			.OrderBy(g => Path.GetFileName(g.Value.FirstOrDefault() ?? string.Empty))];
 
 		Table table = new Table()
 			.Border(TableBorder.Rounded)
@@ -982,8 +842,6 @@ public class ConsoleApplicationService : ApplicationService
 			rightFile = file2;
 		}
 
-		ProgressReportingService.ReportMergeInitiation(leftFile, rightFile, existingContent != null);
-
 		MergeResult? result = IterativeMergeOrchestrator.PerformMergeWithConflictResolution(
 			leftFile, rightFile, existingContent, (diffBlock, context, blockNumber) => GetBlockChoice(diffBlock, context, blockNumber, leftFile, rightFile));
 
@@ -1003,9 +861,10 @@ public class ConsoleApplicationService : ApplicationService
 
 	/// <summary>
 	/// Console-specific callback to ask if the user wants to continue merging.
+	/// Always returns true for seamless batch processing.
 	/// </summary>
-	/// <returns>True to continue, false to stop.</returns>
-	private static bool ConsoleContinueCallback() => UserInteractionService.ConfirmContinueMerge();
+	/// <returns>Always true to continue processing without interruption.</returns>
+	private static bool ConsoleContinueCallback() => true;
 
 	/// <summary>
 	/// Gets the user's choice for a merge block with visual conflict resolution
@@ -1018,38 +877,66 @@ public class ConsoleApplicationService : ApplicationService
 	/// <returns>The user's choice for the block</returns>
 	private BlockChoice GetBlockChoice(DiffPlex.Model.DiffBlock diffBlock, BlockContext context, int blockNumber, string leftFile, string rightFile)
 	{
+		DisplayBlockHeader(diffBlock, blockNumber);
+		ShowDiffBlockDisplay(diffBlock, context, leftFile, rightFile);
+		ShowMergeStatistics(diffBlock, leftFile, rightFile);
+		return GetChoiceBasedOnBlockType(diffBlock, leftFile, rightFile);
+	}
+
+	/// <summary>
+	/// Displays the block header with type information.
+	/// </summary>
+	/// <param name="diffBlock">The diff block.</param>
+	/// <param name="blockNumber">The block number.</param>
+	private static void DisplayBlockHeader(DiffPlex.Model.DiffBlock diffBlock, int blockNumber)
+	{
 		string blockType = DetermineBlockType(diffBlock);
-		AnsiConsole.MarkupLine($"[yellow]🔍 Block {blockNumber} ({blockType})[/]");
+		AnsiConsole.MarkupLine($"[yellow]{MenuNames.Output.BlockPrefix} {blockNumber} ({blockType})[/]");
+	}
 
-		(string leftLabel, string rightLabel) = FileDisplayService.GetDistinguishingLabels(leftFile, rightFile);
-
-		// Show the diff block using our improved display service
+	/// <summary>
+	/// Shows the diff block display with file comparison.
+	/// </summary>
+	/// <param name="diffBlock">The diff block.</param>
+	/// <param name="context">The block context.</param>
+	/// <param name="leftFile">The left file path.</param>
+	/// <param name="rightFile">The right file path.</param>
+	private static void ShowDiffBlockDisplay(DiffPlex.Model.DiffBlock diffBlock, BlockContext context, string leftFile, string rightFile)
+	{
+		(string leftLabel, string rightLabel) = FileDisplayService.MakeDistinguishedPaths(leftFile, rightFile);
 		string[] lines1 = File.ReadAllLines(leftFile);
 		string[] lines2 = File.ReadAllLines(rightFile);
 		FileComparisonDisplayService.ShowDiffBlock(lines1, lines2, diffBlock, context, leftLabel, rightLabel);
-		FileComparisonDisplayService.ShowDiffBlockStatistics(diffBlock);
+	}
 
-		// Get user's choice based on block content
-		if (diffBlock.DeleteCountA > 0 && diffBlock.InsertCountB > 0)
-		{
-			// Replace block - both deleted and inserted content
-			return GetReplaceChoice(leftFile, rightFile);
-		}
-		else if (diffBlock.InsertCountB > 0)
-		{
-			// Insert block - only inserted content
-			return GetInsertChoice(rightFile, leftFile);
-		}
-		else if (diffBlock.DeleteCountA > 0)
-		{
-			// Delete block - only deleted content
-			return GetDeleteChoice(leftFile, rightFile);
-		}
-		else
-		{
-			// No changes (shouldn't happen in practice)
-			return BlockChoice.UseVersion2;
-		}
+	/// <summary>
+	/// Shows merge statistics and initiation information.
+	/// </summary>
+	/// <param name="diffBlock">The diff block.</param>
+	/// <param name="leftFile">The left file path.</param>
+	/// <param name="rightFile">The right file path.</param>
+	private static void ShowMergeStatistics(DiffPlex.Model.DiffBlock diffBlock, string leftFile, string rightFile)
+	{
+		(int deletions, int insertions) = FileComparisonDisplayService.GetDiffBlockStatistics(diffBlock);
+		ProgressReportingService.ReportMergeInitiation(leftFile, rightFile, false, deletions, insertions);
+	}
+
+	/// <summary>
+	/// Gets the appropriate choice based on the block type.
+	/// </summary>
+	/// <param name="diffBlock">The diff block.</param>
+	/// <param name="leftFile">The left file path.</param>
+	/// <param name="rightFile">The right file path.</param>
+	/// <returns>The user's choice for the block.</returns>
+	private static BlockChoice GetChoiceBasedOnBlockType(DiffPlex.Model.DiffBlock diffBlock, string leftFile, string rightFile)
+	{
+		return diffBlock.DeleteCountA > 0 && diffBlock.InsertCountB > 0
+			? GetReplaceChoice(leftFile, rightFile)
+			: diffBlock.InsertCountB > 0
+			? GetInsertChoice(rightFile, leftFile)
+			: diffBlock.DeleteCountA > 0
+			? GetDeleteChoice(leftFile, rightFile)
+			: BlockChoice.UseVersion2;
 	}
 
 	/// <summary>
@@ -1072,12 +959,12 @@ public class ConsoleApplicationService : ApplicationService
 	/// <returns>User's choice</returns>
 	private static BlockChoice GetInsertChoice(string rightFile, string leftFile)
 	{
-		(_, string rightLabel) = FileDisplayService.GetDistinguishingLabels(leftFile, rightFile);
+		(_, string rightLabel) = FileDisplayService.MakeDistinguishedPaths(leftFile, rightFile);
 		string choice = UserInteractionService.ShowSelectionPrompt(
-			$"[cyan]This content exists only in {rightLabel}. What would you like to do?[/]",
+			$"[cyan]Content only in {rightLabel}. What to do?[/]",
 			[
-				"✅ Include the addition",
-				"❌ Skip the addition"
+				"✅ Include",
+				"❌ Skip"
 			]);
 
 		return choice.Contains("Include") ? BlockChoice.Include : BlockChoice.Skip;
@@ -1091,12 +978,12 @@ public class ConsoleApplicationService : ApplicationService
 	/// <returns>User's choice</returns>
 	private static BlockChoice GetDeleteChoice(string leftFile, string rightFile)
 	{
-		(string leftLabel, _) = FileDisplayService.GetDistinguishingLabels(leftFile, rightFile);
+		(string leftLabel, _) = FileDisplayService.MakeDistinguishedPaths(leftFile, rightFile);
 		string choice = UserInteractionService.ShowSelectionPrompt(
-			$"[cyan]This content exists only in {leftLabel}. What would you like to do?[/]",
+			$"[cyan]Content only in {leftLabel}. What to do?[/]",
 			[
-				"✅ Keep the content",
-				"❌ Remove the content"
+				"✅ Keep",
+				"❌ Remove"
 			]);
 
 		return choice.Contains("Keep") ? BlockChoice.Keep : BlockChoice.Remove;
@@ -1110,13 +997,13 @@ public class ConsoleApplicationService : ApplicationService
 	/// <returns>User's choice</returns>
 	private static BlockChoice GetReplaceChoice(string leftFile, string rightFile)
 	{
-		(string leftLabel, string rightLabel) = FileDisplayService.GetDistinguishingLabels(leftFile, rightFile);
+		(string leftLabel, string rightLabel) = FileDisplayService.MakeDistinguishedPaths(leftFile, rightFile);
 		string choice = UserInteractionService.ShowSelectionPrompt(
-			"[cyan]This content differs between versions. What would you like to do?[/]",
+			"[cyan]Content differs. What to do?[/]",
 			[
 				$"  Use {leftLabel}",
 				$"  Use {rightLabel}",
-				"🔄 Use Both Versions",
+				MenuNames.Actions.UseBoth,
 				"❌ Skip Both"
 			]);
 
