@@ -12,6 +12,7 @@ using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
 using System.Text;
+using ktsu.BlastMerge.Test.Adapters;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
@@ -141,21 +142,4 @@ public class MockFileSystemTests
 		Assert.ThrowsException<UnauthorizedAccessException>(() =>
 			mockFileDiffer.Object.FindDifferences(file1Path, restrictedFilePath));
 	}
-}
-
-// Interface definitions to support mocking
-public interface IFileFinder
-{
-	public ReadOnlyCollection<string> FindFiles(string directoryPath, string searchPattern);
-}
-
-public interface IFileHasher
-{
-	public string ComputeFileHash(string filePath);
-}
-
-public interface IFileDiffer
-{
-	public ReadOnlyCollection<string> FindDifferences(string file1Path, string file2Path);
-	public string GenerateGitStyleDiff(string file1Path, string file2Path);
 }

@@ -92,7 +92,6 @@ public class FileDifferPathTests : MockFileSystemTestBase
 		// Mock file system behavior is consistent regardless of platform
 		// Test case sensitivity behavior
 		string upperCaseDir1 = _dir1.ToUpperInvariant();
-		string upperCaseDir2 = _dir2.ToUpperInvariant();
 
 		// In mock file system, paths are case-sensitive by default
 		// This is different from Windows behavior but consistent for testing
