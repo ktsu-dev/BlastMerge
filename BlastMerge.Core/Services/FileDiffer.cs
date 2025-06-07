@@ -445,8 +445,8 @@ public static class FileDiffer
 	/// <returns>Formatted added line string.</returns>
 	private static string FormatAddedLine(LineDifference diff, bool useColor)
 	{
-		(string prefix, string suffix) = GetColorCodes(useColor, "\u001b[32m"); // Green for added
-		return $"{prefix}Added line {diff.LineNumber2}: {diff.Content2}{suffix}";
+		ColorCodePair colors = GetColorCodes(useColor, "\u001b[32m"); // Green for added
+		return $"{colors.Prefix}Added line {diff.LineNumber2}: {diff.Content2}{colors.Suffix}";
 	}
 
 	/// <summary>
@@ -457,8 +457,8 @@ public static class FileDiffer
 	/// <returns>Formatted deleted line string.</returns>
 	private static string FormatDeletedLine(LineDifference diff, bool useColor)
 	{
-		(string prefix, string suffix) = GetColorCodes(useColor, "\u001b[31m"); // Red for deleted
-		return $"{prefix}Deleted line {diff.LineNumber1}: {diff.Content1}{suffix}";
+		ColorCodePair colors = GetColorCodes(useColor, "\u001b[31m"); // Red for deleted
+		return $"{colors.Prefix}Deleted line {diff.LineNumber1}: {diff.Content1}{colors.Suffix}";
 	}
 
 	/// <summary>
