@@ -8,6 +8,8 @@ namespace ktsu.BlastMerge.ConsoleApp.Services;
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ktsu.BlastMerge.Core.Models;
@@ -101,10 +103,18 @@ public static class AsyncApplicationService
 			{
 				// Step 1: Find files in both directories
 				ctx.Status($"[yellow]Finding files in first directory...[/]");
-				IReadOnlyCollection<string> files1 = FileFinder.FindFiles([], dir1, pattern, []);
+				IReadOnlyCollection<string> files1 = recursive
+					? FileFinder.FindFiles(dir1, pattern)
+					: Directory.Exists(dir1)
+					? Directory.GetFiles(dir1, pattern, SearchOption.TopDirectoryOnly)
+					: [];
 
 				ctx.Status($"[yellow]Finding files in second directory...[/]");
-				IReadOnlyCollection<string> files2 = FileFinder.FindFiles([], dir2, pattern, []);
+				IReadOnlyCollection<string> files2 = recursive
+					? FileFinder.FindFiles(dir2, pattern)
+					: Directory.Exists(dir2)
+					? Directory.GetFiles(dir2, pattern, SearchOption.TopDirectoryOnly)
+					: [];
 
 				// Step 2: Compute hashes in parallel for better performance
 				ctx.Status($"[yellow]Computing file hashes ({files1.Count + files2.Count} files)...[/]");
@@ -113,14 +123,85 @@ public static class AsyncApplicationService
 				Task<Dictionary<string, string>> hashesTask2 = FileHasher.ComputeFileHashesAsync(
 					files2, maxDegreeOfParallelism, cancellationToken);
 
-				await Task.WhenAll(hashesTask1, hashesTask2).ConfigureAwait(false);
+				Dictionary<string, string>[] hashResults = await Task.WhenAll(hashesTask1, hashesTask2).ConfigureAwait(false);
+				Dictionary<string, string> hashes1 = hashResults[0];
+				Dictionary<string, string> hashes2 = hashResults[1];
 
-				// Step 3: Create comparison result using the sync method but with pre-computed hashes
+				// Step 3: Create comparison result using pre-computed hashes
 				ctx.Status($"[yellow]Creating comparison report...[/]");
-				result = FileDiffer.FindDifferences(dir1, dir2, pattern, recursive);
+				result = CreateDirectoryComparisonResult(dir1, dir2, files1, files2, hashes1, hashes2);
 			});
 
 		return result;
+	}
+
+	/// <summary>
+	/// Creates a DirectoryComparisonResult using pre-computed file hashes
+	/// </summary>
+	/// <param name="dir1">First directory path</param>
+	/// <param name="dir2">Second directory path</param>
+	/// <param name="files1">Files from first directory</param>
+	/// <param name="files2">Files from second directory</param>
+	/// <param name="hashes1">Pre-computed hashes for files1</param>
+	/// <param name="hashes2">Pre-computed hashes for files2</param>
+	/// <returns>Directory comparison result</returns>
+	private static DirectoryComparisonResult CreateDirectoryComparisonResult(
+		string dir1,
+		string dir2,
+		IReadOnlyCollection<string> files1,
+		IReadOnlyCollection<string> files2,
+		Dictionary<string, string> hashes1,
+		Dictionary<string, string> hashes2)
+	{
+		// Convert absolute paths to relative paths for comparison
+		HashSet<string> relativeFiles1 = Directory.Exists(dir1)
+			? [.. files1.Select(f => Path.GetRelativePath(dir1, f))]
+			: [];
+
+		HashSet<string> relativeFiles2 = Directory.Exists(dir2)
+			? [.. files2.Select(f => Path.GetRelativePath(dir2, f))]
+			: [];
+
+		List<string> sameFiles = [];
+		List<string> modifiedFiles = [];
+		List<string> onlyInDir1 = [];
+		List<string> onlyInDir2 = [];
+
+		// Find files that exist in both directories
+		List<string> commonFiles = [.. relativeFiles1.Intersect(relativeFiles2)];
+
+		foreach (string relativePath in commonFiles)
+		{
+			string file1Path = Path.Combine(dir1, relativePath);
+			string file2Path = Path.Combine(dir2, relativePath);
+
+			// Use pre-computed hashes to compare files
+			bool file1HasHash = hashes1.TryGetValue(file1Path, out string? hash1);
+			bool file2HasHash = hashes2.TryGetValue(file2Path, out string? hash2);
+
+			if (file1HasHash && file2HasHash && hash1 == hash2)
+			{
+				sameFiles.Add(relativePath);
+			}
+			else
+			{
+				modifiedFiles.Add(relativePath);
+			}
+		}
+
+		// Find files that exist only in dir1
+		onlyInDir1.AddRange(relativeFiles1.Except(relativeFiles2));
+
+		// Find files that exist only in dir2
+		onlyInDir2.AddRange(relativeFiles2.Except(relativeFiles1));
+
+		return new DirectoryComparisonResult
+		{
+			SameFiles = sameFiles.AsReadOnly(),
+			ModifiedFiles = modifiedFiles.AsReadOnly(),
+			OnlyInDir1 = onlyInDir1.AsReadOnly(),
+			OnlyInDir2 = onlyInDir2.AsReadOnly()
+		};
 	}
 
 	/// <summary>

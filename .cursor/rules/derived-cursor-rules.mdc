@@ -22,8 +22,8 @@ globs: *
 -   TestableIO.System.IO.Abstractions.Wrappers Version="17.2.26"
 -   MSTest
 -   Moq Version="4.20.72"
--   TestableIO.System.IO.Abstractions Version="20.0.34"
--   TestableIO.System.IO.Abstractions.TestingHelpers Version="20.0.34"
+-   TestableIO.System.IO.Abstractions Version="22.0.14"
+-   TestableIO.System.IO.Abstractions.TestingHelpers Version="22.0.14"
 -   Microsoft.NET.Test.Sdk Version="17.11.1"
 -   MSTest.TestAdapter Version="3.6.0"
 -   MSTest.TestFramework Version="3.6.0"
@@ -290,6 +290,8 @@ globs: *
 -   When showing character level diff formatting, unchanged characters should use dim white.
 -   In `ConsoleApplicationService.cs`, in the `HandleRunRecentBatch()` method, if the batch configuration has search paths configured, the application should use that path and not prompt the user for a directory path.
 -   Do not call out (Primary Feature) anywhere.
+-   When calling `FileFinder.FindFiles` in `CompareDirectoriesAsync`, use the correct 2-argument signature (`directory, pattern`).
+-   In `CompareDirectoriesAsync`, instead of calling the sync `FileDiffer.FindDifferences` that recomputes hashes, create the `DirectoryComparisonResult` directly using the pre-computed hashes.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -302,6 +304,7 @@ globs: *
 -   The `IsGitSubmodule` method should handle potential exceptions like `UnauthorizedAccessException`, `DirectoryNotFoundException`, `IOException`, `ArgumentException`, and `PathTooLongException` by returning `false`.
 -   Batch configurations should include search paths and path exclusion patterns.
 -   When using a batch configuration, if a search path is configured in the batch configuration, the application should use that path and not prompt the user for a directory path.
+-   When using `FileFinder.FindFiles` in `CompareDirectoriesAsync`, use the correct 2-argument signature (`directory, pattern`).
 
 ## HASHING
 
@@ -322,9 +325,4 @@ globs: *
     -   Blue for file headers.
 -   Show the paths of the compared versions.
 -   Implement a change summary diffing mode that shows only lines added or removed between versions.
--   When the user asks to replace the old library with DiffPlex, remove all of the libgit2sharp code and the visualizations, and replace it with the Diffplex library.
--   Display diffs in a side-by-side format with line numbers.
--   Use red on darkred for deleted lines, green on darkgreen for inserted lines, and yellow on darkorange for modified lines.
--   Handle ChangeType.Imaginary lines by ignoring them.
--   Show the paths of the compared versions.
--   Implement a change summary diffing mode that shows only lines added or removed between versions
+-   When the user asks to replace the old library with DiffPlex, remove all of the libgit2sharp code
