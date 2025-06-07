@@ -71,14 +71,11 @@ public static class WhitespaceVisualizer
 		int trailingStart = text.Length;
 		for (int i = text.Length - 1; i >= 0; i--)
 		{
-			if (text[i] is ' ' or '\t')
-			{
-				trailingStart = i;
-			}
-			else
+			if (text[i] is not (' ' or '\t'))
 			{
 				break;
 			}
+			trailingStart = i;
 		}
 
 		// If no trailing whitespace, return as-is
@@ -165,62 +162,73 @@ public static class WhitespaceVisualizer
 	/// <param name="showWhitespace">Whether to show whitespace characters</param>
 	/// <param name="highlightTrailing">Whether to highlight trailing whitespace</param>
 	/// <returns>Processed line ready for markup display</returns>
-	public static string ProcessLineForMarkupDisplay(string? line, bool showWhitespace = true, bool highlightTrailing = true)
+	public static string ProcessLineForMarkupDisplay(string? line, bool showWhitespace = true, bool highlightTrailing = true) =>
+		string.IsNullOrEmpty(line) ? string.Empty :
+		(!showWhitespace && !highlightTrailing) ? Markup.Escape(line) :
+		highlightTrailing ? ProcessLineWithTrailingHighlight(line, showWhitespace) :
+		ProcessLineWithWhitespace(line);
+
+	/// <summary>
+	/// Processes a line with trailing whitespace highlighting
+	/// </summary>
+	private static string ProcessLineWithTrailingHighlight(string line, bool showWhitespace)
 	{
-		if (string.IsNullOrEmpty(line))
-		{
-			return string.Empty;
-		}
+		int trailingStart = FindTrailingWhitespaceStart(line);
 
-		if (!showWhitespace && !highlightTrailing)
-		{
-			return Markup.Escape(line);
-		}
+		return trailingStart >= line.Length ?
+			ProcessLineWithWhitespace(line, showWhitespace) :
+			BuildLineWithTrailingHighlight(line, trailingStart, showWhitespace);
+	}
 
-		if (highlightTrailing)
-		{
-			// Find trailing whitespace
-			int trailingStart = line.Length;
-			for (int i = line.Length - 1; i >= 0; i--)
-			{
-				if (line[i] is ' ' or '\t')
-				{
-					trailingStart = i;
-				}
-				else
-				{
-					break;
-				}
-			}
-
-			// If no trailing whitespace, process normally
-			if (trailingStart >= line.Length)
-			{
-				string processedLine = showWhitespace ? MakeWhitespaceVisible(line) : line;
-				return Markup.Escape(processedLine);
-			}
-
-			// Build result with highlighted trailing whitespace
-			StringBuilder result = new();
-
-			// Add non-trailing part (escaped and with whitespace visualization if needed)
-			if (trailingStart > 0)
-			{
-				string beforeTrailing = line[..trailingStart];
-				string processedBefore = showWhitespace ? MakeWhitespaceVisible(beforeTrailing) : beforeTrailing;
-				result.Append(Markup.Escape(processedBefore));
-			}
-
-			// Add highlighted trailing whitespace (escape the content, then add markup)
-			string trailingPart = line[trailingStart..];
-			string visibleTrailing = MakeWhitespaceVisible(trailingPart);
-			result.Append($"[on red]{Markup.Escape(visibleTrailing)}[/]");
-
-			return result.ToString();
-		}
-
-		// If we reach here, highlightTrailing is false and showWhitespace must be true
-		string processed = MakeWhitespaceVisible(line);
+	/// <summary>
+	/// Processes a line with whitespace visualization only
+	/// </summary>
+	private static string ProcessLineWithWhitespace(string line, bool showWhitespace = true)
+	{
+		string processed = showWhitespace ? MakeWhitespaceVisible(line) : line;
 		return Markup.Escape(processed);
+	}
+
+	/// <summary>
+	/// Finds the start position of trailing whitespace
+	/// </summary>
+	private static int FindTrailingWhitespaceStart(string line)
+	{
+		int trailingStart = line.Length;
+		for (int i = line.Length - 1; i >= 0; i--)
+		{
+			if (line[i] is ' ' or '\t')
+			{
+				trailingStart = i;
+			}
+			else
+			{
+				break;
+			}
+		}
+		return trailingStart;
+	}
+
+	/// <summary>
+	/// Builds a line with trailing whitespace highlighted
+	/// </summary>
+	private static string BuildLineWithTrailingHighlight(string line, int trailingStart, bool showWhitespace)
+	{
+		StringBuilder result = new();
+
+		// Add non-trailing part (escaped and with whitespace visualization if needed)
+		if (trailingStart > 0)
+		{
+			string beforeTrailing = line[..trailingStart];
+			string processedBefore = showWhitespace ? MakeWhitespaceVisible(beforeTrailing) : beforeTrailing;
+			result.Append(Markup.Escape(processedBefore));
+		}
+
+		// Add highlighted trailing whitespace (escape the content, then add markup)
+		string trailingPart = line[trailingStart..];
+		string visibleTrailing = MakeWhitespaceVisible(trailingPart);
+		result.Append($"[on red]{Markup.Escape(visibleTrailing)}[/]");
+
+		return result.ToString();
 	}
 }

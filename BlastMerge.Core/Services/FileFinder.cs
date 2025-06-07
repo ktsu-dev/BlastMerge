@@ -276,28 +276,77 @@ public static class FileFinder
 	private static bool MatchesGlobPattern(string path, string pattern)
 	{
 		// Special handling for common patterns - order matters!
-		if (pattern.StartsWith("*/") && pattern.EndsWith("/*"))
+		if (IsDirectoryContainsPattern(pattern))
 		{
-			// Pattern like "*/bin/*" - check if path contains the directory
-			string dirName = pattern[2..^2]; // Remove "*/" and "/*"
-			return path.Contains($"/{dirName}/", StringComparison.OrdinalIgnoreCase);
+			return MatchesDirectoryContainsPattern(path, pattern);
 		}
-		else if (pattern.StartsWith('*') && pattern.EndsWith('*') && !pattern.Contains('/'))
+
+		if (IsWildcardContainsPattern(pattern))
 		{
-			// Pattern like "*node_modules*" - check if any path component contains the substring
-			string substring = pattern[1..^1]; // Remove leading and trailing "*"
-			string[] pathComponents = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-			return pathComponents.Any(component => component.Contains(substring, StringComparison.OrdinalIgnoreCase));
+			return MatchesWildcardContainsPattern(path, pattern);
 		}
-		else if (pattern.EndsWith('*') && !pattern.Contains('/'))
+
+		if (IsPrefixPattern(pattern))
 		{
-			// Pattern like "temp*" - check if any path component starts with the prefix
-			string prefix = pattern[..^1]; // Remove trailing "*"
-			string[] pathComponents = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-			return pathComponents.Any(component => component.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+			return MatchesPrefixPattern(path, pattern);
 		}
 
 		// Fallback to general regex pattern matching
+		return MatchesRegexPattern(path, pattern);
+	}
+
+	/// <summary>
+	/// Checks if pattern is a directory contains pattern like "*/bin/*"
+	/// </summary>
+	private static bool IsDirectoryContainsPattern(string pattern) =>
+		pattern.StartsWith("*/") && pattern.EndsWith("/*");
+
+	/// <summary>
+	/// Matches directory contains patterns like "*/bin/*"
+	/// </summary>
+	private static bool MatchesDirectoryContainsPattern(string path, string pattern)
+	{
+		string dirName = pattern[2..^2]; // Remove "*/" and "/*"
+		return path.Contains($"/{dirName}/", StringComparison.OrdinalIgnoreCase);
+	}
+
+	/// <summary>
+	/// Checks if pattern is a wildcard contains pattern like "*node_modules*"
+	/// </summary>
+	private static bool IsWildcardContainsPattern(string pattern) =>
+		pattern.StartsWith('*') && pattern.EndsWith('*') && !pattern.Contains('/');
+
+	/// <summary>
+	/// Matches wildcard contains patterns like "*node_modules*"
+	/// </summary>
+	private static bool MatchesWildcardContainsPattern(string path, string pattern)
+	{
+		string substring = pattern[1..^1]; // Remove leading and trailing "*"
+		string[] pathComponents = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+		return pathComponents.Any(component => component.Contains(substring, StringComparison.OrdinalIgnoreCase));
+	}
+
+	/// <summary>
+	/// Checks if pattern is a prefix pattern like "temp*"
+	/// </summary>
+	private static bool IsPrefixPattern(string pattern) =>
+		pattern.EndsWith('*') && !pattern.Contains('/');
+
+	/// <summary>
+	/// Matches prefix patterns like "temp*"
+	/// </summary>
+	private static bool MatchesPrefixPattern(string path, string pattern)
+	{
+		string prefix = pattern[..^1]; // Remove trailing "*"
+		string[] pathComponents = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+		return pathComponents.Any(component => component.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+	}
+
+	/// <summary>
+	/// Matches using regex pattern as fallback
+	/// </summary>
+	private static bool MatchesRegexPattern(string path, string pattern)
+	{
 		string regexPattern = "^" + pattern
 			.Replace("*", ".*")
 			.Replace("?", ".")

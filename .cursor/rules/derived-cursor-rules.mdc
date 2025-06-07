@@ -306,6 +306,7 @@ globs: *
 -   Define a constant instead of using the literal 'No files found' multiple times.
 -   Define a constant instead of using the literal 'Merge completed successfully' multiple times.
 -   When processing a single file pattern, display file paths as they're discovered as user feedback.
+-   When the `ProcessLineForMarkupDisplay` method has high cognitive complexity, extract helper methods to reduce it.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -314,5 +315,4 @@ globs: *
 -   When copying files, handle potential `IOExceptions` and `UnauthorizedAccessException`.
 -   Be aware that binary files will be treated as text and should show differences.
 -   When finding files, skip git submodules. Git submodules are identified by the presence of a `.git` file (not directory) in the subdirectory, which contains a reference to the actual git directory.
--   In `FileFinder.cs`, add a method `IsGitSubmodule` to determine if a directory is a git submodule. This method should check for the existence of a `.git` file (not directory) in the given directory path.
--   The `IsGitSubmodule`
+-   In `FileFinder.cs`, add a method `IsGitSubmodule` to determine if a directory is a git submodule. This method should check for the existence of
