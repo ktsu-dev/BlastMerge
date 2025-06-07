@@ -1,5 +1,6 @@
 <Project Sdk="ktsu.Sdk.Lib">
   <ItemGroup>
     <PackageReference Include="DiffPlex" />
+    <PackageReference Include="Spectre.Console" />
   </ItemGroup>
 </Project>

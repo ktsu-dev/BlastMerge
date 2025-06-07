@@ -32,6 +32,18 @@ public class BatchConfiguration
 	public Collection<string> FilePatterns { get; set; } = [];
 
 	/// <summary>
+	/// Gets or sets the search paths (directories) to search in. If empty, uses the directory parameter from ProcessBatch.
+	/// </summary>
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2227:Collection properties should be read only", Justification = "<Pending>")]
+	public Collection<string> SearchPaths { get; set; } = [];
+
+	/// <summary>
+	/// Gets or sets the path exclusion patterns to exclude specific directories or file paths from the search
+	/// </summary>
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2227:Collection properties should be read only", Justification = "<Pending>")]
+	public Collection<string> PathExclusionPatterns { get; set; } = [];
+
+	/// <summary>
 	/// Gets or sets the created date
 	/// </summary>
 	public DateTime CreatedDate { get; set; } = DateTime.UtcNow;

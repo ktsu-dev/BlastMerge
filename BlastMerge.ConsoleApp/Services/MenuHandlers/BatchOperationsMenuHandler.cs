@@ -209,6 +209,8 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		// Get description
 		string description;
 		List<string> patterns = [];
+		List<string> searchPaths = [];
+		List<string> exclusionPatterns = [];
 
 		try
 		{
@@ -226,6 +228,44 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 					break;
 				}
 				patterns.Add(pattern.Trim());
+			}
+
+			// Get search paths
+			bool addSearchPaths = AnsiConsole.Confirm("[cyan]Add custom search paths? (If no, uses the directory provided at runtime)[/]", false);
+
+			if (addSearchPaths)
+			{
+				AnsiConsole.MarkupLine("[cyan]Enter search paths (one per line, empty line to finish):[/]");
+				AnsiConsole.MarkupLine("[dim]Examples: C:\\Projects, /home/user/repos, ../other-projects[/]");
+
+				while (true)
+				{
+					string searchPath = HistoryInput.AskWithHistory($"[cyan]Search Path {searchPaths.Count + 1}[/]");
+					if (string.IsNullOrWhiteSpace(searchPath))
+					{
+						break;
+					}
+					searchPaths.Add(searchPath.Trim());
+				}
+			}
+
+			// Get path exclusion patterns
+			bool addExclusions = AnsiConsole.Confirm("[cyan]Add path exclusion patterns?[/]", false);
+
+			if (addExclusions)
+			{
+				AnsiConsole.MarkupLine("[cyan]Enter path exclusion patterns (one per line, empty line to finish):[/]");
+				AnsiConsole.MarkupLine("[dim]Examples: */node_modules/*, */bin/*, */obj/*, .git/*, temp*[/]");
+
+				while (true)
+				{
+					string exclusionPattern = HistoryInput.AskWithHistory($"[cyan]Exclusion Pattern {exclusionPatterns.Count + 1}[/]");
+					if (string.IsNullOrWhiteSpace(exclusionPattern))
+					{
+						break;
+					}
+					exclusionPatterns.Add(exclusionPattern.Trim());
+				}
 			}
 		}
 		catch (InputCancelledException)
@@ -249,6 +289,8 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			Name = batchName,
 			Description = description,
 			FilePatterns = [.. patterns],
+			SearchPaths = [.. searchPaths],
+			PathExclusionPatterns = [.. exclusionPatterns],
 			SkipEmptyPatterns = skipEmptyPatterns,
 			PromptBeforeEachPattern = promptBeforeEachPattern,
 			CreatedDate = DateTime.UtcNow,
@@ -339,6 +381,8 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			[cyan]Name:[/] {batch.Name}
 			[cyan]Description:[/] {batch.Description ?? "No description"}
 			[cyan]Patterns:[/] {batch.FilePatterns.Count}
+			[cyan]Search Paths:[/] {batch.SearchPaths.Count}
+			[cyan]Exclusion Patterns:[/] {batch.PathExclusionPatterns.Count}
 			[cyan]Skip Empty:[/] {batch.SkipEmptyPatterns}
 			[cyan]Prompt Before Each:[/] {batch.PromptBeforeEachPattern}
 			[cyan]Created:[/] {batch.CreatedDate:yyyy-MM-dd HH:mm:ss}
@@ -370,6 +414,50 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			AnsiConsole.Write(patternTable);
 		}
 
+		// Show search paths in detail
+		if (batch.SearchPaths.Count > 0)
+		{
+			AnsiConsole.MarkupLine("\n[bold cyan]Search Paths:[/]");
+			Table searchPathTable = new Table()
+				.Border(TableBorder.Rounded)
+				.BorderColor(Color.Green)
+				.AddColumn("#")
+				.AddColumn("Path");
+
+			for (int i = 0; i < batch.SearchPaths.Count; i++)
+			{
+				searchPathTable.AddRow($"{i + 1}", $"[green]{batch.SearchPaths[i]}[/]");
+			}
+
+			AnsiConsole.Write(searchPathTable);
+		}
+		else
+		{
+			AnsiConsole.MarkupLine("\n[dim]No custom search paths configured (uses runtime directory)[/]");
+		}
+
+		// Show exclusion patterns in detail
+		if (batch.PathExclusionPatterns.Count > 0)
+		{
+			AnsiConsole.MarkupLine("\n[bold cyan]Path Exclusion Patterns:[/]");
+			Table exclusionTable = new Table()
+				.Border(TableBorder.Rounded)
+				.BorderColor(Color.Red)
+				.AddColumn("#")
+				.AddColumn("Pattern");
+
+			for (int i = 0; i < batch.PathExclusionPatterns.Count; i++)
+			{
+				exclusionTable.AddRow($"{i + 1}", $"[red]{batch.PathExclusionPatterns[i]}[/]");
+			}
+
+			AnsiConsole.Write(exclusionTable);
+		}
+		else
+		{
+			AnsiConsole.MarkupLine("\n[dim]No path exclusion patterns configured[/]");
+		}
+
 		WaitForKeyPress();
 	}
 
@@ -388,6 +476,8 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 
 		string description;
 		List<string> patterns = [.. batch.FilePatterns];
+		List<string> searchPaths = [.. batch.SearchPaths];
+		List<string> exclusionPatterns = [.. batch.PathExclusionPatterns];
 
 		try
 		{
@@ -424,6 +514,72 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 					patterns = [.. batch.FilePatterns];
 				}
 			}
+
+			// Handle search paths
+			AnsiConsole.MarkupLine($"\n[cyan]Current search paths ({batch.SearchPaths.Count}):[/]");
+			if (batch.SearchPaths.Count == 0)
+			{
+				AnsiConsole.MarkupLine("  [dim]None (uses runtime directory)[/]");
+			}
+			else
+			{
+				for (int i = 0; i < batch.SearchPaths.Count; i++)
+				{
+					AnsiConsole.MarkupLine($"  {i + 1}. [green]{batch.SearchPaths[i]}[/]");
+				}
+			}
+
+			bool modifySearchPaths = AnsiConsole.Confirm("[cyan]Modify search paths?[/]");
+
+			if (modifySearchPaths)
+			{
+				searchPaths.Clear();
+				AnsiConsole.MarkupLine("[cyan]Enter new search paths (one per line, empty line to finish):[/]");
+				AnsiConsole.MarkupLine("[dim]Examples: C:\\Projects, /home/user/repos, ../other-projects[/]");
+
+				while (true)
+				{
+					string searchPath = HistoryInput.AskWithHistory($"[cyan]Search Path {searchPaths.Count + 1}[/]");
+					if (string.IsNullOrWhiteSpace(searchPath))
+					{
+						break;
+					}
+					searchPaths.Add(searchPath.Trim());
+				}
+			}
+
+			// Handle exclusion patterns
+			AnsiConsole.MarkupLine($"\n[cyan]Current exclusion patterns ({batch.PathExclusionPatterns.Count}):[/]");
+			if (batch.PathExclusionPatterns.Count == 0)
+			{
+				AnsiConsole.MarkupLine("  [dim]None[/]");
+			}
+			else
+			{
+				for (int i = 0; i < batch.PathExclusionPatterns.Count; i++)
+				{
+					AnsiConsole.MarkupLine($"  {i + 1}. [red]{batch.PathExclusionPatterns[i]}[/]");
+				}
+			}
+
+			bool modifyExclusions = AnsiConsole.Confirm("[cyan]Modify exclusion patterns?[/]");
+
+			if (modifyExclusions)
+			{
+				exclusionPatterns.Clear();
+				AnsiConsole.MarkupLine("[cyan]Enter new exclusion patterns (one per line, empty line to finish):[/]");
+				AnsiConsole.MarkupLine("[dim]Examples: */node_modules/*, */bin/*, */obj/*, .git/*, temp*[/]");
+
+				while (true)
+				{
+					string exclusionPattern = HistoryInput.AskWithHistory($"[cyan]Exclusion Pattern {exclusionPatterns.Count + 1}[/]");
+					if (string.IsNullOrWhiteSpace(exclusionPattern))
+					{
+						break;
+					}
+					exclusionPatterns.Add(exclusionPattern.Trim());
+				}
+			}
 		}
 		catch (InputCancelledException)
 		{
@@ -439,6 +595,8 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			Name = batch.Name,
 			Description = description,
 			FilePatterns = [.. patterns],
+			SearchPaths = [.. searchPaths],
+			PathExclusionPatterns = [.. exclusionPatterns],
 			SkipEmptyPatterns = skipEmpty,
 			PromptBeforeEachPattern = promptBefore,
 			CreatedDate = batch.CreatedDate,
@@ -502,6 +660,8 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			Name = newName,
 			Description = $"Copy of {sourceBatch.Name}" + (string.IsNullOrEmpty(sourceBatch.Description) ? "" : $" - {sourceBatch.Description}"),
 			FilePatterns = new(sourceBatch.FilePatterns),
+			SearchPaths = new(sourceBatch.SearchPaths),
+			PathExclusionPatterns = new(sourceBatch.PathExclusionPatterns),
 			SkipEmptyPatterns = sourceBatch.SkipEmptyPatterns,
 			PromptBeforeEachPattern = sourceBatch.PromptBeforeEachPattern,
 			CreatedDate = DateTime.UtcNow,

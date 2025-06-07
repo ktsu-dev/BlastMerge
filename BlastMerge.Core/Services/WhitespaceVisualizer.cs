@@ -6,6 +6,7 @@ namespace ktsu.BlastMerge.Core.Services;
 
 using System;
 using System.Text;
+using Spectre.Console;
 
 /// <summary>
 /// Provides functionality to visualize whitespace characters in text
@@ -154,5 +155,72 @@ public static class WhitespaceVisualizer
 
 		// If we reach here, highlightTrailing is false and showWhitespace must be true
 		return MakeWhitespaceVisible(line);
+	}
+
+	/// <summary>
+	/// Processes a line for display with proper markup handling.
+	/// This method ensures that markup escaping happens before whitespace markup is added.
+	/// </summary>
+	/// <param name="line">The line to process</param>
+	/// <param name="showWhitespace">Whether to show whitespace characters</param>
+	/// <param name="highlightTrailing">Whether to highlight trailing whitespace</param>
+	/// <returns>Processed line ready for markup display</returns>
+	public static string ProcessLineForMarkupDisplay(string? line, bool showWhitespace = true, bool highlightTrailing = true)
+	{
+		if (string.IsNullOrEmpty(line))
+		{
+			return string.Empty;
+		}
+
+		if (!showWhitespace && !highlightTrailing)
+		{
+			return Markup.Escape(line);
+		}
+
+		if (highlightTrailing)
+		{
+			// Find trailing whitespace
+			int trailingStart = line.Length;
+			for (int i = line.Length - 1; i >= 0; i--)
+			{
+				if (line[i] is ' ' or '\t')
+				{
+					trailingStart = i;
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			// If no trailing whitespace, process normally
+			if (trailingStart >= line.Length)
+			{
+				string processedLine = showWhitespace ? MakeWhitespaceVisible(line) : line;
+				return Markup.Escape(processedLine);
+			}
+
+			// Build result with highlighted trailing whitespace
+			StringBuilder result = new();
+
+			// Add non-trailing part (escaped and with whitespace visualization if needed)
+			if (trailingStart > 0)
+			{
+				string beforeTrailing = line[..trailingStart];
+				string processedBefore = showWhitespace ? MakeWhitespaceVisible(beforeTrailing) : beforeTrailing;
+				result.Append(Markup.Escape(processedBefore));
+			}
+
+			// Add highlighted trailing whitespace (escape the content, then add markup)
+			string trailingPart = line[trailingStart..];
+			string visibleTrailing = MakeWhitespaceVisible(trailingPart);
+			result.Append($"[on red]{Markup.Escape(visibleTrailing)}[/]");
+
+			return result.ToString();
+		}
+
+		// If we reach here, highlightTrailing is false and showWhitespace must be true
+		string processed = MakeWhitespaceVisible(line);
+		return Markup.Escape(processed);
 	}
 }

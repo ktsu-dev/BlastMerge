@@ -6,6 +6,7 @@ namespace ktsu.BlastMerge.ConsoleApp.Services;
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
@@ -217,7 +218,12 @@ public class ConsoleApplicationService : ApplicationService
 	{
 		AnsiConsole.MarkupLine($"[cyan]Processing pattern: [yellow]{pattern}[/][/]");
 
-		IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(directory, pattern);
+		// Use search paths and exclusion patterns from batch configuration
+		IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(
+			batch.SearchPaths,
+			directory,
+			pattern,
+			batch.PathExclusionPatterns);
 
 		if (filePaths.Count == 0)
 		{
@@ -236,7 +242,7 @@ public class ConsoleApplicationService : ApplicationService
 			return new BatchPatternResult { WasProcessed = false };
 		}
 
-		BatchActionResult actionResult = HandlePatternWithMultipleVersions(directory, pattern);
+		BatchActionResult actionResult = HandlePatternWithMultipleVersions(directory, pattern, batch);
 		AnsiConsole.WriteLine();
 
 		return new BatchPatternResult
@@ -253,11 +259,15 @@ public class ConsoleApplicationService : ApplicationService
 	/// </summary>
 	/// <param name="directory">The directory being processed.</param>
 	/// <param name="pattern">The file pattern.</param>
+	/// <param name="batch">The batch configuration containing search paths and exclusion patterns.</param>
 	/// <returns>The result of the user action.</returns>
-	private BatchActionResult HandlePatternWithMultipleVersions(string directory, string pattern)
+	private BatchActionResult HandlePatternWithMultipleVersions(string directory, string pattern, BatchConfiguration batch)
 	{
-		IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups = CompareFiles(directory, pattern);
+		IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups = CompareFilesWithBatch(directory, pattern, batch);
 		int groupsWithMultipleFiles = fileGroups.Count(g => g.Value.Count > 1);
+
+		// Count how many filename groups have multiple different versions
+		int filenameGroupsWithMultipleVersions = CountFilenameGroupsWithMultipleVersions(directory, pattern, batch);
 
 		if (groupsWithMultipleFiles == 0)
 		{
@@ -272,8 +282,99 @@ public class ConsoleApplicationService : ApplicationService
 			return new BatchActionResult { ShouldStop = false };
 		}
 
-		AnsiConsole.MarkupLine($"[yellow]Found {groupsWithMultipleFiles} different versions that could be merged.[/]");
-		return GetUserActionForPattern(directory, pattern);
+		// Only show the merge option if there are actually filename groups with multiple different versions
+		if (filenameGroupsWithMultipleVersions == 0)
+		{
+			AnsiConsole.MarkupLine($"[green]All files for pattern '{pattern}' have different names - skipping merge (no action needed).[/]");
+			AnsiConsole.MarkupLine($"[dim]Safety rule: Only files with identical names can be merged together.[/]");
+			return new BatchActionResult { ShouldStop = false };
+		}
+
+		AnsiConsole.MarkupLine($"[yellow]Found {filenameGroupsWithMultipleVersions} different versions that could be merged.[/]");
+		return GetUserActionForPattern(directory, pattern, batch);
+	}
+
+	/// <summary>
+	/// Counts how many filename groups have multiple different versions (different hashes).
+	/// This is the actual number of mergeable conflicts, not just duplicate files.
+	/// </summary>
+	/// <param name="directory">The directory being processed.</param>
+	/// <param name="pattern">The file pattern.</param>
+	/// <param name="batch">The batch configuration containing search paths and exclusion patterns.</param>
+	/// <returns>The number of filename groups that have multiple different versions.</returns>
+	private int CountFilenameGroupsWithMultipleVersions(string directory, string pattern, BatchConfiguration batch)
+	{
+		IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(
+			batch.SearchPaths,
+			directory,
+			pattern,
+			batch.PathExclusionPatterns);
+
+		// Group files by filename first
+		Dictionary<string, List<string>> filenameGroups = [];
+		foreach (string filePath in filePaths)
+		{
+			string filename = Path.GetFileName(filePath);
+			if (!filenameGroups.TryGetValue(filename, out List<string>? pathsWithSameName))
+			{
+				pathsWithSameName = [];
+				filenameGroups[filename] = pathsWithSameName;
+			}
+			pathsWithSameName.Add(filePath);
+		}
+
+		// Count how many filename groups have multiple different hashes
+		int filenameGroupsWithMultipleVersions = 0;
+		foreach (KeyValuePair<string, List<string>> filenameGroup in filenameGroups)
+		{
+			if (filenameGroup.Value.Count < 2)
+			{
+				continue; // Only one file with this name, can't have multiple versions
+			}
+
+			// Check if files with the same name have different hashes (different content)
+			HashSet<string> uniqueHashes = [];
+			foreach (string filePath in filenameGroup.Value)
+			{
+				string hash = FileHasher.ComputeFileHash(filePath);
+				uniqueHashes.Add(hash);
+			}
+
+			if (uniqueHashes.Count > 1)
+			{
+				filenameGroupsWithMultipleVersions++;
+			}
+		}
+
+		return filenameGroupsWithMultipleVersions;
+	}
+
+	/// <summary>
+	/// Compares files in a directory using batch configuration search paths and exclusion patterns.
+	/// </summary>
+	/// <param name="directory">The directory containing files to compare.</param>
+	/// <param name="fileName">The filename pattern to search for.</param>
+	/// <param name="batch">The batch configuration containing search paths and exclusion patterns.</param>
+	/// <returns>Dictionary of file groups organized by hash.</returns>
+	private ReadOnlyDictionary<string, IReadOnlyCollection<string>> CompareFilesWithBatch(string directory, string fileName, BatchConfiguration batch)
+	{
+		ValidateDirectoryAndFileName(directory, fileName);
+
+		IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(
+			batch.SearchPaths,
+			directory,
+			fileName,
+			batch.PathExclusionPatterns);
+		IReadOnlyCollection<FileGroup> fileGroups = FileDiffer.GroupFilesByHash(filePaths);
+
+		// Convert FileGroup collection to Dictionary<string, IReadOnlyCollection<string>>
+		Dictionary<string, IReadOnlyCollection<string>> result = [];
+		foreach (FileGroup group in fileGroups)
+		{
+			result[group.Hash] = group.FilePaths;
+		}
+
+		return new ReadOnlyDictionary<string, IReadOnlyCollection<string>>(result);
 	}
 
 	/// <summary>
@@ -281,8 +382,9 @@ public class ConsoleApplicationService : ApplicationService
 	/// </summary>
 	/// <param name="directory">The directory being processed.</param>
 	/// <param name="pattern">The file pattern.</param>
+	/// <param name="batch">The batch configuration containing search paths and exclusion patterns.</param>
 	/// <returns>The user's action choice result.</returns>
-	private BatchActionResult GetUserActionForPattern(string directory, string pattern)
+	private BatchActionResult GetUserActionForPattern(string directory, string pattern, BatchConfiguration batch)
 	{
 		Dictionary<string, BatchActionChoice> choices = new()
 		{
@@ -299,7 +401,7 @@ public class ConsoleApplicationService : ApplicationService
 		return choices.TryGetValue(selection, out BatchActionChoice choice)
 			? choice switch
 			{
-				BatchActionChoice.RunIterativeMerge => ExecuteIterativeMerge(directory, pattern),
+				BatchActionChoice.RunIterativeMerge => ExecuteIterativeMerge(directory, pattern, batch),
 				BatchActionChoice.SkipPattern => HandleSkipPattern(),
 				BatchActionChoice.StopBatchProcessing => HandleStopProcessing(),
 				_ => new BatchActionResult { ShouldStop = false }
@@ -312,10 +414,11 @@ public class ConsoleApplicationService : ApplicationService
 	/// </summary>
 	/// <param name="directory">The directory being processed.</param>
 	/// <param name="pattern">The file pattern.</param>
+	/// <param name="batch">The batch configuration containing search paths and exclusion patterns.</param>
 	/// <returns>The result of the merge operation.</returns>
-	private BatchActionResult ExecuteIterativeMerge(string directory, string pattern)
+	private BatchActionResult ExecuteIterativeMerge(string directory, string pattern, BatchConfiguration batch)
 	{
-		RunBatchIterativeMerge(directory, pattern);
+		RunBatchIterativeMerge(directory, pattern, batch);
 		return new BatchActionResult { ShouldStop = false };
 	}
 
@@ -326,8 +429,77 @@ public class ConsoleApplicationService : ApplicationService
 	/// </summary>
 	/// <param name="directory">The directory to process.</param>
 	/// <param name="fileName">The filename pattern to process.</param>
-	private void RunBatchIterativeMerge(string directory, string fileName) =>
-		RunIterativeMergeWithCallbacks(directory, fileName, ConsoleMergeCallback, ConsoleStatusCallback, ConsoleContinueCallback);
+	/// <param name="batch">The batch configuration containing search paths and exclusion patterns.</param>
+	private void RunBatchIterativeMerge(string directory, string fileName, BatchConfiguration batch) =>
+		RunIterativeMergeWithCallbacks(directory, fileName, batch, ConsoleMergeCallback, ConsoleStatusCallback, ConsoleContinueCallback);
+
+	/// <summary>
+	/// Runs iterative merge with the specified callbacks (batch-aware version).
+	/// </summary>
+	/// <param name="directory">The directory to search.</param>
+	/// <param name="fileName">The file name pattern to match.</param>
+	/// <param name="batch">The batch configuration containing search paths and exclusion patterns.</param>
+	/// <param name="mergeCallback">Callback for handling merge operations.</param>
+	/// <param name="statusCallback">Callback for reporting merge status.</param>
+	/// <param name="continueCallback">Callback for asking whether to continue.</param>
+	private void RunIterativeMergeWithCallbacks(
+		string directory,
+		string fileName,
+		BatchConfiguration batch,
+		Func<string, string, string?, MergeResult?> mergeCallback,
+		Action<MergeSessionStatus> statusCallback,
+		Func<bool> continueCallback)
+	{
+		ValidateDirectoryExists(directory);
+
+		// First get all files for the table display using batch configuration
+		IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups = CompareFilesWithBatch(directory, fileName, batch);
+		int totalFiles = fileGroups.Sum(g => g.Value.Count);
+
+		// Show the improved table summary first
+		ShowFileGroupSummaryTable(fileGroups, directory, totalFiles);
+
+		// Check if there are any groups with multiple files that can be merged
+		int groupsWithMultipleFiles = fileGroups.Count(g => g.Value.Count > 1);
+		if (groupsWithMultipleFiles == 0)
+		{
+			// Table already showed this information, so just return
+			return;
+		}
+
+		// Prepare file groups for merging using batch configuration
+		IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(
+			batch.SearchPaths,
+			directory,
+			fileName,
+			batch.PathExclusionPatterns);
+
+		if (filePaths.Count < 2)
+		{
+			AnsiConsole.MarkupLine("[yellow]No files found or insufficient unique versions to merge.[/]");
+			return;
+		}
+
+		// Group files by hash to find unique versions
+		IReadOnlyCollection<FileGroup> coreFileGroups = FileDiffer.GroupFilesByHash(filePaths);
+		List<FileGroup> uniqueGroups = [.. coreFileGroups.Where(g => g.FilePaths.Count >= 1)];
+
+		if (uniqueGroups.Count < 2)
+		{
+			AnsiConsole.MarkupLine("[yellow]All files are identical - no merging needed.[/]");
+			return;
+		}
+
+		// Start iterative merge process with provided callbacks
+		MergeCompletionResult result = IterativeMergeOrchestrator.StartIterativeMergeProcess(
+			uniqueGroups,
+			mergeCallback,
+			statusCallback,
+			continueCallback);
+
+		// Handle result
+		ProgressReportingService.ReportCompletionResult(result);
+	}
 
 	/// <summary>
 	/// Runs iterative merge with the specified callbacks.
