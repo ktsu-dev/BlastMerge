@@ -307,3 +307,169 @@ How can I resolve this? If you propose a fix, please make it concise.
 
 ---
 
+_**Assistant**_
+
+
+
+---
+
+Looking at the `MatchesGlobPattern` method, it has high cognitive complexity due to multiple nested conditions and complex string operations. Here's a concise fix that extracts helper methods:
+
+---
+
+```diff
+  	{
+  		// Special handling for common patterns - order matters!
+- 		if (pattern.StartsWith("*/") && pattern.EndsWith("/*"))
+- 		{
+- 			// Pattern like "*/bin/*" - check if path contains the directory
++ 		if (IsDirectoryContainsPattern(pattern))
++ 		{
++ 			return MatchesDirectoryContainsPattern(path, pattern);
++ 		}
++ 		
++ 		if (IsWildcardContainsPattern(pattern))
++ 		{
++ 			return MatchesWildcardContainsPattern(path, pattern);
++ 		}
++ 		
++ 		if (IsPrefixPattern(pattern))
++ 		{
++ 			return MatchesPrefixPattern(path, pattern);
++ 		}
++ 
++ 		// Fallback to general regex pattern matching
++ 		return MatchesRegexPattern(path, pattern);
++ 	}
++ 
++ 	/// <summary>
++ 	/// Checks if pattern is a directory contains pattern like "*/bin/*"
++ 	/// </summary>
++ 	private static bool IsDirectoryContainsPattern(string pattern) =>
++ 		pattern.StartsWith("*/") && pattern.EndsWith("/*");
++ 
++ 	/// <summary>
++ 	/// Matches directory contains patterns like "*/bin/*"
++ 	/// </summary>
++ 	private static bool MatchesDirectoryContainsPattern(string path, string pattern)
++ 	{
+  		string dirName = pattern[2..^2]; // Remove "*/" and "/*"
+  		return path.Contains($"/{dirName}/", StringComparison.OrdinalIgnoreCase);
+  	}
+- 		else if (pattern.StartsWith('*') && pattern.EndsWith('*') && !pattern.Contains('/'))
+- 		{
+- 			// Pattern like "*node_modules*" - check if any path component contains the substring
++ 
++ 	/// <summary>
++ 	/// Checks if pattern is a wildcard contains pattern like "*node_modules*"
++ 	/// </summary>
++ 	private static bool IsWildcardContainsPattern(string pattern) =>
++ 		pattern.StartsWith('*') && pattern.EndsWith('*') && !pattern.Contains('/');
++ 
++ 	/// <summary>
++ 	/// Matches wildcard contains patterns like "*node_modules*"
++ 	/// </summary>
++ 	private static bool MatchesWildcardContainsPattern(string path, string pattern)
++ 	{
+  		string substring = pattern[1..^1]; // Remove leading and trailing "*"
+  		string[] pathComponents = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+  		return pathComponents.Any(component => component.Contains(substring, StringComparison.OrdinalIgnoreCase));
+  	}
+- 		else if (pattern.EndsWith('*') && !pattern.Contains('/'))
+- 		{
+- 			// Pattern like "temp*" - check if any path component starts with the prefix
++ 
++ 	/// <summary>
++ 	/// Checks if pattern is a prefix pattern like "temp*"
++ 	/// </summary>
++ 	private static bool IsPrefixPattern(string pattern) =>
++ 		pattern.EndsWith('*') && !pattern.Contains('/');
++ 
++ 	/// <summary>
++ 	/// Matches prefix patterns like "temp*"
++ 	/// </summary>
++ 	private static bool MatchesPrefixPattern(string path, string pattern)
++ 	{
+  		string prefix = pattern[..^1]; // Remove trailing "*"
+  		string[] pathComponents = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+  		return pathComponents.Any(component => component.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+  	}
+  
+- 		// Fallback to general regex pattern matching
++ 	/// <summary>
++ 	/// Matches using regex pattern as fallback
++ 	/// </summary>
++ 	private static bool MatchesRegexPattern(string path, string pattern)
++ 	{
+  		string regexPattern = "^" + pattern
+  			.Replace("*", ".*")
+```
+
+---
+
+Perfect! I've successfully refactored the `MatchesGlobPattern` method to reduce cognitive complexity by:
+
+1. **Extracting pattern detection logic** into simple helper methods (`IsDirectoryContainsPattern`, `IsWildcardContainsPattern`, `IsPrefixPattern`)
+2. **Extracting pattern matching logic** into focused methods (`MatchesDirectoryContainsPattern`, `MatchesWildcardContainsPattern`, `MatchesPrefixPattern`, `MatchesRegexPattern`)
+3. **Eliminating complex if-else chains** by using early returns and single-purpose methods
+4. **Using expression body syntax** for simple condition checks
+
+This refactoring reduces cognitive complexity by:
+- Breaking down one complex method into multiple simple, single-purpose methods
+- Each method now has a clear, focused responsibility
+- Removing nested conditions and complex logic paths
+- Making the code more readable and maintainable
+
+The functionality remains identical while being much easier to understand and test.
+
+---
+
+_**User**_
+
+For the code present, we get this error:
+```
+Either merge this case with the identical one on line 376 or change one of the implementations. [+1 location]
+```
+How can I resolve this? If you propose a fix, please make it concise.
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+Looking at the `FindDifferences` method, I can see that `ChangeType.Unchanged` and the `default` case have identical implementations (both increment line numbers). Here's the fix:
+
+---
+
+
+
+---
+
+Perfect! I merged the `ChangeType.Unchanged` case with the `default` case since they had identical implementations (both increment `line1Number` and `line2Number`). This eliminates the duplicate code while maintaining the same functionality.
+
+The fix:
+- Combines the two identical cases into one
+- Keeps the appropriate comment that covers both scenarios
+- Maintains the same behavior for both unchanged lines and unknown change types
+
+---
+
+_**User**_
+
+For the code present, we get this error:
+```
+Refactor this method to reduce its Cognitive Complexity from 16 to the 15 allowed. [+11 locations]
+```
+How can I resolve this? If you propose a fix, please make it concise.
+
+---
+
+_**Assistant**_
+
+
+
+---
+

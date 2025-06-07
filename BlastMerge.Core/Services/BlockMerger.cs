@@ -120,31 +120,15 @@ public static class BlockMerger
 		switch (choice)
 		{
 			case BlockChoice.UseVersion1:
-				// Take the deleted lines from the left (original) version
-				for (int i = diffBlock.DeleteStartA; i < diffBlock.DeleteStartA + diffBlock.DeleteCountA && i < lines1.Length; i++)
-				{
-					mergedLines.Add(lines1[i]);
-				}
+				ApplyUseVersion1(lines1, diffBlock, mergedLines);
 				break;
 
 			case BlockChoice.UseVersion2:
-				// Take the inserted lines from the right (new) version
-				for (int i = diffBlock.InsertStartB; i < diffBlock.InsertStartB + diffBlock.InsertCountB && i < lines2.Length; i++)
-				{
-					mergedLines.Add(lines2[i]);
-				}
+				ApplyUseVersion2(lines2, diffBlock, mergedLines);
 				break;
 
 			case BlockChoice.UseBoth:
-				// Take deleted lines first, then inserted lines
-				for (int i = diffBlock.DeleteStartA; i < diffBlock.DeleteStartA + diffBlock.DeleteCountA && i < lines1.Length; i++)
-				{
-					mergedLines.Add(lines1[i]);
-				}
-				for (int i = diffBlock.InsertStartB; i < diffBlock.InsertStartB + diffBlock.InsertCountB && i < lines2.Length; i++)
-				{
-					mergedLines.Add(lines2[i]);
-				}
+				ApplyUseBoth(lines1, lines2, diffBlock, mergedLines);
 				break;
 
 			case BlockChoice.Skip:
@@ -156,11 +140,39 @@ public static class BlockMerger
 			case BlockChoice.Remove:
 			default:
 				// For compatibility with other block types, default to UseVersion2
-				for (int i = diffBlock.InsertStartB; i < diffBlock.InsertStartB + diffBlock.InsertCountB && i < lines2.Length; i++)
-				{
-					mergedLines.Add(lines2[i]);
-				}
+				ApplyUseVersion2(lines2, diffBlock, mergedLines);
 				break;
 		}
+	}
+
+	/// <summary>
+	/// Applies UseVersion1 choice - takes deleted lines from the left version
+	/// </summary>
+	private static void ApplyUseVersion1(string[] lines1, DiffPlex.Model.DiffBlock diffBlock, List<string> mergedLines)
+	{
+		for (int i = diffBlock.DeleteStartA; i < diffBlock.DeleteStartA + diffBlock.DeleteCountA && i < lines1.Length; i++)
+		{
+			mergedLines.Add(lines1[i]);
+		}
+	}
+
+	/// <summary>
+	/// Applies UseVersion2 choice - takes inserted lines from the right version
+	/// </summary>
+	private static void ApplyUseVersion2(string[] lines2, DiffPlex.Model.DiffBlock diffBlock, List<string> mergedLines)
+	{
+		for (int i = diffBlock.InsertStartB; i < diffBlock.InsertStartB + diffBlock.InsertCountB && i < lines2.Length; i++)
+		{
+			mergedLines.Add(lines2[i]);
+		}
+	}
+
+	/// <summary>
+	/// Applies UseBoth choice - takes deleted lines first, then inserted lines
+	/// </summary>
+	private static void ApplyUseBoth(string[] lines1, string[] lines2, DiffPlex.Model.DiffBlock diffBlock, List<string> mergedLines)
+	{
+		ApplyUseVersion1(lines1, diffBlock, mergedLines);
+		ApplyUseVersion2(lines2, diffBlock, mergedLines);
 	}
 }
