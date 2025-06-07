@@ -47,17 +47,7 @@ public static class BlockMerger
 			AddUnchangedContentBeforeBlock(lines1, ref currentPos1, diffBlock, mergedLines);
 
 			// Get context for this block using DiffPlexHelper
-			(string[] contextBefore1, string[] contextAfter1, string[] contextBefore2, string[] contextAfter2) =
-				DiffPlexHelper.GetBlockContext(lines1, lines2, diffBlock, 3);
-
-			// Create context object for callback
-			BlockContext context = new()
-			{
-				ContextBefore1 = contextBefore1.AsReadOnly(),
-				ContextAfter1 = contextAfter1.AsReadOnly(),
-				ContextBefore2 = contextBefore2.AsReadOnly(),
-				ContextAfter2 = contextAfter2.AsReadOnly()
-			};
+			BlockContext context = DiffPlexHelper.GetBlockContext(lines1, lines2, diffBlock, 3);
 
 			// Get user's choice for this block
 			BlockChoice choice = blockChoiceCallback(diffBlock, context, blockNumber);

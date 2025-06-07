@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using DiffPlex;
 using DiffPlex.Model;
+using ktsu.BlastMerge.Core.Models;
 
 /// <summary>
 /// Helper class that provides ProjectDirector-style diff functionality using DiffPlex directly
@@ -60,8 +61,7 @@ public static class DiffPlexHelper
 	/// <param name="block">The diff block</param>
 	/// <param name="contextSize">Number of context lines to include</param>
 	/// <returns>Context lines before and after the block</returns>
-	public static (string[] contextBefore1, string[] contextAfter1, string[] contextBefore2, string[] contextAfter2)
-		GetBlockContext(string[] linesOld, string[] linesNew, DiffBlock block, int contextSize = 3)
+	public static BlockContext GetBlockContext(string[] linesOld, string[] linesNew, DiffPlex.Model.DiffBlock block, int contextSize = 3)
 	{
 		ArgumentNullException.ThrowIfNull(linesOld);
 		ArgumentNullException.ThrowIfNull(linesNew);
@@ -85,7 +85,7 @@ public static class DiffPlexHelper
 		int endAfter2 = Math.Min(linesNew.Length, startAfter2 + contextSize);
 		string[] contextAfter2 = GetLinesInRange(linesNew, startAfter2, endAfter2);
 
-		return (contextBefore1, contextAfter1, contextBefore2, contextAfter2);
+		return BlockContext.Create(contextBefore1, contextAfter1, contextBefore2, contextAfter2);
 	}
 
 	/// <summary>
@@ -117,7 +117,7 @@ public static class DiffPlexHelper
 	/// <param name="linesNew">Lines from the new version</param>
 	/// <param name="block">The diff block to apply</param>
 	/// <returns>New content with the left side applied</returns>
-	public static string ApplyTakeLeft(string[] linesOld, string[] linesNew, DiffBlock block)
+	public static string ApplyTakeLeft(string[] linesOld, string[] linesNew, DiffPlex.Model.DiffBlock block)
 	{
 		ArgumentNullException.ThrowIfNull(linesOld);
 		ArgumentNullException.ThrowIfNull(linesNew);
@@ -148,7 +148,7 @@ public static class DiffPlexHelper
 	/// <param name="linesNew">Lines from the new version</param>
 	/// <param name="block">The diff block to apply</param>
 	/// <returns>New content with the right side applied</returns>
-	public static string ApplyTakeRight(string[] linesOld, string[] linesNew, DiffBlock block)
+	public static string ApplyTakeRight(string[] linesOld, string[] linesNew, DiffPlex.Model.DiffBlock block)
 	{
 		ArgumentNullException.ThrowIfNull(linesOld);
 		ArgumentNullException.ThrowIfNull(linesNew);
@@ -176,8 +176,8 @@ public static class DiffPlexHelper
 	/// Calculates diff statistics similar to ProjectDirector
 	/// </summary>
 	/// <param name="diffResult">The DiffPlex DiffResult</param>
-	/// <returns>Tuple of (additions, deletions, modifications)</returns>
-	public static (int additions, int deletions, int modifications) CalculateDiffStatistics(DiffResult diffResult)
+	/// <returns>Diff statistics</returns>
+	public static DiffStatistics CalculateDiffStatistics(DiffResult diffResult)
 	{
 		ArgumentNullException.ThrowIfNull(diffResult);
 
@@ -185,7 +185,12 @@ public static class DiffPlexHelper
 		int deletions = diffResult.DiffBlocks.Sum(b => b.DeleteCountA);
 		int modifications = diffResult.DiffBlocks.Count(b => b.InsertCountB > 0 && b.DeleteCountA > 0);
 
-		return (additions, deletions, modifications);
+		return new DiffStatistics
+		{
+			Additions = additions,
+			Deletions = deletions,
+			Modifications = modifications
+		};
 	}
 
 	/// <summary>

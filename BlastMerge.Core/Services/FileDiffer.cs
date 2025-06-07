@@ -341,21 +341,21 @@ public static class FileDiffer
 	/// <param name="differences">Collection of line differences.</param>
 	private static void BuildStatisticsSummary(StringBuilder sb, IReadOnlyCollection<LineDifference> differences)
 	{
-		(int modifications, int additions, int deletions) = CountDifferenceTypes(differences);
+		DiffStatistics stats = CountDifferenceTypes(differences);
 
-		if (modifications > 0)
+		if (stats.Modifications > 0)
 		{
-			sb.AppendLine($"{modifications} line(s) modified");
+			sb.AppendLine($"{stats.Modifications} line(s) modified");
 		}
 
-		if (additions > 0)
+		if (stats.Additions > 0)
 		{
-			sb.AppendLine($"{additions} line(s) added");
+			sb.AppendLine($"{stats.Additions} line(s) added");
 		}
 
-		if (deletions > 0)
+		if (stats.Deletions > 0)
 		{
-			sb.AppendLine($"{deletions} line(s) deleted");
+			sb.AppendLine($"{stats.Deletions} line(s) deleted");
 		}
 	}
 
@@ -363,14 +363,19 @@ public static class FileDiffer
 	/// Counts the different types of changes in the differences.
 	/// </summary>
 	/// <param name="differences">Collection of line differences.</param>
-	/// <returns>Tuple of modification, addition, and deletion counts.</returns>
-	private static (int modifications, int additions, int deletions) CountDifferenceTypes(IReadOnlyCollection<LineDifference> differences)
+	/// <returns>Diff statistics with modification, addition, and deletion counts.</returns>
+	private static DiffStatistics CountDifferenceTypes(IReadOnlyCollection<LineDifference> differences)
 	{
 		int modifications = differences.Count(d => d.LineNumber1.HasValue && d.LineNumber2.HasValue);
 		int additions = differences.Count(d => !d.LineNumber1.HasValue && d.LineNumber2.HasValue);
 		int deletions = differences.Count(d => d.LineNumber1.HasValue && !d.LineNumber2.HasValue);
 
-		return (modifications, additions, deletions);
+		return new DiffStatistics
+		{
+			Modifications = modifications,
+			Additions = additions,
+			Deletions = deletions
+		};
 	}
 
 	/// <summary>
@@ -380,8 +385,8 @@ public static class FileDiffer
 	/// <returns>True if no differences exist.</returns>
 	private static bool HasNoDifferences(IReadOnlyCollection<LineDifference> differences)
 	{
-		(int modifications, int additions, int deletions) = CountDifferenceTypes(differences);
-		return modifications == 0 && additions == 0 && deletions == 0;
+		DiffStatistics stats = CountDifferenceTypes(differences);
+		return !stats.HasDifferences;
 	}
 
 	/// <summary>
@@ -428,8 +433,8 @@ public static class FileDiffer
 	/// <returns>Formatted modified line string.</returns>
 	private static string FormatModifiedLine(LineDifference diff, bool useColor)
 	{
-		(string prefix, string suffix) = GetColorCodes(useColor, "\u001b[33m"); // Yellow for modified
-		return $"{prefix}Modified line {diff.LineNumber1}: {diff.Content1} → {diff.Content2}{suffix}";
+		ColorCodePair colors = GetColorCodes(useColor, "\u001b[33m"); // Yellow for modified
+		return $"{colors.Prefix}Modified line {diff.LineNumber1}: {diff.Content1} → {diff.Content2}{colors.Suffix}";
 	}
 
 	/// <summary>
@@ -461,9 +466,9 @@ public static class FileDiffer
 	/// </summary>
 	/// <param name="useColor">Whether to use color codes.</param>
 	/// <param name="colorCode">The ANSI color code to use.</param>
-	/// <returns>Tuple of prefix and suffix color codes.</returns>
-	private static (string prefix, string suffix) GetColorCodes(bool useColor, string colorCode) =>
-		useColor ? (colorCode, "\u001b[0m") : ("", "");
+	/// <returns>Color code pair with prefix and suffix codes.</returns>
+	private static ColorCodePair GetColorCodes(bool useColor, string colorCode) =>
+		useColor ? ColorCodePair.CreateAnsi(colorCode) : ColorCodePair.None;
 
 	/// <summary>
 	/// Generates a colored change summary showing added and removed lines
