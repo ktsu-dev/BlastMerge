@@ -162,11 +162,25 @@ public static class WhitespaceVisualizer
 	/// <param name="showWhitespace">Whether to show whitespace characters</param>
 	/// <param name="highlightTrailing">Whether to highlight trailing whitespace</param>
 	/// <returns>Processed line ready for markup display</returns>
-	public static string ProcessLineForMarkupDisplay(string? line, bool showWhitespace = true, bool highlightTrailing = true) =>
-		string.IsNullOrEmpty(line) ? string.Empty :
-		(!showWhitespace && !highlightTrailing) ? Markup.Escape(line) :
-		highlightTrailing ? ProcessLineWithTrailingHighlight(line, showWhitespace) :
-		ProcessLineWithWhitespace(line);
+	public static string ProcessLineForMarkupDisplay(string? line, bool showWhitespace = true, bool highlightTrailing = true)
+	{
+		if (string.IsNullOrEmpty(line))
+		{
+			return string.Empty;
+		}
+
+		if (!showWhitespace && !highlightTrailing)
+		{
+			return Markup.Escape(line);
+		}
+
+		if (highlightTrailing)
+		{
+			return ProcessLineWithTrailingHighlight(line, showWhitespace);
+		}
+
+		return ProcessLineWithWhitespace(line);
+	}
 
 	/// <summary>
 	/// Processes a line with trailing whitespace highlighting

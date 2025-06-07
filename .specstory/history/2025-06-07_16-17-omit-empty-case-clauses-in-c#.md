@@ -554,7 +554,71 @@ The fix is simple - remove the empty case clause since it's just falling through
 
 ---
 
-This consolidates both `MenuChoice.Help` and `MenuChoice.Exit` to fall through to the same logic
+This consolidates both `MenuChoice.Help` and `MenuChoice.Exit` to fall through to the same logic, which removes the empty case clause while maintaining the same behavior.
+
+---
+
+_**User**_
+
+For the code present, we get this error:
+```
+Extract this nested ternary operation into an independent statement.
+```
+How can I resolve this? If you propose a fix, please make it concise.
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+Looking at the `ProcessLineForMarkupDisplay` method, I can see the nested ternary operation that needs to be extracted. Here's the fix:
+
+---
+
+
+
+---
+
+This converts the nested ternary operation into clear, independent if-else statements that are much easier to read and understand.
+
+---
+
+_**User**_
+
+For the code present, we get this error:
+```
+Remove this method and declare a constant for this value.
+```
+How can I resolve this? If you propose a fix, please make it concise.
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+I can see the code snippet you've provided, but I don't see a method that's simply returning a constant value. The error message suggests there's a method that always returns the same constant and should be replaced with a constant field.
+
+Could you please point out which specific method is being flagged with this error? The code snippet shows methods like `ShowWelcomeScreen()`, `GetMostRecentBatch()`, etc., but none of these appear to be simple constant returns that would trigger this rule.
+
+Once you identify the specific method, I can provide a concise fix to replace it with a constant.
+
+---
+
+_**User**_
+
+ConsoleContinueCallback
+
+---
+
+_**Assistant**_
+
+
 
 ---
 

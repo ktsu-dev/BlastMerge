@@ -234,7 +234,7 @@ public class ConsoleApplicationService : ApplicationService
 			directory,
 			ConsoleMergeCallback,
 			ConsoleStatusCallback,
-			ConsoleContinueCallback,
+			() => AlwaysContinue,
 			(progressMessage) => AnsiConsole.MarkupLine($"[yellow]{progressMessage}[/]")); // Direct output with phase separation
 
 		int totalFilesFound = result?.PatternResults.Sum(pr => pr.FilesFound) ?? 0;
@@ -450,7 +450,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// <param name="directory">The directory to search.</param>
 	/// <param name="fileName">The file name pattern to match.</param>
 	public override void RunIterativeMerge(string directory, string fileName) =>
-		RunIterativeMergeWithCallbacks(directory, fileName, ConsoleMergeCallback, ConsoleStatusCallback, ConsoleContinueCallback);
+		RunIterativeMergeWithCallbacks(directory, fileName, ConsoleMergeCallback, ConsoleStatusCallback, () => AlwaysContinue);
 
 	/// <summary>
 	/// Lists all available batch configurations.
@@ -645,8 +645,6 @@ public class ConsoleApplicationService : ApplicationService
 			case MenuChoice.Settings:
 				new SettingsMenuHandler(this).Enter();
 				break;
-			case MenuChoice.Help:
-			case MenuChoice.Exit:
 			default:
 				new HelpMenuHandler(this).Enter();
 				break;
@@ -949,11 +947,9 @@ public class ConsoleApplicationService : ApplicationService
 	private static void ConsoleStatusCallback(MergeSessionStatus status) => ProgressReportingService.ReportMergeStatus(status);
 
 	/// <summary>
-	/// Console-specific callback to ask if the user wants to continue merging.
-	/// Always returns true for seamless batch processing.
+	/// Constant indicating to always continue processing without interruption for seamless batch processing.
 	/// </summary>
-	/// <returns>Always true to continue processing without interruption.</returns>
-	private static bool ConsoleContinueCallback() => true;
+	private const bool AlwaysContinue = true;
 
 	/// <summary>
 	/// Gets the user's choice for a merge block with visual conflict resolution
