@@ -7,14 +7,21 @@ namespace ktsu.BlastMerge.Core.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Abstractions;
 using ktsu.BlastMerge.Core.Contracts;
 using ktsu.BlastMerge.Core.Models;
 
 /// <summary>
 /// Implementation of the main application service that handles business logic.
 /// </summary>
-public abstract class ApplicationService : IApplicationService
+/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
+public abstract class ApplicationService(IFileSystem? fileSystem = null) : IApplicationService
 {
+	/// <summary>
+	/// The file system abstraction to use for file operations
+	/// </summary>
+	protected IFileSystem FileSystem { get; } = fileSystem ?? new FileSystem();
+
 	/// <summary>
 	/// Validates that parameters are not null and directory exists.
 	/// </summary>
@@ -22,7 +29,7 @@ public abstract class ApplicationService : IApplicationService
 	/// <param name="fileName">The filename pattern to validate.</param>
 	/// <exception cref="ArgumentNullException">Thrown when directory or fileName is null.</exception>
 	/// <exception cref="DirectoryNotFoundException">Thrown when directory does not exist.</exception>
-	protected static void ValidateDirectoryAndFileName(string directory, string fileName)
+	protected void ValidateDirectoryAndFileName(string directory, string fileName)
 	{
 		ArgumentNullException.ThrowIfNull(directory);
 		ArgumentNullException.ThrowIfNull(fileName);
@@ -34,9 +41,9 @@ public abstract class ApplicationService : IApplicationService
 	/// </summary>
 	/// <param name="directory">The directory to validate.</param>
 	/// <exception cref="DirectoryNotFoundException">Thrown when directory does not exist.</exception>
-	protected static void ValidateDirectoryExists(string directory)
+	protected void ValidateDirectoryExists(string directory)
 	{
-		if (!Directory.Exists(directory))
+		if (!FileSystem.Directory.Exists(directory))
 		{
 			throw new DirectoryNotFoundException($"Directory '{directory}' does not exist.");
 		}
@@ -66,7 +73,7 @@ public abstract class ApplicationService : IApplicationService
 	{
 		ValidateDirectoryAndFileName(directory, fileName);
 
-		IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(directory, fileName);
+		IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(directory, fileName, FileSystem);
 		IReadOnlyCollection<FileGroup> fileGroups = FileDiffer.GroupFilesByHash(filePaths);
 
 		// Convert FileGroup collection to Dictionary<string, IReadOnlyCollection<string>>

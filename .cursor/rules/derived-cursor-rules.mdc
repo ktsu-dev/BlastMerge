@@ -81,6 +81,7 @@ globs: *
 -   TestableIO.System.IO.Abstractions.Wrappers Version="22.0.14"
 -   Tomlyn Version="0.17.0"
 -   YamlDotNet Version="16.2.0"
+-   System.IO.Abstractions
 
 ## PROJECT DOCUMENTATION & CONTEXT SYSTEM
 
@@ -312,5 +313,4 @@ globs: *
     -   Extract pattern matching logic into focused methods (`MatchesDirectoryContainsPattern`, `MatchesWildcardContainsPattern`, `MatchesPrefixPattern`, `MatchesRegexPattern`)
     -   Eliminate complex if-else chains by using early returns and single-purpose methods
     -   Using expression body syntax for simple condition checks
--   Merge the `ChangeType.Unchanged` case with the `default` case in `FindDifferences` since they have identical implementations.
--   Omit empty
+-   Merge the `ChangeType.Unchanged` case with the `default` case in `FindDifferences` since they have

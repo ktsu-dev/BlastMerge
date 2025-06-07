@@ -3,5 +3,6 @@
     <PackageReference Include="DiffPlex" />
     <PackageReference Include="Spectre.Console" />
     <PackageReference Include="ktsu.AppDataStorage" />
+    <PackageReference Include="TestableIO.System.IO.Abstractions" />
   </ItemGroup>
 </Project>

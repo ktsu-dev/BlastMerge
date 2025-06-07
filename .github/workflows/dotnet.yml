@@ -171,6 +171,12 @@ jobs:
           submodules: recursive
           persist-credentials: true
           token: ${{ github.token }}
+      - name: Setup .NET SDK ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}.x
+          cache: true
+          cache-dependency-path: "**/*.csproj"
       - name: Determine Target Commit for Analysis
         shell: pwsh
         run: |
@@ -236,6 +242,24 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: powershell
         run: |
-          .\.sonar\scanner\dotnet-sonarscanner begin /k:"${{ github.repository_owner }}_${{ github.event.repository.name }}" /o:"${{ github.repository_owner }}" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
-          dotnet build
+                    # Setup .NET SDK before SonarQube analysis
+          dotnet --version
+
+          # Restore dependencies
+          dotnet restore
+
+          # Begin SonarQube analysis with proper configuration
+          .\.sonar\scanner\dotnet-sonarscanner begin `
+            /k:"${{ github.repository_owner }}_${{ github.event.repository.name }}" `
+            /o:"${{ github.repository_owner }}" `
+            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" `
+            /d:sonar.host.url="https://sonarcloud.io" `
+            /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" `
+            /d:sonar.coverage.exclusions="**Test*.cs,**/*Test.cs,**/*Tests.cs,**/Program.cs" `
+            /d:sonar.exclusions="**/bin/**,**/obj/**,**/*.dll,**/*.pdb"
+
+          # Build the solution
+          dotnet build --no-restore --configuration Release
+
+          # End SonarQube analysis
           .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"

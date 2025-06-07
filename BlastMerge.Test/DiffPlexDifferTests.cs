@@ -69,7 +69,7 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 		}
 		finally
 		{
-			SecureTempFileHelper.SafeDeleteTempFiles(tempFile1, tempFile2);
+			SecureTempFileHelper.SafeDeleteTempFiles(fileSystem: null, tempFile1, tempFile2);
 		}
 	}
 
@@ -93,7 +93,7 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 		}
 		finally
 		{
-			SecureTempFileHelper.SafeDeleteTempFiles(tempFile1, tempFile2);
+			SecureTempFileHelper.SafeDeleteTempFiles(fileSystem: null, tempFile1, tempFile2);
 		}
 	}
 

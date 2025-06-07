@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Text;
 using ktsu.BlastMerge.Core.Models;
@@ -149,22 +150,24 @@ public static class FileDiffer
 	/// <param name="dir2">Path to the second directory</param>
 	/// <param name="searchPattern">File search pattern (e.g., "*.txt")</param>
 	/// <param name="recursive">Whether to search subdirectories recursively</param>
+	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>A DirectoryComparisonResult containing the comparison results</returns>
-	public static DirectoryComparisonResult FindDifferences(string dir1, string dir2, string searchPattern, bool recursive = false)
+	public static DirectoryComparisonResult FindDifferences(string dir1, string dir2, string searchPattern, bool recursive = false, IFileSystem? fileSystem = null)
 	{
 		ArgumentNullException.ThrowIfNull(dir1);
 		ArgumentNullException.ThrowIfNull(dir2);
 		ArgumentNullException.ThrowIfNull(searchPattern);
 
+		fileSystem ??= new FileSystem();
 		SearchOption searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
 
 		// Get all files from both directories
-		HashSet<string> files1 = Directory.Exists(dir1)
-			? [.. Directory.GetFiles(dir1, searchPattern, searchOption).Select(f => Path.GetRelativePath(dir1, f))]
+		HashSet<string> files1 = fileSystem.Directory.Exists(dir1)
+			? [.. fileSystem.Directory.GetFiles(dir1, searchPattern, searchOption).Select(f => fileSystem.Path.GetRelativePath(dir1, f))]
 			: [];
 
-		HashSet<string> files2 = Directory.Exists(dir2)
-			? [.. Directory.GetFiles(dir2, searchPattern, searchOption).Select(f => Path.GetRelativePath(dir2, f))]
+		HashSet<string> files2 = fileSystem.Directory.Exists(dir2)
+			? [.. fileSystem.Directory.GetFiles(dir2, searchPattern, searchOption).Select(f => fileSystem.Path.GetRelativePath(dir2, f))]
 			: [];
 
 		List<string> sameFiles = [];
@@ -530,18 +533,21 @@ public static class FileDiffer
 	/// </summary>
 	/// <param name="sourceFile">Path to the source file</param>
 	/// <param name="targetFile">Path to the target file</param>
-	public static void SyncFile(string sourceFile, string targetFile)
+	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
+	public static void SyncFile(string sourceFile, string targetFile, IFileSystem? fileSystem = null)
 	{
 		ArgumentNullException.ThrowIfNull(sourceFile);
 		ArgumentNullException.ThrowIfNull(targetFile);
 
-		string? targetDir = Path.GetDirectoryName(targetFile);
+		fileSystem ??= new FileSystem();
+
+		string? targetDir = fileSystem.Path.GetDirectoryName(targetFile);
 		if (!string.IsNullOrEmpty(targetDir))
 		{
-			Directory.CreateDirectory(targetDir);
+			fileSystem.Directory.CreateDirectory(targetDir);
 		}
 
-		File.Copy(sourceFile, targetFile, overwrite: true);
+		fileSystem.File.Copy(sourceFile, targetFile, overwrite: true);
 	}
 
 	/// <summary>
@@ -549,14 +555,17 @@ public static class FileDiffer
 	/// </summary>
 	/// <param name="file1">Path to the first file</param>
 	/// <param name="file2">Path to the second file</param>
+	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>A similarity score between 0.0 (completely different) and 1.0 (identical)</returns>
-	public static double CalculateFileSimilarity(string file1, string file2)
+	public static double CalculateFileSimilarity(string file1, string file2, IFileSystem? fileSystem = null)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		string[] lines1 = File.ReadAllLines(file1);
-		string[] lines2 = File.ReadAllLines(file2);
+		fileSystem ??= new FileSystem();
+
+		string[] lines1 = fileSystem.File.ReadAllLines(file1);
+		string[] lines2 = fileSystem.File.ReadAllLines(file2);
 
 		return CalculateLineSimilarity(lines1, lines2);
 	}
@@ -610,7 +619,7 @@ public static class FileDiffer
 		finally
 		{
 			// Clean up temporary files
-			SecureTempFileHelper.SafeDeleteTempFiles(tempFile1, tempFile2);
+			SecureTempFileHelper.SafeDeleteTempFiles(null, tempFile1, tempFile2);
 		}
 	}
 
@@ -626,8 +635,9 @@ public static class FileDiffer
 	/// Only compares files with the same filename to prevent merging unrelated files.
 	/// </summary>
 	/// <param name="fileGroups">Collection of file groups with different content</param>
+	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>A FileSimilarity object with the most similar pair, or null if less than 2 groups</returns>
-	public static FileSimilarity? FindMostSimilarFiles(IReadOnlyCollection<FileGroup> fileGroups)
+	public static FileSimilarity? FindMostSimilarFiles(IReadOnlyCollection<FileGroup> fileGroups, IFileSystem? fileSystem = null)
 	{
 		ArgumentNullException.ThrowIfNull(fileGroups);
 
@@ -654,7 +664,7 @@ public static class FileDiffer
 			{
 				string file1 = pair.group1.FilePaths.First();
 				string file2 = pair.group2.FilePaths.First();
-				double similarity = CalculateFileSimilarity(file1, file2);
+				double similarity = CalculateFileSimilarity(file1, file2, fileSystem);
 				return new { file1, file2, similarity };
 			});
 
@@ -675,14 +685,17 @@ public static class FileDiffer
 	/// </summary>
 	/// <param name="file1">Path to the first file</param>
 	/// <param name="file2">Path to the second file</param>
+	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>A MergeResult containing the merged content and any conflicts</returns>
-	public static MergeResult MergeFiles(string file1, string file2)
+	public static MergeResult MergeFiles(string file1, string file2, IFileSystem? fileSystem = null)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		string[] lines1 = File.ReadAllLines(file1);
-		string[] lines2 = File.ReadAllLines(file2);
+		fileSystem ??= new FileSystem();
+
+		string[] lines1 = fileSystem.File.ReadAllLines(file1);
+		string[] lines2 = fileSystem.File.ReadAllLines(file2);
 
 		return MergeLines(lines1, lines2);
 	}
@@ -703,21 +716,23 @@ public static class FileDiffer
 
 		try
 		{
-			return PerformMergeWithTempFiles(lines1, lines2, tempFile1, tempFile2);
+			return PerformMergeWithTempFiles(lines1, lines2, tempFile1, tempFile2, null);
 		}
 		finally
 		{
-			SecureTempFileHelper.SafeDeleteTempFiles(tempFile1, tempFile2);
+			SecureTempFileHelper.SafeDeleteTempFiles(null, tempFile1, tempFile2);
 		}
 	}
 
 	/// <summary>
 	/// Performs the actual merge operation using temporary files
 	/// </summary>
-	private static MergeResult PerformMergeWithTempFiles(string[] lines1, string[] lines2, string tempFile1, string tempFile2)
+	private static MergeResult PerformMergeWithTempFiles(string[] lines1, string[] lines2, string tempFile1, string tempFile2, IFileSystem? fileSystem = null)
 	{
-		File.WriteAllLines(tempFile1, lines1);
-		File.WriteAllLines(tempFile2, lines2);
+		fileSystem ??= new FileSystem();
+
+		fileSystem.File.WriteAllLines(tempFile1, lines1);
+		fileSystem.File.WriteAllLines(tempFile2, lines2);
 
 		IReadOnlyCollection<LineDifference> differences = DiffPlexDiffer.FindDifferences(tempFile1, tempFile2);
 		List<string> mergedLines = [];

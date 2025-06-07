@@ -147,7 +147,7 @@ public static class SyncOperationsService
 		try
 		{
 			ctx.Status($"Syncing [yellow]{Path.GetFileName(targetFile)}[/]...");
-			FileDiffer.SyncFile(sourceFile, targetFile);
+			FileDiffer.SyncFile(sourceFile, targetFile, null);
 			return 1;
 		}
 		catch (IOException ex)
@@ -266,7 +266,7 @@ public static class SyncOperationsService
 			{
 				try
 				{
-					FileDiffer.SyncFile(referenceFile, file);
+					FileDiffer.SyncFile(referenceFile, file, null);
 					syncedFiles++;
 					UIHelper.ShowSuccess($"✓ Synced {Path.GetFileName(file)}");
 				}

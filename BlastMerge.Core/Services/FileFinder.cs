@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -21,25 +22,28 @@ public static class FileFinder
 	/// </summary>
 	/// <param name="rootDirectory">The root directory to search from</param>
 	/// <param name="fileName">The filename to search for</param>
+	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>A list of full file paths</returns>
-	public static IReadOnlyCollection<string> FindFiles(string rootDirectory, string fileName) =>
-		FindFiles(rootDirectory, fileName, null);
+	public static IReadOnlyCollection<string> FindFiles(string rootDirectory, string fileName, IFileSystem? fileSystem = null) =>
+		FindFiles(rootDirectory, fileName, fileSystem, null);
 
 	/// <summary>
 	/// Recursively finds all files with the specified filename with progress reporting
 	/// </summary>
 	/// <param name="rootDirectory">The root directory to search from</param>
 	/// <param name="fileName">The filename to search for</param>
+	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <param name="progressCallback">Optional callback to report discovered file paths</param>
 	/// <returns>A list of full file paths</returns>
-	public static IReadOnlyCollection<string> FindFiles(string rootDirectory, string fileName, Action<string>? progressCallback)
+	public static IReadOnlyCollection<string> FindFiles(string rootDirectory, string fileName, IFileSystem? fileSystem = null, Action<string>? progressCallback = null)
 	{
+		fileSystem ??= new FileSystem();
 		List<string> result = [];
 
 		try
 		{
 			// Search in current directory
-			string[] filesInCurrentDir = Directory.GetFiles(rootDirectory, fileName, SearchOption.TopDirectoryOnly);
+			string[] filesInCurrentDir = fileSystem.Directory.GetFiles(rootDirectory, fileName, SearchOption.TopDirectoryOnly);
 			foreach (string file in filesInCurrentDir)
 			{
 				result.Add(file);
@@ -47,11 +51,11 @@ public static class FileFinder
 			}
 
 			// Search in subdirectories
-			foreach (string directory in Directory.GetDirectories(rootDirectory).Where(dir => !IsGitSubmodule(dir)))
+			foreach (string directory in fileSystem.Directory.GetDirectories(rootDirectory).Where(dir => !IsGitSubmodule(dir, fileSystem)))
 			{
 				try
 				{
-					IReadOnlyCollection<string> filesInSubDir = FindFiles(directory, fileName, progressCallback);
+					IReadOnlyCollection<string> filesInSubDir = FindFiles(directory, fileName, fileSystem, progressCallback);
 					result.AddRange(filesInSubDir);
 				}
 				catch (UnauthorizedAccessException)
@@ -79,13 +83,15 @@ public static class FileFinder
 	/// <param name="rootDirectory">The fallback root directory to search from if searchPaths is empty</param>
 	/// <param name="fileName">The filename to search for</param>
 	/// <param name="pathExclusionPatterns">Path patterns to exclude from the search</param>
+	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>A list of full file paths</returns>
 	public static IReadOnlyCollection<string> FindFiles(
 		IReadOnlyCollection<string> searchPaths,
 		string rootDirectory,
 		string fileName,
-		IReadOnlyCollection<string> pathExclusionPatterns) =>
-		FindFiles(searchPaths, rootDirectory, fileName, pathExclusionPatterns, null);
+		IReadOnlyCollection<string> pathExclusionPatterns,
+		IFileSystem? fileSystem = null) =>
+		FindFiles(searchPaths, rootDirectory, fileName, pathExclusionPatterns, fileSystem, null);
 
 	/// <summary>
 	/// Finds all files matching the specified filename across multiple search paths with exclusion support and progress reporting
@@ -94,6 +100,7 @@ public static class FileFinder
 	/// <param name="rootDirectory">The fallback root directory to search from if searchPaths is empty</param>
 	/// <param name="fileName">The filename to search for</param>
 	/// <param name="pathExclusionPatterns">Path patterns to exclude from the search</param>
+	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <param name="progressCallback">Optional callback to report discovered file paths</param>
 	/// <returns>A list of full file paths</returns>
 	public static IReadOnlyCollection<string> FindFiles(
@@ -101,21 +108,23 @@ public static class FileFinder
 		string rootDirectory,
 		string fileName,
 		IReadOnlyCollection<string> pathExclusionPatterns,
-		Action<string>? progressCallback)
+		IFileSystem? fileSystem = null,
+		Action<string>? progressCallback = null)
 	{
 		ArgumentNullException.ThrowIfNull(searchPaths);
 		ArgumentNullException.ThrowIfNull(rootDirectory);
 		ArgumentNullException.ThrowIfNull(fileName);
 		ArgumentNullException.ThrowIfNull(pathExclusionPatterns);
 
+		fileSystem ??= new FileSystem();
 		List<string> result = [];
 
 		// Use search paths if provided, otherwise use the root directory
 		IEnumerable<string> directoriesToSearch = searchPaths.Count > 0 ? searchPaths : [rootDirectory];
 
 		result.AddRange(directoriesToSearch
-			.Where(Directory.Exists)
-			.SelectMany(searchPath => FindFilesWithExclusions(searchPath, fileName, pathExclusionPatterns, progressCallback)));
+			.Where(fileSystem.Directory.Exists)
+			.SelectMany(searchPath => FindFilesWithExclusions(searchPath, fileName, pathExclusionPatterns, fileSystem, progressCallback)));
 
 		return result.AsReadOnly();
 	}
@@ -133,7 +142,7 @@ public static class FileFinder
 		string fileName,
 		IReadOnlyCollection<string> pathExclusionPatterns,
 		Action<string>? progressCallback) =>
-		FindFilesWithExclusions(rootDirectory, fileName, pathExclusionPatterns, progressCallback);
+		FindFilesWithExclusions(rootDirectory, fileName, pathExclusionPatterns, new FileSystem(), progressCallback);
 
 	/// <summary>
 	/// Recursively finds all files with the specified filename, applying exclusion patterns with progress reporting
@@ -141,12 +150,14 @@ public static class FileFinder
 	/// <param name="rootDirectory">The root directory to search from</param>
 	/// <param name="fileName">The filename to search for</param>
 	/// <param name="pathExclusionPatterns">Path patterns to exclude from the search</param>
+	/// <param name="fileSystem">File system abstraction</param>
 	/// <param name="progressCallback">Optional callback to report discovered file paths</param>
 	/// <returns>A list of full file paths</returns>
 	private static ReadOnlyCollection<string> FindFilesWithExclusions(
 		string rootDirectory,
 		string fileName,
 		IReadOnlyCollection<string> pathExclusionPatterns,
+		IFileSystem fileSystem,
 		Action<string>? progressCallback)
 	{
 		List<string> result = [];
@@ -159,8 +170,8 @@ public static class FileFinder
 				return new ReadOnlyCollection<string>(result);
 			}
 
-			ProcessCurrentDirectory(rootDirectory, fileName, pathExclusionPatterns, progressCallback, result);
-			ProcessSubdirectories(rootDirectory, fileName, pathExclusionPatterns, progressCallback, result);
+			ProcessCurrentDirectory(rootDirectory, fileName, pathExclusionPatterns, fileSystem, progressCallback, result);
+			ProcessSubdirectories(rootDirectory, fileName, pathExclusionPatterns, fileSystem, progressCallback, result);
 		}
 		catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException)
 		{
@@ -177,10 +188,11 @@ public static class FileFinder
 		string rootDirectory,
 		string fileName,
 		IReadOnlyCollection<string> pathExclusionPatterns,
+		IFileSystem fileSystem,
 		Action<string>? progressCallback,
 		List<string> result)
 	{
-		string[] filesInCurrentDir = Directory.GetFiles(rootDirectory, fileName, SearchOption.TopDirectoryOnly);
+		string[] filesInCurrentDir = fileSystem.Directory.GetFiles(rootDirectory, fileName, SearchOption.TopDirectoryOnly);
 
 		foreach (string file in filesInCurrentDir.Where(file => !ShouldExcludePath(file, pathExclusionPatterns)))
 		{
@@ -196,14 +208,15 @@ public static class FileFinder
 		string rootDirectory,
 		string fileName,
 		IReadOnlyCollection<string> pathExclusionPatterns,
+		IFileSystem fileSystem,
 		Action<string>? progressCallback,
 		List<string> result)
 	{
-		foreach (string directory in Directory.GetDirectories(rootDirectory).Where(dir => !ShouldSkipDirectory(dir, pathExclusionPatterns)))
+		foreach (string directory in fileSystem.Directory.GetDirectories(rootDirectory).Where(dir => !ShouldSkipDirectory(dir, pathExclusionPatterns, fileSystem)))
 		{
 			try
 			{
-				ReadOnlyCollection<string> filesInSubDir = FindFilesWithExclusions(directory, fileName, pathExclusionPatterns, progressCallback);
+				ReadOnlyCollection<string> filesInSubDir = FindFilesWithExclusions(directory, fileName, pathExclusionPatterns, fileSystem, progressCallback);
 				result.AddRange(filesInSubDir);
 			}
 			catch (UnauthorizedAccessException)
@@ -220,8 +233,8 @@ public static class FileFinder
 	/// <summary>
 	/// Determines if a directory should be skipped
 	/// </summary>
-	private static bool ShouldSkipDirectory(string directory, IReadOnlyCollection<string> pathExclusionPatterns) =>
-		IsGitSubmodule(directory) || ShouldExcludePath(directory, pathExclusionPatterns);
+	private static bool ShouldSkipDirectory(string directory, IReadOnlyCollection<string> pathExclusionPatterns, IFileSystem fileSystem) =>
+		IsGitSubmodule(directory, fileSystem) || ShouldExcludePath(directory, pathExclusionPatterns);
 
 	/// <summary>
 	/// Determines if a path should be excluded based on exclusion patterns
@@ -364,16 +377,18 @@ public static class FileFinder
 	/// Determines if a directory is a git submodule
 	/// </summary>
 	/// <param name="directoryPath">The directory path to check</param>
+	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>True if the directory is a git submodule, false otherwise</returns>
-	private static bool IsGitSubmodule(string directoryPath)
+	private static bool IsGitSubmodule(string directoryPath, IFileSystem? fileSystem = null)
 	{
+		fileSystem ??= new FileSystem();
 		try
 		{
-			string gitPath = Path.Combine(directoryPath, ".git");
+			string gitPath = fileSystem.Path.Combine(directoryPath, ".git");
 
 			// Git submodules have a .git file (not directory) that contains a reference
 			// to the actual git directory location
-			return File.Exists(gitPath) && !Directory.Exists(gitPath);
+			return fileSystem.File.Exists(gitPath) && !fileSystem.Directory.Exists(gitPath);
 		}
 		catch (Exception ex) when (ex is UnauthorizedAccessException
 								or DirectoryNotFoundException

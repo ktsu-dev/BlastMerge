@@ -48,7 +48,7 @@ public class FindFilesMenuHandler(ApplicationService applicationService) : BaseM
 		AnsiConsole.Status()
 			.Start("Finding files...", ctx =>
 			{
-				IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(directory, fileName, path =>
+				IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(directory, fileName, progressCallback: path =>
 				{
 					ctx.Status($"Finding files... Found: {Path.GetFileName(path)}");
 					ctx.Refresh();

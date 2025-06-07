@@ -421,7 +421,8 @@ public static partial class BatchProcessor
 					resolutionItem.FileGroups,
 					mergeCallback,
 					statusCallback,
-					continuationCallback);
+					continuationCallback,
+					null);
 
 				result.MergeResult = mergeResult;
 				result.Success = mergeResult.IsSuccessful;
@@ -455,6 +456,7 @@ public static partial class BatchProcessor
 					directory,
 					pattern,
 					batch.PathExclusionPatterns,
+					fileSystem: null,
 					progressCallback);
 				return (pattern, files);
 			});
@@ -598,7 +600,7 @@ public static partial class BatchProcessor
 				: null;
 
 			// Find files matching the pattern using search paths and exclusions
-			IReadOnlyCollection<string> files = FileFinder.FindFiles(parameters.SearchPaths, parameters.Directory, parameters.Pattern, parameters.PathExclusionPatterns, fileDiscoveryCallback);
+			IReadOnlyCollection<string> files = FileFinder.FindFiles(parameters.SearchPaths, parameters.Directory, parameters.Pattern, parameters.PathExclusionPatterns, fileSystem: null, fileDiscoveryCallback);
 			result.FilesFound = files.Count;
 
 			if (files.Count == 0)
@@ -631,7 +633,8 @@ public static partial class BatchProcessor
 				fileGroups,
 				callbacks.MergeCallback,
 				callbacks.StatusCallback,
-				callbacks.ContinuationCallback);
+				callbacks.ContinuationCallback,
+				null);
 
 			result.MergeResult = mergeResult;
 			result.Success = mergeResult.IsSuccessful;

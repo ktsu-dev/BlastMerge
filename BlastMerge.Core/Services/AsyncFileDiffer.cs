@@ -38,7 +38,7 @@ public static class AsyncFileDiffer
 
 		// Compute hashes in parallel
 		Dictionary<string, string> fileHashes = await FileHasher.ComputeFileHashesAsync(
-			filePaths, maxDegreeOfParallelism, cancellationToken).ConfigureAwait(false);
+			filePaths, null, maxDegreeOfParallelism, cancellationToken).ConfigureAwait(false);
 
 		// Group by hash
 		Dictionary<string, FileGroup> groups = [];
@@ -100,7 +100,7 @@ public static class AsyncFileDiffer
 		if (filesWithSameName.Count == 1)
 		{
 			// Single file with this name - create a group for it
-			string hash = await FileHasher.ComputeFileHashAsync(filesWithSameName[0], cancellationToken).ConfigureAwait(false);
+			string hash = await FileHasher.ComputeFileHashAsync(filesWithSameName[0], null, cancellationToken).ConfigureAwait(false);
 			FileGroup group = new() { Hash = hash };
 			group.AddFilePath(filesWithSameName[0]);
 			return [group];
@@ -108,7 +108,7 @@ public static class AsyncFileDiffer
 
 		// Multiple files with same name - group by content hash
 		Dictionary<string, string> fileHashes = await FileHasher.ComputeFileHashesAsync(
-			filesWithSameName, maxDegreeOfParallelism, cancellationToken).ConfigureAwait(false);
+			filesWithSameName, null, maxDegreeOfParallelism, cancellationToken).ConfigureAwait(false);
 
 		Dictionary<string, FileGroup> hashGroups = [];
 		foreach (KeyValuePair<string, string> kvp in fileHashes)

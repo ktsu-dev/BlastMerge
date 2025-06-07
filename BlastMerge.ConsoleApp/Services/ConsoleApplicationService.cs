@@ -84,7 +84,7 @@ public class ConsoleApplicationService : ApplicationService
 		AnsiConsole.Status()
 			.Start("Discovering files...", ctx =>
 			{
-				IReadOnlyCollection<string> foundFiles = FileFinder.FindFiles(directory, fileName, path =>
+				IReadOnlyCollection<string> foundFiles = FileFinder.FindFiles(directory, fileName, fileSystem: null, progressCallback: path =>
 				{
 					ctx.Status($"Discovering files... Found: {Path.GetFileName(path)}");
 					ctx.Refresh();
@@ -287,7 +287,8 @@ public class ConsoleApplicationService : ApplicationService
 			coreFileGroups,
 			mergeCallback,
 			statusCallback,
-			continueCallback);
+			continueCallback,
+			null);
 
 		// Handle result
 		ProgressReportingService.ReportCompletionResult(result);

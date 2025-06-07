@@ -7,6 +7,7 @@ namespace ktsu.BlastMerge.Core.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
 using ktsu.BlastMerge.Core.Models;
 
@@ -22,17 +23,21 @@ public static class IterativeMergeOrchestrator
 	/// <param name="mergeCallback">Callback function to perform individual merges</param>
 	/// <param name="statusCallback">Callback function to report merge status</param>
 	/// <param name="continuationCallback">Callback function to ask whether to continue</param>
+	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>The completion result of the merge process</returns>
 	public static MergeCompletionResult StartIterativeMergeProcess(
 		IReadOnlyCollection<FileGroup> fileGroups,
 		Func<string, string, string?, MergeResult?> mergeCallback,
 		Action<MergeSessionStatus> statusCallback,
-		Func<bool> continuationCallback)
+		Func<bool> continuationCallback,
+		IFileSystem? fileSystem = null)
 	{
 		ArgumentNullException.ThrowIfNull(fileGroups);
 		ArgumentNullException.ThrowIfNull(mergeCallback);
 		ArgumentNullException.ThrowIfNull(statusCallback);
 		ArgumentNullException.ThrowIfNull(continuationCallback);
+
+		fileSystem ??= new FileSystem();
 
 		// Create a working copy of file groups that we'll update as we merge
 		List<FileGroup> remainingGroups = [.. fileGroups];
@@ -44,7 +49,7 @@ public static class IterativeMergeOrchestrator
 		while (remainingGroups.Count > 1)
 		{
 			// Find the two most similar groups among remaining groups
-			FileSimilarity? similarity = FileDiffer.FindMostSimilarFiles(remainingGroups);
+			FileSimilarity? similarity = FileDiffer.FindMostSimilarFiles(remainingGroups, null);
 
 			if (similarity == null)
 			{
@@ -108,7 +113,7 @@ public static class IterativeMergeOrchestrator
 				// Update all files in both groups with the merged content
 				foreach (string filePath in mergedGroup.FilePaths)
 				{
-					File.WriteAllText(filePath, mergedContent);
+					fileSystem.File.WriteAllText(filePath, mergedContent);
 				}
 
 				// Remove the original groups and add the merged group
@@ -154,7 +159,7 @@ public static class IterativeMergeOrchestrator
 
 		// Merge completed successfully
 		FileGroup finalGroup = remainingGroups[0];
-		string finalContent = File.ReadAllText(finalGroup.FilePaths.First());
+		string finalContent = fileSystem.File.ReadAllText(finalGroup.FilePaths.First());
 		string[] finalLines = finalContent.Split(Environment.NewLine);
 
 		return new MergeCompletionResult(true, finalContent, finalLines.Length, Path.GetFileName(finalGroup.FilePaths.First()))
@@ -171,18 +176,21 @@ public static class IterativeMergeOrchestrator
 	/// </summary>
 	/// <param name="directory">Directory containing the files</param>
 	/// <param name="fileName">Filename pattern to search for</param>
+	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>Collection of unique file groups, or null if insufficient files found</returns>
-	public static IReadOnlyCollection<FileGroup>? PrepareFileGroupsForMerging(string directory, string fileName)
+	public static IReadOnlyCollection<FileGroup>? PrepareFileGroupsForMerging(string directory, string fileName, IFileSystem? fileSystem = null)
 	{
 		ArgumentNullException.ThrowIfNull(directory);
 		ArgumentNullException.ThrowIfNull(fileName);
 
-		if (!Directory.Exists(directory))
+		fileSystem ??= new FileSystem();
+
+		if (!fileSystem.Directory.Exists(directory))
 		{
 			return null;
 		}
 
-		IReadOnlyCollection<string> files = FileFinder.FindFiles(directory, fileName);
+		IReadOnlyCollection<string> files = FileFinder.FindFiles(directory, fileName, fileSystem);
 		List<string> filesList = [.. files];
 
 		if (filesList.Count < 2)
@@ -209,16 +217,20 @@ public static class IterativeMergeOrchestrator
 	/// <param name="file2">Second file to merge</param>
 	/// <param name="existingMergedContent">Existing merged content (if any)</param>
 	/// <param name="blockChoiceCallback">Callback function to get user's choice for each block</param>
+	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>The manually merged result, or null if cancelled</returns>
 	public static MergeResult? PerformMergeWithConflictResolution(
 		string file1,
 		string file2,
 		string? existingMergedContent,
-		Func<DiffPlex.Model.DiffBlock, BlockContext, int, BlockChoice> blockChoiceCallback)
+		Func<DiffPlex.Model.DiffBlock, BlockContext, int, BlockChoice> blockChoiceCallback,
+		IFileSystem? fileSystem = null)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 		ArgumentNullException.ThrowIfNull(blockChoiceCallback);
+
+		fileSystem ??= new FileSystem();
 
 		string[] lines1;
 		string[] lines2;
@@ -227,13 +239,13 @@ public static class IterativeMergeOrchestrator
 		{
 			// Merge with existing content
 			lines1 = existingMergedContent.Split(Environment.NewLine);
-			lines2 = File.ReadAllLines(file2);
+			lines2 = fileSystem.File.ReadAllLines(file2);
 		}
 		else
 		{
 			// Merge two files
-			lines1 = File.ReadAllLines(file1);
-			lines2 = File.ReadAllLines(file2);
+			lines1 = fileSystem.File.ReadAllLines(file1);
+			lines2 = fileSystem.File.ReadAllLines(file2);
 		}
 
 		return BlockMerger.PerformManualBlockSelection(lines1, lines2, blockChoiceCallback);

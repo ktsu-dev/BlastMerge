@@ -47,7 +47,7 @@ public static class AsyncApplicationService
 			{
 				// Step 1: Find files
 				ctx.Status($"[yellow]Finding files...[/]");
-				filePaths = FileFinder.FindFiles(directory, fileName, path =>
+				filePaths = FileFinder.FindFiles(directory, fileName, progressCallback: path =>
 					ctx.Status($"[yellow]Finding files... Found: {Path.GetFileName(path)}[/]"));
 
 				if (filePaths.Count == 0)
@@ -99,21 +99,21 @@ public static class AsyncApplicationService
 			{
 				// Step 1: Find files in both directories
 				ctx.Status($"[yellow]Finding files in first directory...[/]");
-				IReadOnlyCollection<string> files1 = recursive
-					? FileFinder.FindFiles(dir1, pattern)
+				string[] files1 = recursive
+					? [.. FileFinder.FindFiles(dir1, pattern, fileSystem: null)]
 					: GetNonRecursiveFiles(dir1, pattern);
 
 				ctx.Status($"[yellow]Finding files in second directory...[/]");
-				IReadOnlyCollection<string> files2 = recursive
-					? FileFinder.FindFiles(dir2, pattern)
+				string[] files2 = recursive
+					? [.. FileFinder.FindFiles(dir2, pattern, fileSystem: null)]
 					: GetNonRecursiveFiles(dir2, pattern);
 
 				// Step 2: Compute hashes in parallel for better performance
-				ctx.Status($"[yellow]Computing file hashes ({files1.Count + files2.Count} files)...[/]");
+				ctx.Status($"[yellow]Computing file hashes ({files1.Length + files2.Length} files)...[/]");
 				Task<Dictionary<string, string>> hashesTask1 = FileHasher.ComputeFileHashesAsync(
-					files1, maxDegreeOfParallelism, cancellationToken);
+					files1, null, maxDegreeOfParallelism, cancellationToken);
 				Task<Dictionary<string, string>> hashesTask2 = FileHasher.ComputeFileHashesAsync(
-					files2, maxDegreeOfParallelism, cancellationToken);
+					files2, null, maxDegreeOfParallelism, cancellationToken);
 
 				Dictionary<string, string>[] hashResults = await Task.WhenAll(hashesTask1, hashesTask2).ConfigureAwait(false);
 				Dictionary<string, string> hashes1 = hashResults[0];

@@ -136,7 +136,7 @@ public static class InteractiveMergeService
 		}
 
 		ShowMergeInfo(mostSimilar);
-		MergeResult mergeResult = FileDiffer.MergeFiles(mostSimilar.FilePath1, mostSimilar.FilePath2);
+		MergeResult mergeResult = FileDiffer.MergeFiles(mostSimilar.FilePath1, mostSimilar.FilePath2, null);
 
 		return HandleMergeConflicts(mergeResult) && ApplyMergeResult(mergeResult, mostSimilar, remainingFiles);
 	}
@@ -268,7 +268,7 @@ public static class InteractiveMergeService
 			{
 				try
 				{
-					double similarity = FileDiffer.CalculateFileSimilarity(files[i], files[j]);
+					double similarity = FileDiffer.CalculateFileSimilarity(files[i], files[j], null);
 
 					if (similarity > highestSimilarity)
 					{

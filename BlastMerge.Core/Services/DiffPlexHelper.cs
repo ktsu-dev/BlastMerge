@@ -7,6 +7,7 @@ namespace ktsu.BlastMerge.Core.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
 using DiffPlex;
 using DiffPlex.Model;
@@ -22,19 +23,22 @@ public static class DiffPlexHelper
 	/// </summary>
 	/// <param name="file1">Path to the first file</param>
 	/// <param name="file2">Path to the second file</param>
+	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>DiffPlex DiffResult with DiffBlocks</returns>
-	public static DiffResult CreateLineDiffs(string file1, string file2)
+	public static DiffResult CreateLineDiffs(string file1, string file2, IFileSystem? fileSystem = null)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		if (!File.Exists(file1) || !File.Exists(file2))
+		fileSystem ??= new FileSystem();
+
+		if (!fileSystem.File.Exists(file1) || !fileSystem.File.Exists(file2))
 		{
 			throw new FileNotFoundException("One or both files do not exist");
 		}
 
-		string content1 = File.ReadAllText(file1);
-		string content2 = File.ReadAllText(file2);
+		string content1 = fileSystem.File.ReadAllText(file1);
+		string content2 = fileSystem.File.ReadAllText(file2);
 
 		return Differ.Instance.CreateLineDiffs(content1, content2, ignoreWhitespace: false, ignoreCase: false);
 	}

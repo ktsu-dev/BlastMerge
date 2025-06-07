@@ -89,7 +89,7 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 		finally
 		{
 			// Clean up temporary files
-			SecureTempFileHelper.SafeDeleteTempFiles(tempFile1, tempFile2);
+			SecureTempFileHelper.SafeDeleteTempFiles(fileSystem: null, tempFile1, tempFile2);
 		}
 	}
 
@@ -130,7 +130,7 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 		finally
 		{
 			// Clean up temporary files
-			SecureTempFileHelper.SafeDeleteTempFiles(tempFile1, tempFile2);
+			SecureTempFileHelper.SafeDeleteTempFiles(fileSystem: null, tempFile1, tempFile2);
 		}
 	}
 
