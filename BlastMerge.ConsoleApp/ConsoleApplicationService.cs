@@ -624,63 +624,114 @@ public class ConsoleApplicationService : ApplicationService
 
 		if (string.IsNullOrEmpty(recentBatch))
 		{
-			AnsiConsole.MarkupLine("[yellow]No recent batch configurations found.[/]");
-			AnsiConsole.MarkupLine("[dim]Run a batch configuration first to use this shortcut.[/]");
-			Console.WriteLine();
-			Console.WriteLine(PressAnyKeyMessage);
-			Console.ReadKey(true);
+			ShowNoRecentBatchMessage();
 			return;
 		}
 
-		// Load the batch configuration to check if it has search paths configured
 		BatchConfiguration? selectedBatch = GetBatchConfiguration(recentBatch);
 		if (selectedBatch == null)
 		{
-			AnsiConsole.MarkupLine($"[red]Batch configuration '{recentBatch}' not found.[/]");
-			Console.WriteLine();
-			Console.WriteLine(PressAnyKeyMessage);
-			Console.ReadKey(true);
+			ShowBatchNotFoundMessage(recentBatch);
 			return;
 		}
 
-		string directory;
-		if (selectedBatch.SearchPaths.Count > 0)
+		string directory = GetDirectoryForBatch(selectedBatch);
+		if (string.IsNullOrWhiteSpace(directory))
 		{
-			// Batch has search paths configured, no need to ask for directory
-			AnsiConsole.MarkupLine($"[green]Using configured search paths ({selectedBatch.SearchPaths.Count} paths)[/]");
-			foreach (string searchPath in selectedBatch.SearchPaths)
-			{
-				AnsiConsole.MarkupLine($"  [dim]• {searchPath}[/]");
-			}
-			AnsiConsole.WriteLine();
-
-			// Use a placeholder directory since the API still requires it, but it won't be used
-			directory = ".";
-		}
-		else
-		{
-			// No search paths configured, ask for directory
-			AnsiConsole.MarkupLine("[yellow]This batch configuration doesn't have search paths configured.[/]");
-			directory = AppDataHistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
-			if (string.IsNullOrWhiteSpace(directory))
-			{
-				AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
-				return;
-			}
+			AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
+			return;
 		}
 
+		ShowRunningBatchMessage(selectedBatch, recentBatch, directory);
+		ProcessBatch(directory, recentBatch);
+		ShowCompletionMessage();
+	}
+
+	/// <summary>
+	/// Shows the message when no recent batch is found.
+	/// </summary>
+	private static void ShowNoRecentBatchMessage()
+	{
+		AnsiConsole.MarkupLine("[yellow]No recent batch configurations found.[/]");
+		AnsiConsole.MarkupLine("[dim]Run a batch configuration first to use this shortcut.[/]");
+		Console.WriteLine();
+		Console.WriteLine(PressAnyKeyMessage);
+		Console.ReadKey(true);
+	}
+
+	/// <summary>
+	/// Shows the message when a batch configuration is not found.
+	/// </summary>
+	/// <param name="batchName">The batch name that was not found.</param>
+	private static void ShowBatchNotFoundMessage(string batchName)
+	{
+		AnsiConsole.MarkupLine($"[red]Batch configuration '{batchName}' not found.[/]");
+		Console.WriteLine();
+		Console.WriteLine(PressAnyKeyMessage);
+		Console.ReadKey(true);
+	}
+
+	/// <summary>
+	/// Gets the directory for the batch, either from configured search paths or user input.
+	/// </summary>
+	/// <param name="selectedBatch">The batch configuration.</param>
+	/// <returns>The directory to use for the batch.</returns>
+	private static string GetDirectoryForBatch(BatchConfiguration selectedBatch)
+	{
 		if (selectedBatch.SearchPaths.Count > 0)
 		{
-			AnsiConsole.MarkupLine($"[cyan]Running recent batch '{recentBatch}' using configured search paths[/]");
+			ShowConfiguredSearchPaths(selectedBatch);
+			return "."; // Use placeholder directory since API requires it, but it won't be used
 		}
-		else
+
+		return GetDirectoryFromUser();
+	}
+
+	/// <summary>
+	/// Shows the configured search paths for the batch.
+	/// </summary>
+	/// <param name="selectedBatch">The batch configuration.</param>
+	private static void ShowConfiguredSearchPaths(BatchConfiguration selectedBatch)
+	{
+		AnsiConsole.MarkupLine($"[green]Using configured search paths ({selectedBatch.SearchPaths.Count} paths)[/]");
+		foreach (string searchPath in selectedBatch.SearchPaths)
 		{
-			AnsiConsole.MarkupLine($"[cyan]Running recent batch '{recentBatch}' in '{directory}'[/]");
+			AnsiConsole.MarkupLine($"  [dim]• {searchPath}[/]");
 		}
 		AnsiConsole.WriteLine();
+	}
 
-		ProcessBatch(directory, recentBatch);
+	/// <summary>
+	/// Gets the directory from user input.
+	/// </summary>
+	/// <returns>The directory path entered by the user.</returns>
+	private static string GetDirectoryFromUser()
+	{
+		AnsiConsole.MarkupLine("[yellow]This batch configuration doesn't have search paths configured.[/]");
+		return AppDataHistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
+	}
 
+	/// <summary>
+	/// Shows the message indicating which batch is running.
+	/// </summary>
+	/// <param name="selectedBatch">The batch configuration.</param>
+	/// <param name="batchName">The batch name.</param>
+	/// <param name="directory">The directory being processed.</param>
+	private static void ShowRunningBatchMessage(BatchConfiguration selectedBatch, string batchName, string directory)
+	{
+		string message = selectedBatch.SearchPaths.Count > 0
+			? $"[cyan]Running recent batch '{batchName}' using configured search paths[/]"
+			: $"[cyan]Running recent batch '{batchName}' in '{directory}'[/]";
+
+		AnsiConsole.MarkupLine(message);
+		AnsiConsole.WriteLine();
+	}
+
+	/// <summary>
+	/// Shows the completion message for the batch operation.
+	/// </summary>
+	private static void ShowCompletionMessage()
+	{
 		AnsiConsole.MarkupLine("[green]Batch operation completed.[/]");
 		Console.WriteLine();
 		Console.WriteLine(PressAnyKeyMessage);
@@ -808,32 +859,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// <returns>Merge result or null if cancelled.</returns>
 	private MergeResult? ConsoleMergeCallback(string file1, string file2, string? existingContent)
 	{
-		// Determine which file should be on the left (fewer changes)
-		string leftFile, rightFile;
-		if (existingContent == null)
-		{
-			// For new merges, count changes to determine order
-			IReadOnlyCollection<LineDifference> differences = FileDiffer.FindDifferences(file1, file2);
-			int changesInFile1 = differences.Count(d => d.LineNumber1.HasValue);
-			int changesInFile2 = differences.Count(d => d.LineNumber2.HasValue);
-
-			if (changesInFile1 <= changesInFile2)
-			{
-				leftFile = file1;
-				rightFile = file2;
-			}
-			else
-			{
-				leftFile = file2;
-				rightFile = file1;
-			}
-		}
-		else
-		{
-			// For merges with existing content, keep original order
-			leftFile = file1;
-			rightFile = file2;
-		}
+		(string leftFile, string rightFile) = DetermineFileOrder(file1, file2, existingContent);
 
 		MergeResult? result = IterativeMergeOrchestrator.PerformMergeWithConflictResolution(
 			leftFile, rightFile, existingContent, (diffBlock, context, blockNumber) => GetBlockChoice(diffBlock, context, blockNumber, leftFile, rightFile));
@@ -844,6 +870,29 @@ public class ConsoleApplicationService : ApplicationService
 		}
 
 		return result;
+	}
+
+	/// <summary>
+	/// Determines the order of files for merging based on existing content and change counts.
+	/// </summary>
+	/// <param name="file1">First file path.</param>
+	/// <param name="file2">Second file path.</param>
+	/// <param name="existingContent">Existing merged content.</param>
+	/// <returns>A tuple with the left and right file paths in the determined order.</returns>
+	private static (string leftFile, string rightFile) DetermineFileOrder(string file1, string file2, string? existingContent)
+	{
+		if (existingContent != null)
+		{
+			// For merges with existing content, keep original order
+			return (file1, file2);
+		}
+
+		// For new merges, count changes to determine order (fewer changes on left)
+		IReadOnlyCollection<LineDifference> differences = FileDiffer.FindDifferences(file1, file2);
+		int changesInFile1 = differences.Count(d => d.LineNumber1.HasValue);
+		int changesInFile2 = differences.Count(d => d.LineNumber2.HasValue);
+
+		return changesInFile1 <= changesInFile2 ? (file1, file2) : (file2, file1);
 	}
 
 	/// <summary>
@@ -923,13 +972,22 @@ public class ConsoleApplicationService : ApplicationService
 	/// <returns>The user's choice for the block.</returns>
 	private static BlockChoice GetChoiceBasedOnBlockType(DiffPlex.Model.DiffBlock diffBlock, string leftFile, string rightFile)
 	{
-		return diffBlock.DeleteCountA > 0 && diffBlock.InsertCountB > 0
-			? GetReplaceChoice(leftFile, rightFile)
-			: diffBlock.InsertCountB > 0
-			? GetInsertChoice(rightFile, leftFile)
-			: diffBlock.DeleteCountA > 0
-			? GetDeleteChoice(leftFile, rightFile)
-			: BlockChoice.UseVersion2;
+		if (diffBlock.DeleteCountA > 0 && diffBlock.InsertCountB > 0)
+		{
+			return GetReplaceChoice(leftFile, rightFile);
+		}
+
+		if (diffBlock.InsertCountB > 0)
+		{
+			return GetInsertChoice(rightFile, leftFile);
+		}
+
+		if (diffBlock.DeleteCountA > 0)
+		{
+			return GetDeleteChoice(leftFile, rightFile);
+		}
+
+		return BlockChoice.UseVersion2;
 	}
 
 	/// <summary>
