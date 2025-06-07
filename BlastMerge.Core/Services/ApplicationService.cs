@@ -70,11 +70,7 @@ public abstract class ApplicationService : IApplicationService
 		IReadOnlyCollection<FileGroup> fileGroups = FileDiffer.GroupFilesByHash(filePaths);
 
 		// Convert FileGroup collection to Dictionary<string, IReadOnlyCollection<string>>
-		Dictionary<string, IReadOnlyCollection<string>> result = [];
-		foreach (FileGroup group in fileGroups)
-		{
-			result[group.Hash] = group.FilePaths;
-		}
+		Dictionary<string, IReadOnlyCollection<string>> result = fileGroups.ToDictionary(group => group.Hash, group => group.FilePaths);
 
 		return result.AsReadOnly();
 	}

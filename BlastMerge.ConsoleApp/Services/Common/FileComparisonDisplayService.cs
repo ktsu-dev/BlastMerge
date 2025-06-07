@@ -24,28 +24,23 @@ public static class FileComparisonDisplayService
 	/// Executes a file operation with standard exception handling for file-related errors.
 	/// </summary>
 	/// <param name="fileOperation">The file operation to execute.</param>
-	/// <returns>True if operation succeeded, false if an exception was caught.</returns>
-	private static bool ExecuteFileOperation(Action fileOperation)
+	private static void ExecuteFileOperation(Action fileOperation)
 	{
 		try
 		{
 			fileOperation();
-			return true;
 		}
 		catch (FileNotFoundException ex)
 		{
 			UIHelper.ShowError($"File not found: {ex.Message}");
-			return false;
 		}
 		catch (IOException ex)
 		{
 			UIHelper.ShowError($"IO error: {ex.Message}");
-			return false;
 		}
 		catch (UnauthorizedAccessException ex)
 		{
 			UIHelper.ShowError($"Access denied: {ex.Message}");
-			return false;
 		}
 	}
 
@@ -469,7 +464,8 @@ public static class FileComparisonDisplayService
 		StringBuilder sb = new();
 		List<ColoredDiffLine> lines = [.. coloredDiff];
 
-		for (int i = 0; i < lines.Count; i++)
+		int i = 0;
+		while (i < lines.Count)
 		{
 			ColoredDiffLine line = lines[i];
 
@@ -477,12 +473,13 @@ public static class FileComparisonDisplayService
 			{
 				string formattedDiff = CharacterLevelDiffer.CreateInlineCharacterDiff(line.Content, lines[i + 1].Content);
 				sb.AppendLine(formattedDiff);
-				i++; // Skip the next line since we processed both
+				i += 2; // Skip both lines since we processed them together
 			}
 			else
 			{
 				string formattedLine = FormatSingleDiffLine(line);
 				sb.AppendLine(formattedLine);
+				i++;
 			}
 		}
 		return sb.ToString();

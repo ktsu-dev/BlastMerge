@@ -114,7 +114,7 @@ globs: *
 -   In externally visible methods, validate parameter is non-null before using it. If appropriate, throw an 'ArgumentNullException' when the argument is 'null'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1062)
 -   Use `string.Contains(char)` instead of `string.Contains(string)` when searching for a single character (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1847)
 -   Use string comparison instead of unicode emoji characters in switch statements.
--   Ensure switch statements are populated (https://learn.microsoft.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0072)
+-   Ensure switch statements are populated (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0072)
 -   Use primary constructors (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0290)
 -   Change return type of method 'FindDifferences' from 'System.Collections.Generic.IReadOnlyCollection<ktsu.DiffMore.Core.LineDifference>' to 'System.Collections.ObjectModel.ReadOnlyCollection<ktsu.DiffMore.Core.LineDifference>' for improved performance (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1859)
 -   'MakeConflictColumnLayout' has a cyclomatic complexity of '49'. Refactor the code to decrease its complexity.
@@ -131,7 +131,7 @@ globs: *
 -   Use `dotnet format` to automatically fix formatting and style issues. Be aware that `dotnet format` may not be able to fix all issues, such as catching general exceptions or performance improvement suggestions.
 -   Prefer comparing 'Count' to 0 rather than using 'Any()', both for clarity and for performance (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1860)
 -   Member 'HandleListBatches' does not access instance data and can be marked as static (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822)
--   Loop should be simplified by calling Select(group => group.Value))
+-   Loop should be simplified by calling Select(group => group.FilePaths))
 -   For loops performing side effects (e.g., file I/O), consider if a `foreach` loop is more appropriate than using `Select()` to avoid unintended side effects within a LINQ query. If the linter insists on using `Select()` for loops performing side effects, suppress the specific linter warning if your coding standards allow it.
 -   Define a constant instead of using the literal 'Press any key to continue...' multiple times.
 -   Menus like in ShowMainMenu that display a string and translate it to a command should use a dictionary to avoid string repetitions.
@@ -313,4 +313,4 @@ globs: *
     -   Eliminate complex if-else chains by using early returns and single-purpose methods
     -   Using expression body syntax for simple condition checks
 -   Merge the `ChangeType.Unchanged` case with the `default` case in `FindDifferences` since they have identical implementations.
--   Remove
+-   Loop should

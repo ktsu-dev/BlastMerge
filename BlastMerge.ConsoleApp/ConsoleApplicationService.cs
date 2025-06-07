@@ -223,7 +223,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// <param name="directory">The directory to process.</param>
 	/// <param name="batch">The batch configuration.</param>
 	/// <returns>A tuple containing the total patterns processed, total files found, and batch result.</returns>
-	private (int totalPatternsProcessed, int totalFilesFound, BatchResult? batchResult) ProcessAllPatterns(string directory, BatchConfiguration batch)
+	private static (int totalPatternsProcessed, int totalFilesFound, BatchResult? batchResult) ProcessAllPatterns(string directory, BatchConfiguration batch)
 	{
 		BatchResult? result = null;
 
@@ -384,17 +384,34 @@ public class ConsoleApplicationService : ApplicationService
 	/// <returns>A formatted description of the result.</returns>
 	private static string GetPatternResultDescription(PatternResult patternResult)
 	{
-		return !patternResult.Success
-			? $"[red]{patternResult.Message}[/]"
-			: patternResult.FilesFound == 0
-			? "[dim]No files[/]"
-			: patternResult.FilesFound == 1
-			? "[green]Single file[/]"
-			: patternResult.UniqueVersions == 1
-			? "[green]Identical[/]"
-			: patternResult.MergeResult == null
-			? "[yellow]Multiple versions[/]"
-			: patternResult.MergeResult.IsSuccessful ? "[green]Merged[/]" : "[red]Failed[/]";
+		if (!patternResult.Success)
+		{
+			return $"[red]{patternResult.Message}[/]";
+		}
+
+		if (patternResult.FilesFound == 0)
+		{
+			return "[dim]No files[/]";
+		}
+
+		if (patternResult.FilesFound == 1)
+		{
+			return "[green]Single file[/]";
+		}
+
+		if (patternResult.UniqueVersions == 1)
+		{
+			return "[green]Identical[/]";
+		}
+
+		if (patternResult.MergeResult == null)
+		{
+			return "[yellow]Multiple versions[/]";
+		}
+
+		return patternResult.MergeResult.IsSuccessful
+			? "[green]Merged[/]"
+			: "[red]Failed[/]";
 	}
 
 	/// <summary>
@@ -472,49 +489,69 @@ public class ConsoleApplicationService : ApplicationService
 		{
 			try
 			{
-				// Check navigation stack to determine what menu to show
-				if (NavigationHistory.ShouldGoToMainMenu())
+				if (ProcessInteractiveMenuLoop())
 				{
-					ShowWelcomeScreen();
-					MenuChoice choice = ShowMainMenu();
-
-					if (choice == MenuChoice.Exit)
-					{
-						break;
-					}
-
-					ExecuteMenuChoice(choice);
-				}
-				else
-				{
-					// Navigate back based on navigation stack
-					NavigateBasedOnStack();
+					break;
 				}
 			}
-			catch (DirectoryNotFoundException ex)
+			catch (Exception ex) when (ex is DirectoryNotFoundException or UnauthorizedAccessException or IOException or ArgumentException or InvalidOperationException)
 			{
-				HandleInteractiveModeError($"Directory not found: {ex.Message}");
-			}
-			catch (UnauthorizedAccessException ex)
-			{
-				HandleInteractiveModeError($"Access denied: {ex.Message}");
-			}
-			catch (IOException ex)
-			{
-				HandleInteractiveModeError($"File I/O error: {ex.Message}");
-			}
-			catch (ArgumentException ex)
-			{
-				HandleInteractiveModeError($"Invalid input: {ex.Message}");
-			}
-			catch (InvalidOperationException ex)
-			{
-				HandleInteractiveModeError($"Operation error: {ex.Message}");
+				HandleInteractiveModeError(GetErrorMessage(ex));
 			}
 		}
 
 		ShowGoodbyeScreen();
 	}
+
+	/// <summary>
+	/// Processes a single iteration of the interactive menu loop.
+	/// </summary>
+	/// <returns>True if the user chose to exit, false to continue.</returns>
+	private bool ProcessInteractiveMenuLoop()
+	{
+		// Check navigation stack to determine what menu to show
+		if (NavigationHistory.ShouldGoToMainMenu())
+		{
+			return ProcessMainMenuInteraction();
+		}
+
+		// Navigate back based on navigation stack
+		NavigateBasedOnStack();
+		return false;
+	}
+
+	/// <summary>
+	/// Processes main menu interaction and returns whether user chose to exit.
+	/// </summary>
+	/// <returns>True if the user chose to exit, false to continue.</returns>
+	private bool ProcessMainMenuInteraction()
+	{
+		ShowWelcomeScreen();
+		MenuChoice choice = ShowMainMenu();
+
+		if (choice == MenuChoice.Exit)
+		{
+			return true;
+		}
+
+		ExecuteMenuChoice(choice);
+		return false;
+	}
+
+	/// <summary>
+	/// Gets an appropriate error message for the given exception.
+	/// </summary>
+	/// <param name="ex">The exception to get a message for.</param>
+	/// <returns>A formatted error message.</returns>
+	private static string GetErrorMessage(Exception ex) => ex switch
+	{
+		DirectoryNotFoundException => $"Directory not found: {ex.Message}",
+		UnauthorizedAccessException => $"Access denied: {ex.Message}",
+		IOException => $"File I/O error: {ex.Message}",
+		ArgumentException => $"Invalid input: {ex.Message}",
+		InvalidOperationException => $"Operation error: {ex.Message}",
+		_ => $"Unexpected error: {ex.Message}"
+	};
 
 	/// <summary>
 	/// Handles errors that occur during interactive mode with consistent formatting and cleanup.
@@ -762,8 +799,16 @@ public class ConsoleApplicationService : ApplicationService
 			return;
 		}
 
-		// Route to the appropriate menu handler based on navigation stack
-		switch (currentMenu)
+		NavigateToMenuHandler(currentMenu);
+	}
+
+	/// <summary>
+	/// Routes to the appropriate menu handler based on menu name.
+	/// </summary>
+	/// <param name="menuName">The name of the menu to navigate to.</param>
+	private void NavigateToMenuHandler(string menuName)
+	{
+		switch (menuName)
 		{
 			case MenuNames.FindFiles:
 				new FindFilesMenuHandler(this).Handle();
@@ -784,7 +829,6 @@ public class ConsoleApplicationService : ApplicationService
 				new HelpMenuHandler(this).Handle();
 				break;
 			default:
-				// Unknown menu - clear navigation and return to main
 				NavigationHistory.Clear();
 				break;
 		}
@@ -857,7 +901,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// <param name="file2">Second file path.</param>
 	/// <param name="existingContent">Existing merged content.</param>
 	/// <returns>Merge result or null if cancelled.</returns>
-	private MergeResult? ConsoleMergeCallback(string file1, string file2, string? existingContent)
+	private static MergeResult? ConsoleMergeCallback(string file1, string file2, string? existingContent)
 	{
 		(string leftFile, string rightFile) = DetermineFileOrder(file1, file2, existingContent);
 
@@ -917,7 +961,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// <param name="leftFile">The left file path</param>
 	/// <param name="rightFile">The right file path</param>
 	/// <returns>The user's choice for the block</returns>
-	private BlockChoice GetBlockChoice(DiffPlex.Model.DiffBlock diffBlock, BlockContext context, int blockNumber, string leftFile, string rightFile)
+	private static BlockChoice GetBlockChoice(DiffPlex.Model.DiffBlock diffBlock, BlockContext context, int blockNumber, string leftFile, string rightFile)
 	{
 		DisplayBlockHeader(diffBlock, blockNumber);
 		ShowDiffBlockDisplay(diffBlock, context, leftFile, rightFile);
@@ -997,9 +1041,22 @@ public class ConsoleApplicationService : ApplicationService
 	/// <returns>A string describing the block type</returns>
 	private static string DetermineBlockType(DiffPlex.Model.DiffBlock diffBlock)
 	{
-		return diffBlock.DeleteCountA > 0 && diffBlock.InsertCountB > 0
-			? "Replace"
-			: diffBlock.InsertCountB > 0 ? "Insert" : diffBlock.DeleteCountA > 0 ? "Delete" : "Unchanged";
+		if (diffBlock.DeleteCountA > 0 && diffBlock.InsertCountB > 0)
+		{
+			return "Replace";
+		}
+
+		if (diffBlock.InsertCountB > 0)
+		{
+			return "Insert";
+		}
+
+		if (diffBlock.DeleteCountA > 0)
+		{
+			return "Delete";
+		}
+
+		return "Unchanged";
 	}
 
 	/// <summary>

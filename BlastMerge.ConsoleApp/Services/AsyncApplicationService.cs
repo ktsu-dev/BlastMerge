@@ -61,11 +61,7 @@ public static class AsyncApplicationService
 					filePaths, maxDegreeOfParallelism, cancellationToken).ConfigureAwait(false);
 
 				// Convert back to dictionary format for compatibility
-				Dictionary<string, IReadOnlyCollection<string>> result = [];
-				foreach (FileGroup group in groups)
-				{
-					result[group.Hash] = group.FilePaths;
-				}
+				Dictionary<string, IReadOnlyCollection<string>> result = groups.ToDictionary(group => group.Hash, group => group.FilePaths);
 
 				fileGroups = result;
 			});
@@ -105,16 +101,12 @@ public static class AsyncApplicationService
 				ctx.Status($"[yellow]Finding files in first directory...[/]");
 				IReadOnlyCollection<string> files1 = recursive
 					? FileFinder.FindFiles(dir1, pattern)
-					: Directory.Exists(dir1)
-					? Directory.GetFiles(dir1, pattern, SearchOption.TopDirectoryOnly)
-					: [];
+					: GetNonRecursiveFiles(dir1, pattern);
 
 				ctx.Status($"[yellow]Finding files in second directory...[/]");
 				IReadOnlyCollection<string> files2 = recursive
 					? FileFinder.FindFiles(dir2, pattern)
-					: Directory.Exists(dir2)
-					? Directory.GetFiles(dir2, pattern, SearchOption.TopDirectoryOnly)
-					: [];
+					: GetNonRecursiveFiles(dir2, pattern);
 
 				// Step 2: Compute hashes in parallel for better performance
 				ctx.Status($"[yellow]Computing file hashes ({files1.Count + files2.Count} files)...[/]");
@@ -134,6 +126,17 @@ public static class AsyncApplicationService
 
 		return result;
 	}
+
+	/// <summary>
+	/// Gets files from directory non-recursively, or empty collection if directory doesn't exist
+	/// </summary>
+	/// <param name="directory">Directory path</param>
+	/// <param name="pattern">Search pattern</param>
+	/// <returns>Collection of file paths</returns>
+	private static string[] GetNonRecursiveFiles(string directory, string pattern) =>
+		Directory.Exists(directory)
+			? Directory.GetFiles(directory, pattern, SearchOption.TopDirectoryOnly)
+			: [];
 
 	/// <summary>
 	/// Creates a DirectoryComparisonResult using pre-computed file hashes
