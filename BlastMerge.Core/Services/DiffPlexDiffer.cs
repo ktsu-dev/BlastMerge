@@ -23,6 +23,7 @@ public static class DiffPlexDiffer
 	private static readonly Differ Differ = new();
 	private static readonly InlineDiffBuilder InlineDiffBuilder = new(Differ);
 	private static readonly SideBySideDiffBuilder SideBySideDiffBuilder = new(Differ);
+	private const string FilesNotFoundMessage = "One or both files do not exist";
 
 	/// <summary>
 	/// Checks if two files are identical
@@ -61,7 +62,7 @@ public static class DiffPlexDiffer
 
 		if (!File.Exists(file1) || !File.Exists(file2))
 		{
-			throw new FileNotFoundException("One or both files do not exist");
+			throw new FileNotFoundException(FilesNotFoundMessage);
 		}
 
 		string content1 = File.ReadAllText(file1);
@@ -285,7 +286,7 @@ public static class DiffPlexDiffer
 
 		if (!File.Exists(file1) || !File.Exists(file2))
 		{
-			throw new FileNotFoundException("One or both files do not exist");
+			throw new FileNotFoundException(FilesNotFoundMessage);
 		}
 
 		string content1 = File.ReadAllText(file1);
@@ -339,7 +340,7 @@ public static class DiffPlexDiffer
 
 		if (!File.Exists(file1) || !File.Exists(file2))
 		{
-			throw new FileNotFoundException("One or both files do not exist");
+			throw new FileNotFoundException(FilesNotFoundMessage);
 		}
 
 		string content1 = File.ReadAllText(file1);
@@ -448,7 +449,7 @@ public static class DiffPlexDiffer
 
 		if (!File.Exists(file1) || !File.Exists(file2))
 		{
-			throw new FileNotFoundException("One or both files do not exist");
+			throw new FileNotFoundException(FilesNotFoundMessage);
 		}
 
 		string content1 = File.ReadAllText(file1);

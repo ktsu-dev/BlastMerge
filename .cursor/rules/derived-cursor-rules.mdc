@@ -292,6 +292,8 @@ globs: *
 -   Do not call out (Primary Feature) anywhere.
 -   When calling `FileFinder.FindFiles` in `CompareDirectoriesAsync`, use the correct 2-argument signature (`directory, pattern`).
 -   In `CompareDirectoriesAsync`, instead of calling the sync `FileDiffer.FindDifferences` that recomputes hashes, create the `DirectoryComparisonResult` directly using the pre-computed hashes.
+-   When using `Regex.IsMatch` in `MatchesGlobPattern` add a timeout and non-backtracking algorithm to prevent ReDoS attacks. Use a 1-second timeout.
+-   If the regex times out, fall back to simple contains check to avoid DoS.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -322,7 +324,4 @@ globs: *
     -   Green for added lines
     -   Red for deleted lines
     -   Cyan for chunk headers
-    -   Blue for file headers.
--   Show the paths of the compared versions.
--   Implement a change summary diffing mode that shows only lines added or removed between versions.
--   When the user asks to replace the old library with DiffPlex, remove all of the libgit2sharp code
+    -   Blue for
