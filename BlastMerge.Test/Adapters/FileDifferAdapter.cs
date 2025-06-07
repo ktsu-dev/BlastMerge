@@ -256,28 +256,8 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 	/// </summary>
 	/// <param name="filePaths">List of file paths to group</param>
 	/// <returns>A collection of file groups where each group contains identical files (regardless of filename)</returns>
-	public IReadOnlyCollection<FileGroup> GroupFilesByHashOnly(IReadOnlyCollection<string> filePaths)
-	{
-		ArgumentNullException.ThrowIfNull(filePaths);
-
-		Dictionary<string, FileGroup> groups = [];
-		FileHasherAdapter fileHasher = new(_fileSystem);
-
-		foreach (string filePath in filePaths)
-		{
-			string hash = fileHasher.ComputeFileHash(filePath);
-
-			if (!groups.TryGetValue(hash, out FileGroup? group))
-			{
-				group = new FileGroup { Hash = hash };
-				groups[hash] = group;
-			}
-
-			group.AddFilePath(filePath);
-		}
-
-		return [.. groups.Values];
-	}
+	public IReadOnlyCollection<FileGroup> GroupFilesByHashOnly(IReadOnlyCollection<string> filePaths) =>
+		GroupFilesByHash(filePaths);
 
 	/// <summary>
 	/// Finds the two most similar files from a collection of unique file groups.

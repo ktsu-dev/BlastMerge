@@ -93,8 +93,8 @@ public class RecursiveDiffTests : MockFileSystemTestBase
 		// Create a directory structure with some files
 		for (int i = 0; i < 3; i++) // Reduced from 10 to 3 for faster testing
 		{
-			string subdir1 = CreateDirectory($"large1/sub{i}");
-			string subdir2 = CreateDirectory($"large2/sub{i}");
+			CreateDirectory($"large1/sub{i}");
+			CreateDirectory($"large2/sub{i}");
 
 			for (int j = 0; j < 3; j++) // Reduced from 10 to 3 for faster testing
 			{

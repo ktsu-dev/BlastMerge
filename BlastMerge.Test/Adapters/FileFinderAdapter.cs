@@ -129,47 +129,11 @@ public class FileFinderAdapter(IFileSystem fileSystem)
 				return new System.Collections.ObjectModel.ReadOnlyCollection<string>(result);
 			}
 
-			// Search in current directory
-			string[] filesInCurrentDir = _fileSystem.Directory.GetFiles(rootDirectory, fileName, SearchOption.TopDirectoryOnly);
+			// Add files from current directory
+			AddFilesFromCurrentDirectory(result, rootDirectory, fileName, pathExclusionPatterns);
 
-			// Filter files based on exclusion patterns
-			foreach (string file in filesInCurrentDir)
-			{
-				if (!ShouldExcludePath(file, pathExclusionPatterns))
-				{
-					result.Add(file);
-				}
-			}
-
-			// Search in subdirectories
-			foreach (string directory in _fileSystem.Directory.GetDirectories(rootDirectory))
-			{
-				try
-				{
-					// Skip git submodules
-					if (IsGitSubmodule(directory))
-					{
-						continue;
-					}
-
-					// Skip excluded directories
-					if (ShouldExcludePath(directory, pathExclusionPatterns))
-					{
-						continue;
-					}
-
-					System.Collections.ObjectModel.ReadOnlyCollection<string> filesInSubDir = FindFilesWithExclusions(directory, fileName, pathExclusionPatterns);
-					result.AddRange(filesInSubDir);
-				}
-				catch (UnauthorizedAccessException)
-				{
-					// Skip directories we don't have access to
-				}
-				catch (DirectoryNotFoundException)
-				{
-					// Skip directories that may have been deleted during enumeration
-				}
-			}
+			// Add files from subdirectories
+			AddFilesFromSubdirectories(result, rootDirectory, fileName, pathExclusionPatterns);
 		}
 		catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException)
 		{
@@ -177,6 +141,59 @@ public class FileFinderAdapter(IFileSystem fileSystem)
 		}
 
 		return result.AsReadOnly();
+	}
+
+	/// <summary>
+	/// Adds files from the current directory to the result list
+	/// </summary>
+	private void AddFilesFromCurrentDirectory(
+		List<string> result,
+		string rootDirectory,
+		string fileName,
+		IReadOnlyCollection<string> pathExclusionPatterns)
+	{
+		string[] filesInCurrentDir = _fileSystem.Directory.GetFiles(rootDirectory, fileName, SearchOption.TopDirectoryOnly);
+
+		foreach (string file in filesInCurrentDir)
+		{
+			if (!ShouldExcludePath(file, pathExclusionPatterns))
+			{
+				result.Add(file);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Adds files from subdirectories to the result list
+	/// </summary>
+	private void AddFilesFromSubdirectories(
+		List<string> result,
+		string rootDirectory,
+		string fileName,
+		IReadOnlyCollection<string> pathExclusionPatterns)
+	{
+		foreach (string directory in _fileSystem.Directory.GetDirectories(rootDirectory))
+		{
+			try
+			{
+				// Skip git submodules and excluded directories
+				if (IsGitSubmodule(directory) || ShouldExcludePath(directory, pathExclusionPatterns))
+				{
+					continue;
+				}
+
+				System.Collections.ObjectModel.ReadOnlyCollection<string> filesInSubDir = FindFilesWithExclusions(directory, fileName, pathExclusionPatterns);
+				result.AddRange(filesInSubDir);
+			}
+			catch (UnauthorizedAccessException)
+			{
+				// Skip directories we don't have access to
+			}
+			catch (DirectoryNotFoundException)
+			{
+				// Skip directories that may have been deleted during enumeration
+			}
+		}
 	}
 
 	/// <summary>
@@ -231,30 +248,37 @@ public class FileFinderAdapter(IFileSystem fileSystem)
 	/// <param name="path">The path to check</param>
 	/// <param name="pattern">The glob pattern</param>
 	/// <returns>True if the path matches the pattern, false otherwise</returns>
-	private static bool MatchesGlobPattern(string path, string pattern)
-	{
-		// Special handling for common patterns - order matters!
-		if (pattern.StartsWith("*/") && pattern.EndsWith("/*"))
-		{
-			// Pattern like "*/bin/*" - check if path contains the directory
-			string dirName = pattern[2..^2]; // Remove "*/" and "/*"
-			return path.Contains($"/{dirName}/", StringComparison.OrdinalIgnoreCase);
-		}
-		else if (pattern.StartsWith('*') && pattern.EndsWith('*') && !pattern.Contains('/'))
-		{
-			// Pattern like "*node_modules*" - check if any path component contains the substring
-			string substring = pattern[1..^1]; // Remove leading and trailing "*"
-			string[] pathComponents = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-			return pathComponents.Any(component => component.Contains(substring, StringComparison.OrdinalIgnoreCase));
-		}
-		else if (pattern.EndsWith('*') && !pattern.Contains('/'))
-		{
-			// Pattern like "temp*" - check if any path component starts with the prefix
-			string prefix = pattern[..^1]; // Remove trailing "*"
-			string[] pathComponents = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-			return pathComponents.Any(component => component.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
-		}
+	private static bool MatchesGlobPattern(string path, string pattern) =>
+		pattern.StartsWith("*/") && pattern.EndsWith("/*") ? MatchesDirectoryPattern(path, pattern) :
+		pattern.StartsWith('*') && pattern.EndsWith('*') && !pattern.Contains('/') ? MatchesSubstringPattern(path, pattern) :
+		pattern.EndsWith('*') && !pattern.Contains('/') ? MatchesPrefixPattern(path, pattern) :
+		MatchesRegexPattern(path, pattern);
 
+	private static bool MatchesDirectoryPattern(string path, string pattern)
+	{
+		// Pattern like "*/bin/*" - check if path contains the directory
+		string dirName = pattern[2..^2]; // Remove "*/" and "/*"
+		return path.Contains($"/{dirName}/", StringComparison.OrdinalIgnoreCase);
+	}
+
+	private static bool MatchesSubstringPattern(string path, string pattern)
+	{
+		// Pattern like "*node_modules*" - check if any path component contains the substring
+		string substring = pattern[1..^1]; // Remove leading and trailing "*"
+		string[] pathComponents = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+		return pathComponents.Any(component => component.Contains(substring, StringComparison.OrdinalIgnoreCase));
+	}
+
+	private static bool MatchesPrefixPattern(string path, string pattern)
+	{
+		// Pattern like "temp*" - check if any path component starts with the prefix
+		string prefix = pattern[..^1]; // Remove trailing "*"
+		string[] pathComponents = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+		return pathComponents.Any(component => component.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+	}
+
+	private static bool MatchesRegexPattern(string path, string pattern)
+	{
 		// Fallback to general regex pattern matching
 		string regexPattern = "^" + pattern
 			.Replace("*", ".*")

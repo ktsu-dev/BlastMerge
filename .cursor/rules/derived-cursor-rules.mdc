@@ -294,6 +294,11 @@ globs: *
 -   In `CompareDirectoriesAsync`, instead of calling the sync `FileDiffer.FindDifferences` that recomputes hashes, create the `DirectoryComparisonResult` directly using the pre-computed hashes.
 -   When using `Regex.IsMatch` in `MatchesGlobPattern` add a timeout and non-backtracking algorithm to prevent ReDoS attacks. Use a 1-second timeout.
 -   If the regex times out, fall back to simple contains check to avoid DoS.
+-   Define a constant for the string "One or both files do not exist". Use this constant instead of the literal string throughout the codebase.
+-   Remove unused local variables. If the value is intentionally discarded, use the discard operator `_`.
+-   Refactor methods to reduce cognitive complexity.
+-   If `GroupFilesByHashOnly` has an identical implementation to `GroupFilesByHash`, make `GroupFilesByHashOnly` delegate to `GroupFilesByHash`.
+-   When a method has more than 7 parameters, group related parameters into a single object (e.g., a record) to reduce the number of parameters.
 
 ## FILE & DIRECTORY HANDLING
 
@@ -312,16 +317,4 @@ globs: *
 
 -   Use FNV-1a (64-bit version) as the hashing algorithm for file identification.
 -   Handle files with different encodings.
--   Hashes are compared per filename pattern. BlastMerge will NOT compare `a.json` vs `b.json`.
--   For small files or few files, the hashing could be happening so quickly that the progress messages flash by too fast to see. Ensure that hashing progress is always visible, even for fast operations. Add a small delay to ensure visibility.
-
-## DIFFING
-
--   Use the DiffPlex library for diffing functionality.
--   Use the Differ.CreateDiffs method with a LineChunker.
--   Generate diff output in a unified format.
--   Color-code the diff output:
-    -   Green for added lines
-    -   Red for deleted lines
-    -   Cyan for chunk headers
-    -   Blue for
+-   Hashes are compared per filename pattern. BlastMerge will NOT compare `a.json` vs `b.json

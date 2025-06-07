@@ -12,6 +12,19 @@ using ktsu.BlastMerge.Core.Constants;
 using ktsu.BlastMerge.Core.Models;
 
 /// <summary>
+/// Callback functions for batch processing operations
+/// </summary>
+/// <param name="MergeCallback">Callback function to perform individual merges</param>
+/// <param name="StatusCallback">Callback function to report merge status</param>
+/// <param name="ContinuationCallback">Callback function to ask whether to continue</param>
+/// <param name="ProgressCallback">Optional callback to report progress updates</param>
+public record ProcessingCallbacks(
+	Func<string, string, string?, MergeResult?> MergeCallback,
+	Action<MergeSessionStatus> StatusCallback,
+	Func<bool> ContinuationCallback,
+	Action<string>? ProgressCallback = null);
+
+/// <summary>
 /// Processes batch operations for multiple file patterns
 /// </summary>
 public static partial class BatchProcessor
@@ -718,28 +731,20 @@ public static partial class BatchProcessor
 	/// <param name="searchPaths">The search paths to use. If empty, uses the directory parameter.</param>
 	/// <param name="directory">The default directory to search in</param>
 	/// <param name="pathExclusionPatterns">Path exclusion patterns to apply</param>
-	/// <param name="mergeCallback">Callback function to perform individual merges</param>
-	/// <param name="statusCallback">Callback function to report merge status</param>
-	/// <param name="continuationCallback">Callback function to ask whether to continue</param>
-	/// <param name="progressCallback">Optional callback to report discovered file paths</param>
+	/// <param name="callbacks">Processing callbacks for merge operations and progress reporting</param>
 	/// <returns>The pattern processing result</returns>
 	public static PatternResult ProcessSinglePatternWithPaths(
 		string pattern,
 		IReadOnlyCollection<string> searchPaths,
 		string directory,
 		IReadOnlyCollection<string> pathExclusionPatterns,
-		Func<string, string, string?, MergeResult?> mergeCallback,
-		Action<MergeSessionStatus> statusCallback,
-		Func<bool> continuationCallback,
-		Action<string>? progressCallback)
+		ProcessingCallbacks callbacks)
 	{
 		ArgumentNullException.ThrowIfNull(pattern);
 		ArgumentNullException.ThrowIfNull(searchPaths);
 		ArgumentNullException.ThrowIfNull(directory);
 		ArgumentNullException.ThrowIfNull(pathExclusionPatterns);
-		ArgumentNullException.ThrowIfNull(mergeCallback);
-		ArgumentNullException.ThrowIfNull(statusCallback);
-		ArgumentNullException.ThrowIfNull(continuationCallback);
+		ArgumentNullException.ThrowIfNull(callbacks);
 
 		PatternResult result = new()
 		{
@@ -750,8 +755,8 @@ public static partial class BatchProcessor
 		try
 		{
 			// Create a wrapper for the progress callback to show file paths as they're discovered
-			Action<string>? fileDiscoveryCallback = progressCallback != null
-				? filePath => progressCallback($"📄 Found: {filePath}")
+			Action<string>? fileDiscoveryCallback = callbacks.ProgressCallback != null
+				? filePath => callbacks.ProgressCallback($"📄 Found: {filePath}")
 				: null;
 
 			// Find files matching the pattern using search paths and exclusions
@@ -786,9 +791,9 @@ public static partial class BatchProcessor
 			// Perform iterative merge
 			MergeCompletionResult mergeResult = IterativeMergeOrchestrator.StartIterativeMergeProcess(
 				fileGroups,
-				mergeCallback,
-				statusCallback,
-				continuationCallback);
+				callbacks.MergeCallback,
+				callbacks.StatusCallback,
+				callbacks.ContinuationCallback);
 
 			result.MergeResult = mergeResult;
 			result.Success = mergeResult.IsSuccessful;
