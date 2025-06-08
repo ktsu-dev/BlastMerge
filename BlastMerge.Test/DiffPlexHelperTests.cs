@@ -56,7 +56,7 @@ public class DiffPlexHelperTests
 	[TestCleanup]
 	public void Cleanup()
 	{
-		SecureTempFileHelper.SafeDeleteTempFiles(_file1Path, _file2Path, _identicalFilePath);
+		SecureTempFileHelper.SafeDeleteTempFiles(fileSystem: null, _file1Path, _file2Path, _identicalFilePath);
 	}
 
 	[TestMethod]
@@ -318,7 +318,7 @@ public class DiffPlexHelperTests
 		}
 		finally
 		{
-			SecureTempFileHelper.SafeDeleteTempFiles(emptyFile1, emptyFile2);
+			SecureTempFileHelper.SafeDeleteTempFiles(fileSystem: null, emptyFile1, emptyFile2);
 		}
 	}
 

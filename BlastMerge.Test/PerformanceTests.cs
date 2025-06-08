@@ -170,7 +170,7 @@ public class PerformanceTests
 
 		// Act
 		stopwatch.Start();
-		IReadOnlyCollection<string> files = FileFinder.FindFiles(largeDir, "*.txt");
+		IReadOnlyCollection<string> files = FileFinder.FindFiles(largeDir, "*.txt", fileSystem: null);
 		stopwatch.Stop();
 
 		// Assert

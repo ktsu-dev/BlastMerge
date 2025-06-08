@@ -73,7 +73,7 @@ public class SecureTempFileHelperTests
 		}
 		finally
 		{
-			SecureTempFileHelper.SafeDeleteTempFiles(tempFile1, tempFile2);
+			SecureTempFileHelper.SafeDeleteTempFiles(fileSystem: null, tempFile1, tempFile2);
 		}
 	}
 
@@ -159,7 +159,7 @@ public class SecureTempFileHelperTests
 		Assert.IsTrue(File.Exists(tempFile2));
 
 		// Act
-		SecureTempFileHelper.SafeDeleteTempFiles(tempFile1, tempFile2);
+		SecureTempFileHelper.SafeDeleteTempFiles(fileSystem: null, tempFile1, tempFile2);
 
 		// Assert
 		Assert.IsFalse(File.Exists(tempFile1));
@@ -174,7 +174,7 @@ public class SecureTempFileHelperTests
 		string nonExistentFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		// Act & Assert - Should not throw
-		SecureTempFileHelper.SafeDeleteTempFiles(tempFile, nonExistentFile, null, string.Empty);
+		SecureTempFileHelper.SafeDeleteTempFiles(fileSystem: null, tempFile, nonExistentFile, null, string.Empty);
 
 		// Verify the valid file was deleted
 		Assert.IsFalse(File.Exists(tempFile));
@@ -242,7 +242,7 @@ public class SecureTempFileHelperTests
 	public void CreateTempFile_WithNullExtension_ThrowsArgumentNullException()
 	{
 		// Act
-		SecureTempFileHelper.CreateTempFile(null!);
+		SecureTempFileHelper.CreateTempFile((string)null!);
 	}
 
 	[TestMethod]
@@ -250,7 +250,7 @@ public class SecureTempFileHelperTests
 	public void SafeDeleteTempFiles_WithNullArray_ThrowsArgumentNullException()
 	{
 		// Act
-		SecureTempFileHelper.SafeDeleteTempFiles(null!);
+		SecureTempFileHelper.SafeDeleteTempFiles(fileSystem: null, filePaths: null!);
 	}
 
 	[TestMethod]

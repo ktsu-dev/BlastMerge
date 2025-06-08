@@ -5,6 +5,7 @@
 namespace ktsu.BlastMerge.Core.Models;
 
 using System.Collections.Generic;
+using System.Reflection;
 using ktsu.AppDataStorage;
 
 /// <summary>
@@ -31,4 +32,24 @@ public class BlastMergeAppData : AppData<BlastMergeAppData>
 	/// Gets or sets application settings and preferences.
 	/// </summary>
 	public ApplicationSettings Settings { get; set; } = new();
+
+#if DEBUG
+	/// <summary>
+	/// Resets the singleton instance for testing purposes.
+	/// This method should only be used in test environments.
+	/// </summary>
+	/// <remarks>
+	/// This method uses reflection to clear the internal singleton cache
+	/// of the AppData base class to enable proper test isolation.
+	/// </remarks>
+	public static void ResetForTesting()
+	{
+		// Use reflection to access the static instance field in the base class
+		// This is necessary because AppData<T> doesn't provide a public reset method
+		Type baseType = typeof(AppData<BlastMergeAppData>);
+		FieldInfo? instanceField = baseType.GetField("_instance", BindingFlags.NonPublic | BindingFlags.Static);
+
+		instanceField?.SetValue(null, null);
+	}
+#endif
 }

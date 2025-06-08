@@ -118,29 +118,30 @@ public static class SecureTempFileHelper
 
 			try
 			{
-				// Create the directory (this always succeeds even if it exists)
+				// Check if directory already exists first
+				if (fileSystem.Directory.Exists(fullPath))
+				{
+					continue; // Try again with a new random name
+				}
+
+				// Create the directory
 				fileSystem.Directory.CreateDirectory(fullPath);
 
-				// Use a marker file to ensure we have exclusive access to this directory
-				string markerFile = fileSystem.Path.Combine(fullPath, "temp_marker.tmp");
-				try
+				// Verify it was created and we can access it
+				if (fileSystem.Directory.Exists(fullPath))
 				{
-					using Stream fs = fileSystem.File.Create(markerFile);
-					// Successfully created marker file, we have a unique directory
-					// Clean up the marker file immediately
-					fileSystem.File.Delete(markerFile);
 					return fullPath;
-				}
-				catch (IOException) when (fileSystem.File.Exists(markerFile))
-				{
-					// Marker file already exists, someone else got here first
-					// Continue to next iteration with a new random name
-					continue;
 				}
 			}
 			catch (IOException)
 			{
 				// Directory creation failed, try again with a new random name
+				continue;
+			}
+			catch (UnauthorizedAccessException)
+			{
+				// Access denied, try again with a new random name
+				continue;
 			}
 		}
 

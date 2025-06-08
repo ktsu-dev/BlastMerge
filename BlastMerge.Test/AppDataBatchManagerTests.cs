@@ -23,6 +23,9 @@ public class AppDataBatchManagerTests
 	[TestInitialize]
 	public void Setup()
 	{
+		// Reset the singleton instance to ensure test isolation
+		BlastMergeAppData.ResetForTesting();
+
 		// Create a temporary app data directory for testing
 		_testAppDataPath = SecureTempFileHelper.CreateTempDirectory();
 
@@ -36,6 +39,9 @@ public class AppDataBatchManagerTests
 	[TestCleanup]
 	public void Cleanup()
 	{
+		// Reset the singleton instance to ensure test isolation
+		BlastMergeAppData.ResetForTesting();
+
 		// Restore original environment variable
 		if (!string.IsNullOrEmpty(_originalAppDataPath))
 		{

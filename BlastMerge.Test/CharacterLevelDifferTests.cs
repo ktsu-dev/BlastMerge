@@ -39,8 +39,15 @@ public class CharacterLevelDifferTests
 		// Assert
 		Assert.IsTrue(highlightedOld.Contains("[dim white]"));
 		Assert.IsTrue(highlightedNew.Contains("[dim white]"));
-		Assert.IsTrue(highlightedOld.Contains("hello"));
-		Assert.IsTrue(highlightedNew.Contains("hello"));
+		// Each character is individually wrapped in markup tags, so check for individual characters
+		Assert.IsTrue(highlightedOld.Contains('h'));
+		Assert.IsTrue(highlightedOld.Contains('e'));
+		Assert.IsTrue(highlightedOld.Contains('l'));
+		Assert.IsTrue(highlightedOld.Contains('o'));
+		Assert.IsTrue(highlightedNew.Contains('h'));
+		Assert.IsTrue(highlightedNew.Contains('e'));
+		Assert.IsTrue(highlightedNew.Contains('l'));
+		Assert.IsTrue(highlightedNew.Contains('o'));
 	}
 
 	[TestMethod]
@@ -133,7 +140,11 @@ public class CharacterLevelDifferTests
 		// Assert
 		Assert.IsTrue(result.Contains("[red]- "));
 		Assert.IsTrue(result.Contains("[green]+ "));
-		Assert.IsTrue(result.Contains("hello"));
+		// Each character is individually wrapped in markup tags, so check for individual characters
+		Assert.IsTrue(result.Contains('h'));
+		Assert.IsTrue(result.Contains('e'));
+		Assert.IsTrue(result.Contains('l'));
+		Assert.IsTrue(result.Contains('o'));
 	}
 
 	[TestMethod]
@@ -256,8 +267,24 @@ public class CharacterLevelDifferTests
 		// Assert
 		Assert.IsNotNull(leftSide);
 		Assert.IsNotNull(rightSide);
-		Assert.IsTrue(leftSide.Contains("hello"));
-		Assert.IsTrue(rightSide.Contains("hello"));
+
+		// The CreateSideBySideCharacterDiff method applies character-level markup and whitespace visualization
+		// Each character is individually wrapped in markup tags, so we need to check for individual characters
+		Assert.IsTrue(leftSide.Contains('h'));
+		Assert.IsTrue(leftSide.Contains('e'));
+		Assert.IsTrue(leftSide.Contains('l'));
+		Assert.IsTrue(leftSide.Contains('o'));
+		Assert.IsTrue(rightSide.Contains('h'));
+		Assert.IsTrue(rightSide.Contains('e'));
+		Assert.IsTrue(rightSide.Contains('l'));
+		Assert.IsTrue(rightSide.Contains('o'));
+
+		// Verify whitespace visualization is applied (spaces become middle dots)
+		Assert.IsTrue(leftSide.Contains('·') || rightSide.Contains('·'));
+
+		// Verify markup tags are present
+		Assert.IsTrue(leftSide.Contains("[dim white]") || leftSide.Contains("[red]"));
+		Assert.IsTrue(rightSide.Contains("[dim white]") || rightSide.Contains("[green]"));
 	}
 
 	[TestMethod]

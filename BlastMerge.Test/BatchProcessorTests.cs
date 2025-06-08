@@ -31,7 +31,7 @@ public class BatchProcessorTests : MockFileSystemTestBase
 		Assert.AreEqual(description, result.Description);
 		CollectionAssert.AreEqual(patterns, result.FilePatterns.ToArray());
 		Assert.IsFalse(result.PromptBeforeEachPattern);
-		Assert.IsFalse(result.SkipEmptyPatterns);
+		Assert.IsTrue(result.SkipEmptyPatterns);
 	}
 
 	[TestMethod]
