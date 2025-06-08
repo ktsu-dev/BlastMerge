@@ -29,6 +29,11 @@ public static class AppDataBatchManager
 	{
 		ArgumentNullException.ThrowIfNull(batch);
 
+		if (string.IsNullOrWhiteSpace(batch.Name))
+		{
+			throw new ArgumentException("Batch name cannot be null, empty, or whitespace.", nameof(batch));
+		}
+
 		if (!batch.IsValid())
 		{
 			return false;
@@ -73,6 +78,11 @@ public static class AppDataBatchManager
 	{
 		ArgumentNullException.ThrowIfNull(name);
 
+		if (string.IsNullOrWhiteSpace(name))
+		{
+			throw new ArgumentException("Name cannot be null, empty, or whitespace.", nameof(name));
+		}
+
 		return AppData.BatchConfigurations.TryGetValue(name, out BatchConfiguration? batch) ? batch : null;
 	}
 
@@ -91,6 +101,11 @@ public static class AppDataBatchManager
 	public static bool DeleteBatch(string name)
 	{
 		ArgumentNullException.ThrowIfNull(name);
+
+		if (string.IsNullOrWhiteSpace(name))
+		{
+			throw new ArgumentException("Name cannot be null, empty, or whitespace.", nameof(name));
+		}
 
 		try
 		{
@@ -157,6 +172,11 @@ public static class AppDataBatchManager
 	public static void RecordBatchUsage(string batchName)
 	{
 		ArgumentNullException.ThrowIfNull(batchName);
+
+		if (string.IsNullOrWhiteSpace(batchName))
+		{
+			throw new ArgumentException("Batch name cannot be null, empty, or whitespace.", nameof(batchName));
+		}
 
 		try
 		{
