@@ -1429,8 +1429,10 @@ function Invoke-DotNetTest {
 
     Write-StepHeader "Running Tests" -Tags "Invoke-DotNetTest"
 
-    # Execute command and stream output directly to console
-    "dotnet test -m:1 --configuration $Configuration -logger:`"Microsoft.Build.Logging.ConsoleLogger,Microsoft.Build;Summary;ForceNoAlign;ShowTimestamp;ShowCommandLine;Verbosity=quiet`" --no-build --collect:`"Code Coverage`"" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
+    "dotnet tool install --global dotnet-coverage" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
+    Assert-LastExitCode "Failed to install dotnet-coverage"
+
+    "dotnet-coverage collect `"dotnet test -m:1 --configuration $Configuration --no-build`"" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
     Assert-LastExitCode "Tests failed"
 }
 
