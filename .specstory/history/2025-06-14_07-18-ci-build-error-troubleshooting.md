@@ -184,3 +184,16 @@ Your CI build should now pass without the unnecessary using directive. This chan
 
 ---
 
+_**User**_
+
+C:\Program Files\dotnet\dotnet.exe exec "C:\Program Files\dotnet\sdk\9.0.301\Roslyn\bincore\csc.dll" /noconfig /unsafe- /checked- /nowarn:CA1724,CA1034,CA1000,CA2260,CA1515,1701,1702 /fullpaths /nostdlib+ /errorreport:prompt /warn:9 /doc:obj\Release\net9.0\ktsu.BlastMerge.xml /define:TRACE;RELEASE;NET;NET9_0;NETCOREAPP;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NETCOREAPP1_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER /highentropyva+ /nullable:enable /reference:C:\Users\runneradmin\.nuget\packages\diffplex\1.8.0\lib\net6.0\DiffPlex.dll /reference:C:\Users\runneradmin\.nuget\packages\ktsu.appdatastorage\1.15.6\lib\net9.0\ktsu.AppDataStorage.dll /reference:C:\Users\runneradmin\.nuget\packages\ktsu.caseconverter\1.3.2\lib\net9.0\ktsu.CaseConverter.dll /reference:C:\Users\runneradmin\.nuget\packages\ktsu.deepclone\1.2.0\lib\net9.0\kt
+Error: D:\a\BlastMerge\BlastMerge\BlastMerge\Models\BlastMergeAppData.cs(7,1): error IDE0005: Using directive is unnecessary. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0005) [D:\a\BlastMerge\BlastMerge\BlastMerge\BlastMerge.csproj]
+
+---
+
+_**Assistant**_
+
+
+
+---
+

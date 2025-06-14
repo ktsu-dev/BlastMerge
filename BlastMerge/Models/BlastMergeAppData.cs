@@ -4,7 +4,9 @@
 
 namespace ktsu.BlastMerge.Models;
 
+#if DEBUG
 using System.Reflection;
+#endif
 using ktsu.AppDataStorage;
 
 /// <summary>
