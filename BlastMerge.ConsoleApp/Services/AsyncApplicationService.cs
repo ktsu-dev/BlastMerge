@@ -12,8 +12,8 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ktsu.BlastMerge.Core.Models;
-using ktsu.BlastMerge.Core.Services;
+using ktsu.BlastMerge.Models;
+using ktsu.BlastMerge.Services;
 using Spectre.Console;
 
 /// <summary>

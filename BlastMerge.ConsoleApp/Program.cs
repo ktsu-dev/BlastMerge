@@ -8,6 +8,7 @@ using System;
 using System.Text;
 using ktsu.BlastMerge.ConsoleApp.CLI;
 using ktsu.BlastMerge.ConsoleApp.Services;
+using ktsu.BlastMerge.Contracts;
 
 /// <summary>
 /// Main entry point for the BlastMerge console application.
@@ -28,7 +29,7 @@ public static class Program
 		try
 		{
 			// Create services with proper dependency injection pattern
-			Core.Contracts.IApplicationService applicationService = new ConsoleApplicationService();
+			IApplicationService applicationService = new ConsoleApplicationService();
 			CommandLineHandler commandLineHandler = new(applicationService);
 
 			// Process command line arguments

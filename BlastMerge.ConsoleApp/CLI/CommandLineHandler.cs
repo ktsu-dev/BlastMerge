@@ -8,12 +8,13 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using CommandLine;
+using ktsu.BlastMerge.Contracts;
 
 /// <summary>
 /// Handles command line argument processing and delegates to appropriate operations.
 /// </summary>
 /// <param name="applicationService">The application service for processing operations.</param>
-public class CommandLineHandler(Core.Contracts.IApplicationService applicationService) : ICommandLineHandler
+public class CommandLineHandler(IApplicationService applicationService) : ICommandLineHandler
 {
 	/// <summary>
 	/// Processes command line arguments and executes the appropriate action.

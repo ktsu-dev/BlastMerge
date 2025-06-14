@@ -12,8 +12,8 @@ using System.Linq;
 using System.Text;
 using DiffPlex.Model;
 using ktsu.BlastMerge.ConsoleApp.Text;
-using ktsu.BlastMerge.Core.Models;
-using ktsu.BlastMerge.Core.Services;
+using ktsu.BlastMerge.Models;
+using ktsu.BlastMerge.Services;
 using Spectre.Console;
 
 /// <summary>

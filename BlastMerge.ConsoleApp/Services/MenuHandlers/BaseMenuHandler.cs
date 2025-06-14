@@ -6,7 +6,7 @@ namespace ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 
 using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
-using ktsu.BlastMerge.Core.Services;
+using ktsu.BlastMerge.Services;
 using Spectre.Console;
 
 /// <summary>

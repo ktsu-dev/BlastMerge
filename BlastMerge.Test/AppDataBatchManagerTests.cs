@@ -7,14 +7,20 @@ namespace ktsu.BlastMerge.Test;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using ktsu.BlastMerge.Core.Models;
-using ktsu.BlastMerge.Core.Services;
+using ktsu.BlastMerge.Models;
+using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 /// <summary>
 /// Tests for the AppDataBatchManager utility class
+///
+/// NOTE: This test class uses real filesystem operations through ktsu.AppDataStorage
+/// and cannot use mock filesystems. Therefore, tests may experience isolation issues
+/// when run concurrently. The [DoNotParallelize] attribute prevents concurrent execution
+/// within this class, and individual tests clear BatchConfigurations to ensure isolation.
 /// </summary>
 [TestClass]
+[DoNotParallelize]
 public class AppDataBatchManagerTests
 {
 	private string _originalAppDataPath = string.Empty;
@@ -111,6 +117,11 @@ public class AppDataBatchManagerTests
 	[TestMethod]
 	public void ListBatches_NoBatches_ReturnsEmptyCollection()
 	{
+		// Arrange
+		// Ensure we start with a clean slate for this specific test
+		BlastMergeAppData appData = BlastMergeAppData.Get();
+		appData.BatchConfigurations.Clear();
+
 		// Act
 		IReadOnlyCollection<string> batchNames = AppDataBatchManager.ListBatches();
 
@@ -123,6 +134,10 @@ public class AppDataBatchManagerTests
 	public void ListBatches_MultipleBatches_ReturnsAllBatchNames()
 	{
 		// Arrange
+		// Ensure we start with a clean slate for this specific test
+		BlastMergeAppData appData = BlastMergeAppData.Get();
+		appData.BatchConfigurations.Clear();
+
 		BatchConfiguration batch1 = new()
 		{
 			Name = "Batch1",
@@ -153,6 +168,10 @@ public class AppDataBatchManagerTests
 	public void GetAllBatches_MultipleBatches_ReturnsAllBatches()
 	{
 		// Arrange
+		// Ensure we start with a clean slate for this specific test
+		BlastMergeAppData appData = BlastMergeAppData.Get();
+		appData.BatchConfigurations.Clear();
+
 		BatchConfiguration batch1 = new()
 		{
 			Name = "Batch1",
@@ -330,6 +349,11 @@ public class AppDataBatchManagerTests
 	[TestMethod]
 	public void GetAllBatches_NoBatches_ReturnsEmptyCollection()
 	{
+		// Arrange
+		// Ensure we start with a clean slate for this specific test
+		BlastMergeAppData appData = BlastMergeAppData.Get();
+		appData.BatchConfigurations.Clear();
+
 		// Act
 		IReadOnlyCollection<BatchConfiguration> batches = AppDataBatchManager.GetAllBatches();
 

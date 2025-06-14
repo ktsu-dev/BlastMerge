@@ -5,7 +5,7 @@
 namespace ktsu.BlastMerge.Test;
 
 using System;
-using ktsu.BlastMerge.Core.Services;
+using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 [TestClass]

@@ -7,8 +7,8 @@ namespace ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 using System.Text.Json;
 using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.ConsoleApp.Text;
-using ktsu.BlastMerge.Core.Models;
-using ktsu.BlastMerge.Core.Services;
+using ktsu.BlastMerge.Models;
+using ktsu.BlastMerge.Services;
 using ktsu.Extensions;
 using Spectre.Console;
 

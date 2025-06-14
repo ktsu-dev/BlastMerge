@@ -6,8 +6,8 @@ namespace ktsu.BlastMerge.Test;
 
 using System.IO;
 using System.Linq;
-using ktsu.BlastMerge.Core.Models;
-using ktsu.BlastMerge.Core.Services;
+using ktsu.BlastMerge.Models;
+using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 /// <summary>

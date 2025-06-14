@@ -6,7 +6,7 @@ namespace ktsu.BlastMerge.ConsoleApp.Services;
 
 using System;
 using ktsu.BlastMerge.ConsoleApp.Text;
-using ktsu.BlastMerge.Core.Models;
+using ktsu.BlastMerge.Models;
 using Spectre.Console;
 
 /// <summary>

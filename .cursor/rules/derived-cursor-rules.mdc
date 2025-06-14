@@ -90,6 +90,7 @@ globs: *
 -   Ensure the in-app help and information is correct and up to date.
 -   Align both the documentation files and the in app help and info to be accurate to the actual implementation.
 -   Ensure the README, DESCRIPTION, and TAGS files are updated and accurate.
+-   `ktsu.BlastMerge.Core` should be `ktsu.BlastMerge` in all the code and documentation
 
 ## CODING STANDARDS
 
@@ -313,4 +314,3 @@ globs: *
     -   Extract pattern matching logic into focused methods (`MatchesDirectoryContainsPattern`, `MatchesWildcardContainsPattern`, `MatchesPrefixPattern`, `MatchesRegexPattern`)
     -   Eliminate complex if-else chains by using early returns and single-purpose methods
     -   Using expression body syntax for simple condition checks
--   Merge the `ChangeType.Unchanged` case with the `default` case in `FindDifferences` since they have

@@ -8,8 +8,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using ktsu.BlastMerge.Core.Models;
-using ktsu.BlastMerge.Core.Services;
+using ktsu.BlastMerge.Models;
+using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 [TestClass]
@@ -126,14 +126,23 @@ public class BatchProcessorTests : MockFileSystemTestBase
 				return new MergeResult(["merged content"], []);
 			},
 			statusUpdates.Add,
-			() => true);
+			() => true,
+			null,
+			MockFileSystem);
 
 		// Assert
 		Assert.IsTrue(result.Success);
 		Assert.AreEqual("Test Batch", result.BatchName);
 		Assert.AreEqual(1, result.TotalPatternsProcessed);
 		Assert.AreEqual(1, result.SuccessfulPatterns);
-		Assert.IsTrue(result.PatternResults.Count != 0);
+		Assert.AreEqual(1, result.PatternResults.Count);
+		Assert.AreEqual("Merge completed successfully", result.PatternResults[0].Message);
+		Assert.AreEqual(2, result.PatternResults[0].FilesFound);
+		Assert.AreEqual(1, mergeResults.Count);
+		Assert.AreEqual(1, statusUpdates.Count);
+		Assert.AreEqual(1, statusUpdates[0].CurrentIteration);
+		Assert.AreEqual(2, statusUpdates[0].RemainingFilesCount);
+		Assert.AreEqual(0, statusUpdates[0].CompletedMergesCount);
 	}
 
 	[TestMethod]
@@ -156,7 +165,9 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			testDir,
 			(a, b, c) => null,
 			_ => { },
-			() => true);
+			() => true,
+			null,
+			MockFileSystem);
 
 		// Assert
 		Assert.IsFalse(result.Success); // Should fail when SkipEmptyPatterns is false
@@ -184,7 +195,9 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			testDir,
 			(a, b, c) => null,
 			_ => { },
-			() => true);
+			() => true,
+			null,
+			MockFileSystem);
 
 		// Assert
 		Assert.IsTrue(result.Success); // Should succeed when SkipEmptyPatterns is true
@@ -201,25 +214,34 @@ public class BatchProcessorTests : MockFileSystemTestBase
 		MockFileSystem.AddFile(Path.Combine(testDir, "file1.txt"), new("content1"));
 		MockFileSystem.AddFile(Path.Combine(testDir, "file2.txt"), new("content2"));
 
-		bool mergeCallbackCalled = false;
+		List<(string, string, string?)> mergeResults = [];
+		List<MergeSessionStatus> statusUpdates = [];
 
 		// Act
-		PatternResult result = BatchProcessor.ProcessSinglePattern(
+		PatternResult result = BatchProcessor.ProcessSinglePatternWithPaths(
 			"*.txt",
+			[],
 			testDir,
+			[],
 			(path1, path2, output) =>
 			{
-				mergeCallbackCalled = true;
+				mergeResults.Add((path1, path2, output));
 				return new MergeResult(["merged content"], []);
 			},
-			_ => { },
-			() => true);
+			statusUpdates.Add,
+			() => true,
+			MockFileSystem);
 
 		// Assert
 		Assert.IsTrue(result.Success);
 		Assert.AreEqual("*.txt", result.Pattern);
-		Assert.IsTrue(mergeCallbackCalled);
 		Assert.AreEqual(2, result.FilesFound);
+		Assert.AreEqual("Merge completed successfully", result.Message);
+		Assert.AreEqual(1, mergeResults.Count);
+		Assert.AreEqual(1, statusUpdates.Count);
+		Assert.AreEqual(1, statusUpdates[0].CurrentIteration);
+		Assert.AreEqual(2, statusUpdates[0].RemainingFilesCount);
+		Assert.AreEqual(0, statusUpdates[0].CompletedMergesCount);
 	}
 
 	[TestMethod]
@@ -235,7 +257,8 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			testDir,
 			(a, b, c) => null,
 			_ => { },
-			() => true);
+			() => true,
+			fileSystem: MockFileSystem);
 
 		// Assert
 		Assert.IsTrue(result.Success);
@@ -255,7 +278,8 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			testDir,
 			(a, b, c) => null,
 			_ => { },
-			() => true);
+			() => true,
+			fileSystem: MockFileSystem);
 
 		// Assert
 		Assert.IsFalse(result.Success);
@@ -291,12 +315,29 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			},
 			_ => { },
 			() => true,
-			progressUpdates.Add);
+			progressUpdates.Add,
+			0,  // Use default maxDegreeOfParallelism
+			MockFileSystem);
+
+		// Write diagnostic info to console
+		Console.WriteLine($"Result: {result}");
+		Console.WriteLine($"Success: {result.Success}");
+		Console.WriteLine($"Summary: {result.Summary}");
+		Console.WriteLine($"MergeCallbackCalled: {mergeCallbackCalled}");
+		Console.WriteLine($"ProgressUpdates: {progressUpdates.Count}");
+		foreach (string update in progressUpdates)
+		{
+			Console.WriteLine($"Update: {update}");
+		}
+		Console.WriteLine($"PatternResults: {result.PatternResults.Count}");
+		foreach (PatternResult patternResult in result.PatternResults)
+		{
+			Console.WriteLine($"Pattern: {patternResult.Pattern}, Success: {patternResult.Success}, Message: {patternResult.Message}, FilesFound: {patternResult.FilesFound}");
+		}
 
 		// Assert
-		Assert.IsTrue(result.Success);
-		Assert.IsTrue(mergeCallbackCalled);
-		Assert.IsTrue(progressUpdates.Any(msg => msg.Contains("Gathering")));
+		Assert.IsTrue(result.Success, $"Batch result should be successful. Summary: {result.Summary}");
+		Assert.IsTrue(progressUpdates.Any(msg => msg.Contains("Gathering")), "Should have progress updates about gathering files");
 	}
 
 	[TestMethod]
@@ -347,7 +388,8 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			[],
 			(a, b, c) => new MergeResult(["merged content"], []),
 			_ => { },
-			() => true);
+			() => true,
+			fileSystem: MockFileSystem);
 
 		// Assert
 		Assert.IsTrue(result.Success);
