@@ -667,6 +667,9 @@ public static partial class BatchProcessor
 		// Sort files to ensure consistent order
 		List<string> sortedFiles = [.. files.OrderBy(f => f)];
 
+		// Calculate similarity between the first two files
+		double similarity = FileDiffer.CalculateFileSimilarity(sortedFiles[0], sortedFiles[1], parameters.FileSystem);
+
 		// Merge first two files
 		mergeResult = callbacks.MergeCallback(sortedFiles[0], sortedFiles[1], outputPath);
 
@@ -686,7 +689,7 @@ public static partial class BatchProcessor
 			CurrentIteration: 1,
 			RemainingFilesCount: files.Count,
 			CompletedMergesCount: 0,
-			MostSimilarPair: new FileSimilarity(sortedFiles[0], sortedFiles[1], 0.5)
+			MostSimilarPair: new FileSimilarity(sortedFiles[0], sortedFiles[1], similarity)
 		));
 
 		// Continue merging with remaining files
@@ -702,6 +705,9 @@ public static partial class BatchProcessor
 					FilesFound = files.Count
 				};
 			}
+
+			// Calculate similarity between this file and previous file
+			double currentSimilarity = FileDiffer.CalculateFileSimilarity(sortedFiles[i - 1], sortedFiles[i], parameters.FileSystem);
 
 			mergeResult = callbacks.MergeCallback(sortedFiles[i - 1], sortedFiles[i], outputPath);
 
@@ -721,7 +727,7 @@ public static partial class BatchProcessor
 				CurrentIteration: i,
 				RemainingFilesCount: files.Count - i,
 				CompletedMergesCount: i - 1,
-				MostSimilarPair: new FileSimilarity(sortedFiles[i - 1], sortedFiles[i], 0.5)
+				MostSimilarPair: new FileSimilarity(sortedFiles[i - 1], sortedFiles[i], currentSimilarity)
 			));
 		}
 
