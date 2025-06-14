@@ -82,6 +82,9 @@ globs: *
 -   Tomlyn Version="0.17.0"
 -   YamlDotNet Version="16.2.0"
 -   System.IO.Abstractions
+-   coverlet.collector Version="6.0.0"
+-   coverlet.msbuild Version="6.0.0"
+-   ReportGenerator
 
 ## PROJECT DOCUMENTATION & CONTEXT SYSTEM
 
@@ -311,6 +314,4 @@ globs: *
 -   When the `ProcessLineForMarkupDisplay` method has high cognitive complexity, extract helper methods to reduce it.
 -   Refactor the `MatchesGlobPattern` method to reduce cognitive complexity by:
     -   Extract pattern detection logic into simple helper methods (`IsDirectoryContainsPattern`, `IsWildcardContainsPattern`, `IsPrefixPattern`)
-    -   Extract pattern matching logic into focused methods (`MatchesDirectoryContainsPattern`, `MatchesWildcardContainsPattern`, `MatchesPrefixPattern`, `MatchesRegexPattern`)
-    -   Eliminate complex if-else chains by using early returns and single-purpose methods
-    -   Using expression body syntax for simple condition checks
+    -   Extract pattern matching logic into focused methods (`MatchesDirectoryContainsPattern`, `MatchesWildcardContainsPattern`, `MatchesPrefixPattern`, `Matches

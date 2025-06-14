@@ -1432,8 +1432,21 @@ function Invoke-DotNetTest {
     # Ensure the coverage directory exists
     New-Item -Path $CoverageOutputPath -ItemType Directory -Force | Write-InformationStream -Tags "Invoke-DotNetTest"
 
+    # Ensure coverlet packages are installed in test projects
+    Write-Information "Ensuring coverage tools are available..." -Tags "Invoke-DotNetTest"
+    $testProjects = @(Get-ChildItem -Recurse -Filter "*Tests.csproj" -ErrorAction SilentlyContinue)
+    if ($testProjects.Count -gt 0) {
+        foreach ($project in $testProjects) {
+            Write-Information "Adding coverage packages to $($project.Name)..." -Tags "Invoke-DotNetTest"
+            "dotnet add `"$($project.FullName)`" package coverlet.collector --version 6.0.0" | Invoke-ExpressionWithLogging -ErrorAction SilentlyContinue | Write-InformationStream -Tags "Invoke-DotNetTest"
+            "dotnet add `"$($project.FullName)`" package coverlet.msbuild --version 6.0.0" | Invoke-ExpressionWithLogging -ErrorAction SilentlyContinue | Write-InformationStream -Tags "Invoke-DotNetTest"
+        }
+    } else {
+        Write-Information "No test projects found to add coverage packages to" -Tags "Invoke-DotNetTest"
+    }
+
     # Run tests with code coverage and generate .trx files for SonarQube
-    "dotnet test -m:1 --configuration $Configuration --no-build /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./$CoverageOutputPath/coverage.cobertura.xml --logger:trx --results-directory:$CoverageOutputPath/TestResults" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
+    "dotnet test -m:1 --configuration $Configuration --no-build /p:CollectCoverage=true /p:CoverletOutputFormat=\"cobertura,opencover\" /p:CoverletOutput=./$CoverageOutputPath/ /p:MergeWith=./$CoverageOutputPath/coverage.json /p:Exclude=\"[*]*.Program,[*]*.*Tests.*,[*]*.Startup\" --logger:trx --results-directory:$CoverageOutputPath/TestResults" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
     Assert-LastExitCode "Tests failed"
 }
 

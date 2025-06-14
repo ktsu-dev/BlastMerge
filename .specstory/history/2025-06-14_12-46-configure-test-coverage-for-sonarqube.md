@@ -204,3 +204,33 @@ These changes should ensure that SonarQube properly receives and processes your 
 
 ---
 
+_**User**_
+
+Quality Gate Failed Quality Gate failed
+Failed conditions
+ 0.0% Coverage on New Code (required ≥ 80%)
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+I see the issue. Your SonarQube quality gate is failing because it's not detecting any code coverage data, even though we configured the coverage reporting. Let's fix this by enhancing how code coverage is collected and reported.
+
+Here's what we need to do to address the 0.0% coverage issue:
+
+1. First, let's modify the test runner in PSBuild.psm1 to output multiple coverage formats:
+
+---
+
+
+
+---
+
+
+
+---
+
