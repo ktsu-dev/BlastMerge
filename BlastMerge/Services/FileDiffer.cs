@@ -767,11 +767,14 @@ public static class FileDiffer
 	/// </summary>
 	private static void AddUnchangedLinesBeforeDifference(string[] lines1, List<string> mergedLines, ref int line1Index, ref int line2Index, LineDifference diff)
 	{
-		while (line1Index < diff.LineNumber1 - 1 && line2Index < diff.LineNumber2 - 1)
+		if (diff.LineNumber1.HasValue && diff.LineNumber2.HasValue)
 		{
-			mergedLines.Add(lines1[line1Index]);
-			line1Index++;
-			line2Index++;
+			while (line1Index < diff.LineNumber1.Value - 1 && line2Index < diff.LineNumber2.Value - 1)
+			{
+				mergedLines.Add(lines1[line1Index]);
+				line1Index++;
+				line2Index++;
+			}
 		}
 	}
 
@@ -780,15 +783,15 @@ public static class FileDiffer
 	/// </summary>
 	private static void ProcessSingleDifference(LineDifference diff, List<string> mergedLines, List<MergeConflict> conflicts, ref int line1Index, ref int line2Index)
 	{
-		if (diff.LineNumber1 > 0 && diff.LineNumber2 > 0)
+		if (diff.LineNumber1.HasValue && diff.LineNumber2.HasValue && diff.LineNumber1.Value > 0 && diff.LineNumber2.Value > 0)
 		{
 			HandleBothFilesConflict(diff, mergedLines, conflicts);
 		}
-		else if (diff.LineNumber1 > 0)
+		else if (diff.LineNumber1.HasValue && diff.LineNumber1.Value > 0)
 		{
 			HandleDeletionConflict(diff, mergedLines, conflicts);
 		}
-		else if (diff.LineNumber2 > 0)
+		else if (diff.LineNumber2.HasValue && diff.LineNumber2.Value > 0)
 		{
 			HandleAdditionConflict(diff, mergedLines, conflicts);
 		}
