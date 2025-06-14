@@ -1446,7 +1446,7 @@ function Invoke-DotNetTest {
     }
 
     # Run tests with code coverage and generate .trx files for SonarQube
-    "dotnet test -m:1 --configuration $Configuration --no-build /p:CollectCoverage=true /p:CoverletOutputFormat=\"cobertura,opencover\" /p:CoverletOutput=./$CoverageOutputPath/ /p:MergeWith=./$CoverageOutputPath/coverage.json /p:Exclude=\"[*]*.Program,[*]*.*Tests.*,[*]*.Startup\" --logger:trx --results-directory:$CoverageOutputPath/TestResults" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
+    "dotnet test -m:1 --configuration $Configuration --no-build /p:CollectCoverage=true /p:CoverletOutputFormat=`"cobertura,opencover`" /p:CoverletOutput=./$CoverageOutputPath/ /p:MergeWith=./$CoverageOutputPath/coverage.json /p:Exclude=`"[*]*.Program,[*]*.*Tests.*,[*]*.Startup`" --logger:trx --results-directory:$CoverageOutputPath/TestResults" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
     Assert-LastExitCode "Tests failed"
 }
 
