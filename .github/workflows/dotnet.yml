@@ -141,7 +141,7 @@ jobs:
           "release_hash=$($buildConfig.Data.ReleaseHash)" >> $env:GITHUB_OUTPUT
           "should_release=$($buildConfig.Data.ShouldRelease)" >> $env:GITHUB_OUTPUT
 
-            - name: Generate Coverage Report
+      - name: Generate Coverage Report
         if: always()
         shell: pwsh
         run: |

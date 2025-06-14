@@ -305,6 +305,83 @@ The error is happening because of how PowerShell handles nested quotes in the co
 
 ---
 
+Now let's also update the SonarQube configuration to match our single-format coverage output:
+
+---
+
+
+
+---
+
+Let's also update the Generate Coverage Report step to reflect we're now only using Cobertura format:
+
+---
+
+
+
+---
+
+I've simplified the approach to fix the error you encountered. Here's what I changed:
+
+1. **Fixed the `dotnet test` command**:
+   - Removed the complex quoting that was causing the error
+   - Simplified to use just the Cobertura format, which is well-supported by SonarQube
+   - Removed potentially problematic parameters like MergeWith and Exclude
+
+2. **Updated SonarQube configuration**:
+   - Removed OpenCover references since we're now only generating Cobertura format
+   - Specified a more precise path for the test result (.trx) files
+
+3. **Updated reporting steps**:
+   - Adjusted the Generate Coverage Report step to work with Cobertura format only
+   - Added reporting of test result files for better diagnostics
+
+These changes should fix the immediate error and allow your tests to run with coverage. The SonarQube scanner should now be able to find and process the coverage data properly.
+
+If you still encounter issues with the quality gate after these changes, we might need to:
+1. Check if your tests are actually covering enough code to meet the 80% threshold
+2. Verify the coverage report is being properly generated and contains all the expected data
+3. Consider adjusting the SonarQube quality gate settings if needed
+
+---
+
+_**User**_
+
+Invalid workflow file: .github/workflows/dotnet.yml#L146
+The workflow is not valid. .github/workflows/dotnet.yml (Line: 146, Col: 9): 'shell' is already defined .github/workflows/dotnet.yml (Line: 147, Col: 9): 'run' is already defined
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+Let's fix the duplicate keys in your workflow file:
+
+---
+
+Read file: .github/workflows/dotnet.yml
+
+---
+
+I found the issue. There's a formatting problem in the file. Let me fix the indentation of the "Generate Coverage Report" step:
+
+---
+
+
+
+---
+
+Let me fix that using edit_file instead:
+
+---
+
+
+
+---
+
 
 
 ---
