@@ -1446,8 +1446,18 @@ function Invoke-DotNetTest {
     }
 
     # Run tests with code coverage and generate .trx files for SonarQube
-    $testCommand = "dotnet test -m:1 --configuration $Configuration --no-build /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./$CoverageOutputPath/ --logger:trx --results-directory:$CoverageOutputPath/TestResults"
+    $testCommand = "dotnet test -m:1 --configuration $Configuration --no-build --collect:""XPlat Code Coverage"" --settings .runsettings --results-directory:$CoverageOutputPath/TestResults"
     $testCommand | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
+
+    # Copy the coverage files to the expected location for SonarQube
+    Write-Information "Copying coverage files to expected location..." -Tags "Invoke-DotNetTest"
+    $coverageFiles = @(Get-ChildItem -Path "$CoverageOutputPath/TestResults" -Recurse -Filter "*.cobertura.xml" -ErrorAction SilentlyContinue)
+    if ($coverageFiles.Count -gt 0) {
+        Write-Information "Found $($coverageFiles.Count) coverage files" -Tags "Invoke-DotNetTest"
+        Copy-Item -Path $coverageFiles[0].FullName -Destination "$CoverageOutputPath/coverage.cobertura.xml" -Force
+    } else {
+        Write-Information "No coverage files found" -Tags "Invoke-DotNetTest"
+    }
     Assert-LastExitCode "Tests failed"
 }
 

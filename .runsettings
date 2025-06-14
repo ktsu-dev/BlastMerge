@@ -80,9 +80,12 @@
                     <!--<IncludeDirectory>../dir1/,../dir2/,</IncludeDirectory>-->
                     <SingleHit>false</SingleHit>
                     <!--<UseSourceLink>true</UseSourceLink>-->
-                    <IncludeTestAssembly>true</IncludeTestAssembly>
+                    <IncludeTestAssembly>false</IncludeTestAssembly>
                     <SkipAutoProps>true</SkipAutoProps>
                     <DeterministicReport>false</DeterministicReport>
+                    <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute,ExcludeFromCodeCoverage</ExcludeByAttribute>
+                    <Include>[*]*,[ktsu.*]*</Include>
+                    <Exclude>[*]*Tests*,[*]*Test*,[*]*.Test*,[xunit.*]*</Exclude>
                     <ExcludeAssembliesWithoutSources>MissingAll,MissingAny,None</ExcludeAssembliesWithoutSources>
                 </Configuration>
             </DataCollector>

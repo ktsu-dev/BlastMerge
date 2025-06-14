@@ -151,13 +151,35 @@ jobs:
           Write-Host "Found coverage files:"
           $coverageFiles | ForEach-Object { Write-Host " - $($_.FullName)" }
 
-          # Generate HTML report for visibility
+          # Make sure the expected coverage file exists for SonarQube
           $coberturaFile = "./coverage/coverage.cobertura.xml"
 
+          if (-not (Test-Path $coberturaFile)) {
+            Write-Host "Primary cobertura file not found, searching for alternatives..."
+            $alternativeCoverageFiles = Get-ChildItem -Path "./coverage" -Recurse -Filter "*.cobertura.xml" -ErrorAction SilentlyContinue
+
+            if ($alternativeCoverageFiles.Count -gt 0) {
+              Write-Host "Found alternative coverage file, copying to expected location"
+              Copy-Item -Path $alternativeCoverageFiles[0].FullName -Destination $coberturaFile -Force
+              Write-Host "Copied $($alternativeCoverageFiles[0].FullName) to $coberturaFile"
+            } else {
+              Write-Host "No cobertura files found at all!"
+            }
+          }
+
+          # Generate HTML report for visibility
           if (Test-Path $coberturaFile) {
             Write-Host "Cobertura file found at $coberturaFile"
             reportgenerator "-reports:$coberturaFile" "-targetdir:./coverage/report" "-reporttypes:Html"
             Write-Host "HTML report generated at ./coverage/report"
+
+            # Display coverage percentage for information
+            $coverageContent = Get-Content -Path $coberturaFile -Raw
+            if ($coverageContent -match 'line-rate="([0-9.]+)"') {
+              $lineRate = [float]$Matches[1]
+              $coveragePercentage = [math]::Round($lineRate * 100, 2)
+              Write-Host "Code coverage: $coveragePercentage%"
+            }
           } else {
             Write-Host "Cobertura file not found at $coberturaFile"
           }
