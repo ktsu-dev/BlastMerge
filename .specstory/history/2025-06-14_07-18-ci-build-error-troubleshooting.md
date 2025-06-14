@@ -197,3 +197,145 @@ _**Assistant**_
 
 ---
 
+I see the problem. The first fix removed `System.Collections.Generic`, but now the error is pointing to line 7, which is the `System.Reflection` import. 
+
+Looking at your code, `System.Reflection` is only used in the `#if DEBUG` conditional block. In your CI build (which runs in Release mode), this block is excluded entirely, making the import unnecessary.
+
+Let's wrap the `System.Reflection` import in a `#if DEBUG` directive too:
+
+---
+
+```diff
+  namespace ktsu.BlastMerge.Models;
+  
++ #if DEBUG
+  using System.Reflection;
++ #endif
+  using ktsu.AppDataStorage;
+  
+```
+
+---
+
+This should fix the build error in your CI pipeline. The issue was that the `System.Reflection` namespace is only used within the `#if DEBUG` conditional block. When building in Release mode (which your CI does), this block is excluded from compilation, making the import unnecessary.
+
+By wrapping the `using System.Reflection;` directive inside the same `#if DEBUG` conditional as the code that uses it, it will only be included when compiling in Debug mode and excluded in Release mode, preventing the "Using directive is unnecessary" error.
+
+---
+
+_**User**_
+
+07:36:27.005     3>C:\Program Files\dotnet\dotnet.exe exec "C:\Program Files\dotnet\sdk\9.0.301\Roslyn\bincore\csc.dll" /noconfig /unsafe- /checked- /nowarn:CA1724,CA1034,CA1000,CA2260,CA1515,CS1591,CA2225,IDE0022,IDE0058,CA1305,CA5394,CA1707,1701,1702 /fullpaths /nostdlib+ /errorreport:prompt /warn:9 /doc:obj\Release\net9.0\ktsu.BlastMerge.Test.xml /define:TRACE;RELEASE;NET;NET9_0;NETCOREAPP;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NETCOREAPP1_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER /highentropyva+ /nullable:enable /reference:C:\Users\runneradmin\.nuget\packages\castle.core\5.1.1\lib\net6.0\Castle.Core.dll /reference:C:\Users\runneradmin\.nuget\packages\commandlineparser\2.9.1\lib\netstandard2.0\CommandLine.dll /reference:C:\Users\runneradmin\.nuget\packages\diffplex\1.8.0\lib\net6.0\DiffPlex.dll /reference:C:\Users\runneradmin\.nuget\pack
+Error: D:\a\BlastMerge\BlastMerge\BlastMerge.Test\AppDataBatchManagerTests.cs(33,21): error CS0117: 'BlastMergeAppData' does not contain a definition for 'ResetForTesting' [D:\a\BlastMerge\BlastMerge\BlastMerge.Test\BlastMerge.Test.csproj]
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+The error shows that our test is trying to access `ResetForTesting()` method, but it's not available since we wrapped it in `#if DEBUG` and the tests are being built in Release mode.
+
+Let's modify the conditional compilation to make this method available for tests in any build configuration:
+
+---
+
+```diff
+  namespace ktsu.BlastMerge.Models;
+  
+- #if DEBUG
++ #if DEBUG || TEST
+  using System.Reflection;
+  #endif
+```
+
+```diff
+  	public ApplicationSettings Settings { get; set; } = new();
+  
+- #if DEBUG
++ #if DEBUG || TEST
+  	/// <summary>
+  	/// Resets the singleton instance for testing purposes.
+```
+
+---
+
+Now let's define the TEST constant in the test project so that it can access the `ResetForTesting()` method:
+
+---
+
+<details>
+            <summary>Searched codebase "BlastMerge.Test.csproj" • **1** results</summary>
+        
+| File |
+|------|
+| `undefined` |
+
+</details>
+
+---
+
+Read file: BlastMerge.Test/BlastMerge.Test.csproj
+
+---
+
+Now let's modify the test project file to add the TEST conditional compilation symbol:
+
+---
+
+```diff
+  <Project Sdk="ktsu.Sdk.Test">
++   <PropertyGroup>
++     <DefineConstants>$(DefineConstants);TEST</DefineConstants>
++   </PropertyGroup>
++   
+    <ItemGroup>
+      <PackageReference Include="TestableIO.System.IO.Abstractions" />
+```
+
+---
+
+This should fix your CI build issue. Here's what we did:
+
+1. Modified `BlastMergeAppData.cs` to make the `System.Reflection` import and the `ResetForTesting()` method available in both DEBUG and TEST configurations
+2. Added the TEST compilation symbol to your test project so it can access the `ResetForTesting()` method regardless of Debug/Release mode
+
+This approach ensures that:
+- In production Release builds, the unused code is excluded, satisfying the IDE0005 rule
+- In test builds (both Debug and Release), the testing utility method is available
+- The test project will always have access to the method, regardless of build configuration
+
+The conditional compilation with `#if DEBUG || TEST` makes sure the method is available when needed without unnecessarily including it in production code.
+
+---
+
+_**User**_
+
+why make it conditionally compiles at all
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+You're absolutely right. There's no need for conditional compilation in this case.
+
+Since ResetForTesting is specifically designed for test scenarios and the method is clearly named as such (with documentation stating its purpose), making it conditionally compile adds unnecessary complexity.
+
+Let's simplify by keeping the method available in all build configurations:
+
+---
+
+
+
+---
+
+
+
+---
+

@@ -4,9 +4,7 @@
 
 namespace ktsu.BlastMerge.Models;
 
-#if DEBUG
 using System.Reflection;
-#endif
 using ktsu.AppDataStorage;
 
 /// <summary>
@@ -34,7 +32,6 @@ public class BlastMergeAppData : AppData<BlastMergeAppData>
 	/// </summary>
 	public ApplicationSettings Settings { get; set; } = new();
 
-#if DEBUG
 	/// <summary>
 	/// Resets the singleton instance for testing purposes.
 	/// This method should only be used in test environments.
@@ -52,5 +49,4 @@ public class BlastMergeAppData : AppData<BlastMergeAppData>
 
 		instanceField?.SetValue(null, null);
 	}
-#endif
 }
