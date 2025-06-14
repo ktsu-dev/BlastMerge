@@ -1429,7 +1429,11 @@ function Invoke-DotNetTest {
 
     Write-StepHeader "Running Tests" -Tags "Invoke-DotNetTest"
 
-    "dotnet test -m:1 --configuration $Configuration --no-build" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
+    # Ensure the coverage directory exists
+    New-Item -Path $CoverageOutputPath -ItemType Directory -Force | Write-InformationStream -Tags "Invoke-DotNetTest"
+
+    # Run tests with code coverage and generate .trx files for SonarQube
+    "dotnet test -m:1 --configuration $Configuration --no-build /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./$CoverageOutputPath/coverage.cobertura.xml --logger:trx --results-directory:$CoverageOutputPath/TestResults" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
     Assert-LastExitCode "Tests failed"
 }
 
