@@ -85,7 +85,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: powershell
         run: |
-          .\.sonar\scanner\dotnet-sonarscanner begin /k:"${{ github.repository_owner }}_${{ github.event.repository.name }}" /o:"${{ github.repository_owner }}" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="coverage/coverage.opencover.xml" /d:sonar.cs.cobertura.reportsPaths="coverage/coverage.cobertura.xml" /d:sonar.coverage.exclusions="**/*Test*.cs,**/*.Tests.cs,**/*.Tests/**/*,**/obj/**/*,**/*.dll,**/Program.cs" /d:sonar.cs.vstest.reportsPaths="**/*.trx" /d:sonar.verbose=true
+          .\.sonar\scanner\dotnet-sonarscanner begin /k:"${{ github.repository_owner }}_${{ github.event.repository.name }}" /o:"${{ github.repository_owner }}" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.cobertura.reportsPaths="coverage/coverage.cobertura.xml" /d:sonar.coverage.exclusions="**/*Test*.cs,**/*.Tests.cs,**/*.Tests/**/*,**/obj/**/*,**/*.dll,**/Program.cs" /d:sonar.cs.vstest.reportsPaths="coverage/TestResults/**/*.trx" /d:sonar.verbose=true
 
       - name: Install Coverage Tools
         shell: pwsh
@@ -141,7 +141,7 @@ jobs:
           "release_hash=$($buildConfig.Data.ReleaseHash)" >> $env:GITHUB_OUTPUT
           "should_release=$($buildConfig.Data.ShouldRelease)" >> $env:GITHUB_OUTPUT
 
-      - name: Generate Coverage Report
+            - name: Generate Coverage Report
         if: always()
         shell: pwsh
         run: |
@@ -151,22 +151,23 @@ jobs:
           Write-Host "Found coverage files:"
           $coverageFiles | ForEach-Object { Write-Host " - $($_.FullName)" }
 
-          # Generate HTML reports for visibility
-          $openCoverFile = "./coverage/coverage.opencover.xml"
+          # Generate HTML report for visibility
           $coberturaFile = "./coverage/coverage.cobertura.xml"
 
-          if (Test-Path $openCoverFile) {
-            reportgenerator "-reports:$openCoverFile" "-targetdir:./coverage/report" "-reporttypes:Html"
-            Write-Host "OpenCover report generated at ./coverage/report"
-          } else {
-            Write-Host "OpenCover file not found at $openCoverFile"
-          }
-
-          # Create summary for console display
           if (Test-Path $coberturaFile) {
             Write-Host "Cobertura file found at $coberturaFile"
+            reportgenerator "-reports:$coberturaFile" "-targetdir:./coverage/report" "-reporttypes:Html"
+            Write-Host "HTML report generated at ./coverage/report"
           } else {
             Write-Host "Cobertura file not found at $coberturaFile"
+          }
+
+          # Check for test results
+          $testResults = Get-ChildItem -Path "./coverage/TestResults" -Recurse -Filter "*.trx" -ErrorAction SilentlyContinue
+          if ($testResults.Count -gt 0) {
+            Write-Host "Found $($testResults.Count) test result files"
+          } else {
+            Write-Host "No test result files found"
           }
 
       - name: End SonarQube

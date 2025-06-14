@@ -230,6 +230,81 @@ Here's what we need to do to address the 0.0% coverage issue:
 
 ---
 
+2. Now let's update the SonarQube begin command to correctly locate the coverage files:
+
+---
+
+
+
+---
+
+3. Let's add a step to generate a coverage report that SonarQube can definitely pick up:
+
+---
+
+
+
+---
+
+4. Let's also make sure the coverage NuGet packages are properly set up by adding them directly to the Invoke-DotNetTest function in PSBuild.psm1:
+
+---
+
+
+
+---
+
+5. Finally, let's update how artifacts are uploaded to ensure all coverage files are included:
+
+---
+
+
+
+---
+
+These changes should help resolve the 0.0% code coverage issue. Here's what we've improved:
+
+1. **Multiple Coverage Formats**: Now collecting both Cobertura and OpenCover formats (SonarQube can use either)
+
+2. **Path Correction**: Fixed the paths in SonarQube configuration to match what our coverage tool generates
+
+3. **Diagnostic Reporting**: Added verbose mode to SonarQube and a step to list all coverage files for troubleshooting
+
+4. **Coverage Configuration**:
+   - Added proper exclusion patterns for test files and program entry points
+   - Set up file merging for consolidated coverage results
+   - Configured appropriate coverage formats
+
+5. **Package Management**: Added automatic package installation directly in the test function to ensure the coverlet tools are available
+
+6. **Full Artifact Upload**: Uploading all coverage-related files for easier debugging
+
+The quality gate should now receive proper coverage data and be able to accurately assess your code coverage percentage. If your tests cover at least 80% of your code, the quality gate should pass on the next run.
+
+---
+
+_**User**_
+
+Executing command: dotnet test -m:1 --configuration Release --no-build /p:CollectCoverage=true /p:CoverletOutputFormat="cobertura,opencover" /p:CoverletOutput=./coverage/ /p:MergeWith=./coverage/coverage.json /p:Exclude="[*]*.Program,[*]*.*Tests.*,[*]*.Startup" --logger:trx --results-directory:coverage/TestResults
+MSBUILD : error MSB1006: Property is not valid.
+Switch: opencover
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+The error is happening because of how PowerShell handles nested quotes in the command string. Let's fix the test command in PSBuild.psm1:
+
+---
+
+
+
+---
+
 
 
 ---
