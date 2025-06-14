@@ -4,7 +4,6 @@
 
 namespace ktsu.BlastMerge.Models;
 
-using System.Collections.Generic;
 using System.Reflection;
 using ktsu.AppDataStorage;
 
