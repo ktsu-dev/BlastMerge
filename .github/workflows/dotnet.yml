@@ -111,9 +111,9 @@ jobs:
             Write-Host "Project: $($project.Name)"
             $projectContent = Get-Content -Path $project.FullName -Raw
             if ($projectContent -match "coverlet.collector") {
-              Write-Host "âœ“ coverlet.collector found"
+              Write-Host "[OK] coverlet.collector found"
             } else {
-              Write-Host "âœ— coverlet.collector NOT found"
+              Write-Host "[MISSING] coverlet.collector NOT found"
             }
           }
 
@@ -250,12 +250,12 @@ jobs:
           # Ensure SonarQube can find the coverage file
           Write-Host "Ensuring SonarQube can find coverage file:"
           if (Test-Path $coberturaFile) {
-            Write-Host "âœ“ Coverage file exists at expected location"
+            Write-Host "[OK] Coverage file exists at expected location"
           } else {
-            Write-Host "âœ— Coverage file does not exist at expected location"
+            Write-Host "[MISSING] Coverage file does not exist at expected location"
             Write-Host "Current working directory: $($pwd.Path)"
             Get-ChildItem -Path "." -Recurse -Filter "*.xml" | Where-Object { $_.Length -gt 1000 } | ForEach-Object {
-              Write-Host "  Potential XML file: $($_.FullName) (size: $($_.Length) bytes)"
+              Write-Host ('  Potential XML file: {0} (size: {1} bytes)' -f $_.FullName, $_.Length)
             }
           }
 
