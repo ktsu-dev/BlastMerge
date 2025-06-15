@@ -131,7 +131,10 @@ function Get-BuildConfiguration {
     $APPLICATION_PATTERN = Join-Path $STAGING_PATH "*.zip"
 
     # Set build arguments
-    $BUILD_ARGS = $USE_DOTNET_SCRIPT ? "-maxCpuCount:1" : ""
+    $BUILD_ARGS = ""
+    if ($USE_DOTNET_SCRIPT) {
+        $BUILD_ARGS = "-maxCpuCount:1"
+    }
 
     # Create configuration object with standard format
     $config = [PSCustomObject]@{
@@ -1271,8 +1274,10 @@ function Update-ProjectMetadata {
         "git add $filesToAdd" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Update-ProjectMetadata"
 
         Write-Information "Checking for changes to commit..." -Tags "Update-ProjectMetadata"
-        $postStatus = "git status --porcelain" | Invoke-ExpressionWithLogging
-        Write-Information "Git status: $($postStatus ? 'Changes detected' : 'No changes')" -Tags "Update-ProjectMetadata"
+        $postStatus = "git status --porcelain" | Invoke-ExpressionWithLogging -Tags "Update-ProjectMetadata" | Out-String
+        $hasChanges = -not [string]::IsNullOrWhiteSpace($postStatus)
+        $statusMessage = if ($hasChanges) { 'Changes detected' } else { 'No changes' }
+        Write-Information "Git status: $statusMessage" -Tags "Update-ProjectMetadata"
 
         # Get the current commit hash regardless of whether we make changes
         $currentHash = "git rev-parse HEAD" | Invoke-ExpressionWithLogging
@@ -1435,6 +1440,11 @@ function Invoke-DotNetTest {
     # Ensure coverlet packages are installed in test projects
     Write-Information "Ensuring coverage tools are available..." -Tags "Invoke-DotNetTest"
     $testProjects = @(Get-ChildItem -Recurse -Filter "*Tests.csproj" -ErrorAction SilentlyContinue)
+    if ($testProjects.Count -eq 0) {
+        # Try alternative naming patterns
+        $testProjects = @(Get-ChildItem -Recurse -Filter "*Test.csproj" -ErrorAction SilentlyContinue)
+    }
+
     if ($testProjects.Count -gt 0) {
         foreach ($project in $testProjects) {
             Write-Information "Adding coverage packages to $($project.Name)..." -Tags "Invoke-DotNetTest"
@@ -1450,6 +1460,11 @@ function Invoke-DotNetTest {
 
     # Get test projects
     $testProjects = @(Get-ChildItem -Recurse -Filter "*Tests.csproj")
+    if ($testProjects.Count -eq 0) {
+        # Try alternative naming patterns
+        $testProjects = @(Get-ChildItem -Recurse -Filter "*Test.csproj" -ErrorAction SilentlyContinue)
+    }
+
     Write-Information "Found $($testProjects.Count) test projects" -Tags "Invoke-DotNetTest"
 
     if ($testProjects.Count -eq 0) {
@@ -1477,11 +1492,12 @@ function Invoke-DotNetTest {
             # Ensure the coverage directory exists
             New-Item -Path $CoverageOutputPath -ItemType Directory -Force | Write-InformationStream -Tags "Invoke-DotNetTest"
 
-            # Run the coverage command with proper syntax using Invoke-Expression
+            # Run the coverage command using correct syntax with & operator instead of Invoke-Expression
             $coverageFile = Join-Path $CoverageOutputPath "coverage.cobertura.xml"
-            $coverageCmd = "dotnet-coverage collect --output `"$coverageFile`" --format cobertura -- $testCommand"
-            Write-Information "Running: $coverageCmd" -Tags "Invoke-DotNetTest"
-            Invoke-Expression $coverageCmd | Write-InformationStream -Tags "Invoke-DotNetTest"
+            Write-Information "Running coverage with dotnet-coverage" -Tags "Invoke-DotNetTest"
+
+            # Use & operator with separate arguments to avoid parsing issues
+            & dotnet-coverage collect "--output" "$coverageFile" "--format" "cobertura" "--" "dotnet" "test" "$($project.FullName)" "--configuration" "$Configuration" "--no-build" | Write-InformationStream -Tags "Invoke-DotNetTest"
 
             # Check if coverage file was created
             if (Test-Path $coverageFile) {
