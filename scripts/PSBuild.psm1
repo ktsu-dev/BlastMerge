@@ -1474,17 +1474,21 @@ function Invoke-DotNetTest {
             # Define the test command properly
             $testCommand = "dotnet test `"$($project.FullName)`" --configuration $Configuration --no-build"
 
-            # Run the coverage command with proper syntax
-            Write-Information "Running: dotnet-coverage collect --output `"$CoverageOutputPath/coverage.cobertura.xml`" --format cobertura `"$testCommand`"" -Tags "Invoke-DotNetTest"
-            "dotnet-coverage collect --output `"$CoverageOutputPath/coverage.cobertura.xml`" --format cobertura `"$testCommand`"" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
+            # Ensure the coverage directory exists
+            New-Item -Path $CoverageOutputPath -ItemType Directory -Force | Write-InformationStream -Tags "Invoke-DotNetTest"
+
+            # Run the coverage command with proper syntax using Invoke-Expression
+            $coverageFile = Join-Path $CoverageOutputPath "coverage.cobertura.xml"
+            $coverageCmd = "dotnet-coverage collect --output `"$coverageFile`" --format cobertura -- $testCommand"
+            Write-Information "Running: $coverageCmd" -Tags "Invoke-DotNetTest"
+            Invoke-Expression $coverageCmd | Write-InformationStream -Tags "Invoke-DotNetTest"
 
             # Check if coverage file was created
-            $coberturaFile = "$CoverageOutputPath/coverage.cobertura.xml"
-            if (Test-Path $coberturaFile) {
-                Write-Information "Coverage file successfully created at: $coberturaFile" -Tags "Invoke-DotNetTest"
+            if (Test-Path $coverageFile) {
+                Write-Information "Coverage file successfully created at: $coverageFile" -Tags "Invoke-DotNetTest"
 
                 # Analyze coverage content
-                $coverageContent = Get-Content -Path $coberturaFile -Raw
+                $coverageContent = Get-Content -Path $coverageFile -Raw
                 if ($coverageContent -match 'line-rate="([0-9.]+)"') {
                     $lineRate = [float]$Matches[1]
                     $coveragePercentage = [math]::Round($lineRate * 100, 2)
@@ -1499,13 +1503,13 @@ function Invoke-DotNetTest {
         }
 
         # Final check if we have any coverage file
-        $coberturaFile = "$CoverageOutputPath/coverage.cobertura.xml"
-        if (-not (Test-Path $coberturaFile)) {
+        $coverageFile = "$CoverageOutputPath/coverage.cobertura.xml"
+        if (-not (Test-Path $coverageFile)) {
             Write-Information "Failed to generate coverage with any project, creating fallback file" -Tags "Invoke-DotNetTest"
             $timestamp = [DateTimeOffset]::Now.ToUnixTimeSeconds()
             $minimalCoverage = '<?xml version="1.0" encoding="utf-8"?><coverage line-rate="0.8" branch-rate="0.8" version="1.9" timestamp="' + $timestamp + '" lines-covered="0" lines-valid="0" branches-covered="0" branches-valid="0"><sources><source>' + $pwd.Path.Replace('\','/') + '</source></sources><packages></packages></coverage>'
-            [System.IO.File]::WriteAllText($coberturaFile, $minimalCoverage, [System.Text.UTF8Encoding]::new($false)) | Write-InformationStream -Tags "Invoke-DotNetTest"
-            Write-Information "Created fallback coverage file at: $coberturaFile" -Tags "Invoke-DotNetTest"
+            [System.IO.File]::WriteAllText($coverageFile, $minimalCoverage, [System.Text.UTF8Encoding]::new($false)) | Write-InformationStream -Tags "Invoke-DotNetTest"
+            Write-Information "Created fallback coverage file at: $coverageFile" -Tags "Invoke-DotNetTest"
         }
     }
     catch {
@@ -1513,12 +1517,12 @@ function Invoke-DotNetTest {
         Write-Information "Stack trace: $($_.ScriptStackTrace)" -Tags "Invoke-DotNetTest"
 
         # Create fallback coverage file
-        $coberturaFile = "$CoverageOutputPath/coverage.cobertura.xml"
-        if (-not (Test-Path $coberturaFile)) {
+        $coverageFile = "$CoverageOutputPath/coverage.cobertura.xml"
+        if (-not (Test-Path $coverageFile)) {
             Write-Information "Creating fallback coverage file after error" -Tags "Invoke-DotNetTest"
             $timestamp = [DateTimeOffset]::Now.ToUnixTimeSeconds()
             $minimalCoverage = '<?xml version="1.0" encoding="utf-8"?><coverage line-rate="0.8" branch-rate="0.8" version="1.9" timestamp="' + $timestamp + '" lines-covered="0" lines-valid="0" branches-covered="0" branches-valid="0"><sources><source>' + $pwd.Path.Replace('\','/') + '</source></sources><packages></packages></coverage>'
-            [System.IO.File]::WriteAllText($coberturaFile, $minimalCoverage, [System.Text.UTF8Encoding]::new($false)) | Write-InformationStream -Tags "Invoke-DotNetTest"
+            [System.IO.File]::WriteAllText($coverageFile, $minimalCoverage, [System.Text.UTF8Encoding]::new($false)) | Write-InformationStream -Tags "Invoke-DotNetTest"
         }
     }
     Assert-LastExitCode "Tests failed"

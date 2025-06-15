@@ -182,38 +182,6 @@ jobs:
             Write-Host "  - $($_.Name) (Test Project: $isTestProject)"
           }
 
-          # Find test projects and create coverage manually if needed
-          $testProjects = $projects | Where-Object {
-            $content = Get-Content -Path $_.FullName -Raw
-            $content -match "Microsoft.NET.Test" -or $_.Name -match "Test"
-          }
-
-          if ($testProjects.Count -gt 0 -and -not (Test-Path "./coverage/coverage.cobertura.xml")) {
-            Write-Host "Attempting to generate coverage file manually..."
-            $mainProject = $testProjects[0]
-            Write-Host "Using test project: $($mainProject.Name)"
-
-            # Install coverlet if needed
-            dotnet add $mainProject.FullName package coverlet.msbuild --version 6.0.0
-
-            # First ensure dotnet-coverage tool is installed
-            if (-not (Get-Command dotnet-coverage -ErrorAction SilentlyContinue)) {
-              Write-Host "Installing dotnet-coverage tool..."
-              dotnet tool install --global dotnet-coverage
-            }
-
-            # Run tests with coverage using dotnet-coverage with properly formatted command
-            $testCommand = "dotnet test `"$($mainProject.FullName)`" --configuration Release --no-build"
-            dotnet-coverage collect --output "./coverage/coverage.cobertura.xml" --format cobertura "$testCommand"
-
-            # Check if file was created
-            if (Test-Path "./coverage/coverage.cobertura.xml") {
-              Write-Host "Successfully generated coverage file manually"
-            } else {
-              Write-Host "Failed to generate coverage file manually"
-            }
-          }
-
           # Find and display coverage files
           $coverageFiles = Get-ChildItem -Path "." -Recurse -Filter "*.cobertura.xml" -ErrorAction SilentlyContinue
           Write-Host "Found coverage files across entire workspace:"
@@ -222,10 +190,47 @@ jobs:
           # Make sure the expected coverage file exists for SonarQube
           $coberturaFile = "./coverage/coverage.cobertura.xml"
 
-          if (-not (Test-Path $coberturaFile) -and $coverageFiles.Count -gt 0) {
-            Write-Host "Primary cobertura file not found, copying from found alternative"
-            Copy-Item -Path $coverageFiles[0].FullName -Destination $coberturaFile -Force
-            Write-Host "Copied $($coverageFiles[0].FullName) to $coberturaFile"
+          # If no coverage file exists, only then try to generate one
+          if (-not (Test-Path $coberturaFile) -and $coverageFiles.Count -eq 0) {
+            Write-Host "No coverage file found - attempting to generate one..."
+
+            # Find test projects
+            $testProjects = $projects | Where-Object {
+              $content = Get-Content -Path $_.FullName -Raw
+              $content -match "Microsoft.NET.Test" -or $_.Name -match "Test"
+            }
+
+            if ($testProjects.Count -gt 0) {
+              $mainProject = $testProjects[0]
+              Write-Host "Using test project: $($mainProject.Name)"
+
+              # Install coverlet if needed
+              dotnet add $mainProject.FullName package coverlet.msbuild --version 6.0.0
+
+              # First ensure dotnet-coverage tool is installed
+              if (-not (Get-Command dotnet-coverage -ErrorAction SilentlyContinue)) {
+                Write-Host "Installing dotnet-coverage tool..."
+                dotnet tool install --global dotnet-coverage
+              }
+
+              # Run tests with coverage using dotnet-coverage with properly formatted command
+              $testCommand = "dotnet test `"$($mainProject.FullName)`" --configuration Release --no-build"
+
+              # Use Invoke-Expression to handle the command properly
+              Write-Host "Running coverage command..."
+              $coverageCmd = "dotnet-coverage collect --output `"./coverage/coverage.cobertura.xml`" --format cobertura -- $testCommand"
+              Write-Host "Executing: $coverageCmd"
+              Invoke-Expression $coverageCmd
+            }
+          } else {
+            Write-Host "Found existing coverage file - skipping test run"
+
+            # If coverage file is not in the expected location but exists elsewhere, copy it
+            if (-not (Test-Path $coberturaFile) -and $coverageFiles.Count -gt 0) {
+              Write-Host "Primary cobertura file not found, copying from found alternative"
+              Copy-Item -Path $coverageFiles[0].FullName -Destination $coberturaFile -Force
+              Write-Host "Copied $($coverageFiles[0].FullName) to $coberturaFile"
+            }
           }
 
           # Generate HTML report for visibility
