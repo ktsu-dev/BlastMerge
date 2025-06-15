@@ -49,7 +49,7 @@ public static class IterativeMergeOrchestrator
 		while (remainingGroups.Count > 1)
 		{
 			// Find the two most similar groups among remaining groups
-			FileSimilarity? similarity = FileDiffer.FindMostSimilarFiles(remainingGroups, null);
+			FileSimilarity? similarity = FileDiffer.FindMostSimilarFiles(remainingGroups, fileSystem);
 
 			if (similarity == null)
 			{
