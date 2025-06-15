@@ -106,6 +106,35 @@ public static class DiffPlexDiffer
 	}
 
 	/// <summary>
+	/// Generates a unified diff from content strings
+	/// </summary>
+	/// <param name="content1">Content of the first file</param>
+	/// <param name="content2">Content of the second file</param>
+	/// <param name="file1">Path to the first file (for header)</param>
+	/// <param name="file2">Path to the second file (for header)</param>
+	/// <param name="contextLines">Number of context lines to include</param>
+	/// <returns>Unified diff as a string</returns>
+	private static string GenerateUnifiedDiffFromContent(string content1, string content2, string file1, string file2, int contextLines)
+	{
+		if (content1 == content2)
+		{
+			return string.Empty;
+		}
+
+		DiffPaneModel diff = InlineDiffBuilder.BuildDiffModel(content1, content2);
+
+		List<string> result =
+		[
+			$"--- {file1}",
+			$"+++ {file2}"
+		];
+
+		ProcessDiffLines(diff.Lines, result, contextLines);
+
+		return string.Join(Environment.NewLine, result);
+	}
+
+	/// <summary>
 	/// Processes diff lines and builds unified diff chunks
 	/// </summary>
 	/// <param name="lines">Diff lines to process</param>

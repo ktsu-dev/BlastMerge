@@ -5,6 +5,7 @@
 namespace ktsu.BlastMerge.Test;
 
 using System;
+using System.IO.Abstractions;
 using DiffPlex.Model;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
@@ -52,6 +53,28 @@ public class DiffPlexHelperTests : MockFileSystemTestBase
 			Line 3
 			Line 4
 			""");
+	}
+
+	[TestMethod]
+	public void Debug_FileSystemProvider_IsWorkingCorrectly()
+	{
+		// Verify that FileSystemProvider.Current is using our mock file system
+		IFileSystem currentFileSystem = FileSystemProvider.Current;
+		Assert.IsNotNull(currentFileSystem);
+		Assert.IsTrue(currentFileSystem.GetType().Name.Contains("Mock"));
+
+		// Verify that our test files exist in the mock file system
+		Assert.IsTrue(MockFileSystem.File.Exists(_file1Path), $"File1 should exist at {_file1Path}");
+		Assert.IsTrue(MockFileSystem.File.Exists(_file2Path), $"File2 should exist at {_file2Path}");
+		Assert.IsTrue(MockFileSystem.File.Exists(_identicalFilePath), $"Identical file should exist at {_identicalFilePath}");
+
+		// Verify that FileSystemProvider.Current can see our files
+		Assert.IsTrue(currentFileSystem.File.Exists(_file1Path), $"FileSystemProvider.Current should see file1 at {_file1Path}");
+		Assert.IsTrue(currentFileSystem.File.Exists(_file2Path), $"FileSystemProvider.Current should see file2 at {_file2Path}");
+
+		// Read content to verify it's correct
+		string content1 = currentFileSystem.File.ReadAllText(_file1Path);
+		Assert.IsTrue(content1.Contains("Line 1"), "File1 should contain expected content");
 	}
 
 	[TestMethod]
