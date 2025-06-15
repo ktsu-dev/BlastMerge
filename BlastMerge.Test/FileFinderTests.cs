@@ -26,6 +26,14 @@ public class FileFinderTests : MockFileSystemTestBase
 		CreateFile(Path.Combine("other.txt"), "Other file");
 		CreateFile(Path.Combine("Subdir1", "different.txt"), "Different file");
 
+		// Create additional structure for search path and exclusion tests
+		CreateFile(Path.Combine("bin", "test.txt"), "Bin test file");
+		CreateFile(Path.Combine("obj", "test.txt"), "Obj test file");
+		CreateFile(Path.Combine("temp", "test.txt"), "Temp test file");
+		CreateFile(Path.Combine("node_modules", "test.txt"), "Node modules test file");
+		CreateFile(Path.Combine("SearchPath1", "test.txt"), "Search path 1 test file");
+		CreateFile(Path.Combine("SearchPath2", "test.txt"), "Search path 2 test file");
+
 		// Initialize the adapter
 		_fileFinderAdapter = new FileFinderAdapter(MockFileSystem);
 	}
@@ -57,7 +65,7 @@ public class FileFinderTests : MockFileSystemTestBase
 		IReadOnlyCollection<string> files = _fileFinderAdapter.FindFiles(TestDirectory, "*.txt");
 
 		// Assert
-		Assert.AreEqual(6, files.Count, "Should find all 6 .txt files");
+		Assert.AreEqual(12, files.Count, "Should find all 12 .txt files");
 	}
 
 	[TestMethod]
@@ -80,7 +88,7 @@ public class FileFinderTests : MockFileSystemTestBase
 		IReadOnlyCollection<string> files = _fileFinderAdapter.FindFiles(TestDirectory, "test.txt");
 
 		// Assert
-		Assert.AreEqual(4, files.Count, "Should find 4 test.txt files, excluding those in submodules");
+		Assert.AreEqual(10, files.Count, "Should find 10 test.txt files, excluding those in submodules");
 		Assert.IsFalse(files.Any(f => f.Contains("MySubmodule")), "Should not include files from submodule directories");
 	}
 
@@ -101,7 +109,7 @@ public class FileFinderTests : MockFileSystemTestBase
 		IReadOnlyCollection<string> files = _fileFinderAdapter.FindFiles(TestDirectory, "test.txt");
 
 		// Assert
-		Assert.AreEqual(5, files.Count, "Should find 5 test.txt files, including those in regular git repositories");
+		Assert.AreEqual(11, files.Count, "Should find 11 test.txt files, including those in regular git repositories");
 		Assert.IsTrue(files.Any(f => f.Contains("MyGitRepo")), "Should include files from regular git repository directories");
 	}
 
@@ -126,7 +134,7 @@ public class FileFinderTests : MockFileSystemTestBase
 		IReadOnlyCollection<string> files = _fileFinderAdapter.FindFiles(TestDirectory, "test.txt");
 
 		// Assert
-		Assert.AreEqual(4, files.Count, "Should find 4 test.txt files, excluding both submodules");
+		Assert.AreEqual(10, files.Count, "Should find 10 test.txt files, excluding both submodules");
 		Assert.IsFalse(files.Any(f => f.Contains("Submodule1") || f.Contains("Submodule2")),
 			"Should not include files from any submodule directories");
 	}
@@ -150,8 +158,106 @@ public class FileFinderTests : MockFileSystemTestBase
 		IReadOnlyCollection<string> files = _fileFinderAdapter.FindFiles(TestDirectory, "test.txt");
 
 		// Assert
-		Assert.AreEqual(5, files.Count, "Should find 5 test.txt files, including parent dir but excluding nested submodule");
+		Assert.AreEqual(11, files.Count, "Should find 11 test.txt files, including parent dir but excluding nested submodule");
 		Assert.IsTrue(files.Any(f => f.Contains(Path.Combine("ParentDir", "test.txt"))), "Should include files from parent directory");
 		Assert.IsFalse(files.Any(f => f.Contains("NestedSubmodule")), "Should not include files from nested submodule");
+	}
+
+	[TestMethod]
+	public void FindFiles_WithSearchPaths_ReturnsFilesFromSpecifiedPaths()
+	{
+		// Arrange
+		string searchPath1 = Path.Combine(TestDirectory, "SearchPath1");
+		string searchPath2 = Path.Combine(TestDirectory, "SearchPath2");
+		IReadOnlyCollection<string> searchPaths = [searchPath1, searchPath2];
+		IReadOnlyCollection<string> exclusionPatterns = [];
+
+		// Act
+		IReadOnlyCollection<string> files = _fileFinderAdapter.FindFiles(searchPaths, TestDirectory, "test.txt", exclusionPatterns);
+
+		// Assert
+		Assert.AreEqual(2, files.Count, "Should find 2 test.txt files from specified search paths");
+		Assert.IsTrue(files.Any(f => f.Contains("SearchPath1")), "Should include files from SearchPath1");
+		Assert.IsTrue(files.Any(f => f.Contains("SearchPath2")), "Should include files from SearchPath2");
+		Assert.IsFalse(files.Any(f => f.Contains("Subdir1") || f.Contains("Subdir2")), "Should not include files from other directories");
+	}
+
+	[TestMethod]
+	public void FindFiles_WithEmptySearchPaths_UsesRootDirectory()
+	{
+		// Arrange
+		IReadOnlyCollection<string> searchPaths = [];
+		IReadOnlyCollection<string> exclusionPatterns = [];
+
+		// Act
+		IReadOnlyCollection<string> files = _fileFinderAdapter.FindFiles(searchPaths, TestDirectory, "test.txt", exclusionPatterns);
+
+		// Assert
+		Assert.AreEqual(10, files.Count, "Should find all 10 test.txt files when using root directory as fallback");
+	}
+
+	[TestMethod]
+	public void FindFiles_WithExclusionPatterns_ExcludesMatchingPaths()
+	{
+		// Arrange
+		IReadOnlyCollection<string> searchPaths = [];
+		IReadOnlyCollection<string> exclusionPatterns = ["*/bin/*", "*/obj/*", "*/temp/*"];
+
+		// Act
+		IReadOnlyCollection<string> files = _fileFinderAdapter.FindFiles(searchPaths, TestDirectory, "test.txt", exclusionPatterns);
+
+		// Assert
+		Assert.AreEqual(7, files.Count, "Should find 7 test.txt files after excluding bin, obj, and temp directories");
+		Assert.IsFalse(files.Any(f => f.Contains("bin") || f.Contains("obj") || f.Contains("temp")),
+			"Should not include files from excluded directories");
+	}
+
+	[TestMethod]
+	public void FindFiles_WithWildcardExclusion_ExcludesMatchingPaths()
+	{
+		// Arrange
+		IReadOnlyCollection<string> searchPaths = [];
+		IReadOnlyCollection<string> exclusionPatterns = ["*node_modules*"];
+
+		// Act
+		IReadOnlyCollection<string> files = _fileFinderAdapter.FindFiles(searchPaths, TestDirectory, "test.txt", exclusionPatterns);
+
+		// Assert
+		Assert.AreEqual(9, files.Count, "Should find 9 test.txt files after excluding node_modules directory");
+		Assert.IsFalse(files.Any(f => f.Contains("node_modules")), "Should not include files from node_modules directory");
+	}
+
+	[TestMethod]
+	public void FindFiles_WithNonExistentSearchPath_SkipsNonExistentPaths()
+	{
+		// Arrange
+		string existingPath = Path.Combine(TestDirectory, "SearchPath1");
+		string nonExistentPath = Path.Combine(TestDirectory, "NonExistentPath");
+		IReadOnlyCollection<string> searchPaths = [existingPath, nonExistentPath];
+		IReadOnlyCollection<string> exclusionPatterns = [];
+
+		// Act
+		IReadOnlyCollection<string> files = _fileFinderAdapter.FindFiles(searchPaths, TestDirectory, "test.txt", exclusionPatterns);
+
+		// Assert
+		Assert.AreEqual(1, files.Count, "Should find 1 test.txt file from existing search path only");
+		Assert.IsTrue(files.Any(f => f.Contains("SearchPath1")), "Should include files from existing search path");
+	}
+
+	[TestMethod]
+	public void FindFiles_WithComplexExclusionPattern_ExcludesCorrectly()
+	{
+		// Arrange
+		IReadOnlyCollection<string> searchPaths = [];
+		IReadOnlyCollection<string> exclusionPatterns = ["*/Subdir1/*", "temp*"];
+
+		// Act
+		IReadOnlyCollection<string> files = _fileFinderAdapter.FindFiles(searchPaths, TestDirectory, "test.txt", exclusionPatterns);
+
+		// Assert
+		Assert.AreEqual(7, files.Count, $"Should find 7 test.txt files after excluding Subdir1 and temp directories. Actual count: {files.Count}");
+		Assert.IsFalse(files.Any(f => f.Contains("Subdir1") || f.Contains("temp")),
+			"Should not include files from Subdir1 or temp directories");
+		Assert.IsTrue(files.Any(f => f.Contains("Subdir2")), "Should still include files from Subdir2");
 	}
 }

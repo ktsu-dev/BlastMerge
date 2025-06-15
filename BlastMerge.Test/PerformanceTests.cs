@@ -7,6 +7,7 @@ namespace ktsu.BlastMerge.Test;
 using System;
 using System.Diagnostics;
 using System.IO;
+using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 [TestClass]
@@ -103,7 +104,7 @@ public class PerformanceTests
 
 		// Act
 		stopwatch.Start();
-		IReadOnlyCollection<LineDifference> differences = FileDiffer.FindDifferences(_smallFile1, _smallFile2);
+		_ = FileDiffer.FindDifferences(_smallFile1, _smallFile2);
 		stopwatch.Stop();
 
 		// Assert
@@ -121,7 +122,7 @@ public class PerformanceTests
 
 		// Act
 		stopwatch.Start();
-		IReadOnlyCollection<LineDifference> differences = FileDiffer.FindDifferences(_mediumFile1, _mediumFile2);
+		_ = FileDiffer.FindDifferences(_mediumFile1, _mediumFile2);
 		stopwatch.Stop();
 
 		// Assert
@@ -139,7 +140,7 @@ public class PerformanceTests
 
 		// Act
 		stopwatch.Start();
-		IReadOnlyCollection<LineDifference> differences = FileDiffer.FindDifferences(_largeFile1, _largeFile2);
+		_ = FileDiffer.FindDifferences(_largeFile1, _largeFile2);
 		stopwatch.Stop();
 
 		// Assert
@@ -169,7 +170,7 @@ public class PerformanceTests
 
 		// Act
 		stopwatch.Start();
-		IReadOnlyCollection<string> files = FileFinder.FindFiles(largeDir, "*.txt");
+		IReadOnlyCollection<string> files = FileFinder.FindFiles(largeDir, "*.txt", fileSystem: null);
 		stopwatch.Stop();
 
 		// Assert
