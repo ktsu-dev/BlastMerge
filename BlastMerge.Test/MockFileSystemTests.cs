@@ -12,6 +12,8 @@ using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
 using System.Text;
+using ktsu.BlastMerge.Services;
+using ktsu.BlastMerge.Test.Adapters;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
@@ -22,11 +24,12 @@ public class MockFileSystemTests
 	private string _testDir = null!;
 	private string _testDir1 = null!;
 	private string _testDir2 = null!;
+	private readonly string _testId = Guid.NewGuid().ToString("N");
 
 	[TestInitialize]
 	public void Setup()
 	{
-		_testDir = "/testdir";
+		_testDir = $"/testdir-{_testId}";
 		_testDir1 = Path.Combine(_testDir, "dir1");
 		_testDir2 = Path.Combine(_testDir, "dir2");
 
@@ -43,6 +46,18 @@ public class MockFileSystemTests
 		_mockFileSystem = new MockFileSystem(fileDict);
 		_mockFileSystem.Directory.CreateDirectory(_testDir1);
 		_mockFileSystem.Directory.CreateDirectory(_testDir2);
+
+		// Set the mock file system as the default for all services
+		// Each test gets its own isolated filesystem instance
+		FileSystemProvider.SetFileSystem(_mockFileSystem);
+	}
+
+	[TestCleanup]
+	public void Cleanup()
+	{
+		// Reset the file system provider back to default
+		// This ensures the next test (or non-test code) gets a clean slate
+		FileSystemProvider.ResetToDefault();
 	}
 
 	[TestMethod]
@@ -141,21 +156,4 @@ public class MockFileSystemTests
 		Assert.ThrowsException<UnauthorizedAccessException>(() =>
 			mockFileDiffer.Object.FindDifferences(file1Path, restrictedFilePath));
 	}
-}
-
-// Interface definitions to support mocking
-public interface IFileFinder
-{
-	public ReadOnlyCollection<string> FindFiles(string directoryPath, string searchPattern);
-}
-
-public interface IFileHasher
-{
-	public string ComputeFileHash(string filePath);
-}
-
-public interface IFileDiffer
-{
-	public ReadOnlyCollection<string> FindDifferences(string file1Path, string file2Path);
-	public string GenerateGitStyleDiff(string file1Path, string file2Path);
 }

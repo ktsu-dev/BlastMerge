@@ -4,9 +4,11 @@
 
 namespace ktsu.BlastMerge.Test;
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
+using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 /// <summary>
@@ -25,16 +27,48 @@ public abstract class MockFileSystemTestBase
 	protected string TestDirectory { get; private set; } = null!;
 
 	/// <summary>
+	/// A unique identifier for this test instance, used to prevent collisions in parallel tests
+	/// </summary>
+	protected string TestId { get; } = Guid.NewGuid().ToString("N");
+
+	/// <summary>
 	/// Initializes the mock file system
 	/// </summary>
 	[TestInitialize]
 	public virtual void SetUp()
 	{
-		TestDirectory = @"C:\mock-test-dir";
+		// Create unique test directory per test to avoid collisions when running in parallel
+		TestDirectory = $@"C:\mock-test-dir-{TestId}";
+
+		// Create a fresh mock filesystem instance for this test
 		MockFileSystem = new MockFileSystem(new Dictionary<string, MockFileData>());
 		MockFileSystem.Directory.CreateDirectory(TestDirectory);
 
-		InitializeFileSystem();
+		// Set this test's mock file system as the current one for all services to use
+		// Each test gets its own isolated filesystem
+		FileSystemProvider.SetFileSystem(MockFileSystem);
+
+		try
+		{
+			InitializeFileSystem();
+		}
+		catch
+		{
+			// If initialization fails, ensure we still reset the filesystem before propagating exception
+			FileSystemProvider.ResetToDefault();
+			throw;
+		}
+	}
+
+	/// <summary>
+	/// Clean up after tests
+	/// </summary>
+	[TestCleanup]
+	public virtual void Cleanup()
+	{
+		// Reset the file system back to default after test completes
+		// This ensures the next test (or real code) gets a clean slate
+		FileSystemProvider.ResetToDefault();
 	}
 
 	/// <summary>

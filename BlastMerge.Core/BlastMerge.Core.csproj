@@ -1,5 +1,0 @@
-<Project Sdk="ktsu.Sdk.Lib">
-  <ItemGroup>
-    <PackageReference Include="DiffPlex" />
-  </ItemGroup>
-</Project>

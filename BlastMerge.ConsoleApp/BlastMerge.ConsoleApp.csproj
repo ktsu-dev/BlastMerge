@@ -2,9 +2,10 @@
   <ItemGroup>
     <PackageReference Include="Spectre.Console" />
     <PackageReference Include="CommandLineParser" />
+    <PackageReference Include="ktsu.AppDataStorage" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../BlastMerge.Core/BlastMerge.Core.csproj" />
+    <ProjectReference Include="../BlastMerge/BlastMerge.csproj" />
   </ItemGroup>
 </Project>
