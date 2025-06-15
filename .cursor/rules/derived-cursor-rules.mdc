@@ -86,6 +86,7 @@ globs: *
 -   coverlet.msbuild Version="6.0.0"
 -   ReportGenerator
 -   powershell-yaml
+-   dotnet-coverage
 
 ## PROJECT DOCUMENTATION & CONTEXT SYSTEM
 
@@ -315,4 +316,4 @@ globs: *
 -   When the `ProcessLineForMarkupDisplay` method has high cognitive complexity, extract helper methods to reduce it.
 -   Refactor the `MatchesGlobPattern` method to reduce cognitive complexity by:
     -   Extract pattern detection logic into simple helper methods (`IsDirectoryContainsPattern`, `IsWildcardContainsPattern`, `IsPrefixPattern`)
-    -   Extract pattern matching logic into focused methods (`MatchesDirectoryContainsPattern`, `MatchesWildcardContainsPattern`,
+    -   Extract pattern matching logic into focused methods (`MatchesDirectoryContainsPattern`, `

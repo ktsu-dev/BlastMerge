@@ -895,3 +895,80 @@ _**Assistant**_
 
 ---
 
+I see the issue with Coverlet. The tests are running successfully (213 passed), but the coverage collection is failing because the Coverlet MSBuild task is missing the "InstrumenterState" parameter. Let's fix that by using a different approach for coverage collection.
+
+Here's what we need to update:
+
+1. First, let's modify the Generate Coverage Report step to use a more reliable method:
+
+---
+
+
+
+---
+
+2. Now, let's also update our main test function in PSBuild.psm1 to use dotnet-coverage:
+
+---
+
+
+
+---
+
+3. Let's also update the alternative check in the same file:
+
+---
+
+
+
+---
+
+4. Finally, let's update the manual coverage generation method:
+
+---
+
+
+
+---
+
+I've completely changed the approach for code coverage collection to fix the error you're seeing. Here's what was changed:
+
+1. **Switched from coverlet.msbuild to dotnet-coverage**:
+   - The error `MSB4044: The "Coverlet.MSbuild.Tasks.CoverageResultTask" task was not given a value for the required parameter "InstrumenterState"` indicates a problem with the coverlet.msbuild integration
+   - The dotnet-coverage tool is Microsoft's official coverage tool and is more reliable in CI environments
+
+2. **Made all coverage collection consistent**:
+   - Now using the same approach in all places: `dotnet-coverage collect`
+   - This provides more consistent results across different test projects
+
+3. **Added automatic installation checks**:
+   - Added code to ensure dotnet-coverage is installed before using it
+   - This prevents any "command not found" errors
+
+4. **Simplified the commands**:
+   - Removed the complex parameters that were causing issues with the MSBuild integration
+   - Using direct command-line parameters instead of MSBuild properties
+
+This approach should resolve the coverage collection issue because:
+
+1. It bypasses the problematic coverlet.msbuild integration
+2. It uses a more direct and reliable approach with dotnet-coverage
+3. It ensures the tool is installed before use
+4. It outputs directly to the expected location for SonarQube
+
+Now SonarQube should receive actual test coverage data rather than a fallback file with no real coverage information.
+
+---
+
+_**User**_
+
+@build.log check the logs please
+
+---
+
+_**Assistant**_
+
+
+
+---
+
