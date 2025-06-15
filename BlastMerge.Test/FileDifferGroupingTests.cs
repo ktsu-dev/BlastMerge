@@ -130,4 +130,79 @@ public class FileDifferGroupingTests : MockFileSystemTestBase
 		Assert.AreEqual(1, group.FilePaths.Count, "Group should have one file path");
 		Assert.AreEqual(filePath, group.FilePaths.First(), "Group should contain the added file path");
 	}
+
+	[TestMethod]
+	public void GroupFilesByHashOnly_WithIdenticalFiles_GroupsCorrectly()
+	{
+		// Arrange
+		List<string> files = [_testFile1, _testFile2, _testFile3];
+
+		// Act
+		IReadOnlyCollection<FileGroup> groups = _fileDifferAdapter.GroupFilesByHashOnly(files);
+
+		// Assert
+		Assert.AreEqual(2, groups.Count, "Should create two groups for two unique file contents");
+
+		// Find group containing file1/file2
+		FileGroup group1 = groups.First(g => g.FilePaths.Contains(_testFile1));
+		Assert.AreEqual(2, group1.FilePaths.Count, "First group should contain 2 files");
+		Assert.IsTrue(group1.FilePaths.Contains(_testFile1), "First group should contain file1");
+		Assert.IsTrue(group1.FilePaths.Contains(_testFile2), "First group should contain file2");
+	}
+
+	[TestMethod]
+	[ExpectedException(typeof(ArgumentNullException))]
+	public void GroupFilesByHashOnly_WithNullInput_ThrowsArgumentNullException()
+	{
+		// Act
+		_fileDifferAdapter.GroupFilesByHashOnly(null!);
+	}
+
+	[TestMethod]
+	public void GroupFilesByFilenameAndHash_WithDifferentFilenames_CreatesSeperateGroups()
+	{
+		// Arrange - Create files with same content but different names
+		string fileA = CreateFile("fileA.txt", "identical content");
+		string fileB = CreateFile("fileB.txt", "identical content");
+		List<string> files = [fileA, fileB];
+
+		// Act
+		IReadOnlyCollection<FileGroup> groups = _fileDifferAdapter.GroupFilesByFilenameAndHash(files);
+
+		// Assert
+		Assert.AreEqual(2, groups.Count, "Should create separate groups for files with different names");
+
+		// Each group should contain only one file
+		foreach (FileGroup group in groups)
+		{
+			Assert.AreEqual(1, group.FilePaths.Count, "Each group should contain only one file");
+		}
+	}
+
+	[TestMethod]
+	public void GroupFilesByFilenameAndHash_WithSameFilenameAndContent_GroupsTogether()
+	{
+		// Arrange - Create files with same name and content in different directories
+		string file1 = CreateFile("dir1/same.txt", "identical content");
+		string file2 = CreateFile("dir2/same.txt", "identical content");
+		List<string> files = [file1, file2];
+
+		// Act
+		IReadOnlyCollection<FileGroup> groups = _fileDifferAdapter.GroupFilesByFilenameAndHash(files);
+
+		// Assert
+		Assert.AreEqual(1, groups.Count, "Should create one group for files with same name and content");
+		FileGroup group = groups.First();
+		Assert.AreEqual(2, group.FilePaths.Count, "Group should contain both files");
+		Assert.IsTrue(group.FilePaths.Contains(file1), "Group should contain first file");
+		Assert.IsTrue(group.FilePaths.Contains(file2), "Group should contain second file");
+	}
+
+	[TestMethod]
+	[ExpectedException(typeof(ArgumentNullException))]
+	public void GroupFilesByFilenameAndHash_WithNullInput_ThrowsArgumentNullException()
+	{
+		// Act
+		_fileDifferAdapter.GroupFilesByFilenameAndHash(null!);
+	}
 }
