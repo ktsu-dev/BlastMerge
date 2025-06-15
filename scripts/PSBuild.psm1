@@ -1470,10 +1470,15 @@ function Invoke-DotNetTest {
             if (Test-Path $dllPath) {
                 Write-Information "Test assembly exists at: $dllPath" -Tags "Invoke-DotNetTest"
 
-                # Run tests and collect coverage directly with coverlet.collector
-                Write-Information "Running tests with direct coverage collection" -Tags "Invoke-DotNetTest"
-                $testCommand = "dotnet test `"$($project.FullName)`" --configuration $Configuration /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=`"$CoverageOutputPath/`" --no-build --verbosity normal"
-                $testCommand | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
+                # Run tests and collect coverage using dotnet-coverage tool
+                Write-Information "Running tests with dotnet-coverage" -Tags "Invoke-DotNetTest"
+
+                # First ensure the tool is installed
+                "dotnet tool update --global dotnet-coverage" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
+
+                # Run tests with coverage collection
+                $coverageCommand = "dotnet-coverage collect --output `"$CoverageOutputPath/coverage.cobertura.xml`" --format cobertura `"dotnet test `"$($project.FullName)`" --configuration $Configuration --no-build`""
+                $coverageCommand | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
 
                 # Check if coverage file was created
                 $coberturaFile = "$CoverageOutputPath/coverage.cobertura.xml"
@@ -1490,9 +1495,17 @@ function Invoke-DotNetTest {
                 if ($alternativeDlls.Count -gt 0) {
                     Write-Information "Found alternative test assembly at: $($alternativeDlls[0].FullName)" -Tags "Invoke-DotNetTest"
 
-                    # Just run tests directly
-                    $testCommand = "dotnet test `"$($project.FullName)`" --configuration $Configuration /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=`"$CoverageOutputPath/`" --no-build --verbosity normal"
-                    $testCommand | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
+                    # Just run tests with coverage
+                    Write-Information "Running tests with dotnet-coverage (alternative path)" -Tags "Invoke-DotNetTest"
+
+                    # First ensure the tool is installed if not already
+                    if (-not (Get-Command dotnet-coverage -ErrorAction SilentlyContinue)) {
+                        "dotnet tool update --global dotnet-coverage" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
+                    }
+
+                    # Run coverage collection
+                    $coverageCommand = "dotnet-coverage collect --output `"$CoverageOutputPath/coverage.cobertura.xml`" --format cobertura `"dotnet test `"$($project.FullName)`" --configuration $Configuration --no-build`""
+                    $coverageCommand | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
                 } else {
                     Write-Information "No test assembly found for project: $($project.Name)" -Tags "Invoke-DotNetTest"
                 }
@@ -1514,7 +1527,14 @@ function Invoke-DotNetTest {
         # Try to manually run a test project to generate coverage
         if ($testProjects.Count -gt 0) {
             $mainProject = $testProjects[0]
-            $coverageCommand = "dotnet test `"$($mainProject.FullName)`" --configuration $Configuration /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:IncludeTestAssembly=false /p:CoverletOutput=`"$CoverageOutputPath/coverage.cobertura.xml`" /p:Exclude=`"[*]*Tests*`" --no-build --verbosity normal"
+            # Ensure dotnet-coverage is installed
+            if (-not (Get-Command dotnet-coverage -ErrorAction SilentlyContinue)) {
+                Write-Information "Installing dotnet-coverage tool globally" -Tags "Invoke-DotNetTest"
+                "dotnet tool update --global dotnet-coverage" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
+            }
+
+            # Use dotnet-coverage to collect code coverage
+            $coverageCommand = "dotnet-coverage collect --output `"$CoverageOutputPath/coverage.cobertura.xml`" --format cobertura `"dotnet test `"$($mainProject.FullName)`" --configuration $Configuration --no-build`""
             Write-Information "Running manual coverage command: $coverageCommand" -Tags "Invoke-DotNetTest"
             $coverageCommand | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
         }

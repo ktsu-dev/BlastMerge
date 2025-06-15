@@ -810,3 +810,88 @@ _**Assistant**_
 
 ---
 
+The error is occurring with the string quoting in the PowerShell script. Let me fix that:
+
+---
+
+Read file: .github/workflows/dotnet.yml
+
+---
+
+I've found the issue. There are special characters (Unicode checkmark symbols) that are causing problems with the string termination in PowerShell. Let's fix this:
+
+---
+
+```diff
+              $projectContent = Get-Content -Path $project.FullName -Raw
+              if ($projectContent -match "coverlet.collector") {
+-               Write-Host "âœ“ coverlet.collector found"
++               Write-Host "[OK] coverlet.collector found"
+              } else {
+-               Write-Host "âœ— coverlet.collector NOT found"
++               Write-Host "[MISSING] coverlet.collector NOT found"
+              }
+            }
+```
+
+```diff
+            Write-Host "Ensuring SonarQube can find coverage file:"
+            if (Test-Path $coberturaFile) {
+-             Write-Host "âœ“ Coverage file exists at expected location"
++             Write-Host "[OK] Coverage file exists at expected location"
+            } else {
+-             Write-Host "âœ— Coverage file does not exist at expected location"
++             Write-Host "[MISSING] Coverage file does not exist at expected location"
+              Write-Host "Current working directory: $($pwd.Path)"
+              Get-ChildItem -Path "." -Recurse -Filter "*.xml" | Where-Object { $_.Length -gt 1000 } | ForEach-Object {
+-               Write-Host "  Potential XML file: $($_.FullName) (size: $($_.Length) bytes)"
++               Write-Host ('  Potential XML file: {0} (size: {1} bytes)' -f $_.FullName, $_.Length)
+              }
+            }
+```
+
+---
+
+I've fixed the issues in your YAML file:
+
+1. **Removed problematic Unicode characters**:
+   - Replaced Unicode checkmark symbols (✓ and ✗) with plain ASCII alternatives "[OK]" and "[MISSING]"
+   - These characters were causing parsing problems in the PowerShell script
+
+2. **Fixed string formatting**:
+   - Changed the problematic string interpolation to use PowerShell's `-f` format operator
+   - This avoids potential issues with string termination when embedding variables
+
+The error was happening because the Unicode characters in your workflow file were not being properly encoded or recognized by the GitHub Actions runner, causing PowerShell to interpret them incorrectly.
+
+The workflow should now run correctly without any parsing errors. The changes maintain the same functionality but use plain ASCII text that's more compatible with different environments and character encodings.
+
+These kinds of issues can be tricky to spot because they often depend on the specific environment where the code is running. GitHub Actions runners have specific encoding expectations that can sometimes differ from local development environments.
+
+---
+
+_**User**_
+
+  BlastMerge.Test -> D:\a\BlastMerge\BlastMerge\BlastMerge.Test\bin\Release\net9.0\ktsu.BlastMerge.Test.dll
+  Sonar: (BlastMerge.Test.csproj) Project processed successfully
+  Run tests: 'D:\a\BlastMerge\BlastMerge\BlastMerge.Test\bin\Release\net9.0\ktsu.BlastMerge.Test.dll' [net9.0|x64]
+  Passed! - Failed: 0, Passed: 213, Skipped: 0, Total: 213, Duration: 1s 235ms - ktsu.BlastMerge.Test.dll (net9.0|x64)
+  Tests succeeded: 'D:\a\BlastMerge\BlastMerge\BlastMerge.Test\bin\Release\net9.0\ktsu.BlastMerge.Test.dll' [net9.0|x64]
+C:\Users\runneradmin\.nuget\packages\coverlet.msbuild\6.0.0\build\coverlet.msbuild.targets(72,5): error MSB4044: The "Coverlet.MSbuild.Tasks.CoverageResultTask" task was not given a value for the required parameter "InstrumenterState". [D:\a\BlastMerge\BlastMerge\BlastMerge.Test\BlastMerge.Test.csproj]
+Failed to generate coverage file manually
+Found coverage files across entire workspace:
+Cobertura file not found at ./coverage/coverage.cobertura.xml
+Creating fallback empty coverage file for SonarQube
+Created fallback coverage file
+Ensuring SonarQube can find coverage file:
+[OK] Coverage file exists at expected location
+Error: Process completed with exit code 1.
+
+---
+
+_**Assistant**_
+
+
+
+---
+

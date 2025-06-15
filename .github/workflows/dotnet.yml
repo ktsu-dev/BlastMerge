@@ -196,8 +196,8 @@ jobs:
             # Install coverlet if needed
             dotnet add $mainProject.FullName package coverlet.msbuild --version 6.0.0
 
-            # Run tests with coverage
-            dotnet test $mainProject.FullName --configuration Release /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput="./coverage/"
+            # Run tests with coverage using dotnet-coverage instead of MSBuild integration
+            dotnet-coverage collect --output ./coverage/coverage.cobertura.xml --format cobertura "dotnet test $mainProject.FullName --configuration Release --no-build"
 
             # Check if file was created
             if (Test-Path "./coverage/coverage.cobertura.xml") {
