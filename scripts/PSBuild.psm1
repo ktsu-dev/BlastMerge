@@ -1446,7 +1446,7 @@ function Invoke-DotNetTest {
 		"--results-directory:`"$CoverageOutputPath`""
 	)
 
-	& dotnet $testArgs | Write-InformationStream -Tags "Invoke-DotNetTest"
+	"dotnet $($testArgs -join ' ')" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
 
     # Final check if we have any coverage file
     if (-not (Test-Path (Join-Path $CoverageOutputPath "coverage.cobertura.xml"))) {
