@@ -1432,7 +1432,15 @@ function Invoke-DotNetTest {
         [string]$CoverageOutputPath = "coverage"
     )
 
-	"dotnet test --configuration $Configuration" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
+    Write-StepHeader "Running Tests with Coverage" -Tags "Invoke-DotNetTest"
+
+    # Ensure the TestResults directory exists
+    $testResultsPath = Join-Path $CoverageOutputPath "TestResults"
+    New-Item -Path $testResultsPath -ItemType Directory -Force | Out-Null
+
+    # Run tests with both coverage collection and TRX logging for SonarQube
+    "dotnet test --configuration $Configuration --logger `"trx;LogFileName=TestResults.trx`" --results-directory `"$testResultsPath`"" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
+    Assert-LastExitCode "Tests failed"
 }
 
 function Invoke-DotNetPack {
