@@ -1,9 +1,6 @@
 ﻿<Project Sdk="ktsu.Sdk.Test">
+
   <ItemGroup>
-    <PackageReference Include="coverlet.collector">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
     <PackageReference Include="TestableIO.System.IO.Abstractions" />
     <PackageReference Include="TestableIO.System.IO.Abstractions.Wrappers" />
     <PackageReference Include="TestableIO.System.IO.Abstractions.TestingHelpers" />
@@ -15,8 +12,4 @@
     <ProjectReference Include="..\BlastMerge.ConsoleApp\BlastMerge.ConsoleApp.csproj" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <!-- Ensure tests run with the .runsettings file -->
-    <VSTestSettingsFile>$(MSBuildThisFileDirectory)..\.runsettings</VSTestSettingsFile>
-  </PropertyGroup>
 </Project>

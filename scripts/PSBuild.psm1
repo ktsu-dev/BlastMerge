@@ -1432,18 +1432,10 @@ function Invoke-DotNetTest {
         [string]$CoverageOutputPath = "coverage"
     )
 
-    # First ensure the coverage directory exists
-    New-Item -Path $CoverageOutputPath -ItemType Directory -Force | Write-InformationStream -Tags "Invoke-DotNetTest"
-
-    # Create coverage directory
-    New-Item -Path $CoverageOutputPath -ItemType Directory -Force | Write-InformationStream -Tags "Invoke-DotNetTest"
-
-	Write-Information "Trying XPlat Code Coverage collector..." -Tags "Invoke-DotNetTest"
 	$testArgs = @(
 		"test",
-		"--configuration", $Configuration,
-		"--collect:""XPlat Code Coverage""",
-		"--results-directory:`"$CoverageOutputPath`""
+		"--configuration",
+		$Configuration
 	)
 
 	"dotnet $($testArgs -join ' ')" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"

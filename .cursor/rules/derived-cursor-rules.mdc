@@ -83,11 +83,13 @@ globs: *
 -   YamlDotNet Version="16.2.0"
 -   System.IO.Abstractions
 -   coverlet.collector Version="6.0.0"
--   coverlet.msbuild Version="6.0.0"
+-   coverlet.msbuild Version="6.0.4"
 -   ReportGenerator
 -   powershell-yaml
 -   dotnet-coverage
 -   dotnet tool install --global dotnet-coverage
+-   dotnet-reportgenerator-globaltool
+-   coverlet.msbuild
 
 ## PROJECT DOCUMENTATION & CONTEXT SYSTEM
 
@@ -316,5 +318,4 @@ globs: *
 -   When processing a single file pattern, display file paths as they're discovered as user feedback.
 -   When the `ProcessLineForMarkupDisplay` method has high cognitive complexity, extract helper methods to reduce it.
 -   Refactor the `MatchesGlobPattern` method to reduce cognitive complexity by:
-    -   Extract pattern detection logic into simple helper methods (`IsDirectoryContainsPattern`, `IsWildcardContainsPattern`, `IsPrefixPattern`)
-    -   Extract pattern matching
+    -   Extract pattern detection logic into simple helper methods (`IsDirectoryContainsPattern`, `Is

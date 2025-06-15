@@ -1,63 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RunSettings>
-    <RunConfiguration>
-        <MaxCpuCount>0</MaxCpuCount>
-        <ResultsDirectory>.\TestResults</ResultsDirectory>
-        <TestSessionTimeout>100000</TestSessionTimeout>
-        <TreatNoTestsAsError>true</TreatNoTestsAsError>
-    </RunConfiguration>
-
-    <DataCollectionRunSettings>
-        <DataCollectors>
-            <DataCollector friendlyName="XPlat code coverage" uri="datacollector://Microsoft/CodeCoverage/2.0">
-                <Configuration>
-                    <Format>cobertura,opencover</Format>
-                    <ExcludeByAttribute>
-                        Obsolete,
-                        GeneratedCodeAttribute,
-                        CompilerGeneratedAttribute,
-                        ExcludeFromCodeCoverageAttribute
-                    </ExcludeByAttribute>
-                    <Include>
-                        [*]*
-                    </Include>
-                    <Exclude>
-                        [*]*Tests*,
-                        [*]*Test*,
-                        [*]*.Test*,
-                        [xunit.*]*,
-                        [Moq*]*,
-                        [System.*]*,
-                        [Microsoft.*]*
-                    </Exclude>
-                    <SingleHit>false</SingleHit>
-                    <IncludeTestAssembly>false</IncludeTestAssembly>
-                    <SkipAutoProps>true</SkipAutoProps>
-                    <ExcludeAssembliesWithoutSources>MissingAll</ExcludeAssembliesWithoutSources>
-                </Configuration>
-            </DataCollector>
-        </DataCollectors>
-    </DataCollectionRunSettings>
-
-    <LoggerRunSettings>
-        <Loggers>
-            <Logger friendlyName="console" enabled="True">
-                <Configuration>
-                    <Verbosity>normal</Verbosity>
-                </Configuration>
-            </Logger>
-            <Logger friendlyName="trx" enabled="True">
-                <Configuration>
-                    <LogFileName>TestResults.trx</LogFileName>
-                </Configuration>
-            </Logger>
-        </Loggers>
-    </LoggerRunSettings>
-
-    <MSTest>
-        <Parallelize>
-            <Workers>0</Workers>
-            <Scope>MethodLevel</Scope>
-        </Parallelize>
-    </MSTest>
+  <!-- Specify a deterministic output directory -->
+  <RunConfiguration>
+    <ResultsDirectory>.\coverage</ResultsDirectory>
+  </RunConfiguration>
 </RunSettings>
