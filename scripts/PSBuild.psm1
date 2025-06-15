@@ -1448,6 +1448,38 @@ function Invoke-DotNetTest {
 
 	"dotnet $($testArgs -join ' ')" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
 
+    # Show the contents of the coverage output directory
+    Write-Information "Checking coverage output directory contents..." -Tags "Invoke-DotNetTest"
+
+    if (Test-Path $CoverageOutputPath) {
+        $coverageFiles = Get-ChildItem -Path $CoverageOutputPath -Recurse
+
+        if ($coverageFiles.Count -gt 0) {
+            Write-Information "Coverage directory contents:" -Tags "Invoke-DotNetTest"
+            foreach ($file in $coverageFiles) {
+                Write-Information "  - $($file.FullName)" -Tags "Invoke-DotNetTest"
+            }
+        } else {
+            Write-Information "Coverage directory is empty" -Tags "Invoke-DotNetTest"
+        }
+
+        # Check for coverage.cobertura.xml specifically
+        $coberturaFile = Join-Path $CoverageOutputPath "coverage.cobertura.xml"
+        if (Test-Path $coberturaFile) {
+            Write-Information "Found coverage.cobertura.xml file" -Tags "Invoke-DotNetTest"
+        } else {
+            Write-Information "coverage.cobertura.xml file not found" -Tags "Invoke-DotNetTest"
+
+            # Look for coverage files in subdirectories that might need to be copied
+            $coverageXmlFiles = Get-ChildItem -Path $CoverageOutputPath -Recurse -Filter "*.xml"
+            if ($coverageXmlFiles.Count -gt 0) {
+                Write-Information "Found $($coverageXmlFiles.Count) XML files in subdirectories" -Tags "Invoke-DotNetTest"
+            }
+        }
+    } else {
+        Write-Information "Coverage directory does not exist: $CoverageOutputPath" -Tags "Invoke-DotNetTest"
+    }
+
     # Final check if we have any coverage file
     if (-not (Test-Path (Join-Path $CoverageOutputPath "coverage.cobertura.xml"))) {
         Write-Information "Failed to generate coverage with any project, creating fallback file" -Tags "Invoke-DotNetTest"
