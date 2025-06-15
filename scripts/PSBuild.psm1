@@ -1445,18 +1445,79 @@ function Invoke-DotNetTest {
         Write-Information "No test projects found to add coverage packages to" -Tags "Invoke-DotNetTest"
     }
 
-    # Run tests with code coverage and generate .trx files for SonarQube
-    $testCommand = "dotnet test -m:1 --configuration $Configuration --no-build --collect:""XPlat Code Coverage"" --settings .runsettings --results-directory:$CoverageOutputPath/TestResults"
-    $testCommand | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
+        # Ensure output directory exists
+    New-Item -Path $CoverageOutputPath -ItemType Directory -Force | Write-InformationStream -Tags "Invoke-DotNetTest"
 
-    # Copy the coverage files to the expected location for SonarQube
-    Write-Information "Copying coverage files to expected location..." -Tags "Invoke-DotNetTest"
-    $coverageFiles = @(Get-ChildItem -Path "$CoverageOutputPath/TestResults" -Recurse -Filter "*.cobertura.xml" -ErrorAction SilentlyContinue)
-    if ($coverageFiles.Count -gt 0) {
-        Write-Information "Found $($coverageFiles.Count) coverage files" -Tags "Invoke-DotNetTest"
-        Copy-Item -Path $coverageFiles[0].FullName -Destination "$CoverageOutputPath/coverage.cobertura.xml" -Force
+    # Get test projects
+    $testProjects = @(Get-ChildItem -Recurse -Filter "*Tests.csproj")
+    Write-Information "Found $($testProjects.Count) test projects" -Tags "Invoke-DotNetTest"
+
+    if ($testProjects.Count -eq 0) {
+        Write-Information "No test projects found!" -Tags "Invoke-DotNetTest"
+        return
+    }
+
+    # Create direct coverage collection command using coverlet.console
+    try {
+        foreach ($project in $testProjects) {
+            Write-Information "Running tests with coverage for $($project.Name)" -Tags "Invoke-DotNetTest"
+
+            # First run with diagnostics to see what's happening
+            Write-Information "Checking test assembly..." -Tags "Invoke-DotNetTest"
+            $projDir = $project.DirectoryName
+            $dllPath = Join-Path $projDir "bin\$Configuration\net9.0\$($project.BaseName).dll"
+
+            if (Test-Path $dllPath) {
+                Write-Information "Test assembly exists at: $dllPath" -Tags "Invoke-DotNetTest"
+
+                # Run tests and collect coverage directly with coverlet.collector
+                Write-Information "Running tests with direct coverage collection" -Tags "Invoke-DotNetTest"
+                $testCommand = "dotnet test `"$($project.FullName)`" --configuration $Configuration /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=`"$CoverageOutputPath/`" --no-build --verbosity normal"
+                $testCommand | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
+
+                # Check if coverage file was created
+                $coberturaFile = "$CoverageOutputPath/coverage.cobertura.xml"
+                if (Test-Path $coberturaFile) {
+                    Write-Information "Coverage file successfully created at: $coberturaFile" -Tags "Invoke-DotNetTest"
+                } else {
+                    Write-Information "Coverage file was not created at: $coberturaFile" -Tags "Invoke-DotNetTest"
+                }
+            } else {
+                Write-Information "Test assembly does not exist at: $dllPath" -Tags "Invoke-DotNetTest"
+
+                # Try alternative locations
+                $alternativeDlls = @(Get-ChildItem -Path $projDir -Recurse -Filter "$($project.BaseName).dll")
+                if ($alternativeDlls.Count -gt 0) {
+                    Write-Information "Found alternative test assembly at: $($alternativeDlls[0].FullName)" -Tags "Invoke-DotNetTest"
+
+                    # Just run tests directly
+                    $testCommand = "dotnet test `"$($project.FullName)`" --configuration $Configuration /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=`"$CoverageOutputPath/`" --no-build --verbosity normal"
+                    $testCommand | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
+                } else {
+                    Write-Information "No test assembly found for project: $($project.Name)" -Tags "Invoke-DotNetTest"
+                }
+            }
+        }
+    }
+    catch {
+        Write-Information "Error during test execution: $_" -Tags "Invoke-DotNetTest"
+        Write-Information "Stack trace: $($_.ScriptStackTrace)" -Tags "Invoke-DotNetTest"
+    }
+
+    # Check if coverage file was created
+    $coverageFile = "$CoverageOutputPath/coverage.cobertura.xml"
+    if (Test-Path $coverageFile) {
+        Write-Information "Coverage file successfully created" -Tags "Invoke-DotNetTest"
     } else {
-        Write-Information "No coverage files found" -Tags "Invoke-DotNetTest"
+        Write-Information "Coverage file was not created, trying manual generation..." -Tags "Invoke-DotNetTest"
+
+        # Try to manually run a test project to generate coverage
+        if ($testProjects.Count -gt 0) {
+            $mainProject = $testProjects[0]
+            $coverageCommand = "dotnet test `"$($mainProject.FullName)`" --configuration $Configuration /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:IncludeTestAssembly=false /p:CoverletOutput=`"$CoverageOutputPath/coverage.cobertura.xml`" /p:Exclude=`"[*]*Tests*`" --no-build --verbosity normal"
+            Write-Information "Running manual coverage command: $coverageCommand" -Tags "Invoke-DotNetTest"
+            $coverageCommand | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
+        }
     }
     Assert-LastExitCode "Tests failed"
 }

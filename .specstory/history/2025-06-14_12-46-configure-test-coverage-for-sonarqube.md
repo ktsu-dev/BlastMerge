@@ -534,3 +534,86 @@ _**Assistant**_
 
 ---
 
+I see the issue. Looking at your .runsettings file, there are a few configuration problems that could be causing the zero test coverage.
+
+Let me explain what's happening:
+
+1. Your workflow is trying to collect coverage via command-line parameters (`/p:CollectCoverage=true`), but you also have a .runsettings file with its own coverage configuration.
+
+2. In your .runsettings file, there are several settings that could be causing problems:
+
+   - `<IncludeTestAssembly>true</IncludeTestAssembly>` - This includes test code in coverage calculations, which can dilute your actual production code coverage results.
+   
+   - There's no explicit exclusion pattern for test code or inclusion pattern for production code.
+   
+   - The coverage might be collected but not properly reported in the format SonarQube expects.
+
+Here's how to fix it:
+
+1. First, update your .runsettings file:
+
+---
+
+
+
+---
+
+2. Now, modify your test command in PSBuild.psm1 to use the runsettings file:
+
+---
+
+
+
+---
+
+3. Finally, enhance the Generate Coverage Report step in your GitHub workflow to ensure we're looking for and reporting on the right files:
+
+---
+
+
+
+---
+
+The changes I've made should fix the code coverage issue:
+
+1. **Updated the .runsettings file**:
+   - Set `<IncludeTestAssembly>false</IncludeTestAssembly>` to exclude test code from coverage
+   - Added explicit include patterns for your production code
+   - Added explicit exclude patterns for test assemblies and test code
+   - Added `ExcludeFromCodeCoverage` to the list of excluded attributes
+
+2. **Changed how tests are run in PSBuild.psm1**:
+   - Now we're using the `--collect:"XPlat Code Coverage"` flag which respects the .runsettings file
+   - Added code to copy coverage files from where they're generated to where SonarQube expects them
+
+3. **Enhanced the Generate Coverage Report step**:
+   - Added better error handling when coverage files aren't found
+   - Added logic to search for and use alternative coverage files if the primary one isn't found
+   - Added code to extract and display the actual coverage percentage for easy verification
+
+These changes ensure:
+1. Coverage data is properly collected, excluding test code
+2. The data is moved to the right location for SonarQube
+3. You can see the actual coverage percentage in the build logs
+
+This approach gives SonarQube the coverage data it needs in the format it expects, which should resolve the "0.0% Coverage on New Code" quality gate failure.
+
+---
+
+_**User**_
+
+Generating coverage reports...
+Found coverage files:
+Primary cobertura file not found, searching for alternatives...
+No cobertura files found at all!
+Cobertura file not found at ./coverage/coverage.cobertura.xml
+No test result files found
+
+---
+
+_**Assistant**_
+
+
+
+---
+
