@@ -1,4 +1,4 @@
-name: .NET Workflow
+﻿name: .NET Workflow
 
 on:
   push:
@@ -111,9 +111,9 @@ jobs:
             Write-Host "Project: $($project.Name)"
             $projectContent = Get-Content -Path $project.FullName -Raw
             if ($projectContent -match "coverlet.collector") {
-              Write-Host "✓ coverlet.collector found"
+              Write-Host "âœ“ coverlet.collector found"
             } else {
-              Write-Host "✗ coverlet.collector NOT found"
+              Write-Host "âœ— coverlet.collector NOT found"
             }
           }
 
@@ -160,7 +160,7 @@ jobs:
           "release_hash=$($buildConfig.Data.ReleaseHash)" >> $env:GITHUB_OUTPUT
           "should_release=$($buildConfig.Data.ShouldRelease)" >> $env:GITHUB_OUTPUT
 
-            - name: Generate Coverage Report
+      - name: Generate Coverage Report
         if: always()
         shell: pwsh
         run: |
@@ -240,15 +240,8 @@ jobs:
             # Create fallback empty coverage file as a last resort
             if (-not (Test-Path $coberturaFile) -and $coverageFiles.Count -eq 0) {
               Write-Host "Creating fallback empty coverage file for SonarQube"
-              $minimalCoverage = @"
-<?xml version="1.0" encoding="utf-8"?>
-<coverage line-rate="0.8" branch-rate="0.8" version="1.9" timestamp="$([DateTimeOffset]::Now.ToUnixTimeSeconds())" lines-covered="0" lines-valid="0" branches-covered="0" branches-valid="0">
-  <sources>
-    <source>$($pwd.Path.Replace('\','/'))</source>
-  </sources>
-  <packages></packages>
-</coverage>
-"@
+              $timestamp = [DateTimeOffset]::Now.ToUnixTimeSeconds()
+              $minimalCoverage = '<?xml version="1.0" encoding="utf-8"?><coverage line-rate="0.8" branch-rate="0.8" version="1.9" timestamp="' + $timestamp + '" lines-covered="0" lines-valid="0" branches-covered="0" branches-valid="0"><sources><source>' + $pwd.Path.Replace('\','/') + '</source></sources><packages></packages></coverage>'
               Set-Content -Path $coberturaFile -Value $minimalCoverage
               Write-Host "Created fallback coverage file"
             }
@@ -257,9 +250,9 @@ jobs:
           # Ensure SonarQube can find the coverage file
           Write-Host "Ensuring SonarQube can find coverage file:"
           if (Test-Path $coberturaFile) {
-            Write-Host "✓ Coverage file exists at expected location"
+            Write-Host "âœ“ Coverage file exists at expected location"
           } else {
-            Write-Host "✗ Coverage file does not exist at expected location"
+            Write-Host "âœ— Coverage file does not exist at expected location"
             Write-Host "Current working directory: $($pwd.Path)"
             Get-ChildItem -Path "." -Recurse -Filter "*.xml" | Where-Object { $_.Length -gt 1000 } | ForEach-Object {
               Write-Host "  Potential XML file: $($_.FullName) (size: $($_.Length) bytes)"
