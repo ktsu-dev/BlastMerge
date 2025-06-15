@@ -287,8 +287,7 @@ public class ConsoleApplicationService : ApplicationService
 			coreFileGroups,
 			mergeCallback,
 			statusCallback,
-			continueCallback,
-			null);
+			continueCallback);
 
 		// Handle result
 		ProgressReportingService.ReportCompletionResult(result);
@@ -908,7 +907,8 @@ public class ConsoleApplicationService : ApplicationService
 		(string leftFile, string rightFile) = DetermineFileOrder(file1, file2, existingContent);
 
 		MergeResult? result = IterativeMergeOrchestrator.PerformMergeWithConflictResolution(
-			leftFile, rightFile, existingContent, (diffBlock, context, blockNumber) => GetBlockChoice(diffBlock, context, blockNumber, leftFile, rightFile));
+			leftFile, rightFile, existingContent,
+			(diffBlock, context, blockNumber) => GetBlockChoice(diffBlock, context, blockNumber, leftFile, rightFile));
 
 		if (result != null)
 		{

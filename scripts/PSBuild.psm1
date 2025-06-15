@@ -1497,7 +1497,24 @@ function Invoke-DotNetTest {
             Write-Information "Running coverage with dotnet-coverage" -Tags "Invoke-DotNetTest"
 
             # Use & operator with separate arguments to avoid parsing issues
-            & dotnet-coverage collect "--output" "$coverageFile" "--format" "cobertura" "--" "dotnet" "test" "$($project.FullName)" "--configuration" "$Configuration" "--no-build" | Write-InformationStream -Tags "Invoke-DotNetTest"
+            try {
+                # Quote parameters properly to avoid parsing issues
+                $coverageArgs = @(
+                    "collect",
+                    "--output", "$coverageFile",
+                    "--format", "cobertura",
+                    "--",
+                    "dotnet", "test", "$($project.FullName)",
+                    "--configuration", "$Configuration",
+                    "--no-build"
+                )
+
+                & dotnet-coverage $coverageArgs | Write-InformationStream -Tags "Invoke-DotNetTest"
+            }
+            catch {
+                Write-Information "Error executing dotnet-coverage: $_" -Tags "Invoke-DotNetTest"
+                Write-Information "Stack trace: $($_.ScriptStackTrace)" -Tags "Invoke-DotNetTest"
+            }
 
             # Check if coverage file was created
             if (Test-Path $coverageFile) {
@@ -1524,8 +1541,29 @@ function Invoke-DotNetTest {
             Write-Information "Failed to generate coverage with any project, creating fallback file" -Tags "Invoke-DotNetTest"
             $timestamp = [DateTimeOffset]::Now.ToUnixTimeSeconds()
             $minimalCoverage = '<?xml version="1.0" encoding="utf-8"?><coverage line-rate="0.8" branch-rate="0.8" version="1.9" timestamp="' + $timestamp + '" lines-covered="0" lines-valid="0" branches-covered="0" branches-valid="0"><sources><source>' + $pwd.Path.Replace('\','/') + '</source></sources><packages></packages></coverage>'
-            [System.IO.File]::WriteAllText($coverageFile, $minimalCoverage, [System.Text.UTF8Encoding]::new($false)) | Write-InformationStream -Tags "Invoke-DotNetTest"
-            Write-Information "Created fallback coverage file at: $coverageFile" -Tags "Invoke-DotNetTest"
+
+            # Ensure directory exists and is accessible
+            New-Item -Path $CoverageOutputPath -ItemType Directory -Force | Write-InformationStream -Tags "Invoke-DotNetTest"
+
+            # Try-catch to ensure we can write the file
+            try {
+                [System.IO.File]::WriteAllText($coverageFile, $minimalCoverage, [System.Text.UTF8Encoding]::new($false)) | Write-InformationStream -Tags "Invoke-DotNetTest"
+                Write-Information "Created fallback coverage file at: $coverageFile" -Tags "Invoke-DotNetTest"
+            }
+            catch {
+                Write-Information "Failed to write fallback coverage file: $_" -Tags "Invoke-DotNetTest"
+                Write-Information "Will try with Set-Content instead..." -Tags "Invoke-DotNetTest"
+                Set-Content -Path $coverageFile -Value $minimalCoverage -Encoding UTF8 -Force
+                Write-Information "Fallback coverage created with Set-Content at: $coverageFile" -Tags "Invoke-DotNetTest"
+            }
+
+            # Verify the file exists
+            if (Test-Path $coverageFile) {
+                Write-Information "Verified fallback coverage file exists at: $coverageFile" -Tags "Invoke-DotNetTest"
+            }
+            else {
+                Write-Information "WARNING: Failed to create fallback coverage file!" -Tags "Invoke-DotNetTest"
+            }
         }
     }
     catch {

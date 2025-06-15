@@ -435,8 +435,7 @@ public static partial class BatchProcessor
 					resolutionItem.FileGroups,
 					mergeCallback,
 					statusCallback,
-					continuationCallback,
-					null);
+					continuationCallback);
 
 				result.MergeResult = mergeResult;
 				result.Success = mergeResult.IsSuccessful;
