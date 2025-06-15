@@ -1439,8 +1439,19 @@ function Invoke-DotNetTest {
     New-Item -Path $testResultsPath -ItemType Directory -Force | Out-Null
 
     # Run tests with both coverage collection and TRX logging for SonarQube
-    "dotnet test --configuration $Configuration --logger `"trx;LogFileName=TestResults.trx`" --results-directory `"$testResultsPath`"" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
+    "dotnet test --configuration $Configuration --collect `"XPlat code coverage`" --results-directory `"$testResultsPath`" --logger `"trx;LogFileName=TestResults.trx`" --settings `".runsettings`"" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
     Assert-LastExitCode "Tests failed"
+
+    # Copy coverage file to expected location for SonarQube
+    $coverageFiles = @(Get-ChildItem -Path $testResultsPath -Recurse -Filter "*.cobertura.xml" -ErrorAction SilentlyContinue)
+    if ($coverageFiles.Count -gt 0) {
+        $latestCoverageFile = $coverageFiles | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        $targetCoverageFile = Join-Path $CoverageOutputPath "coverage.cobertura.xml"
+        Copy-Item -Path $latestCoverageFile.FullName -Destination $targetCoverageFile -Force
+        Write-Information "Coverage file copied to: $targetCoverageFile" -Tags "Invoke-DotNetTest"
+    } else {
+        Write-Information "Warning: No coverage file found in test results" -Tags "Invoke-DotNetTest"
+    }
 }
 
 function Invoke-DotNetPack {
