@@ -5,7 +5,6 @@
 namespace ktsu.BlastMerge.Test;
 
 using System;
-using System.IO;
 using DiffPlex.Model;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
@@ -15,29 +14,31 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 /// Tests for the DiffPlexHelper utility class
 /// </summary>
 [TestClass]
-public class DiffPlexHelperTests
+public class DiffPlexHelperTests : MockFileSystemTestBase
 {
 	private string _file1Path = string.Empty;
 	private string _file2Path = string.Empty;
 	private string _identicalFilePath = string.Empty;
 
-	[TestInitialize]
-	public void Setup()
+	protected override void InitializeFileSystem()
 	{
-		// Create temporary test files
-		_file1Path = SecureTempFileHelper.CreateTempFile(".txt");
-		_file2Path = SecureTempFileHelper.CreateTempFile(".txt");
-		_identicalFilePath = SecureTempFileHelper.CreateTempFile(".txt");
+		// Create temp directory in the mock file system
+		MockFileSystem.Directory.CreateDirectory(@"C:\temp");
+
+		// Create test files in the mock file system
+		_file1Path = @"C:\temp\file1.txt";
+		_file2Path = @"C:\temp\file2.txt";
+		_identicalFilePath = @"C:\temp\identical.txt";
 
 		// Write test content to files
-		File.WriteAllText(_file1Path, """
+		MockFileSystem.File.WriteAllText(_file1Path, """
 			Line 1
 			Line 2
 			Line 3
 			Line 4
 			""");
 
-		File.WriteAllText(_file2Path, """
+		MockFileSystem.File.WriteAllText(_file2Path, """
 			Line 1
 			Modified Line 2
 			Line 3
@@ -45,7 +46,7 @@ public class DiffPlexHelperTests
 			Line 5
 			""");
 
-		File.WriteAllText(_identicalFilePath, """
+		MockFileSystem.File.WriteAllText(_identicalFilePath, """
 			Line 1
 			Line 2
 			Line 3
@@ -53,17 +54,11 @@ public class DiffPlexHelperTests
 			""");
 	}
 
-	[TestCleanup]
-	public void Cleanup()
-	{
-		SecureTempFileHelper.SafeDeleteTempFiles(fileSystem: null, _file1Path, _file2Path, _identicalFilePath);
-	}
-
 	[TestMethod]
 	public void CreateLineDiffs_ValidFiles_ReturnsDiffResult()
 	{
 		// Act
-		DiffResult result = DiffPlexHelper.CreateLineDiffs(_file1Path, _file2Path);
+		DiffResult result = DiffPlexHelper.CreateLineDiffs(_file1Path, _file2Path, MockFileSystem);
 
 		// Assert
 		Assert.IsNotNull(result);
@@ -75,7 +70,7 @@ public class DiffPlexHelperTests
 	public void CreateLineDiffs_IdenticalFiles_ReturnsNoDifferences()
 	{
 		// Act
-		DiffResult result = DiffPlexHelper.CreateLineDiffs(_file1Path, _identicalFilePath);
+		DiffResult result = DiffPlexHelper.CreateLineDiffs(_file1Path, _identicalFilePath, MockFileSystem);
 
 		// Assert
 		Assert.IsNotNull(result);
@@ -88,7 +83,7 @@ public class DiffPlexHelperTests
 	public void CreateLineDiffs_NullFile1_ThrowsArgumentNullException()
 	{
 		// Act
-		DiffPlexHelper.CreateLineDiffs(null!, _file2Path);
+		DiffPlexHelper.CreateLineDiffs(null!, _file2Path, MockFileSystem);
 	}
 
 	[TestMethod]
@@ -96,7 +91,7 @@ public class DiffPlexHelperTests
 	public void CreateLineDiffs_NullFile2_ThrowsArgumentNullException()
 	{
 		// Act
-		DiffPlexHelper.CreateLineDiffs(_file1Path, null!);
+		DiffPlexHelper.CreateLineDiffs(_file1Path, null!, MockFileSystem);
 	}
 
 	[TestMethod]
@@ -104,10 +99,10 @@ public class DiffPlexHelperTests
 	public void CreateLineDiffs_NonExistentFile_ThrowsFileNotFoundException()
 	{
 		// Arrange
-		string nonExistentFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+		string nonExistentFile = @"C:\temp\nonexistent.txt";
 
 		// Act
-		DiffPlexHelper.CreateLineDiffs(_file1Path, nonExistentFile);
+		DiffPlexHelper.CreateLineDiffs(_file1Path, nonExistentFile, MockFileSystem);
 	}
 
 	[TestMethod]
@@ -300,26 +295,18 @@ public class DiffPlexHelperTests
 	public void CreateLineDiffs_EmptyFiles_HandlesCorrectly()
 	{
 		// Arrange
-		string emptyFile1 = SecureTempFileHelper.CreateTempFile(".txt");
-		string emptyFile2 = SecureTempFileHelper.CreateTempFile(".txt");
+		string emptyFile1 = @"C:\temp\empty1.txt";
+		string emptyFile2 = @"C:\temp\empty2.txt";
+		MockFileSystem.File.WriteAllText(emptyFile1, string.Empty);
+		MockFileSystem.File.WriteAllText(emptyFile2, string.Empty);
 
-		try
-		{
-			File.WriteAllText(emptyFile1, string.Empty);
-			File.WriteAllText(emptyFile2, string.Empty);
+		// Act
+		DiffResult result = DiffPlexHelper.CreateLineDiffs(emptyFile1, emptyFile2, MockFileSystem);
 
-			// Act
-			DiffResult result = DiffPlexHelper.CreateLineDiffs(emptyFile1, emptyFile2);
-
-			// Assert
-			Assert.IsNotNull(result);
-			Assert.IsNotNull(result.DiffBlocks);
-			Assert.AreEqual(0, result.DiffBlocks.Count);
-		}
-		finally
-		{
-			SecureTempFileHelper.SafeDeleteTempFiles(fileSystem: null, emptyFile1, emptyFile2);
-		}
+		// Assert
+		Assert.IsNotNull(result);
+		Assert.IsNotNull(result.DiffBlocks);
+		Assert.AreEqual(0, result.DiffBlocks.Count);
 	}
 
 	[TestMethod]

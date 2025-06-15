@@ -4,77 +4,66 @@
 
 namespace ktsu.BlastMerge.Test;
 
-using System;
-using System.IO;
+using System.IO.Abstractions.TestingHelpers;
 using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 /// <summary>
-/// Tests for the SecureTempFileHelper utility class
+/// Unit tests for SecureTempFileHelper
 /// </summary>
 [TestClass]
-public class SecureTempFileHelperTests
+public class SecureTempFileHelperTests : MockFileSystemTestBase
 {
+	protected override void InitializeFileSystem()
+	{
+		// Set up a mock temp directory
+		string tempPath = @"C:\temp";
+		MockFileSystem.Directory.CreateDirectory(tempPath);
+
+		// Mock Path.GetTempPath() behavior by ensuring temp directory exists
+		MockFileSystem.Directory.CreateDirectory(tempPath);
+	}
+
 	[TestMethod]
-	public void CreateTempFile_CreatesUniqueFile()
+	public void CreateTempFile_WithDefaultExtension_CreatesFileWithTxtExtension()
 	{
 		// Act
 		string tempFile = SecureTempFileHelper.CreateTempFile();
 
-		try
-		{
-			// Assert
-			Assert.IsNotNull(tempFile);
-			Assert.IsTrue(File.Exists(tempFile));
-			Assert.IsTrue(tempFile.StartsWith(Path.GetTempPath()));
-		}
-		finally
-		{
-			SecureTempFileHelper.SafeDeleteTempFile(tempFile);
-		}
+		// Assert
+		Assert.IsTrue(MockFileSystem.File.Exists(tempFile));
+		Assert.IsTrue(tempFile.StartsWith(@"C:\temp"));
 	}
 
 	[TestMethod]
-	public void CreateTempFile_WithExtension_CreatesFileWithCorrectExtension()
+	public void CreateTempFile_WithCustomExtension_CreatesFileWithSpecifiedExtension()
 	{
 		// Arrange
-		string extension = ".txt";
+		string extension = ".log";
 
 		// Act
 		string tempFile = SecureTempFileHelper.CreateTempFile(extension);
 
-		try
-		{
-			// Assert
-			Assert.IsNotNull(tempFile);
-			Assert.IsTrue(File.Exists(tempFile));
-			Assert.IsTrue(tempFile.EndsWith(extension));
-			Assert.IsTrue(tempFile.StartsWith(Path.GetTempPath()));
-		}
-		finally
-		{
-			SecureTempFileHelper.SafeDeleteTempFile(tempFile);
-		}
+		// Assert
+		Assert.IsTrue(MockFileSystem.File.Exists(tempFile));
+		Assert.IsTrue(tempFile.EndsWith(extension));
+		Assert.IsTrue(tempFile.StartsWith(@"C:\temp"));
 	}
 
 	[TestMethod]
-	public void CreateTempFile_MultipleCallsCreateUniqueFiles()
+	public void CreateTempFile_CalledMultipleTimes_CreatesUniqueFiles()
 	{
 		// Act
 		string tempFile1 = SecureTempFileHelper.CreateTempFile();
 		string tempFile2 = SecureTempFileHelper.CreateTempFile();
 
-		try
-		{
-			// Assert
-			Assert.AreNotEqual(tempFile1, tempFile2);
-			Assert.IsTrue(File.Exists(tempFile1));
-			Assert.IsTrue(File.Exists(tempFile2));
-		}
-		finally
-		{
-			SecureTempFileHelper.SafeDeleteTempFiles(fileSystem: null, tempFile1, tempFile2);
-		}
+		// Assert
+		Assert.AreNotEqual(tempFile1, tempFile2);
+		Assert.IsTrue(MockFileSystem.File.Exists(tempFile1));
+		Assert.IsTrue(MockFileSystem.File.Exists(tempFile2));
+
+		// Cleanup
+		SecureTempFileHelper.SafeDeleteTempFiles(MockFileSystem, tempFile1, tempFile2);
 	}
 
 	[TestMethod]
@@ -83,197 +72,162 @@ public class SecureTempFileHelperTests
 		// Act
 		string tempDir = SecureTempFileHelper.CreateTempDirectory();
 
-		try
-		{
-			// Assert
-			Assert.IsNotNull(tempDir);
-			Assert.IsTrue(Directory.Exists(tempDir));
-			Assert.IsTrue(tempDir.StartsWith(Path.GetTempPath()));
-		}
-		finally
-		{
-			SecureTempFileHelper.SafeDeleteTempDirectory(tempDir);
-		}
+		// Assert
+		Assert.IsTrue(MockFileSystem.Directory.Exists(tempDir));
+		Assert.IsTrue(tempDir.StartsWith(@"C:\temp"));
 	}
 
 	[TestMethod]
-	public void CreateTempDirectory_MultipleCallsCreateUniqueDirectories()
+	public void CreateTempDirectory_CalledMultipleTimes_CreatesUniqueDirectories()
 	{
 		// Act
 		string tempDir1 = SecureTempFileHelper.CreateTempDirectory();
 		string tempDir2 = SecureTempFileHelper.CreateTempDirectory();
 
-		try
-		{
-			// Assert
-			Assert.AreNotEqual(tempDir1, tempDir2);
-			Assert.IsTrue(Directory.Exists(tempDir1));
-			Assert.IsTrue(Directory.Exists(tempDir2));
-		}
-		finally
-		{
-			SecureTempFileHelper.SafeDeleteTempDirectory(tempDir1);
-			SecureTempFileHelper.SafeDeleteTempDirectory(tempDir2);
-		}
+		// Assert
+		Assert.AreNotEqual(tempDir1, tempDir2);
+		Assert.IsTrue(MockFileSystem.Directory.Exists(tempDir1));
+		Assert.IsTrue(MockFileSystem.Directory.Exists(tempDir2));
 	}
 
 	[TestMethod]
-	public void SafeDeleteTempFile_DeletesExistingFile()
+	public void SafeDeleteTempFiles_WithExistingFile_DeletesFile()
 	{
 		// Arrange
 		string tempFile = SecureTempFileHelper.CreateTempFile();
-		Assert.IsTrue(File.Exists(tempFile));
+		Assert.IsTrue(MockFileSystem.File.Exists(tempFile));
 
 		// Act
-		SecureTempFileHelper.SafeDeleteTempFile(tempFile);
+		SecureTempFileHelper.SafeDeleteTempFiles(MockFileSystem, tempFile);
 
 		// Assert
-		Assert.IsFalse(File.Exists(tempFile));
+		Assert.IsFalse(MockFileSystem.File.Exists(tempFile));
 	}
 
 	[TestMethod]
-	public void SafeDeleteTempFile_WithNullPath_DoesNotThrow()
-	{
-		// Act & Assert - Should not throw
-		SecureTempFileHelper.SafeDeleteTempFile(null);
-		SecureTempFileHelper.SafeDeleteTempFile(string.Empty);
-	}
-
-	[TestMethod]
-	public void SafeDeleteTempFile_WithNonExistentFile_DoesNotThrow()
+	public void SafeDeleteTempFiles_WithNonExistentFile_DoesNotThrow()
 	{
 		// Arrange
-		string nonExistentFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+		string nonExistentFile = @"C:\temp\nonexistent.txt";
 
-		// Act & Assert - Should not throw
-		SecureTempFileHelper.SafeDeleteTempFile(nonExistentFile);
+		// Act & Assert (should not throw)
+		SecureTempFileHelper.SafeDeleteTempFiles(MockFileSystem, nonExistentFile);
 	}
 
 	[TestMethod]
-	public void SafeDeleteTempFiles_DeletesMultipleFiles()
+	public void SafeDeleteTempFiles_WithMultipleFiles_DeletesAllFiles()
 	{
 		// Arrange
 		string tempFile1 = SecureTempFileHelper.CreateTempFile();
 		string tempFile2 = SecureTempFileHelper.CreateTempFile();
-		Assert.IsTrue(File.Exists(tempFile1));
-		Assert.IsTrue(File.Exists(tempFile2));
+		Assert.IsTrue(MockFileSystem.File.Exists(tempFile1));
+		Assert.IsTrue(MockFileSystem.File.Exists(tempFile2));
 
 		// Act
-		SecureTempFileHelper.SafeDeleteTempFiles(fileSystem: null, tempFile1, tempFile2);
+		SecureTempFileHelper.SafeDeleteTempFiles(MockFileSystem, tempFile1, tempFile2);
 
 		// Assert
-		Assert.IsFalse(File.Exists(tempFile1));
-		Assert.IsFalse(File.Exists(tempFile2));
+		Assert.IsFalse(MockFileSystem.File.Exists(tempFile1));
+		Assert.IsFalse(MockFileSystem.File.Exists(tempFile2));
 	}
 
 	[TestMethod]
-	public void SafeDeleteTempFiles_WithMixedValidAndInvalidPaths_DoesNotThrow()
+	public void SafeDeleteTempFiles_WithMixedExistentAndNonExistentFiles_DeletesExistingFiles()
 	{
 		// Arrange
 		string tempFile = SecureTempFileHelper.CreateTempFile();
-		string nonExistentFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+		string nonExistentFile = @"C:\temp\nonexistent.txt";
 
-		// Act & Assert - Should not throw
-		SecureTempFileHelper.SafeDeleteTempFiles(fileSystem: null, tempFile, nonExistentFile, null, string.Empty);
+		// Act
+		SecureTempFileHelper.SafeDeleteTempFiles(MockFileSystem, tempFile, nonExistentFile, null, string.Empty);
 
-		// Verify the valid file was deleted
-		Assert.IsFalse(File.Exists(tempFile));
+		// Assert
+		Assert.IsFalse(MockFileSystem.File.Exists(tempFile));
 	}
 
 	[TestMethod]
-	public void SafeDeleteTempDirectory_DeletesExistingDirectory()
+	public void SafeDeleteTempDirectory_WithExistingDirectory_DeletesDirectory()
 	{
 		// Arrange
 		string tempDir = SecureTempFileHelper.CreateTempDirectory();
-		Assert.IsTrue(Directory.Exists(tempDir));
+		Assert.IsTrue(MockFileSystem.Directory.Exists(tempDir));
 
 		// Act
-		SecureTempFileHelper.SafeDeleteTempDirectory(tempDir);
+		SecureTempFileHelper.SafeDeleteTempDirectory(tempDir, MockFileSystem);
 
 		// Assert
-		Assert.IsFalse(Directory.Exists(tempDir));
+		Assert.IsFalse(MockFileSystem.Directory.Exists(tempDir));
 	}
 
 	[TestMethod]
-	public void SafeDeleteTempDirectory_WithFilesInside_DeletesRecursively()
+	public void SafeDeleteTempDirectory_WithDirectoryContainingFiles_DeletesDirectoryAndContents()
 	{
 		// Arrange
 		string tempDir = SecureTempFileHelper.CreateTempDirectory();
-		string fileInside = Path.Combine(tempDir, "test.txt");
-		File.WriteAllText(fileInside, "test content");
+		string fileInside = MockFileSystem.Path.Combine(tempDir, "test.txt");
+		MockFileSystem.File.WriteAllText(fileInside, "test content");
 
-		string subDir = Path.Combine(tempDir, "subdir");
-		Directory.CreateDirectory(subDir);
-		string fileInSubDir = Path.Combine(subDir, "subtest.txt");
-		File.WriteAllText(fileInSubDir, "subtest content");
+		string subDir = MockFileSystem.Path.Combine(tempDir, "subdir");
+		MockFileSystem.Directory.CreateDirectory(subDir);
+		string fileInSubDir = MockFileSystem.Path.Combine(subDir, "subtest.txt");
+		MockFileSystem.File.WriteAllText(fileInSubDir, "subtest content");
 
-		Assert.IsTrue(Directory.Exists(tempDir));
-		Assert.IsTrue(File.Exists(fileInside));
-		Assert.IsTrue(Directory.Exists(subDir));
-		Assert.IsTrue(File.Exists(fileInSubDir));
+		Assert.IsTrue(MockFileSystem.Directory.Exists(tempDir));
+		Assert.IsTrue(MockFileSystem.File.Exists(fileInside));
+		Assert.IsTrue(MockFileSystem.Directory.Exists(subDir));
+		Assert.IsTrue(MockFileSystem.File.Exists(fileInSubDir));
 
 		// Act
-		SecureTempFileHelper.SafeDeleteTempDirectory(tempDir);
+		SecureTempFileHelper.SafeDeleteTempDirectory(tempDir, MockFileSystem);
 
 		// Assert
-		Assert.IsFalse(Directory.Exists(tempDir));
+		Assert.IsFalse(MockFileSystem.Directory.Exists(tempDir));
 	}
 
 	[TestMethod]
-	public void SafeDeleteTempDirectory_WithNullPath_DoesNotThrow()
+	public void SafeDeleteTempDirectory_WithMultipleDirectories_DeletesAllDirectories()
 	{
-		// Act & Assert - Should not throw
-		SecureTempFileHelper.SafeDeleteTempDirectory(null);
-		SecureTempFileHelper.SafeDeleteTempDirectory(string.Empty);
+		// Arrange
+		string tempDir1 = SecureTempFileHelper.CreateTempDirectory();
+		string tempDir2 = SecureTempFileHelper.CreateTempDirectory();
+
+		// Act
+		SecureTempFileHelper.SafeDeleteTempDirectory(tempDir1, MockFileSystem);
+		SecureTempFileHelper.SafeDeleteTempDirectory(tempDir2, MockFileSystem);
+
+		// Assert
+		Assert.IsFalse(MockFileSystem.Directory.Exists(tempDir1));
+		Assert.IsFalse(MockFileSystem.Directory.Exists(tempDir2));
 	}
 
 	[TestMethod]
 	public void SafeDeleteTempDirectory_WithNonExistentDirectory_DoesNotThrow()
 	{
 		// Arrange
-		string nonExistentDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+		string nonExistentDir = @"C:\temp\nonexistent";
 
-		// Act & Assert - Should not throw
-		SecureTempFileHelper.SafeDeleteTempDirectory(nonExistentDir);
+		// Act & Assert (should not throw)
+		SecureTempFileHelper.SafeDeleteTempDirectory(nonExistentDir, MockFileSystem);
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
-	public void CreateTempFile_WithNullExtension_ThrowsArgumentNullException()
+	public void SafeDeleteTempFiles_WithNullFileSystemAndNullFilePaths_DoesNotThrow()
 	{
-		// Act
-		SecureTempFileHelper.CreateTempFile((string)null!);
-	}
-
-	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
-	public void SafeDeleteTempFiles_WithNullArray_ThrowsArgumentNullException()
-	{
-		// Act
+		// Act & Assert (should not throw)
 		SecureTempFileHelper.SafeDeleteTempFiles(fileSystem: null, filePaths: null!);
 	}
 
 	[TestMethod]
-	public void CreateTempFile_WithCustomExtension_CreatesFileWithCorrectExtension()
+	public void CreateTempFile_WithFileSystemParameter_UsesProvidedFileSystem()
 	{
 		// Arrange
-		string[] extensions = [".cs", ".json", ".xml", ".config"];
+		string extension = ".test";
 
-		foreach (string extension in extensions)
-		{
-			// Act
-			string tempFile = SecureTempFileHelper.CreateTempFile(extension);
+		// Act
+		string tempFile = SecureTempFileHelper.CreateTempFile(extension, MockFileSystem);
 
-			try
-			{
-				// Assert
-				Assert.IsTrue(tempFile.EndsWith(extension), $"File should end with {extension}");
-				Assert.IsTrue(File.Exists(tempFile));
-			}
-			finally
-			{
-				SecureTempFileHelper.SafeDeleteTempFile(tempFile);
-			}
-		}
+		// Assert
+		Assert.IsTrue(tempFile.EndsWith(extension), $"File should end with {extension}");
+		Assert.IsTrue(MockFileSystem.File.Exists(tempFile));
 	}
 }

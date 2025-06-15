@@ -12,8 +12,10 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 /// Unit tests for FileDisplayService functionality.
 /// </summary>
 [TestClass]
-public class FileDisplayServiceTests
+public class FileDisplayServiceTests : MockFileSystemTestBase
 {
+	#region MakeDistinguishedPaths Tests
+
 	/// <summary>
 	/// Tests that identical paths return just the filename.
 	/// </summary>
@@ -227,4 +229,122 @@ public class FileDisplayServiceTests
 		Assert.IsTrue(result2.EndsWith("lib/file.txt"));
 		Assert.AreNotEqual(result1, result2); // Should still be distinguishable
 	}
+
+	#endregion
+
+	#region GetRelativeDirectoryName Tests
+
+	/// <summary>
+	/// Tests GetRelativeDirectoryName with a deep path.
+	/// </summary>
+	[TestMethod]
+	public void GetRelativeDirectoryName_WithDeepPath_ReturnsLastTwoDirectoriesAndFilename()
+	{
+		// Arrange
+		string filePath = @"C:\very\deep\directory\structure\parent\child\file.txt";
+
+		// Act
+		string result = FileDisplayService.GetRelativeDirectoryName(filePath);
+
+		// Assert
+		Assert.AreEqual("parent\\child\\file.txt", result);
+	}
+
+	/// <summary>
+	/// Tests GetRelativeDirectoryName with a single directory.
+	/// </summary>
+	[TestMethod]
+	public void GetRelativeDirectoryName_WithSingleDirectory_ReturnsDirectoryAndFilename()
+	{
+		// Arrange
+		string filePath = @"C:\directory\file.txt";
+
+		// Act
+		string result = FileDisplayService.GetRelativeDirectoryName(filePath);
+
+		// Assert
+		// For paths with drive letter + single directory, it returns drive + directory + filename
+		Assert.AreEqual("C:\\directory\\file.txt", result);
+	}
+
+	/// <summary>
+	/// Tests GetRelativeDirectoryName with just a filename.
+	/// </summary>
+	[TestMethod]
+	public void GetRelativeDirectoryName_WithJustFilename_ReturnsFilename()
+	{
+		// Arrange
+		string filePath = "file.txt";
+
+		// Act
+		string result = FileDisplayService.GetRelativeDirectoryName(filePath);
+
+		// Assert
+		Assert.AreEqual("file.txt", result);
+	}
+
+	/// <summary>
+	/// Tests GetRelativeDirectoryName with an invalid path.
+	/// </summary>
+	[TestMethod]
+	public void GetRelativeDirectoryName_WithInvalidPath_ReturnsFilename()
+	{
+		// Arrange
+		string filePath = "invalid<>path|file.txt";
+
+		// Act
+		string result = FileDisplayService.GetRelativeDirectoryName(filePath);
+
+		// Assert
+		Assert.AreEqual("invalid<>path|file.txt", result);
+	}
+
+	/// <summary>
+	/// Tests GetRelativeDirectoryName with Unix-style path.
+	/// </summary>
+	[TestMethod]
+	public void GetRelativeDirectoryName_WithUnixPath_HandlesCorrectly()
+	{
+		// Arrange
+		string filePath = "/home/user/documents/projects/file.txt";
+
+		// Act
+		string result = FileDisplayService.GetRelativeDirectoryName(filePath);
+
+		// Assert
+		// Should handle Unix paths and return appropriate relative structure
+		Assert.IsTrue(result.Contains("file.txt"));
+	}
+
+	#endregion
+
+	#region ShowDetailedFileList Tests
+
+	/// <summary>
+	/// Tests ShowDetailedFileList with null input.
+	/// </summary>
+	[TestMethod]
+	public void ShowDetailedFileList_WithNullInput_ThrowsArgumentNullException()
+	{
+		// Act & Assert
+		Assert.ThrowsException<ArgumentNullException>(() =>
+			FileDisplayService.ShowDetailedFileList(null!));
+	}
+
+	#endregion
+
+	#region ShowDifferences Tests
+
+	/// <summary>
+	/// Tests ShowDifferences with null input.
+	/// </summary>
+	[TestMethod]
+	public void ShowDifferences_WithNullInput_ThrowsArgumentNullException()
+	{
+		// Act & Assert
+		Assert.ThrowsException<ArgumentNullException>(() =>
+			FileDisplayService.ShowDifferences(null!));
+	}
+
+	#endregion
 }

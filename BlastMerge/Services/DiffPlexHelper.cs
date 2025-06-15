@@ -23,14 +23,14 @@ public static class DiffPlexHelper
 	/// </summary>
 	/// <param name="file1">Path to the first file</param>
 	/// <param name="file2">Path to the second file</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
+	/// <param name="fileSystem">File system abstraction (optional, defaults to FileSystemProvider.Current)</param>
 	/// <returns>DiffPlex DiffResult with DiffBlocks</returns>
 	public static DiffResult CreateLineDiffs(string file1, string file2, IFileSystem? fileSystem = null)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		fileSystem ??= new FileSystem();
+		fileSystem ??= FileSystemProvider.Current;
 
 		if (!fileSystem.File.Exists(file1) || !fileSystem.File.Exists(file2))
 		{

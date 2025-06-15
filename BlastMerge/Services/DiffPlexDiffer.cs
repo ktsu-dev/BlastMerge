@@ -8,11 +8,13 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
 using DiffPlex;
 using DiffPlex.Chunkers;
 using DiffPlex.DiffBuilder;
 using DiffPlex.DiffBuilder.Model;
+using DiffPlex.Model;
 using ktsu.BlastMerge.Models;
 
 /// <summary>
@@ -36,55 +38,71 @@ public static class DiffPlexDiffer
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		if (!File.Exists(file1) || !File.Exists(file2))
+		var fileSystem = FileSystemProvider.Current;
+
+		if (!fileSystem.File.Exists(file1) || !fileSystem.File.Exists(file2))
 		{
 			return false;
 		}
 
-		string content1 = File.ReadAllText(file1);
-		string content2 = File.ReadAllText(file2);
+		string content1 = fileSystem.File.ReadAllText(file1);
+		string content2 = fileSystem.File.ReadAllText(file2);
 
 		DiffPlex.Model.DiffResult diff = Differ.CreateDiffs(content1, content2, true, false, new LineChunker());
 		return !diff.DiffBlocks.Any();
 	}
 
 	/// <summary>
+	/// Creates a line-by-line diff between two files
+	/// </summary>
+	/// <param name="file1">Path to the first file</param>
+	/// <param name="file2">Path to the second file</param>
+	/// <returns>DiffResult containing the differences</returns>
+	/// <exception cref="ArgumentNullException">Thrown when file1 or file2 is null</exception>
+	/// <exception cref="FileNotFoundException">Thrown when one or both files do not exist</exception>
+	public static DiffResult CreateLineDiffs(string file1, string file2)
+	{
+		ArgumentNullException.ThrowIfNull(file1);
+		ArgumentNullException.ThrowIfNull(file2);
+
+		var fileSystem = FileSystemProvider.Current;
+
+		if (!fileSystem.File.Exists(file1) || !fileSystem.File.Exists(file2))
+		{
+			throw new FileNotFoundException("One or both files do not exist");
+		}
+
+		string content1 = fileSystem.File.ReadAllText(file1);
+		string content2 = fileSystem.File.ReadAllText(file2);
+
+		return DiffPlexHelper.CreateLineDiffsFromContent(content1, content2);
+	}
+
+	/// <summary>
 	/// Generates a unified diff between two files
 	/// </summary>
-	/// <param name="file1">First file path</param>
-	/// <param name="file2">Second file path</param>
-	/// <param name="contextLines">Number of context lines around changes (default: 3)</param>
-	/// <returns>Unified diff as string</returns>
+	/// <param name="file1">Path to the first file</param>
+	/// <param name="file2">Path to the second file</param>
+	/// <param name="contextLines">Number of context lines to include</param>
+	/// <returns>Unified diff as a string</returns>
+	/// <exception cref="ArgumentNullException">Thrown when file1 or file2 is null</exception>
+	/// <exception cref="FileNotFoundException">Thrown when one or both files do not exist</exception>
 	public static string GenerateUnifiedDiff(string file1, string file2, int contextLines = 3)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		if (!File.Exists(file1) || !File.Exists(file2))
+		var fileSystem = FileSystemProvider.Current;
+
+		if (!fileSystem.File.Exists(file1) || !fileSystem.File.Exists(file2))
 		{
-			throw new FileNotFoundException(FilesNotFoundMessage);
+			throw new FileNotFoundException("One or both files do not exist");
 		}
 
-		string content1 = File.ReadAllText(file1);
-		string content2 = File.ReadAllText(file2);
+		string content1 = fileSystem.File.ReadAllText(file1);
+		string content2 = fileSystem.File.ReadAllText(file2);
 
-		// If files are identical, return empty string
-		if (content1 == content2)
-		{
-			return string.Empty;
-		}
-
-		DiffPaneModel diff = InlineDiffBuilder.BuildDiffModel(content1, content2);
-
-		List<string> result =
-		[
-			$"--- {file1}",
-			$"+++ {file2}"
-		];
-
-		ProcessDiffLines(diff.Lines, result, contextLines);
-
-		return string.Join(Environment.NewLine, result);
+		return GenerateUnifiedDiffFromContent(content1, content2, file1, file2, contextLines);
 	}
 
 	/// <summary>
@@ -284,13 +302,15 @@ public static class DiffPlexDiffer
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		if (!File.Exists(file1) || !File.Exists(file2))
+		var fileSystem = FileSystemProvider.Current;
+
+		if (!fileSystem.File.Exists(file1) || !fileSystem.File.Exists(file2))
 		{
 			throw new FileNotFoundException(FilesNotFoundMessage);
 		}
 
-		string content1 = File.ReadAllText(file1);
-		string content2 = File.ReadAllText(file2);
+		string content1 = fileSystem.File.ReadAllText(file1);
+		string content2 = fileSystem.File.ReadAllText(file2);
 
 		DiffPaneModel diff = InlineDiffBuilder.BuildDiffModel(content1, content2);
 		Collection<ColoredDiffLine> result =
@@ -338,13 +358,15 @@ public static class DiffPlexDiffer
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		if (!File.Exists(file1) || !File.Exists(file2))
+		var fileSystem = FileSystemProvider.Current;
+
+		if (!fileSystem.File.Exists(file1) || !fileSystem.File.Exists(file2))
 		{
 			throw new FileNotFoundException(FilesNotFoundMessage);
 		}
 
-		string content1 = File.ReadAllText(file1);
-		string content2 = File.ReadAllText(file2);
+		string content1 = fileSystem.File.ReadAllText(file1);
+		string content2 = fileSystem.File.ReadAllText(file2);
 
 		// Use inline diff for simpler processing
 		DiffPaneModel inlineDiff = InlineDiffBuilder.BuildDiffModel(content1, content2);
@@ -435,13 +457,15 @@ public static class DiffPlexDiffer
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		if (!File.Exists(file1) || !File.Exists(file2))
+		var fileSystem = FileSystemProvider.Current;
+
+		if (!fileSystem.File.Exists(file1) || !fileSystem.File.Exists(file2))
 		{
 			throw new FileNotFoundException(FilesNotFoundMessage);
 		}
 
-		string content1 = File.ReadAllText(file1);
-		string content2 = File.ReadAllText(file2);
+		string content1 = fileSystem.File.ReadAllText(file1);
+		string content2 = fileSystem.File.ReadAllText(file2);
 
 		return SideBySideDiffBuilder.BuildDiffModel(content1, content2);
 	}

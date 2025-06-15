@@ -74,10 +74,17 @@ public abstract class ApplicationService(IFileSystem? fileSystem = null) : IAppl
 		ValidateDirectoryAndFileName(directory, fileName);
 
 		IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(directory, fileName, FileSystem);
-		IReadOnlyCollection<FileGroup> fileGroups = FileDiffer.GroupFilesByHash(filePaths);
+		IReadOnlyCollection<FileGroup> fileGroups = FileDiffer.GroupFilesByHash(filePaths, FileSystem);
 
 		// Convert FileGroup collection to Dictionary<string, IReadOnlyCollection<string>>
-		Dictionary<string, IReadOnlyCollection<string>> result = fileGroups.ToDictionary(group => group.Hash, group => group.FilePaths);
+		// Use a combination of hash and index to ensure unique keys
+		Dictionary<string, IReadOnlyCollection<string>> result = [];
+		int index = 0;
+		foreach (FileGroup group in fileGroups)
+		{
+			string key = $"{group.Hash}_{index++}";
+			result[key] = group.FilePaths;
+		}
 
 		return result.AsReadOnly();
 	}
