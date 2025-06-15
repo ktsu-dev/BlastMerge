@@ -1435,166 +1435,23 @@ function Invoke-DotNetTest {
     # First ensure the coverage directory exists
     New-Item -Path $CoverageOutputPath -ItemType Directory -Force | Write-InformationStream -Tags "Invoke-DotNetTest"
 
-    # Find test projects
-    Write-Information "Ensuring coverage tools are available..." -Tags "Invoke-DotNetTest"
-    $testProjects = @(Get-ChildItem -Recurse -Filter "*.csproj" | Where-Object {
-        $name = $_.Name
-        $content = Get-Content -Path $_.FullName -Raw
-        $name -match "Test" -or $content -match "Microsoft.NET.Test"
-    })
-
-    if ($testProjects.Count -gt 0) {
-        foreach ($project in $testProjects) {
-            Write-Information "Adding coverage packages to $($project.Name)..." -Tags "Invoke-DotNetTest"
-            "dotnet add `"$($project.FullName)`" package coverlet.collector --version 6.0.0" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
-            "dotnet add `"$($project.FullName)`" package coverlet.msbuild --version 6.0.0" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
-        }
-    } else {
-        Write-Information "No test projects found to add coverage packages to" -Tags "Invoke-DotNetTest"
-    }
-
     # Create coverage directory
     New-Item -Path $CoverageOutputPath -ItemType Directory -Force | Write-InformationStream -Tags "Invoke-DotNetTest"
 
-    # Run tests for each test project with coverage
-    $coverageSuccess = $false
+	Write-Information "Trying XPlat Code Coverage collector..." -Tags "Invoke-DotNetTest"
+	$testArgs = @(
+		"test",
+		"--configuration", $Configuration,
+		"--collect:""XPlat Code Coverage""",
+		"--results-directory:`"$CoverageOutputPath`""
+	)
 
-    foreach ($project in $testProjects) {
-        Write-Information "Running tests with coverage for $($project.Name)" -Tags "Invoke-DotNetTest"
-
-        # Try both approaches for better compatibility
-
-        # First approach: Using dotnet test with XPlat Code Coverage collector
-        Write-Information "Trying XPlat Code Coverage collector..." -Tags "Invoke-DotNetTest"
-        $testArgs = @(
-            "test",
-            "`"$($project.FullName)`"",
-            "--configuration", $Configuration,
-            "--collect:""XPlat Code Coverage""",
-            "--results-directory:`"$CoverageOutputPath`"",
-            "--settings:.runsettings"
-        )
-
-        & dotnet $testArgs | Write-InformationStream -Tags "Invoke-DotNetTest"
-
-        # Check if coverage file was created in a subdirectory
-        $coverageFiles = Get-ChildItem -Path $CoverageOutputPath -Recurse -Filter "*.cobertura.xml" -ErrorAction SilentlyContinue
-        if ($coverageFiles.Count -gt 0) {
-            # Copy the first coverage file to the expected location
-            $coverageFile = Join-Path $CoverageOutputPath "coverage.cobertura.xml"
-            Copy-Item -Path $coverageFiles[0].FullName -Destination $coverageFile -Force
-            Write-Information "Coverage file successfully created at: $coverageFile" -Tags "Invoke-DotNetTest"
-            $coverageSuccess = $true
-            break
-        }
-
-        # Second approach: Using coverlet MSBuild integration
-        Write-Information "Trying Coverlet MSBuild integration..." -Tags "Invoke-DotNetTest"
-        $coverageFile = Join-Path $CoverageOutputPath "coverage.cobertura.xml"
-
-        $testArgs = @(
-            "test",
-            "`"$($project.FullName)`"",
-            "--configuration", $Configuration,
-            "/p:CollectCoverage=true",
-            "/p:CoverletOutputFormat=cobertura",
-            "/p:CoverletOutput=`"$coverageFile`""
-        )
-
-        & dotnet $testArgs | Write-InformationStream -Tags "Invoke-DotNetTest"
-
-        # Check if coverage succeeded
-        if (($LASTEXITCODE -eq 0) -and (Test-Path $coverageFile)) {
-            Write-Information "Coverage file successfully created at: $coverageFile" -Tags "Invoke-DotNetTest"
-
-            # Analyze coverage content
-            $coverageContent = Get-Content -Path $coverageFile -Raw
-            if ($coverageContent -match 'line-rate="([0-9.]+)"') {
-                $lineRate = [float]$Matches[1]
-                $coveragePercentage = [math]::Round($lineRate * 100, 2)
-                Write-Information "Code coverage: $coveragePercentage%" -Tags "Invoke-DotNetTest"
-            }
-
-            $coverageSuccess = $true
-            break
-        } else {
-            Write-Information "Coverage file was not created for this project, trying the next one..." -Tags "Invoke-DotNetTest"
-        }
-    }
-
-    # If Coverlet MSBuild integration didn't work, try with dotnet-coverage as fallback
-    if (-not $coverageSuccess) {
-        Write-Information "Coverlet MSBuild integration failed, trying dotnet-coverage as fallback" -Tags "Invoke-DotNetTest"
-
-        # First ensure the dotnet-coverage tool is installed
-        Write-Information "Checking for dotnet-coverage tool..." -Tags "Invoke-DotNetTest"
-        $hasDotnetCoverage = $null -ne (Get-Command dotnet-coverage -ErrorAction SilentlyContinue)
-
-        if (-not $hasDotnetCoverage) {
-            Write-Information "Installing dotnet-coverage tool..." -Tags "Invoke-DotNetTest"
-            "dotnet tool install --global dotnet-coverage" | Invoke-ExpressionWithLogging | Write-InformationStream -Tags "Invoke-DotNetTest"
-        }
-
-        foreach ($project in $testProjects) {
-            Write-Information "Running tests with dotnet-coverage for $($project.Name)" -Tags "Invoke-DotNetTest"
-
-            $coverageFile = Join-Path $CoverageOutputPath "coverage.cobertura.xml"
-
-            $coverageArgs = @(
-                "collect",
-                "--output", "$coverageFile",
-                "--format", "cobertura",
-                "--",
-                "dotnet", "test", "`"$($project.FullName)`"",
-                "--configuration", $Configuration
-            )
-
-            try {
-                & dotnet-coverage $coverageArgs | Write-InformationStream -Tags "Invoke-DotNetTest"
-
-                if (Test-Path $coverageFile) {
-                    Write-Information "Coverage file successfully created at: $coverageFile" -Tags "Invoke-DotNetTest"
-                    $coverageSuccess = $true
-                    break
-                }
-            }
-            catch {
-                Write-Information "Error executing dotnet-coverage: $_" -Tags "Invoke-DotNetTest"
-            }
-        }
-    }
+	& dotnet $testArgs | Write-InformationStream -Tags "Invoke-DotNetTest"
 
     # Final check if we have any coverage file
     if (-not (Test-Path (Join-Path $CoverageOutputPath "coverage.cobertura.xml"))) {
         Write-Information "Failed to generate coverage with any project, creating fallback file" -Tags "Invoke-DotNetTest"
-        $timestamp = [DateTimeOffset]::Now.ToUnixTimeSeconds()
-        $minimalCoverage = '<?xml version="1.0" encoding="utf-8"?><coverage line-rate="0.8" branch-rate="0.8" version="1.9" timestamp="' + $timestamp + '" lines-covered="0" lines-valid="0" branches-covered="0" branches-valid="0"><sources><source>' + $pwd.Path.Replace('\','/') + '</source></sources><packages></packages></coverage>'
-
-        try {
-            New-Item -Path $CoverageOutputPath -ItemType Directory -Force | Write-InformationStream -Tags "Invoke-DotNetTest"
-            $coverageFile = Join-Path $CoverageOutputPath "coverage.cobertura.xml"
-
-            # Try to write the file using System.IO.File to avoid encoding issues
-            [System.IO.File]::WriteAllText($coverageFile, $minimalCoverage, [System.Text.UTF8Encoding]::new($false)) | Write-InformationStream -Tags "Invoke-DotNetTest"
-            Write-Information "Created fallback coverage file at: $coverageFile" -Tags "Invoke-DotNetTest"
-        }
-        catch {
-            Write-Information "Failed to write fallback coverage file: $_" -Tags "Invoke-DotNetTest"
-            # Try alternative approach
-            Set-Content -Path $coverageFile -Value $minimalCoverage -Encoding UTF8 -Force
-            Write-Information "Fallback coverage created with Set-Content at: $coverageFile" -Tags "Invoke-DotNetTest"
-        }
-
-        # Verify the file exists
-        if (Test-Path $coverageFile) {
-            Write-Information "Verified fallback coverage file exists at: $coverageFile" -Tags "Invoke-DotNetTest"
-        }
-        else {
-            Write-Information "WARNING: Failed to create fallback coverage file!" -Tags "Invoke-DotNetTest"
-        }
     }
-
-    return $null
 }
 
 function Invoke-DotNetPack {
