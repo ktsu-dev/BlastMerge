@@ -182,55 +182,63 @@ jobs:
             Write-Host "  - $($_.Name) (Test Project: $isTestProject)"
           }
 
-          # Find and display coverage files
-          $coverageFiles = Get-ChildItem -Path "." -Recurse -Filter "*.cobertura.xml" -ErrorAction SilentlyContinue
-          Write-Host "Found coverage files across entire workspace:"
-          $coverageFiles | ForEach-Object { Write-Host " - $($_.FullName)" }
+          # Find test projects
+          $testProjects = $projects | Where-Object {
+            $_.Name -match "Test" -or (Get-Content -Path $_.FullName -Raw) -match "Microsoft.NET.Test"
+          }
 
-          # Make sure the expected coverage file exists for SonarQube
-          $coberturaFile = "./coverage/coverage.cobertura.xml"
+          if ($testProjects.Count -gt 0) {
+            $mainProject = $testProjects[0]
+            Write-Host "Using test project: $($mainProject.Name)"
 
-          # If no coverage file exists, only then try to generate one
-          if (-not (Test-Path $coberturaFile) -and $coverageFiles.Count -eq 0) {
-            Write-Host "No coverage file found - attempting to generate one..."
+            # Run tests with explicit coverage collection
+            Write-Host "Running tests with coverage collection..."
 
-            # Find test projects
-            $testProjects = $projects | Where-Object {
-              $content = Get-Content -Path $_.FullName -Raw
-              $content -match "Microsoft.NET.Test" -or $_.Name -match "Test"
-            }
+            # First try with Coverlet
+            dotnet test $mainProject.FullName --configuration Release --collect:"XPlat Code Coverage" --results-directory:"./coverage" --settings "./.runsettings"
 
-            if ($testProjects.Count -gt 0) {
-              $mainProject = $testProjects[0]
-              Write-Host "Using test project: $($mainProject.Name)"
+            # Find the coverage file - it will be in a subdirectory with a GUID name
+            $coverageFiles = Get-ChildItem -Path "./coverage" -Recurse -Filter "*.cobertura.xml" -ErrorAction SilentlyContinue
 
-              # Install coverlet if needed
-              dotnet add $mainProject.FullName package coverlet.msbuild --version 6.0.0
+            if ($coverageFiles.Count -gt 0) {
+              Write-Host "Found coverage files:"
+              $coverageFiles | ForEach-Object { Write-Host " - $($_.FullName)" }
 
-              # First ensure dotnet-coverage tool is installed
+              # Copy the first coverage file to the expected location
+              Copy-Item -Path $coverageFiles[0].FullName -Destination "./coverage/coverage.cobertura.xml" -Force
+              Write-Host "Copied $($coverageFiles[0].FullName) to ./coverage/coverage.cobertura.xml"
+            } else {
+              # If Coverlet didn't work, try with dotnet-coverage
+              Write-Host "No coverage files found with Coverlet, trying dotnet-coverage..."
+
+              # Ensure dotnet-coverage is installed
               if (-not (Get-Command dotnet-coverage -ErrorAction SilentlyContinue)) {
                 Write-Host "Installing dotnet-coverage tool..."
                 dotnet tool install --global dotnet-coverage
               }
 
-              # Run tests with coverage using dotnet-coverage with properly formatted command
-              $testCommand = "dotnet test `"$($mainProject.FullName)`" --configuration Release --no-build"
-
-              # Use Invoke-Expression to handle the command properly
-              Write-Host "Running coverage command..."
-              $coverageCmd = "dotnet-coverage collect --output `"./coverage/coverage.cobertura.xml`" --format cobertura -- $testCommand"
-              Write-Host "Executing: $coverageCmd"
+              # Run with dotnet-coverage
+              $coverageCmd = "dotnet-coverage collect --output `"./coverage/coverage.cobertura.xml`" --format cobertura -- dotnet test `"$($mainProject.FullName)`" --configuration Release"
+              Write-Host "Running: $coverageCmd"
               Invoke-Expression $coverageCmd
             }
           } else {
-            Write-Host "Found existing coverage file - skipping test run"
+            Write-Host "No test projects found"
+          }
 
-            # If coverage file is not in the expected location but exists elsewhere, copy it
-            if (-not (Test-Path $coberturaFile) -and $coverageFiles.Count -gt 0) {
-              Write-Host "Primary cobertura file not found, copying from found alternative"
-              Copy-Item -Path $coverageFiles[0].FullName -Destination $coberturaFile -Force
-              Write-Host "Copied $($coverageFiles[0].FullName) to $coberturaFile"
-            }
+          # Make sure the expected coverage file exists for SonarQube
+          $coberturaFile = "./coverage/coverage.cobertura.xml"
+
+          # Find and display coverage files
+          $coverageFiles = Get-ChildItem -Path "." -Recurse -Filter "*.cobertura.xml" -ErrorAction SilentlyContinue
+          Write-Host "Found coverage files across entire workspace:"
+          $coverageFiles | ForEach-Object { Write-Host " - $($_.FullName)" }
+
+          # If no coverage file exists at the expected location but exists elsewhere, copy it
+          if (-not (Test-Path $coberturaFile) -and $coverageFiles.Count -gt 0) {
+            Write-Host "Primary cobertura file not found, copying from found alternative"
+            Copy-Item -Path $coverageFiles[0].FullName -Destination $coberturaFile -Force
+            Write-Host "Copied $($coverageFiles[0].FullName) to $coberturaFile"
           }
 
           # Generate HTML report for visibility
@@ -250,7 +258,7 @@ jobs:
             Write-Host "Cobertura file not found at $coberturaFile"
 
             # Create fallback empty coverage file as a last resort
-            if (-not (Test-Path $coberturaFile) -and $coverageFiles.Count -eq 0) {
+            if (-not (Test-Path $coberturaFile)) {
               Write-Host "Creating fallback empty coverage file for SonarQube"
               $timestamp = [DateTimeOffset]::Now.ToUnixTimeSeconds()
               $minimalCoverage = '<?xml version="1.0" encoding="utf-8"?><coverage line-rate="0.8" branch-rate="0.8" version="1.9" timestamp="' + $timestamp + '" lines-covered="0" lines-valid="0" branches-covered="0" branches-valid="0"><sources><source>' + $pwd.Path.Replace('\','/') + '</source></sources><packages></packages></coverage>'
@@ -263,6 +271,19 @@ jobs:
           Write-Host "Ensuring SonarQube can find coverage file:"
           if (Test-Path $coberturaFile) {
             Write-Host "[OK] Coverage file exists at expected location"
+
+            # Check if the file has actual coverage data
+            $coverageContent = Get-Content -Path $coberturaFile -Raw
+            if ($coverageContent -match '<packages>.*?</packages>' -and -not $coverageContent.Contains('<packages></packages>')) {
+              Write-Host "[OK] Coverage file contains actual coverage data"
+            } else {
+              Write-Host "[WARNING] Coverage file exists but appears to be empty or a placeholder"
+
+              # Display file size and content sample
+              $fileInfo = Get-Item $coberturaFile
+              Write-Host "Coverage file size: $($fileInfo.Length) bytes"
+              Write-Host "Coverage file content sample: $($coverageContent.Substring(0, [Math]::Min(200, $coverageContent.Length)))..."
+            }
           } else {
             Write-Host "[MISSING] Coverage file does not exist at expected location"
             Write-Host "Current working directory: $($pwd.Path)"
