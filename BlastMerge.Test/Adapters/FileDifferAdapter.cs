@@ -70,27 +70,9 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 			throw new FileNotFoundException("File not found", file2Path);
 		}
 
-		// Since FileDiffer.GenerateGitStyleDiff expects real file paths and reads from the actual filesystem,
-		// we need to create temporary files with the content from our mock filesystem
-		string[] lines1 = _fileSystem.File.ReadAllLines(file1Path);
-		string[] lines2 = _fileSystem.File.ReadAllLines(file2Path);
-
-		// Create temporary files
-		string tempFile1 = SecureTempFileHelper.CreateTempFile();
-		string tempFile2 = SecureTempFileHelper.CreateTempFile();
-
-		try
-		{
-			File.WriteAllLines(tempFile1, lines1);
-			File.WriteAllLines(tempFile2, lines2);
-
-			return FileDiffer.GenerateGitStyleDiff(tempFile1, tempFile2);
-		}
-		finally
-		{
-			// Clean up temporary files
-			SecureTempFileHelper.SafeDeleteTempFiles(fileSystem: null, tempFile1, tempFile2);
-		}
+		// Since FileDiffer.GenerateGitStyleDiff uses DiffPlexDiffer which now uses FileSystemProvider.Current,
+		// we can call it directly after setting up the file system provider
+		return FileDiffer.GenerateGitStyleDiff(file1Path, file2Path);
 	}
 
 	/// <summary>
@@ -111,27 +93,9 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 			throw new FileNotFoundException("File not found", file2Path);
 		}
 
-		// Since FileDiffer.GenerateColoredDiff calls DiffPlexDiffer.GenerateColoredDiff which expects real file paths
-		// and reads from the actual filesystem, we need to create temporary files with the content from our mock filesystem
-		string[] lines1 = _fileSystem.File.ReadAllLines(file1Path);
-		string[] lines2 = _fileSystem.File.ReadAllLines(file2Path);
-
-		// Create temporary files
-		string tempFile1 = SecureTempFileHelper.CreateTempFile();
-		string tempFile2 = SecureTempFileHelper.CreateTempFile();
-
-		try
-		{
-			File.WriteAllLines(tempFile1, lines1);
-			File.WriteAllLines(tempFile2, lines2);
-
-			return FileDiffer.GenerateColoredDiff(tempFile1, tempFile2, lines1, lines2);
-		}
-		finally
-		{
-			// Clean up temporary files
-			SecureTempFileHelper.SafeDeleteTempFiles(fileSystem: null, tempFile1, tempFile2);
-		}
+		// Since DiffPlexDiffer.GenerateColoredDiff now uses FileSystemProvider.Current,
+		// we can call it directly
+		return DiffPlexDiffer.GenerateColoredDiff(file1Path, file2Path);
 	}
 
 	/// <summary>

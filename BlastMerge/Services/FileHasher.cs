@@ -19,11 +19,11 @@ public static class FileHasher
 	/// Computes an FNV-1a hash for a file
 	/// </summary>
 	/// <param name="filePath">Path to the file</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
+	/// <param name="fileSystem">File system abstraction (optional, defaults to FileSystemProvider.Current)</param>
 	/// <returns>The FNV-1a hash as a hex string</returns>
 	public static string ComputeFileHash(string filePath, IFileSystem? fileSystem = null)
 	{
-		fileSystem ??= new FileSystem();
+		fileSystem ??= FileSystemProvider.Current;
 		ulong hash = FNV_OFFSET_BASIS_64;
 
 		using Stream fileStream = fileSystem.File.OpenRead(filePath);
@@ -46,12 +46,12 @@ public static class FileHasher
 	/// Computes an FNV-1a hash for a file asynchronously
 	/// </summary>
 	/// <param name="filePath">Path to the file</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
+	/// <param name="fileSystem">File system abstraction (optional, defaults to FileSystemProvider.Current)</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>The FNV-1a hash as a hex string</returns>
 	public static async Task<string> ComputeFileHashAsync(string filePath, IFileSystem? fileSystem = null, CancellationToken cancellationToken = default)
 	{
-		fileSystem ??= new FileSystem();
+		fileSystem ??= FileSystemProvider.Current;
 		ulong hash = FNV_OFFSET_BASIS_64;
 
 		using Stream fileStream = fileSystem.File.OpenRead(filePath);
@@ -74,7 +74,7 @@ public static class FileHasher
 	/// Computes FNV-1a hashes for multiple files in parallel
 	/// </summary>
 	/// <param name="filePaths">Collection of file paths to hash</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
+	/// <param name="fileSystem">File system abstraction (optional, defaults to FileSystemProvider.Current)</param>
 	/// <param name="maxDegreeOfParallelism">Maximum number of concurrent operations (default: processor count)</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>Dictionary mapping file paths to their hashes</returns>
@@ -85,7 +85,7 @@ public static class FileHasher
 		CancellationToken cancellationToken = default)
 	{
 		ArgumentNullException.ThrowIfNull(filePaths);
-		fileSystem ??= new FileSystem();
+		fileSystem ??= FileSystemProvider.Current;
 
 		if (maxDegreeOfParallelism <= 0)
 		{

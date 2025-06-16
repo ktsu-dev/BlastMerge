@@ -32,12 +32,12 @@ public static class FileFinder
 	/// </summary>
 	/// <param name="rootDirectory">The root directory to search from</param>
 	/// <param name="fileName">The filename to search for</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
+	/// <param name="fileSystem">File system abstraction (optional, defaults to FileSystemProvider.Current)</param>
 	/// <param name="progressCallback">Optional callback to report discovered file paths</param>
 	/// <returns>A list of full file paths</returns>
 	public static IReadOnlyCollection<string> FindFiles(string rootDirectory, string fileName, IFileSystem? fileSystem = null, Action<string>? progressCallback = null)
 	{
-		fileSystem ??= new FileSystem();
+		fileSystem ??= FileSystemProvider.Current;
 		List<string> result = [];
 
 		try
@@ -100,7 +100,7 @@ public static class FileFinder
 	/// <param name="rootDirectory">The fallback root directory to search from if searchPaths is empty</param>
 	/// <param name="fileName">The filename to search for</param>
 	/// <param name="pathExclusionPatterns">Path patterns to exclude from the search</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
+	/// <param name="fileSystem">File system abstraction (optional, defaults to FileSystemProvider.Current)</param>
 	/// <param name="progressCallback">Optional callback to report discovered file paths</param>
 	/// <returns>A list of full file paths</returns>
 	public static IReadOnlyCollection<string> FindFiles(
@@ -116,7 +116,7 @@ public static class FileFinder
 		ArgumentNullException.ThrowIfNull(fileName);
 		ArgumentNullException.ThrowIfNull(pathExclusionPatterns);
 
-		fileSystem ??= new FileSystem();
+		fileSystem ??= FileSystemProvider.Current;
 		List<string> result = [];
 
 		// Use search paths if provided, otherwise use the root directory
@@ -142,7 +142,7 @@ public static class FileFinder
 		string fileName,
 		IReadOnlyCollection<string> pathExclusionPatterns,
 		Action<string>? progressCallback) =>
-		FindFilesWithExclusions(rootDirectory, fileName, pathExclusionPatterns, new FileSystem(), progressCallback);
+		FindFilesWithExclusions(rootDirectory, fileName, pathExclusionPatterns, FileSystemProvider.Current, progressCallback);
 
 	/// <summary>
 	/// Recursively finds all files with the specified filename, applying exclusion patterns with progress reporting

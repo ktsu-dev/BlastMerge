@@ -7,6 +7,7 @@ namespace ktsu.BlastMerge.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -36,9 +37,12 @@ public static class AsyncFileDiffer
 			maxDegreeOfParallelism = Environment.ProcessorCount;
 		}
 
+		// Use FileSystemProvider.Current to get the proper file system abstraction
+		IFileSystem fileSystem = FileSystemProvider.Current;
+
 		// Compute hashes in parallel
 		Dictionary<string, string> fileHashes = await FileHasher.ComputeFileHashesAsync(
-			filePaths, null, maxDegreeOfParallelism, cancellationToken).ConfigureAwait(false);
+			filePaths, fileSystem, maxDegreeOfParallelism, cancellationToken).ConfigureAwait(false);
 
 		// Group by hash
 		Dictionary<string, FileGroup> groups = [];
@@ -97,10 +101,13 @@ public static class AsyncFileDiffer
 		int maxDegreeOfParallelism,
 		CancellationToken cancellationToken)
 	{
+		// Use FileSystemProvider.Current to get the proper file system abstraction
+		IFileSystem fileSystem = FileSystemProvider.Current;
+
 		if (filesWithSameName.Count == 1)
 		{
 			// Single file with this name - create a group for it
-			string hash = await FileHasher.ComputeFileHashAsync(filesWithSameName[0], null, cancellationToken).ConfigureAwait(false);
+			string hash = await FileHasher.ComputeFileHashAsync(filesWithSameName[0], fileSystem, cancellationToken).ConfigureAwait(false);
 			FileGroup group = new() { Hash = hash };
 			group.AddFilePath(filesWithSameName[0]);
 			return [group];
@@ -108,7 +115,7 @@ public static class AsyncFileDiffer
 
 		// Multiple files with same name - group by content hash
 		Dictionary<string, string> fileHashes = await FileHasher.ComputeFileHashesAsync(
-			filesWithSameName, null, maxDegreeOfParallelism, cancellationToken).ConfigureAwait(false);
+			filesWithSameName, fileSystem, maxDegreeOfParallelism, cancellationToken).ConfigureAwait(false);
 
 		Dictionary<string, FileGroup> hashGroups = [];
 		foreach (KeyValuePair<string, string> kvp in fileHashes)
@@ -166,7 +173,9 @@ public static class AsyncFileDiffer
 		await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 		try
 		{
-			string content = await File.ReadAllTextAsync(filePath, cancellationToken).ConfigureAwait(false);
+			// Use FileSystemProvider.Current to get the proper file system abstraction
+			IFileSystem fileSystem = FileSystemProvider.Current;
+			string content = await fileSystem.File.ReadAllTextAsync(filePath, cancellationToken).ConfigureAwait(false);
 			return (filePath, content);
 		}
 		finally
@@ -190,8 +199,10 @@ public static class AsyncFileDiffer
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		string[] lines1 = await File.ReadAllLinesAsync(file1, cancellationToken).ConfigureAwait(false);
-		string[] lines2 = await File.ReadAllLinesAsync(file2, cancellationToken).ConfigureAwait(false);
+		// Use FileSystemProvider.Current to get the proper file system abstraction
+		IFileSystem fileSystem = FileSystemProvider.Current;
+		string[] lines1 = await fileSystem.File.ReadAllLinesAsync(file1, cancellationToken).ConfigureAwait(false);
+		string[] lines2 = await fileSystem.File.ReadAllLinesAsync(file2, cancellationToken).ConfigureAwait(false);
 
 		return FileDiffer.CalculateLineSimilarity(lines1, lines2);
 	}
@@ -199,16 +210,16 @@ public static class AsyncFileDiffer
 	/// <summary>
 	/// Copies files asynchronously in parallel
 	/// </summary>
-	/// <param name="copyOperations">Collection of source and target file path pairs</param>
+	/// <param name="operations">Collection of (source, target) file pairs to copy</param>
 	/// <param name="maxDegreeOfParallelism">Maximum number of concurrent operations</param>
 	/// <param name="cancellationToken">Cancellation token</param>
-	/// <returns>Collection of successful copy operations</returns>
+	/// <returns>Collection of (source, target) pairs that were successfully copied</returns>
 	public static async Task<IReadOnlyCollection<(string source, string target)>> CopyFilesAsync(
-		IEnumerable<(string source, string target)> copyOperations,
+		IEnumerable<(string source, string target)> operations,
 		int maxDegreeOfParallelism = 0,
 		CancellationToken cancellationToken = default)
 	{
-		ArgumentNullException.ThrowIfNull(copyOperations);
+		ArgumentNullException.ThrowIfNull(operations);
 
 		if (maxDegreeOfParallelism <= 0)
 		{
@@ -218,7 +229,7 @@ public static class AsyncFileDiffer
 		using SemaphoreSlim semaphore = new(maxDegreeOfParallelism);
 		List<Task<(string source, string target, bool success)>> tasks = [];
 
-		foreach ((string source, string target) in copyOperations)
+		foreach ((string source, string target) in operations)
 		{
 			tasks.Add(CopyFileWithSemaphore(source, target, semaphore, cancellationToken));
 		}
@@ -239,14 +250,18 @@ public static class AsyncFileDiffer
 		await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 		try
 		{
-			string? targetDir = Path.GetDirectoryName(target);
-			if (!string.IsNullOrEmpty(targetDir))
+			// Use FileSystemProvider.Current to get the proper file system abstraction
+			IFileSystem fileSystem = FileSystemProvider.Current;
+
+			// Ensure target directory exists
+			string? targetDirectory = Path.GetDirectoryName(target);
+			if (!string.IsNullOrEmpty(targetDirectory) && !fileSystem.Directory.Exists(targetDirectory))
 			{
-				Directory.CreateDirectory(targetDir);
+				fileSystem.Directory.CreateDirectory(targetDirectory);
 			}
 
-			using FileStream sourceStream = File.OpenRead(source);
-			using FileStream targetStream = File.Create(target);
+			using Stream sourceStream = fileSystem.File.OpenRead(source);
+			using Stream targetStream = fileSystem.File.Create(target);
 			await sourceStream.CopyToAsync(targetStream, cancellationToken).ConfigureAwait(false);
 
 			return (source, target, true);

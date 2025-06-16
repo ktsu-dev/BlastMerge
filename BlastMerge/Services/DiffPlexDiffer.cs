@@ -38,7 +38,7 @@ public static class DiffPlexDiffer
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		var fileSystem = FileSystemProvider.Current;
+		IFileSystem fileSystem = FileSystemProvider.Current;
 
 		if (!fileSystem.File.Exists(file1) || !fileSystem.File.Exists(file2))
 		{
@@ -48,7 +48,7 @@ public static class DiffPlexDiffer
 		string content1 = fileSystem.File.ReadAllText(file1);
 		string content2 = fileSystem.File.ReadAllText(file2);
 
-		DiffPlex.Model.DiffResult diff = Differ.CreateDiffs(content1, content2, true, false, new LineChunker());
+		DiffResult diff = Differ.CreateDiffs(content1, content2, true, false, new LineChunker());
 		return !diff.DiffBlocks.Any();
 	}
 
@@ -65,7 +65,7 @@ public static class DiffPlexDiffer
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		var fileSystem = FileSystemProvider.Current;
+		IFileSystem fileSystem = FileSystemProvider.Current;
 
 		if (!fileSystem.File.Exists(file1) || !fileSystem.File.Exists(file2))
 		{
@@ -92,7 +92,7 @@ public static class DiffPlexDiffer
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		var fileSystem = FileSystemProvider.Current;
+		IFileSystem fileSystem = FileSystemProvider.Current;
 
 		if (!fileSystem.File.Exists(file1) || !fileSystem.File.Exists(file2))
 		{
@@ -331,7 +331,7 @@ public static class DiffPlexDiffer
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		var fileSystem = FileSystemProvider.Current;
+		IFileSystem fileSystem = FileSystemProvider.Current;
 
 		if (!fileSystem.File.Exists(file1) || !fileSystem.File.Exists(file2))
 		{
@@ -387,7 +387,7 @@ public static class DiffPlexDiffer
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		var fileSystem = FileSystemProvider.Current;
+		IFileSystem fileSystem = FileSystemProvider.Current;
 
 		if (!fileSystem.File.Exists(file1) || !fileSystem.File.Exists(file2))
 		{
@@ -486,7 +486,7 @@ public static class DiffPlexDiffer
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		var fileSystem = FileSystemProvider.Current;
+		IFileSystem fileSystem = FileSystemProvider.Current;
 
 		if (!fileSystem.File.Exists(file1) || !fileSystem.File.Exists(file2))
 		{

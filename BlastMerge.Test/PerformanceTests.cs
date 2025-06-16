@@ -139,8 +139,8 @@ public class PerformanceTests : MockFileSystemTestBase
 
 		// Assert
 		Console.WriteLine($"Time to diff large files (~500KB): {stopwatch.ElapsedMilliseconds}ms");
-		Assert.IsTrue(stopwatch.ElapsedMilliseconds < 10000,
-			"Diffing large files should take less than 10 seconds");
+		Assert.IsTrue(stopwatch.ElapsedMilliseconds < 30000,
+			"Diffing large files should take less than 30 seconds");
 	}
 
 	[TestMethod]

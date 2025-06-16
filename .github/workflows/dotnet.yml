@@ -1,4 +1,4 @@
-﻿name: .NET Workflow
+name: .NET Workflow
 
 on:
   push:

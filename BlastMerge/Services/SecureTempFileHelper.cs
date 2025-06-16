@@ -203,9 +203,12 @@ public static class SecureTempFileHelper
 	/// </summary>
 	/// <param name="fileSystem">File system abstraction (optional, defaults to FileSystemProvider.Current)</param>
 	/// <param name="filePaths">The paths to the temporary files to delete.</param>
-	public static void SafeDeleteTempFiles(IFileSystem? fileSystem = null, params string?[] filePaths)
+	public static void SafeDeleteTempFiles(IFileSystem? fileSystem = null, params string?[]? filePaths)
 	{
-		ArgumentNullException.ThrowIfNull(filePaths);
+		if (filePaths == null)
+		{
+			return;
+		}
 
 		foreach (string? filePath in filePaths)
 		{

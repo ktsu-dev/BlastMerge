@@ -594,36 +594,30 @@ public static class FileDiffer
 			return 0.0; // One empty, completely different
 		}
 
-		// Create temporary files to use DiffPlex for similarity calculation
-		string tempFile1 = SecureTempFileHelper.CreateTempFile();
-		string tempFile2 = SecureTempFileHelper.CreateTempFile();
+		// Calculate similarity without using temporary files
+		// Use direct string comparison to avoid file system dependencies
+		string content1 = string.Join("\n", lines1);
+		string content2 = string.Join("\n", lines2);
 
-		try
+		if (content1 == content2)
 		{
-			File.WriteAllLines(tempFile1, lines1);
-			File.WriteAllLines(tempFile2, lines2);
-
-			// Use DiffPlex to get differences
-			IReadOnlyCollection<LineDifference> differences = DiffPlexDiffer.FindDifferences(tempFile1, tempFile2);
-
-			// Calculate similarity based on unchanged lines
-			int totalOperations = differences.Count;
-			int maxLines = Math.Max(lines1.Length, lines2.Length);
-
-			if (totalOperations == 0)
-			{
-				return 1.0; // No differences means identical
-			}
-
-			// Simple similarity calculation: 1 - (differences / max_lines)
-			double similarityRatio = Math.Max(0.0, 1.0 - ((double)totalOperations / maxLines));
-			return similarityRatio;
+			return 1.0; // Identical content
 		}
-		finally
+
+		// Simple similarity calculation based on common lines
+		HashSet<string> lines1Set = [.. lines1];
+		HashSet<string> lines2Set = [.. lines2];
+
+		int commonLines = lines1Set.Intersect(lines2Set).Count();
+		int totalUniqueLines = lines1Set.Union(lines2Set).Count();
+
+		if (totalUniqueLines == 0)
 		{
-			// Clean up temporary files
-			SecureTempFileHelper.SafeDeleteTempFiles(null, tempFile1, tempFile2);
+			return 1.0;
 		}
+
+		// Calculate similarity as ratio of common lines to total unique lines
+		return (double)commonLines / totalUniqueLines;
 	}
 
 	/// <summary>
