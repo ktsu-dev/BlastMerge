@@ -1,4 +1,12 @@
 ﻿<Project Sdk="ktsu.Sdk.Test">
+
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);CA1861;IDE0078;CA1849</NoWarn>
+    <!-- CA1861: Avoid using Enumerable methods on indexable collections. Instead use the collection directly. -->
+    <!-- IDE0078: Use pattern matching. -->
+    <!-- CA1849: Avoid using Enumerable methods on indexable collections. Instead use the collection directly. -->
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="TestableIO.System.IO.Abstractions" />
     <PackageReference Include="TestableIO.System.IO.Abstractions.Wrappers" />
@@ -7,7 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\BlastMerge.Core\BlastMerge.Core.csproj" />
+    <ProjectReference Include="..\BlastMerge\BlastMerge.csproj" />
     <ProjectReference Include="..\BlastMerge.ConsoleApp\BlastMerge.ConsoleApp.csproj" />
   </ItemGroup>
+
 </Project>

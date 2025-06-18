@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34330.188
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlastMerge.Core", "BlastMerge.Core\BlastMerge.Core.csproj", "{A764407C-B8DC-485C-BE87-9C44C7EF26BF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlastMerge", "BlastMerge\BlastMerge.csproj", "{A764407C-B8DC-485C-BE87-9C44C7EF26BF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlastMerge.ConsoleApp", "BlastMerge.ConsoleApp\BlastMerge.ConsoleApp.csproj", "{094B418E-9C5D-901A-71FE-F2ABBA1CEF6C}"
 EndProject

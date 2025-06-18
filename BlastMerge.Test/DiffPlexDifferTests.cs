@@ -6,7 +6,8 @@ namespace ktsu.BlastMerge.Test;
 
 using System.IO;
 using System.Linq;
-using ktsu.BlastMerge.Core;
+using ktsu.BlastMerge.Models;
+using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 /// <summary>
@@ -55,8 +56,8 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	public void AreFilesIdentical_IdenticalFiles_ReturnsTrue()
 	{
 		// Create temporary real files for testing since DiffPlexDiffer uses real file system
-		string tempFile1 = Path.GetTempFileName();
-		string tempFile2 = Path.GetTempFileName();
+		string tempFile1 = SecureTempFileHelper.CreateTempFile();
+		string tempFile2 = SecureTempFileHelper.CreateTempFile();
 
 		try
 		{
@@ -68,15 +69,7 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 		}
 		finally
 		{
-			if (File.Exists(tempFile1))
-			{
-				File.Delete(tempFile1);
-			}
-
-			if (File.Exists(tempFile2))
-			{
-				File.Delete(tempFile2);
-			}
+			SecureTempFileHelper.SafeDeleteTempFiles(fileSystem: null, tempFile1, tempFile2);
 		}
 	}
 
@@ -86,30 +79,9 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	[TestMethod]
 	public void AreFilesIdentical_DifferentFiles_ReturnsFalse()
 	{
-		// Create temporary real files for testing since DiffPlexDiffer uses real file system
-		string tempFile1 = Path.GetTempFileName();
-		string tempFile2 = Path.GetTempFileName();
-
-		try
-		{
-			File.WriteAllText(tempFile1, MockFileSystem.File.ReadAllText(_file1));
-			File.WriteAllText(tempFile2, MockFileSystem.File.ReadAllText(_file2));
-
-			bool result = DiffPlexDiffer.AreFilesIdentical(tempFile1, tempFile2);
-			Assert.IsFalse(result);
-		}
-		finally
-		{
-			if (File.Exists(tempFile1))
-			{
-				File.Delete(tempFile1);
-			}
-
-			if (File.Exists(tempFile2))
-			{
-				File.Delete(tempFile2);
-			}
-		}
+		// Use mock file system directly since DiffPlexDiffer uses FileSystemProvider.Current
+		bool result = DiffPlexDiffer.AreFilesIdentical(_file1, _file2);
+		Assert.IsFalse(result);
 	}
 
 	/// <summary>
@@ -118,34 +90,13 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	[TestMethod]
 	public void GenerateUnifiedDiff_DifferentFiles_ReturnsValidDiff()
 	{
-		// Create temporary real files for testing since DiffPlexDiffer uses real file system
-		string tempFile1 = Path.GetTempFileName();
-		string tempFile2 = Path.GetTempFileName();
+		// Use mock file system directly since DiffPlexDiffer uses FileSystemProvider.Current
+		string diff = DiffPlexDiffer.GenerateUnifiedDiff(_file1, _file2);
 
-		try
-		{
-			File.WriteAllText(tempFile1, MockFileSystem.File.ReadAllText(_file1));
-			File.WriteAllText(tempFile2, MockFileSystem.File.ReadAllText(_file2));
-
-			string diff = DiffPlexDiffer.GenerateUnifiedDiff(tempFile1, tempFile2);
-
-			Assert.IsFalse(string.IsNullOrEmpty(diff));
-			Assert.IsTrue(diff.Contains($"--- {tempFile1}"));
-			Assert.IsTrue(diff.Contains($"+++ {tempFile2}"));
-			Assert.IsTrue(diff.Contains("@@"));
-		}
-		finally
-		{
-			if (File.Exists(tempFile1))
-			{
-				File.Delete(tempFile1);
-			}
-
-			if (File.Exists(tempFile2))
-			{
-				File.Delete(tempFile2);
-			}
-		}
+		Assert.IsFalse(string.IsNullOrEmpty(diff));
+		Assert.IsTrue(diff.Contains($"--- {_file1}"));
+		Assert.IsTrue(diff.Contains($"+++ {_file2}"));
+		Assert.IsTrue(diff.Contains("@@"));
 	}
 
 	/// <summary>
@@ -154,32 +105,11 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	[TestMethod]
 	public void GenerateUnifiedDiff_IdenticalFiles_ReturnsEmptyString()
 	{
-		// Create temporary real files for testing since DiffPlexDiffer uses real file system
-		string tempFile1 = Path.GetTempFileName();
-		string tempFile2 = Path.GetTempFileName();
+		// Use mock file system directly since DiffPlexDiffer uses FileSystemProvider.Current
+		string diff = DiffPlexDiffer.GenerateUnifiedDiff(_file1, _identicalFile);
 
-		try
-		{
-			File.WriteAllText(tempFile1, MockFileSystem.File.ReadAllText(_file1));
-			File.WriteAllText(tempFile2, MockFileSystem.File.ReadAllText(_identicalFile));
-
-			string diff = DiffPlexDiffer.GenerateUnifiedDiff(tempFile1, tempFile2);
-
-			// For identical files, git returns empty string
-			Assert.AreEqual(string.Empty, diff, "Unified diff should be empty for identical files");
-		}
-		finally
-		{
-			if (File.Exists(tempFile1))
-			{
-				File.Delete(tempFile1);
-			}
-
-			if (File.Exists(tempFile2))
-			{
-				File.Delete(tempFile2);
-			}
-		}
+		// For identical files, git returns empty string
+		Assert.AreEqual(string.Empty, diff, "Unified diff should be empty for identical files");
 	}
 
 	/// <summary>
@@ -188,38 +118,17 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	[TestMethod]
 	public void GenerateColoredDiff_DifferentFiles_ReturnsColoredLines()
 	{
-		// Create temporary real files for testing since DiffPlexDiffer uses real file system
-		string tempFile1 = Path.GetTempFileName();
-		string tempFile2 = Path.GetTempFileName();
+		// Use mock file system directly since DiffPlexDiffer uses FileSystemProvider.Current
+		System.Collections.ObjectModel.Collection<ColoredDiffLine> coloredDiff = DiffPlexDiffer.GenerateColoredDiff(_file1, _file2);
 
-		try
-		{
-			File.WriteAllText(tempFile1, MockFileSystem.File.ReadAllText(_file1));
-			File.WriteAllText(tempFile2, MockFileSystem.File.ReadAllText(_file2));
+		Assert.IsTrue(coloredDiff.Count > 0);
 
-			System.Collections.ObjectModel.Collection<ColoredDiffLine> coloredDiff = DiffPlexDiffer.GenerateColoredDiff(tempFile1, tempFile2);
+		// Should contain file headers
+		Assert.IsTrue(coloredDiff.Any(line => line.Color == DiffColor.FileHeader));
 
-			Assert.IsTrue(coloredDiff.Count > 0);
-
-			// Should contain file headers
-			Assert.IsTrue(coloredDiff.Any(line => line.Color == DiffColor.FileHeader));
-
-			// Should contain additions and deletions
-			Assert.IsTrue(coloredDiff.Any(line => line.Color == DiffColor.Addition));
-			Assert.IsTrue(coloredDiff.Any(line => line.Color == DiffColor.Deletion));
-		}
-		finally
-		{
-			if (File.Exists(tempFile1))
-			{
-				File.Delete(tempFile1);
-			}
-
-			if (File.Exists(tempFile2))
-			{
-				File.Delete(tempFile2);
-			}
-		}
+		// Should contain additions and deletions
+		Assert.IsTrue(coloredDiff.Any(line => line.Color == DiffColor.Addition));
+		Assert.IsTrue(coloredDiff.Any(line => line.Color == DiffColor.Deletion));
 	}
 
 	/// <summary>
@@ -228,35 +137,14 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	[TestMethod]
 	public void GenerateSideBySideDiff_DifferentFiles_ReturnsValidModel()
 	{
-		// Create temporary real files for testing since DiffPlexDiffer uses real file system
-		string tempFile1 = Path.GetTempFileName();
-		string tempFile2 = Path.GetTempFileName();
+		// Use mock file system directly since DiffPlexDiffer uses FileSystemProvider.Current
+		DiffPlex.DiffBuilder.Model.SideBySideDiffModel sideBySide = DiffPlexDiffer.GenerateSideBySideDiff(_file1, _file2);
 
-		try
-		{
-			File.WriteAllText(tempFile1, MockFileSystem.File.ReadAllText(_file1));
-			File.WriteAllText(tempFile2, MockFileSystem.File.ReadAllText(_file2));
-
-			DiffPlex.DiffBuilder.Model.SideBySideDiffModel sideBySide = DiffPlexDiffer.GenerateSideBySideDiff(tempFile1, tempFile2);
-
-			Assert.IsNotNull(sideBySide);
-			Assert.IsNotNull(sideBySide.OldText);
-			Assert.IsNotNull(sideBySide.NewText);
-			Assert.IsTrue(sideBySide.OldText.Lines.Count > 0);
-			Assert.IsTrue(sideBySide.NewText.Lines.Count > 0);
-		}
-		finally
-		{
-			if (File.Exists(tempFile1))
-			{
-				File.Delete(tempFile1);
-			}
-
-			if (File.Exists(tempFile2))
-			{
-				File.Delete(tempFile2);
-			}
-		}
+		Assert.IsNotNull(sideBySide);
+		Assert.IsNotNull(sideBySide.OldText);
+		Assert.IsNotNull(sideBySide.NewText);
+		Assert.IsTrue(sideBySide.OldText.Lines.Count > 0);
+		Assert.IsTrue(sideBySide.NewText.Lines.Count > 0);
 	}
 
 	/// <summary>
@@ -265,37 +153,16 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	[TestMethod]
 	public void GenerateChangeSummary_DifferentFiles_ReturnsOnlyChanges()
 	{
-		// Create temporary real files for testing since DiffPlexDiffer uses real file system
-		string tempFile1 = Path.GetTempFileName();
-		string tempFile2 = Path.GetTempFileName();
+		// Use mock file system directly since DiffPlexDiffer uses FileSystemProvider.Current
+		System.Collections.ObjectModel.Collection<ColoredDiffLine> changeSummary = DiffPlexDiffer.GenerateChangeSummary(_file1, _file2);
 
-		try
-		{
-			File.WriteAllText(tempFile1, MockFileSystem.File.ReadAllText(_file1));
-			File.WriteAllText(tempFile2, MockFileSystem.File.ReadAllText(_file2));
+		Assert.IsTrue(changeSummary.Count > 0);
 
-			System.Collections.ObjectModel.Collection<ColoredDiffLine> changeSummary = DiffPlexDiffer.GenerateChangeSummary(tempFile1, tempFile2);
-
-			Assert.IsTrue(changeSummary.Count > 0);
-
-			// Should not contain unchanged lines (default color)
-			List<ColoredDiffLine> unchangedLines = [.. changeSummary.Where(line => line.Color == DiffColor.Default)];
-			// File headers might have default color, but content should not
-			Assert.IsTrue(unchangedLines.Count == 0 || unchangedLines.All(line =>
-				line.Content.Contains(tempFile1) || line.Content.Contains(tempFile2) || string.IsNullOrEmpty(line.Content.Trim())));
-		}
-		finally
-		{
-			if (File.Exists(tempFile1))
-			{
-				File.Delete(tempFile1);
-			}
-
-			if (File.Exists(tempFile2))
-			{
-				File.Delete(tempFile2);
-			}
-		}
+		// Should not contain unchanged lines (default color)
+		List<ColoredDiffLine> unchangedLines = [.. changeSummary.Where(line => line.Color == DiffColor.Default)];
+		// File headers might have default color, but content should not
+		Assert.IsTrue(unchangedLines.Count == 0 || unchangedLines.All(line =>
+			line.Content.Contains(_file1) || line.Content.Contains(_file2) || string.IsNullOrEmpty(line.Content.Trim())));
 	}
 
 	/// <summary>
@@ -329,37 +196,16 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	[TestMethod]
 	public void GenerateUnifiedDiff_EmptyFiles_HandlesCorrectly()
 	{
+		// Use mock file system directly since DiffPlexDiffer uses FileSystemProvider.Current
 		string emptyFile1 = CreateFile("empty1.txt", string.Empty);
 		string emptyFile2 = CreateFile("empty2.txt", string.Empty);
 
-		// Create temporary real files for testing since DiffPlexDiffer uses real file system
-		string tempFile1 = Path.GetTempFileName();
-		string tempFile2 = Path.GetTempFileName();
+		string diff = DiffPlexDiffer.GenerateUnifiedDiff(emptyFile1, emptyFile2);
+		Assert.IsNotNull(diff);
 
-		try
-		{
-			File.WriteAllText(tempFile1, string.Empty);
-			File.WriteAllText(tempFile2, string.Empty);
-
-			string diff = DiffPlexDiffer.GenerateUnifiedDiff(tempFile1, tempFile2);
-			Assert.IsNotNull(diff);
-
-			// Should identify as identical
-			bool areIdentical = DiffPlexDiffer.AreFilesIdentical(tempFile1, tempFile2);
-			Assert.IsTrue(areIdentical);
-		}
-		finally
-		{
-			if (File.Exists(tempFile1))
-			{
-				File.Delete(tempFile1);
-			}
-
-			if (File.Exists(tempFile2))
-			{
-				File.Delete(tempFile2);
-			}
-		}
+		// Should identify as identical
+		bool areIdentical = DiffPlexDiffer.AreFilesIdentical(emptyFile1, emptyFile2);
+		Assert.IsTrue(areIdentical);
 	}
 
 	/// <summary>
@@ -368,33 +214,18 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	[TestMethod]
 	public void GenerateUnifiedDiff_BinaryFiles_HandlesCorrectly()
 	{
-		// Create temporary real files for testing since DiffPlexDiffer uses real file system
-		string tempFile1 = Path.GetTempFileName();
-		string tempFile2 = Path.GetTempFileName();
+		// Use mock file system directly since DiffPlexDiffer uses FileSystemProvider.Current
+		// Create files with binary-like content using mock file system
+		byte[] binaryData1 = [0x00, 0x01, 0x02, 0x03, 0xFF, 0xFE];
+		byte[] binaryData2 = [0x00, 0x01, 0x04, 0x05, 0xFF, 0xFE];
 
-		try
-		{
-			// Create files with binary-like content
-			File.WriteAllBytes(tempFile1, [0x00, 0x01, 0x02, 0x03, 0xFF, 0xFE]);
-			File.WriteAllBytes(tempFile2, [0x00, 0x01, 0x04, 0x05, 0xFF, 0xFE]);
+		string binaryFile1 = CreateFile("binary1.dat", System.Text.Encoding.UTF8.GetString(binaryData1));
+		string binaryFile2 = CreateFile("binary2.dat", System.Text.Encoding.UTF8.GetString(binaryData2));
 
-			string diff = DiffPlexDiffer.GenerateUnifiedDiff(tempFile1, tempFile2);
-			Assert.IsNotNull(diff);
+		string diff = DiffPlexDiffer.GenerateUnifiedDiff(binaryFile1, binaryFile2);
+		Assert.IsNotNull(diff);
 
-			// DiffPlex should handle binary files as text and show differences
-			Assert.IsTrue(diff.Length > 0);
-		}
-		finally
-		{
-			if (File.Exists(tempFile1))
-			{
-				File.Delete(tempFile1);
-			}
-
-			if (File.Exists(tempFile2))
-			{
-				File.Delete(tempFile2);
-			}
-		}
+		// DiffPlex should handle binary files as text and show differences
+		Assert.IsTrue(diff.Length > 0);
 	}
 }

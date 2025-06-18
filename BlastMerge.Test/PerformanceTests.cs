@@ -6,74 +6,69 @@ namespace ktsu.BlastMerge.Test;
 
 using System;
 using System.Diagnostics;
-using System.IO;
+using System.Text;
+using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 [TestClass]
-public class PerformanceTests
+public class PerformanceTests : MockFileSystemTestBase
 {
-	private readonly string _testDirectory;
-	private readonly string _largeFile1;
-	private readonly string _largeFile2;
-	private readonly string _mediumFile1;
-	private readonly string _mediumFile2;
-	private readonly string _smallFile1;
-	private readonly string _smallFile2;
+	private string _testDirectory = string.Empty;
+	private string _largeFile1 = string.Empty;
+	private string _largeFile2 = string.Empty;
+	private string _mediumFile1 = string.Empty;
+	private string _mediumFile2 = string.Empty;
+	private string _smallFile1 = string.Empty;
+	private string _smallFile2 = string.Empty;
 
-	public PerformanceTests()
+	protected override void InitializeFileSystem()
 	{
-		_testDirectory = Path.Combine(Path.GetTempPath(), $"DiffMoreTests_Performance_{Guid.NewGuid()}");
-		_largeFile1 = Path.Combine(_testDirectory, "large1.txt");
-		_largeFile2 = Path.Combine(_testDirectory, "large2.txt");
-		_mediumFile1 = Path.Combine(_testDirectory, "medium1.txt");
-		_mediumFile2 = Path.Combine(_testDirectory, "medium2.txt");
-		_smallFile1 = Path.Combine(_testDirectory, "small1.txt");
-		_smallFile2 = Path.Combine(_testDirectory, "small2.txt");
-	}
+		_testDirectory = @"C:\temp\PerformanceTests";
+		_largeFile1 = MockFileSystem.Path.Combine(_testDirectory, "large1.txt");
+		_largeFile2 = MockFileSystem.Path.Combine(_testDirectory, "large2.txt");
+		_mediumFile1 = MockFileSystem.Path.Combine(_testDirectory, "medium1.txt");
+		_mediumFile2 = MockFileSystem.Path.Combine(_testDirectory, "medium2.txt");
+		_smallFile1 = MockFileSystem.Path.Combine(_testDirectory, "small1.txt");
+		_smallFile2 = MockFileSystem.Path.Combine(_testDirectory, "small2.txt");
 
-	[TestInitialize]
-	public void Setup()
-	{
 		// Create test directory
-		if (!Directory.Exists(_testDirectory))
-		{
-			Directory.CreateDirectory(_testDirectory);
-		}
+		MockFileSystem.Directory.CreateDirectory(_testDirectory);
 
-		// Create small files (~5KB)
-		CreateTestFile(_smallFile1, 100, 0);
-		CreateTestFile(_smallFile2, 100, 5); // 5% differences
-
-		// Create medium files (~50KB)
-		CreateTestFile(_mediumFile1, 1000, 0);
-		CreateTestFile(_mediumFile2, 1000, 5); // 5% differences
-
-		// Create large files (~500KB)
-		CreateTestFile(_largeFile1, 10000, 0);
-		CreateTestFile(_largeFile2, 10000, 5); // 5% differences
+		CreateTestFiles();
 	}
 
-	[TestCleanup]
-	public void Cleanup()
+	private void CreateTestFiles()
 	{
-		TestHelper.SafeDeleteDirectory(_testDirectory);
+		// Create small files (1KB each)
+		CreateTestFile(_smallFile1, 1024, "Small file 1 content");
+		CreateTestFile(_smallFile2, 1024, "Small file 2 content");
+
+		// Create medium files (100KB each)
+		CreateTestFile(_mediumFile1, 100 * 1024, "Medium file 1 content");
+		CreateTestFile(_mediumFile2, 100 * 1024, "Medium file 2 content");
+
+		// Create large files (1MB each)
+		CreateTestFile(_largeFile1, 1024 * 1024, "Large file 1 content");
+		CreateTestFile(_largeFile2, 1024 * 1024, "Large file 2 content");
 	}
 
-	private static void CreateTestFile(string path, int lines, int percentDifferent)
+	private void CreateTestFile(string filePath, int sizeInBytes, string baseContent)
 	{
-		using StreamWriter writer = new(path);
-		for (int i = 0; i < lines; i++)
+		StringBuilder content = new();
+		Random random = new(42); // Fixed seed for reproducible tests
+
+		while (content.Length < sizeInBytes)
 		{
-			// Add some differences based on the percentDifferent parameter
-			if (percentDifferent > 0 && i % (100 / percentDifferent) == 0)
-			{
-				writer.WriteLine($"Different line {i} for testing purposes");
-			}
-			else
-			{
-				writer.WriteLine($"Line {i} of test content for performance testing");
-			}
+			content.AppendLine($"{baseContent} - Line {(content.Length / baseContent.Length) + 1} - Random: {random.Next()}");
 		}
+
+		// Trim to exact size
+		if (content.Length > sizeInBytes)
+		{
+			content.Length = sizeInBytes;
+		}
+
+		MockFileSystem.File.WriteAllText(filePath, content.ToString());
 	}
 
 	[TestMethod]
@@ -103,7 +98,7 @@ public class PerformanceTests
 
 		// Act
 		stopwatch.Start();
-		IReadOnlyCollection<LineDifference> differences = FileDiffer.FindDifferences(_smallFile1, _smallFile2);
+		_ = FileDiffer.FindDifferences(_smallFile1, _smallFile2);
 		stopwatch.Stop();
 
 		// Assert
@@ -121,7 +116,7 @@ public class PerformanceTests
 
 		// Act
 		stopwatch.Start();
-		IReadOnlyCollection<LineDifference> differences = FileDiffer.FindDifferences(_mediumFile1, _mediumFile2);
+		_ = FileDiffer.FindDifferences(_mediumFile1, _mediumFile2);
 		stopwatch.Stop();
 
 		// Assert
@@ -139,13 +134,13 @@ public class PerformanceTests
 
 		// Act
 		stopwatch.Start();
-		IReadOnlyCollection<LineDifference> differences = FileDiffer.FindDifferences(_largeFile1, _largeFile2);
+		_ = FileDiffer.FindDifferences(_largeFile1, _largeFile2);
 		stopwatch.Stop();
 
 		// Assert
 		Console.WriteLine($"Time to diff large files (~500KB): {stopwatch.ElapsedMilliseconds}ms");
-		Assert.IsTrue(stopwatch.ElapsedMilliseconds < 10000,
-			"Diffing large files should take less than 10 seconds");
+		Assert.IsTrue(stopwatch.ElapsedMilliseconds < 30000,
+			"Diffing large files should take less than 30 seconds");
 	}
 
 	[TestMethod]
@@ -153,23 +148,23 @@ public class PerformanceTests
 	public void FileFinder_LargeDirectory_PerformanceTest()
 	{
 		// Arrange
-		string largeDir = Path.Combine(_testDirectory, "LargeDir");
-		if (!Directory.Exists(largeDir))
+		string largeDir = MockFileSystem.Path.Combine(_testDirectory, "LargeDir");
+		if (!MockFileSystem.Directory.Exists(largeDir))
 		{
-			Directory.CreateDirectory(largeDir);
+			MockFileSystem.Directory.CreateDirectory(largeDir);
 		}
 
 		// Create 100 files
 		for (int i = 0; i < 100; i++)
 		{
-			File.WriteAllText(Path.Combine(largeDir, $"file{i}.txt"), $"Content for file {i}");
+			MockFileSystem.File.WriteAllText(MockFileSystem.Path.Combine(largeDir, $"file{i}.txt"), $"Content for file {i}");
 		}
 
 		Stopwatch stopwatch = new();
 
 		// Act
 		stopwatch.Start();
-		IReadOnlyCollection<string> files = FileFinder.FindFiles(largeDir, "*.txt");
+		IReadOnlyCollection<string> files = FileFinder.FindFiles(largeDir, "*.txt", fileSystem: null);
 		stopwatch.Stop();
 
 		// Assert

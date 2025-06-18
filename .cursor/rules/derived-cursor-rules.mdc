@@ -11,6 +11,8 @@ globs: *
 -   Code must be well-commented, explaining non-obvious logic.
 -   Fix formatting issues.
 -   Before continuing work, always check the current state of the project and run the tests.
+-   One class/type definition per file please
+-   Do not use nested classes; extract them into their own files.
 
 ## TECH STACK
 
@@ -21,8 +23,8 @@ globs: *
 -   TestableIO.System.IO.Abstractions.Wrappers Version="17.2.26"
 -   MSTest
 -   Moq Version="4.20.72"
--   TestableIO.System.IO.Abstractions Version="20.0.34"
--   TestableIO.System.IO.Abstractions.TestingHelpers Version="20.0.34"
+-   TestableIO.System.IO.Abstractions Version="22.0.14"
+-   TestableIO.System.IO.Abstractions.TestingHelpers Version="22.0.14"
 -   Microsoft.NET.Test.Sdk Version="17.11.1"
 -   MSTest.TestAdapter Version="3.6.0"
 -   MSTest.TestFramework Version="3.6.0"
@@ -32,10 +34,72 @@ globs: *
 -   System.Text.Json
 -   DiffPlex Version="1.7.2"
 -   CommandLineParser Version="2.9.1"
+-   ImGui.NET
+-   Octokit
+-   OpenAI.Chat
+-   AppDataStorage (https://github.com/ktsu-dev/AppDataStorage)
+-   BenchmarkDotNet Version="0.14.0"
+-   CommandLineParser Version="2.9.1"
+-   DiffPlex Version="1.8.0"
+-   FluentAssertions Version="6.12.1"
+-   ktsu.AppDataStorage Version="1.15.6"
+-   ktsu.CaseConverter Version="1.3.2"
+-   ktsu.Extensions Version="1.5.6"
+-   ktsu.RunCommand Version="1.3.0"
+-   ktsu.StrongPaths Version="1.3.1"
+-   ktsu.StrongStrings Version="1.4.2"
+-   ktsu.ToStringJsonConverter Version="1.2.3"
+-   MessagePack Version="3.0.3"
+-   Microsoft.Build Version="17.14.8"
+-   Microsoft.Build.Utilities.Core Version="17.14.8"
+-   Microsoft.Extensions.DependencyInjection Version="9.0.5"
+-   Microsoft.Extensions.DependencyInjection.Abstractions Version="9.0.5"
+-   Microsoft.Extensions.Hosting Version="9.0.0"
+-   Microsoft.Extensions.Http Version="9.0.5"
+-   Microsoft.Extensions.Logging.Abstractions Version="9.0.5"
+-   Microsoft.Extensions.Logging.Console Version="9.0.5"
+-   Microsoft.NET.Test.Sdk Version="17.14.0"
+-   Microsoft.SourceLink.AzureRepos.Git Version="8.0.0"
+-   Microsoft.SourceLink.GitHub Version="8.0.0"
+-   Microsoft.Testing.Extensions.CodeCoverage Version="17.14.2"
+-   Microsoft.Testing.Extensions.CrashDump Version="1.7.1"
+-   Microsoft.Testing.Extensions.Retry Version="1.7.1"
+-   Microsoft.Testing.Extensions.TrxReport Version="1.7.1"
+-   Moq Version="4.20.72"
+-   MSTest.TestAdapter Version="3.9.1"
+-   MSTest.TestFramework Version="3.9.1"
+-   NSubstitute Version="5.3.0"
+-   NuGet.Packaging Version="6.14.0"
+-   Spectre.Console Version="0.50.0"
+-   Spectre.Console.Analyzer Version="1.0.0"
+-   Spectre.Console.Cli Version="0.50.0"
+-   Spectre.Console.ImageSharp Version="0.50.0"
+-   Spectre.Console.Json Version="0.50.0"
+-   Spectre.Console.Testing Version="0.50.0"
+-   TestableIO.System.IO.Abstractions Version="22.0.14"
+-   TestableIO.System.IO.Abstractions.TestingHelpers Version="22.0.14"
+-   TestableIO.System.IO.Abstractions.Wrappers Version="22.0.14"
+-   Tomlyn Version="0.17.0"
+-   YamlDotNet Version="16.2.0"
+-   System.IO.Abstractions
+-   coverlet.collector Version="6.0.0"
+-   coverlet.msbuild Version="6.0.4"
+-   ReportGenerator
+-   powershell-yaml
+-   dotnet-coverage
+-   dotnet tool install --global dotnet-coverage
+-   dotnet-reportgenerator-globaltool
+-   coverlet.msbuild
+-   ktsu.Sdk.Test
 
 ## PROJECT DOCUMENTATION & CONTEXT SYSTEM
 
 -   Use SpecStory to generate markdown files documenting user requests and assistant responses.
+-   Ensure the documentation is up to date.
+-   Ensure the in-app help and information is correct and up to date.
+-   Align both the documentation files and the in app help and info to be accurate to the actual implementation.
+-   Ensure the README, DESCRIPTION, and TAGS files are updated and accurate.
+-   `ktsu.BlastMerge.Core` should be `ktsu.BlastMerge` in all the code and documentation
 
 ## CODING STANDARDS
 
@@ -47,13 +111,14 @@ globs: *
 -   Collection initialization can be simplified.
 -   When logging or handling exceptions, catch specific exception types (e.g., `IOException`, `UnauthorizedAccessException`) rather than a general `Exception` to provide more targeted error handling.
 -   Use `ArgumentNullException.ThrowIfNull` instead of explicitly throwing a new exception instance.
+-   Use `ArgumentNullException.ThrowIfNull` for parameter validation.
 -   Use pattern matching.
 -   Follow the .editorconfig file.
 -   Private member 'FileHasher.FNV_PRIME_32' is unused (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0051)
 -   Private member 'FileHasher.FNV_OFFSET_BASIS_32' is unused (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0051)
 -   Parentheses should be added for clarity (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0048)
 -   Add braces to 'if' statement. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0011)
--   In the CLI project, use `AnsiConsole` instead of `System.Console` for console output, as required by the Spectre.Console analyzer. **NOTE:** This rule is superseded by the rule to suppress `Spectre1000` in the CLI project. See "WORKFLOW & RELEASE RULES".
+-   In the CLI project, suppress `Spectre1000` to allow the use of `System.Console` where appropriate. This overrides the general rule to use `AnsiConsole`.
 -   Remove unnecessary using directives to keep the code clean and maintainable.
 -   Blank line required between block and subsequent statement (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide2003)
 -   Use `string.StartsWith(char)` instead of `string.StartsWith(string)` when you have a string with a single char (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1866)
@@ -74,230 +139,184 @@ globs: *
 -   Use conditional expressions to simplify if-else-if-else chains for better readability.
 -   When converting classes to records, consider the potential breaking changes for consumers that rely on reference equality comparisons, inheritance patterns, or mutable object patterns.
 -   Reorder using statements to follow .NET conventions (project imports before framework imports).
-
-## FILE & DIRECTORY HANDLING
-
--   Always ensure that file paths are valid before attempting to access files.
--   Create target directories before copying files.
--   When copying files, handle potential `IOExceptions` and `UnauthorizedAccessException`.
--   Be aware that binary files will be treated as text and should show differences.
-
-## HASHING
-
--   Use FNV-1a (64-bit version) as the hashing algorithm for file identification.
--   Handle files with different encodings.
-
-## DIFFING
-
--   Use the DiffPlex library for diffing functionality.
--   Use the Differ.CreateDiffs method with a LineChunker.
--   Generate diff output in a unified format.
--   Color-code the diff output:
-    -   Green for added lines
-    -   Red for deleted lines
-    -   Cyan for chunk headers
-    -   Blue for file headers.
--   Show the paths of the compared versions.
--   Implement a change summary diffing mode that shows only lines added or removed between versions.
--   When the user asks to replace the old library with DiffPlex, remove all of the libgit2sharp code and the visualizations, and replace it with the Diffplex library.
--   Display diffs in a side-by-side format with line numbers.
--   Use red on darkred for deleted lines, green on darkgreen for inserted lines, and yellow on darkorange for modified lines.
--   Handle ChangeType.Imaginary lines by ignoring them.
--   When showing the differences put the file with the least number of changes on the left, and instead of calling them version 1, version 2 use the relative directory from the search path.
--   When displaying diffs in a side-by-side format, ensure that the prologue (initial context lines) shows the correct context around the differences, and not hardcoded line numbers. When displaying diffs in a side-by-side format, calculate the correct starting line numbers for the context before the block by using the actual line numbers. Ensure that the context shows the actual context around the differences, and not hardcoded line numbers.
--   Post-process the results of `FindDifferences` to detect when a deletion is immediately followed by an insertion at adjacent positions and merge them into a modification.
--   When using the `DiffPlexDiffer.GenerateColoredDiff` method, be aware that it uses the real file system (`File.Exists()`) instead of the mock file system. When using a mock file system in tests, ensure that `FileDifferAdapter.GenerateColoredDiff` creates temporary files from the mock file system content, similar to how `GenerateGitStyleDiff` handles it.
--   When creating `DiffBlock` instances, ensure the `BlockType` parameter is correctly specified.
--   When using records with init-only properties, create new instances with the correct values instead of modifying the property after creation.
-
-## DEBUGGING
-
--   When an error occurs, log the error message and rethrow the exception for debugging purposes.
--   When encountering build errors, check the error messages to identify missing package references, incorrect project references, or other dependency-related issues.
--   When using Spectre.Console, avoid running interactive functions (e.g., prompts, progress displays) concurrently to prevent `System.InvalidOperationException`.
--   When tests fail, analyze the test failures by exploring the codebase structure and examining the failing tests to understand what's going wrong.
--   In `PSBuild.psm1`, when the `git log` command fails or returns an error, ensure the `$rawCommits` variable handles the error object appropriately, especially when accessing its `.Count` property. Improve error handling and the `ConvertTo-ArraySafe` function to handle these edge cases.
-
-## UNIT TESTING
-
--   Write comprehensive unit tests using MSTest.
--   Use a mock filesystem to enable parallel test execution and avoid file system conflicts.
--   Create test cases for different scenarios, including normal usage patterns and edge cases.
--   Use setup and cleanup methods to maintain a clean testing environment.
--   Create tests for performance benchmarking, especially for large files and directories.
--   Implement tests for mock file system operations to verify correct behavior with mocked dependencies.
--   Test file operations with relative paths.
--   Test file operations with paths containing trailing slashes.
--   Test file operations with different casing.
--   Test file operations with multiple search patterns.
--   Test with files in deep directory structures.
--   Test with symbolic links, but skip if the test environment does not support them.
--   When using a mock filesystem, create adapters for core classes that need to interact with the filesystem. These adapters should take an `IFileSystem` instance as a parameter. Example adapters: `FileFinderAdapter`, `FileHasherAdapter`, `FileDifferAdapter`.
--   When using a mock filesystem, tests should inherit from a base class that sets up the mock filesystem environment (e.g., `MockFileSystemTestBase`). This base class should initialize the `MockFileSystem` and provide helper methods for creating files and directories in the mock filesystem.
--   When using a mock filesystem, there is no need for cleanup code in tests, as the virtual filesystem is in memory.
--   When tests use a mock file system, ensure that core classes use adapted versions (e.g., `FileFinderAdapter`, `FileHasherAdapter`, `FileDifferAdapter`) taking an `IFileSystem` instance as a parameter for file system interaction.
--   When tests use a mock file system, initialize adapters (e.g. `FileFinderAdapter`) in the `InitializeFileSystem` override within the derived test class.
--   When tests use a mock file system, initialize file and directory paths in the `InitializeFileSystem` override within the derived test class using the `CreateFile` and `CreateDirectory` methods provided by `MockFileSystemTestBase`.
--   Ensure that test files include `using ktsu.DiffMore.Core;`
--   When writing tests, ensure proper instantiation of static classes. Do not attempt to create instances of static classes directly; instead, access their members directly using the class name.
--   When tests use classes implementing `IDisposable`, ensure the `Dispose` method is properly implemented. The `Dispose` method should call `Dispose(true)`, then call `GC.SuppressFinalize` on the current object instance (`this` or `Me` in Visual Basic), and then return.
--   Use MSTest framework for unit tests.
--   When tests fail due to missing assembly references, add the necessary package references to the test project file (.csproj).
--   If a test project references a namespace from another project, ensure to add a project reference to the corresponding project in the test project file (.csproj).
--   Focus tests on the core library.
--   Remove failing tests until more test coverage is added.
--   Use the `Testable.IO.Abstractions` libraries to enable testing file access properly.
--   When using `FileFinderAdapter` in tests, be aware that `Directory.GetFiles()` returns absolute paths. Ensure consistency in path handling by converting paths to relative paths, if necessary, especially in tests using a mock file system.
--   If a test uses the real file system, it can cause problems with parallel test execution because multiple tests are trying to access the same real files simultaneously. Convert the test to use the mock file system.
--   For performance tests, use unique temp directories per test instance to avoid conflicts during parallel execution while still testing real file I/O.
--   Update tests to work with new record structures.
--   Reorder import statements in test files for consistency (project imports before framework imports).
--   Update test adapter classes to use new record constructors.
-
-## WORKFLOW & RELEASE RULES
-
--   Ensure that all tests pass before releasing a new version.
--   Enable parallel execution for tests to improve performance. This can be configured in the `.runsettings` file by setting `<MaxCpuCount>` to `0` and enabling parallelization in the MSTest adapter:
-    ```xml
-    <MSTest>
-        <Parallelize>
-            <Workers>0</Workers>
-            <Scope>MethodLevel</Scope>
-        </Parallelize>
-    </MSTest>
-    ```
--   Suppress NuGet warnings `NU1604`, `NU1602`, `NU1701`, and `NU1504` in all project files by adding a `Directory.Build.props` file at the solution root with the following property group:
-
-    ```xml
-    <Project>
-      <PropertyGroup>
-        <!-- Treat package dependency warnings as warnings instead of errors -->
-        <WarningsAsErrors />
-        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-
-        <!-- Suppress specific NuGet warnings that are coming from the ktsu.Sdk packages -->
-        <NoWarn>$(NoWarn);NU1604;NU1701;NU1602;NU1504</NoWarn>
-        <!-- NU1604: Project dependency does not contain an inclusive lower bound -->
-        <!-- NU1701: Package was restored using a different target framework -->
-        <!-- NU1602: Does not provide an inclusive lower bound for dependency -->
-	    <!-- NU1504: Duplicate PackageReference -->
-      </PropertyGroup>
-    </Project>
-    ```
--   Suppress Spectre Console analyzer errors `Spectre1000` in the CLI project by adding it to the `NoWarn` property in the `Directory.Build.props` file:
-
-    ```xml
-        <NoWarn>$(NoWarn);NU1604;NU1602;NU1701;Spectre1000</NoWarn>
-    ```
--   The application should have a TUI using Spectre.Console.
--   Implement an iterative merge feature for multiple file versions, where the two most similar versions are found and a visual TUI is offered for resolving the merge. This process is repeated until all versions are merged.
--   During the iterative merge, at each step replace both input files with the merged output.
--   When adding package references, use `dotnet add package <package_name>`
--   When adding project references, use `dotnet add reference <project_path>`
--   The BlastMerge CLI should have command history functionality, allowing users to use arrow keys or tab to navigate through previous inputs. History should be visible to the user.
--   Make cross repository file synchronization by iterative merging the primary feature of the app.
--   Remove failing tests until more test coverage is added.
--   Prepare the application for distribution via winget.
--   Modify the existing `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` to integrate the winget package creation functionality. Remove the separate `New-WingetPackages` function and its call in the release workflow.
--   Ensure that the `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` has only one `dotnet publish` step, consolidating the previous separate steps for general application and winget package publishing.
--   The build script `PSBuild.psm1` must respect the "should release" flag and not push files to package repos from a branch build.
--   The GitHub release creation in `Invoke-ReleaseWorkflow` must check the `ShouldRelease` flag and only create releases when `ShouldRelease` is true (main branch + not tagged + official repo).
-
-## DIRECTORY COMPARISON
-
--   When comparing directories, the result should include:
-    -   `SameFiles`: Files that are identical in both directories.
-    -   `ModifiedFiles`: Files that exist in both directories but have different content.
-    -   `OnlyInDir1`: Files that exist only in the first directory.
-    -   `OnlyInDir2`: Files that exist only in the second directory.
-
-## USER INTERFACE
-
--   When displaying diffs in a side-by-side format, ensure that the prologue (initial context lines) shows the correct context around the differences, and not hardcoded line numbers. When displaying diffs in a side-by-side format, calculate the correct starting line numbers for the context before the block by using the actual line numbers. Ensure that the context shows the actual context around the differences, and not hardcoded line numbers.
--   When showing the differences put the file with the least number of changes on the left, and instead of calling them version 1, version 2 use the relative directory from the search path.
--   The BlastMerge CLI should have command history functionality, allowing users to use arrow keys or tab to navigate through previous inputs. History should be visible to the user.
--   The BlastMerge CLI should provide the most recently used input for a prompt as a default value.
--   When performing iterative merge, the message that says "Result will replace ProjectDirector (and delete DiffMore)" should just say the result will replace both files.
--   During iterative merge, the message "Result will replace both files" should be displayed.
--   During iterative merge, the message "Merged successfully! Files reduced by 1." should be updated to say "Merged successfully! Versions reduced by 1."
--   During iterative merge, the confirmation prompt should be skipped, and the merge should continue automatically, displaying "Continuing to next merge step..."
--   During iterative merge, the redundant save prompt should be removed and replaced with the message "Final merged result is saved in the remaining file.".
--   During the iterative merge, the version search should be performed again between every iteration.
--   During the iterative merge, when saving the result, the content of every file that has those versions should be replaced.
-
-## PROJECT RENAMING
-
--   The project has been renamed from "DiffMore" to "BlastMerge". All references to "DiffMore" in the codebase, documentation, and project files must be updated to "BlastMerge".
-
-## NEW PRIMARY FEATURE
-
-- The primary feature of the application is now cross-repository file synchronization through intelligent iterative merging.
-
-- The application is now named BlastMerge
-
-## WINGET DISTRIBUTION
-
--   The application should be prepared for distribution via winget.
--   The project configuration should be enhanced for publishing:
-    -   Set `PublishSingleFile` to `true`.
-    -   Set `PublishTrimmed` to `false` (temporarily, until trimming issues are resolved).
-    -   Set `EnableCompressionInSingleFile` to `true`.
-    -   Set `IncludeNativeLibrariesForSelfExtract` to `true`.
-    -   Set `DebugType` to `none`.
-    -   Set `DebugSymbols` to `false`.
-    -   The application icon (`icon.png`) should be converted to `.ico` format and the `<ApplicationIcon>` line in `BlastMerge.ConsoleApp.csproj` should be uncommented.
--   A GitHub Actions workflow should be integrated with the existing build and release pipeline (PSBuild module in `dotnet.yml`) for building and releasing the application.
-    -   The workflow should build for `win-x64`, `win-x86`, and `win-arm64`.
-    -   The workflow should create GitHub releases with proper asset naming.
-    -   The workflow should generate SHA256 checksums.
-    -   The workflow can be triggered manually for testing.
--   Winget manifest files should be created for the package.
--   A PowerShell script (`scripts/update-winget-manifests.ps1`) should be created to automate the winget submission process.
--   A comprehensive README (`winget/README.md`) should be created for the winget distribution setup.
--   A quick-start guide (`docs/winget-quick-start.md`) should be created for the entire winget distribution process.
--   The `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` should have only one `dotnet publish` step, consolidating the previous separate steps for general application and winget package publishing.
--   The executable name in the winget manifest (`winget/ktsu.BlastMerge.installer.yaml`) should match the actual executable name in the build output directory (e.g., `ktsu.BlastMerge.ConsoleApp.exe`).
-- Add a `--version` command-line argument that winget validation requires. When winget calls `blastmerge.exe --version`, it should display the application's version.
-- The `HistoryInput.cs` file must handle cases where it cannot create a directory in `ApplicationData`, and should fall back to a temporary directory or the current directory.
-
-## CROSS PLATFORM SUPPORT
-
--   The application should publish portable zip files for Linux and macOS platforms in addition to Windows, even if they are not included in the winget manifest.
-
-## PUBLISHING RULES
-
--   The `Invoke-DotNetPublish` function in `scripts/PSBuild.psm1` should have only one `dotnet publish` step, consolidating the previous separate steps for general application and winget package publishing.
--   When publishing, all applications should be published with the same optimized settings (self-contained, single-file, etc.) whether they're for general use or winget packages.
--   Every project should be published for all specified architectures (win-x64, win-x86, win-arm64, linux-x64, linux-arm64, osx-x64, osx-arm64) in a single pass.
--   General application ZIP files should be created for all projects and architectures.
--   SHA256 hashes should be generated for all published packages across all platforms.
--   The staging directory should contain all the packages and the `hashes.txt` file.
--   The build script `PSBuild.psm1` must respect the "should release" flag and not push files to package repos from a branch build.
--   The GitHub release creation in `Invoke-ReleaseWorkflow` must check the `ShouldRelease` flag and only create releases when `ShouldRelease` is true (main branch + not tagged + official repo).
-
-## WINGET INSTALLATION
-
-- The executable name in the winget manifest (`winget/ktsu.BlastMerge.installer.yaml`) should match the actual executable name in the build output directory (e.g., `ktsu.BlastMerge.ConsoleApp.exe`).
-- The `RelativeFilePath` entry in `winget/ktsu.BlastMerge.installer.yaml` must be `ktsu.BlastMerge.ConsoleApp.exe`, not `BlastMerge.ConsoleApp.exe`.
-- The `RelativeFilePath` entry in `scripts/update-winget-manifests.ps1` must be `ktsu.BlastMerge.ConsoleApp.exe`, not `BlastMerge.ConsoleApp.exe`.
-
-## WINGET VALIDATION
-- The application must handle the `--version` command-line argument, as required by winget validation.
-
-## COMMAND LINE PARSING
-
-- Use the CommandLineParser library for handling command-line arguments.
-- Create a `CommandLineOptions` class to define the available options.
-- Use the `[Option]` attribute to define options with short and long names, and help text.
-- Use the `[Value]` attribute to define positional arguments.
-- Handle parsing errors gracefully and display help information when necessary.
-- Use `using var parser = new Parser(...)` to ensure proper disposal of the parser object.
-
-## HISTORY INPUT
-- The `HistoryInput.cs` file must handle cases where it cannot create a directory in `ApplicationData`, and should fall back to a temporary directory or the current directory.
-
-## CHANGELOG GENERATION
-
-- In `PSBuild.psm1`, when the `git log` command fails or returns an error during changelog generation, ensure the `$rawCommits` variable handles the error object appropriately, especially when accessing its `.Count` property. Improve error handling and the `ConvertTo-ArraySafe` function to handle these edge cases. The `ConvertTo-ArraySafe` function should handle `null`, empty inputs, PowerShell error objects, empty strings, and whitespace-only strings. Add try-catch protection around array conversion. After calling `ConvertTo-ArraySafe`, explicitly check that the result has a `Count` property before using it, and create an empty array if it does not.
-- In `PSBuild.psm1`, the `$uniqueCommits` variable must be created using `ConvertTo-ArraySafe -InputObject ($structuredCommits | Sort-Object -Property Hash -Unique | ForEach-Object { $_.FormattedEntry })` to ensure it is always an array, even when the pipeline returns no results.
-- In `PSBuild.psm1`, when the `git log` command fails or returns an error, ensure the `$rawCommits` variable handles the error object appropriately, especially when accessing its `.Count` property. Improve error handling and the `ConvertTo-ArraySafe` function to handle these edge cases. The `ConvertTo-ArraySafe` function should handle `null`, empty inputs, PowerShell error objects, empty strings, and whitespace-only strings. Add try-catch protection around array conversion. After calling `ConvertTo-ArraySafe`, explicitly check that the result has a `Count` property before using it, and create an empty array if it does not. After calling `ConvertTo-ArraySafe`, explicitly check that the result has a `Count` property before using it, and create an empty array if it does not.
+-   **Address Class Coupling and Cyclomatic Complexity**: Refactor code to minimize class coupling and cyclomatic complexity, ensuring the console app primarily handles input and display, while business logic resides in the core library.
+-   Use `dotnet format` to automatically fix formatting and style issues. Be aware that `dotnet format` may not be able to fix all issues, such as catching general exceptions or performance improvement suggestions.
+-   Prefer comparing 'Count' to 0 rather than using 'Any()', both for clarity and for performance (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1860)
+-   Member 'HandleListBatches' does not access instance data and can be marked as static (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822)
+-   Loop should be simplified by calling Select(group => group.FilePaths))
+-   For loops performing side effects (e.g., file I/O), consider if a `foreach` loop is more appropriate than using `Select()` to avoid unintended side effects within a LINQ query. If the linter insists on using `Select()` for loops performing side effects, suppress the specific linter warning if your coding standards allow it.
+-   Define a constant instead of using the literal 'Press any key to continue...' multiple times.
+-   Menus like in ShowMainMenu that display a string and translate it to a command should use a dictionary to avoid string repetitions.
+-   Replace naked strings with constants throughout the file. Consider the following:
+    -   Table column names
+    -   Property names in batch access
+    -   Menu choice strings
+-   Replace manual `groupIndex` tracking with LINQ's indexed `Select`, which eliminates the need for a separate counter variable and makes the loop more functional.
+-   When replacing the literal string `"Press any key to continue..."`, define a constant `PressAnyKeyMessage` at the class level.
+-   When defining constants, ensure each constant is actually used in the code to avoid linter errors.
+-   Table column names should be constants.
+-   Menu choice identifiers (like `"find_files"`, `"settings"`, etc.) should be constants defined in the `MenuNames` class.
+-   Choice text strings that are used in switch statements should be constants.
+-   Use dictionaries for menus that display a string and translate it to a command to avoid string repetitions.
+-   Look for opportunities to use switch expressions instead of switch statements.
+-   Look for opportunities to use enums in place of strings where they're used for determination and not display purposes.
+-   When checking files, ensure the functionality from before we added the batching is present, and that additions, enhancements, and improvements we've been working on are also present.
+-   Break down large classes into smaller, more manageable classes, following the Single Responsibility Principle. Each menu should be its own class, potentially inheriting from a common menu prototype.
+-   Refactor the `ConsoleApplicationService` class to decrease its class coupling below '96' (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1506).
+-   Ensure that business logic is all in the core library, and the console app is only responsible for input and display responsibilities.
+-   Do not replace `Path.GetTempFileName()` with `Path.GetRandomFileName()` for temporary file handling. `GetTempFileName()` creates a file and returns a full path in the system temp directory, while `Path.GetRandomFileName()` only returns a random filename string without creating a file or providing a path.
+-   In the `ApplyInsertChoice` method, ensure that invalid choices (`UseVersion1`, `UseVersion2`, `UseBoth`, `Keep`, and `Remove`) for insertion blocks throw an `InvalidOperationException` instead of silently doing nothing.
+-   For code present, remove array creation and simply pass the elements.
+-   When a condition is always evaluating to 'False', and some code paths are unreachable, ensure that variables used in the condition are properly initialized before the condition check, especially when they are updated inside lambda expressions or status blocks. Consider moving file comparisons outside the status block to ensure proper assignment.
+-   Remove redundant jump statements, such as `continue` at the end of a loop iteration.
+-   Refactor methods with high cognitive complexity by breaking them down into smaller, more manageable methods. Refactor methods like `GenerateUnifiedDiff`, `ShowSideBySideDiff`, and `GenerateChangeSummaryDiff` to reduce cognitive complexity.
+-   Extract nested classes into their own separate files, following the same pattern as the other choice enum files in that directory.
+-   When a literal string is used multiple times, define a constant for it at the class level.
+-   Follow SonarLint suggestions where applicable (e.g., making methods static where appropriate, simplifying loops, extracting nested ternary operations).
+-   Make methods static if they do not access instance data.
+-   Extract nested ternary operations into independent statements for improved readability.
+-   Duplication percentage should be minimized, and code should be refactored to reduce duplication.
+-   Centralize console UI patterns using methods in `BaseMenuHandler` or a dedicated `UIHelper` class.
+-   Consolidate duplicate file comparison logic (`ShowChangeSummary`, `ShowGitStyleDiff`, `ShowSideBySideDiff`) into a common service, specifically the `ComparisonOperationsService`.
+-   Standardize wait-for-key patterns (e.g., "Press any key to continue...") using a common utility method.
+-   Centralize error handling patterns to avoid repeated exception handling code.
+-   Consolidate file validation patterns (e.g., file/directory existence checks) into reusable methods.
+-   'Path.GetTempFileName()' is insecure. Use 'Path.GetRandomFileName()' instead. but also address collision potential.
+-   Replace `Path.GetTempFileName()` with `SecureTempFileHelper.CreateTempFile()` to enhance security and handle potential file collisions. Use `SecureTempFileHelper.SafeDeleteTempFiles()` for cleanup.
+-   When using `Path.GetTempPath()`, ensure publicly writable directories are used safely.
+-   Refactor methods to reduce cognitive complexity to below 15.
+-   Duplicated code should be refactored into centralized services or helper methods to improve maintainability and reduce redundancy.
+-   When displaying statistics, display the managed memory, the working set, and the total available memory. Displaying the managed memory with the label "Available Memory" is misleading.
+-   When catching exceptions in `HandleExportBatches()` and `HandleImportBatches()`, catch specific exception types instead of general `Exception` to adhere to CA1031.
+-   When refactoring, follow the Single Responsibility Principle by breaking down large methods into smaller, focused methods, each with a single, well-defined purpose.
+-   When displaying file paths during iterative merge, and files have the same relative path in different repositories, show the unique parts of the path to distinguish between the files.
+-   In `PopulateTableWithDiffLines` method, ensure that the side-by-side diff implementation correctly pairs lines based on the DiffPlex model, rather than assuming a one-to-one mapping by array index.
+-   When generating insert and delete choices during iterative merge, use `FileDisplayService.MakeDistinguishedPaths()` instead of `FileDisplayService.GetRelativeDirectoryName()` to provide meaningful labels that help distinguish between different versions of files from different directories/repositories.
+-   The application should visualize whitespace characters in diffs.
+-   Whitespace characters must be visualized in diffs, including spaces (·), tabs (→), returns (↵), and newlines (¶).
+-   Trailing whitespace should be highlighted with a red background.
+-   A legend explaining the whitespace symbols should be displayed.
+-   When using glob patterns, ensure that files of different names are not compared with each other.
+-   The `FindMostSimilarFiles` method must only compare files with the same filename.
+-   Change this condition so that it does not always evaluate to 'True'. Some code paths are unreachable.
+-   When multiple identical copies of a file are found during iterative merge, it means that the files have exactly the same content, they share the same hash value, all copies are functionally equivalent and there are no differences between them, and they are candidates for consolidation. In this scenario, "no action is needed" from a functional perspective because the files are already fully synchronized and there are no conflicts to resolve. The merging would simply consolidate duplicate files, not resolve differences. BlastMerge will typically offer choices such as:
+    -   🔄 Run iterative merge - Consolidate the identical files into one
+    -   ⏭️ Skip this pattern - Leave the files as-is
+    -   🛑 Stop processing - Exit batch processing
+-   If `fileGroups.Count == 1` AND `groupsWithMultipleFiles == 1` in `HandlePatternWithMultipleVersions`, automatically skip with a message like: `"All files for pattern '{pattern}' are identical - skipping merge."`. Only prompt the user when there are multiple groups with different content.
+-   In `HandlePatternWithMultipleVersions`, if there are some unique files (each in their own group) AND one group with multiple identical files, automatically skip with a message like: `"All duplicate files for pattern '{pattern}' are identical - skipping merge (no action needed)."`.
+    The corrected logic now checks `groupsWithMultipleFiles == 1`, which means:
+    - There's exactly 1 group that contains multiple files
+    - All the duplicate files in that group are identical (same hash)
+    - No user action is needed since there are no conflicts to resolve
+-   When there are multiple groups with multiple files, it means there are multiple different versions (with different content), not just identical copies. The message should indicate that there are **different versions** that need merging, not just identical copies.
+-   Refactor the `BlastMerge.Core/Services/ApplicationService.cs`, `BlastMerge.ConsoleApp/ConsoleApplicationService.cs`, and `BlastMerge.ConsoleApp/Services/InteractiveMergeService.cs` to reduce code duplication.
+-   Properties `ContextBefore1`, `ContextAfter1`, `ContextBefore2`, and `ContextAfter2` in `BlockContext.cs` must be initialized to empty collections instead of null.
+-   Batch configurations should include search paths and path exclusion patterns.
+-   If there is only whitespace changes in a line, ensure the formatting works properly and displays correctly. The `WhitespaceVisualizer.ProcessLineForDisplay()` method returns strings containing markup tags like `[on red]········[/]` for trailing whitespace. Calling `.EscapeMarkup()` on this already-formatted string escapes the markup tags, causing them to display as literal text instead of formatting. Use `ProcessLineForMarkupDisplay()` instead of `ProcessLineForDisplay()` and remove the subsequent `.EscapeMarkup()` calls since the new method uses `Markup.Escape()`. Add Spectre.Console package reference to the Core project since the new method uses `Markup.Escape()`
+-   When showing diffs, can we do character level visualization where we put a different background behind changed/unchanged characters so we can easily read changes on similar lines. Use DiffPlex character-level diffing and the `CreateCharacterDiffs` method. Use `DiffPiece` objects which have a `SubPieces` property for character-level details. For similar lines, use character-level highlighting with red background for deleted characters and green background for added characters. Use the `CharacterLevelDiffer` service for character-level diffing.
+-   Use the `CharacterLevelDiffer.CreateSideBySideCharacterDiff` method to create a character-level diff for display in side-by-side format.
+-   If lines are not similar, use the standard line-based diffing.
+-   Use the `CharacterLevelDiffer.AreLinesSimilar` method to determine if lines are similar enough for character-level diffing.
+-   When using glob patterns for file exclusion, the patterns should be applied to individual path components, not the entire path. Specifically:
+    -   For patterns like `*/bin/*`, the pattern should match paths that have "bin" as a directory component.
+    -   For patterns like `temp*`, check if any path component starts with "temp".
+    -   For patterns like `*node_modules*`, the pattern should match any path that contains "node_modules" anywhere in it.
+-   If the host console window doesn't have enough width to display the ASCII art titles, then just use plain text titles at that time.
+-   When the same "Multiple different versions found..." message is displayed multiple times in the console application, it indicates a potential issue with the menu handling or loop logic. Ensure that the message is displayed only once per pattern or group of files being processed.
+-   When using `AnsiConsole.Prompt` with `SelectionPrompt<string>`, ensure consistent ordering and avoid any potential duplication issues by using an explicit list of choices instead of `choices.Keys`.
+-   When using `SelectionPrompt<string>`, add `.PageSize(10)` and `.MoreChoicesText("")` to ensure the menu is displayed properly and doesn't have scrolling behavior that might cause duplication.
+-   When using `SelectionPrompt<string>`, add a line break before the prompt to ensure proper spacing and separation from previous output.
+-   Make messages terse in the output.
+-   Pattern '.gitattributes': All files identical - skipped.
+-   When running a batch operation, gather all of the files for all of the patterns, hash them all, and group them by filename before iterative merging so that we can parallelize as much as possible instead of doing it one pattern at a time.
+-   When running a batch operation, use a work queue for the hashing to maximize the parallelization.
+-   When running a batch operation, an optional `maxDegreeOfParallelism` parameter can be specified to configure the degree of parallelism for hashing. It defaults to CPU core count.
+-   Provide good user feedback during parallel operations so the progress can be monitored. Use Spectre.Console's progress bars, spinners, or live status displays during these operations.
+-   When the interactive merge process gets stuck in a loop, it could be due to a console width/line wrapping issue where the message is too long and getting cut off, or an infinite loop in the selection prompt, or the prompt not accepting user input properly. Ensure the console width is sufficient and the selection prompt is correctly configured.
+-   When displaying insert choices during iterative merge, limit the label length to a maximum of 25 characters.
+-   When using `SelectionPrompt<string>`, ensure the page size is always at least 3.
+-   In interactive merge prompts, ensure the page size is always at least 3.
+-   In interactive merge prompts, limit the label length to a maximum of 25 characters.
+-   In interactive merge prompts, use a more concise prompt message like "Content only in {label}. What to do?".
+-   In interactive merge prompts, use shorter choice options such as:
+    - "✅ Include"
+    - "❌ Skip"
+    - "✅ Keep"
+    - "❌ Remove"
+    - "🔄 Use Both"
+-   In interactive merge prompts, add line breaks before and after prompts to prevent display crowding.
+-   During parallel operations, ensure that `AnsiConsole.Status()` and `AnsiConsole.Prompt()` are not used simultaneously to avoid conflicts. Stop the status display before any user interaction. Ensure that user interaction prompts are thread-safe by using a lock to prevent multiple prompts from interfering with each other.
+-   Split the processing into discrete phases: gathering, hashing, grouping, and resolving. Resolving should be the only phase that has any user interaction, we should have a queue of work for the user to step through at this point
+-   Display the merge initiation info ("🔀 Merging" section) before the merge, but display the summary info ("Merge 1: ... | Similarity: ...") after the merge.
+-   In the "🔀 Merging:" section, use `FileDisplayService.MakeDistinguishedPaths()` instead of `FileDisplayService.GetRelativeDirectoryName()` to provide meaningful labels that help distinguish between different versions of files from different directories/repositories.
+-   `MakeDistinguishedPaths()` should normalize and canonize the paths, enumerate through the path components removing identical leading components, keep differing components at the same depth, ellipsize matching internal components at the same depth, and keep the leaf component
+-   `GetDistinguishingLabels()` should normalize and canonize the paths, enumerate through the path components removing identical leading components, keep differing components at the same depth, ellipsize matching internal components at the same depth, and keep the leaf component. Remove the length limiting and ellipsization from the `GetDistinguishingLabels` method so you get the full distinguishing paths. Please rename the method to `MakeDistinguishedPaths()` and write tests for it
+-   Combine the "Changes:" and "🔀 Merging:" lines into a single line, displaying the change statistics with a git-style "tug of war" visualization.
+-   While we are discovering files, print their paths as user feedback.
+-   The tug of war should use one character per change, unless that would make it too long, in which case the number of characters to show in the tug of war should be scaled proportionally.
+-   The tug of war visualization should use one character per change by default, scaling proportionally only when the total changes would make it too long. The available width should be calculated based on the console width, leaving buffer space for the rest of the merge line.
+    -   If the host console window doesn't have enough width to display the ASCII art titles, then just use plain text titles at that time.
+-   During batch processing, the "Continue with next merge?" confirmation prompt is unnecessary and should be removed.
+-   After completing an iterative merge, provide a detailed summary of all operations undertaken.
+-   Always show the detailed merge summary, even when no merge operations were performed, so the behavior is predictable.
+-   The `GetPatternResultDescription` method should use an expression body.
+-   For the code present, show the found filename and then in parentheses the pattern if it was a glob.
+-   Use consistent single-width emojis in menus to ensure proper alignment across systems. If necessary, add an extra space after the emoji to compensate for visual differences.
+    -   Example: `⚙  Configuration & Settings` (plain gear + extra space)
+-   Use emojis with consistent baseline and visual positioning across different systems.
+    -   Example: Replace the lightning bolt `⚡` with a rocket `🚀` emoji for "Run Recent Batch".
+-   Okay lets audit the application and use appropriate enums, nameofs, consts, and other semantically safe constructs in place of strings where we can
+-   Use AppDataStorage (https://github.com/ktsu-dev/AppDataStorage) for serializing all of our persistent state across the application
+-   Menu names should be accessed via the `MenuNames` class.
+-   Menu choice identifiers (like `"find_files"`, `"settings"`, etc.) should be constants defined in the `MenuNames` class.
+-   Use `SettingsChoice` enum for settings menu options.
+-   Use `HelpChoice` enum for help menu options.
+-   Replace strings with emojis with semantic constants
+-   Remove the unused local variable 'history'.
+- Refactor methods to reduce its Cognitive Complexity from 17 to the 15 allowed. When cognitive complexity is too high, extract helper methods.
+-   When using switch expressions, ensure that all possible cases are handled to avoid compilation errors. If the switch is not exhaustive, consider converting to a simpler if-else structure.
+-   When using an `if` statement with simple conditions, consider simplifying it to a ternary expression for conciseness. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0046)
+-   Batch configurations should use the AppData classes for persistence.
+-   All batch configuration code must use `AppDataBatchManager` instead of `BatchManager`.
+-   The `BatchManager` and `RecentBatchTracker` classes should be removed, as their functionality is now handled by the `AppDataStorage` system.
+-   When all input history is cleared, use `AppDataHistoryInput.ClearAllHistory()` to clear the history.
+-   If `InputCancelledException` is no longer defined, remove the `catch (InputCancelledException)` blocks and handle the user input cancellation in a different way. Determine what the new input system uses and adapt the code accordingly.
+-   Define a constant for the string "Operation cancelled.". Use this constant instead of the literal string throughout the codebase.
+-   Indexing at Count-1 should be used instead of the "Enumerable" extension method "Last"
+-   When sorting file groups, use `FirstOrDefault()` and add a null-coalescing fallback to an empty string to avoid `First()` throwing an exception when the collection is empty.
+-   Ensure that all literal strings are replaced with constants.
+-   Refactor the `CreateTugOfWarVisualization` method to reduce cognitive complexity by extracting the nested logic into smaller, focused helper methods:
+    -   `CalculateCharacterCounts` - Handles the scaling logic when total exceeds max width
+    -   `AdjustCharacterCounts` - Handles the complex adjustment logic to ensure we don't exceed limits
+    -   `FormatVisualizationParts` - Simply formats the final string
+-   If there is a "Do not forget to remove this deprecated code someday." comment, the deprecated code should be removed.
+-   When using a batch configuration, if a search path is configured in the batch configuration, the application should use that path and not prompt the user for a directory path.
+-   After successfully saving a new batch configuration, updating a batch configuration, or duplicating a batch configuration, `AppDataBatchManager.SaveIfRequired()` must be called to force any queued saves to be written to disk immediately.
+-   Ensure that the `System.Linq` namespace is imported in `BatchConfiguration.cs` so that the `.All()` method in the `IsValid()` method works correctly.
+-   Ensure that AppData is being loaded at application start.
+-   When character-level diff formatting displays raw formatting codes (e.g., `[on red]`) instead of applying the actual colors, investigate the markup escaping and rendering in `WhitespaceVisualizer` and `CharacterLevelDiffer` to ensure proper color application. The `CreateSideBySideCharacterDiff` method in `CharacterLevelDiffer.cs` should use the `ApplyWhitespaceVisualizationToMarkup` method to preserve existing markup while applying whitespace visualization. The `ApplyWhitespaceVisualizationToMarkup` method should track markup tags and only apply whitespace visualization to text outside of markup tags. The `EscapeForMarkup` method should use `Markup.Escape()` from Spectre.Console.
+-   When showing character level diff formatting, the changed characters should use a dim background and a high contrasting text color, I think its using the same color for the background and text in this case at the moment.
+-   When showing character level diff formatting, unchanged characters should use dim gray, and changed characters should use red and green.
+-   When showing character level diff formatting, unchanged characters should use dim white.
+-   In `ConsoleApplicationService.cs`, in the `HandleRunRecentBatch()` method, if the batch configuration has search paths configured, the application should use that path and not prompt the user for a directory path.
+-   Do not call out (Primary Feature) anywhere.
+-   When calling `FileFinder.FindFiles` in `CompareDirectoriesAsync`, use the correct 2-argument signature (`directory, pattern`).
+-   In `CompareDirectoriesAsync`, instead of calling the sync `FileDiffer.FindDifferences` that recomputes hashes, create the `DirectoryComparisonResult` directly using the pre-computed hashes.
+-   When using `Regex.IsMatch` in `MatchesGlobPattern` add a timeout and non-backtracking algorithm to prevent ReDoS attacks. Use a 1-second timeout.
+-   If the regex times out, fall back to simple contains check to avoid DoS.
+-   Define a constant for the string "One or both files do not exist". Use this constant instead of the literal string throughout the codebase.
+-   Remove unused local variables. If the value is intentionally discarded, use the discard operator `_`.
+-   Refactor methods to reduce cognitive complexity.
+-   If `GroupFilesByHashOnly` has an identical implementation to `GroupFilesByHash`, make `GroupFilesByHashOnly` delegate to `GroupFilesByHash`.
+-   When a method has more than 7 parameters, group related parameters into a single object (e.g., a record) to reduce the number of parameters.
+-   All 'ProcessSinglePattern' method overloads should be adjacent.
+-   Define a constant instead of using the literal 'Only one file found, no merge needed' multiple times.
+-   Define a constant instead of using the literal 'All files are identical' multiple times.
+-   Merge nested if statements into a single condition using the logical AND operator (`&&`) where appropriate to improve conciseness and eliminate linter warnings. For example, `if (condition1 && condition2)` instead of `if (condition1) { if (condition2) }`.
+-   Define a constant instead of using the literal 'No files found' multiple times.
+-   Define a constant instead of using the literal 'Merge completed successfully' multiple times.
+-   When processing a single file pattern, display file paths as they're discovered as user feedback.
+-   When the `ProcessLineForMarkupDisplay` method has high cognitive complexity, extract helper methods to reduce it.
+-   Refactor the `MatchesGlobPattern` method to reduce cognitive complexity by:
+    -   Extract pattern detection logic into simple helper
