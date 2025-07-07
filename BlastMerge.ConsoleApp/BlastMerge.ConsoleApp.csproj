@@ -1,11 +1,15 @@
 <Project Sdk="ktsu.Sdk.ConsoleApp">
+
   <ItemGroup>
-    <PackageReference Include="Spectre.Console" />
     <PackageReference Include="CommandLineParser" />
-    <PackageReference Include="ktsu.AppDataStorage" />
+    <PackageReference Include="Spectre.Console" />
+    <PackageReference Include="ktsu.Extensions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../BlastMerge/BlastMerge.csproj" />
+    <ProjectReference Include="..\BlastMerge\BlastMerge.csproj" />
   </ItemGroup>
+
 </Project>

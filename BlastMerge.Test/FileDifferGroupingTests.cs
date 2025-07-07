@@ -4,6 +4,7 @@
 
 namespace ktsu.BlastMerge.Test;
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using ktsu.BlastMerge.Models;
@@ -11,7 +12,7 @@ using ktsu.BlastMerge.Test.Adapters;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 [TestClass]
-public class FileDifferGroupingTests : MockFileSystemTestBase
+public class FileDifferGroupingTests : DependencyInjectionTestBase
 {
 	private string _testFile1 = null!;
 	private string _testFile2 = null!;
@@ -19,7 +20,7 @@ public class FileDifferGroupingTests : MockFileSystemTestBase
 	private string _testFile4 = null!;
 	private FileDifferAdapter _fileDifferAdapter = null!;
 
-	protected override void InitializeFileSystem()
+	protected override void InitializeTestData()
 	{
 		// Initialize adapter
 		_fileDifferAdapter = new FileDifferAdapter(MockFileSystem);
@@ -98,11 +99,10 @@ public class FileDifferGroupingTests : MockFileSystemTestBase
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
 	public void GroupFilesByHash_WithNullInput_ThrowsArgumentNullException()
 	{
-		// Act
-		_fileDifferAdapter.GroupFilesByHash(null!);
+		// Act & Assert
+		Assert.ThrowsException<ArgumentNullException>(() => _fileDifferAdapter.GroupFilesByHash(null!));
 	}
 
 	[TestMethod]
@@ -151,11 +151,10 @@ public class FileDifferGroupingTests : MockFileSystemTestBase
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
 	public void GroupFilesByHashOnly_WithNullInput_ThrowsArgumentNullException()
 	{
-		// Act
-		_fileDifferAdapter.GroupFilesByHashOnly(null!);
+		// Act & Assert
+		Assert.ThrowsException<ArgumentNullException>(() => _fileDifferAdapter.GroupFilesByHashOnly(null!));
 	}
 
 	[TestMethod]
@@ -199,10 +198,9 @@ public class FileDifferGroupingTests : MockFileSystemTestBase
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
 	public void GroupFilesByFilenameAndHash_WithNullInput_ThrowsArgumentNullException()
 	{
-		// Act
-		_fileDifferAdapter.GroupFilesByFilenameAndHash(null!);
+		// Act & Assert
+		Assert.ThrowsException<ArgumentNullException>(() => _fileDifferAdapter.GroupFilesByFilenameAndHash(null!));
 	}
 }

@@ -14,17 +14,17 @@ using System.Threading.Tasks;
 using ktsu.BlastMerge.Models;
 
 /// <summary>
-/// Provides asynchronous file diffing and comparison functionality with parallel processing
+/// Provides asynchronous file comparison operations with parallel processing support
 /// </summary>
 public static class AsyncFileDiffer
 {
 	/// <summary>
-	/// Groups files by their hash asynchronously with parallel processing
+	/// Groups files by their content hash asynchronously
 	/// </summary>
 	/// <param name="filePaths">List of file paths to group</param>
 	/// <param name="maxDegreeOfParallelism">Maximum number of concurrent operations</param>
 	/// <param name="cancellationToken">Cancellation token</param>
-	/// <returns>A collection of file groups where each group contains identical files</returns>
+	/// <returns>A readonly collection of file groups where each group contains files with identical content</returns>
 	public static async Task<IReadOnlyCollection<FileGroup>> GroupFilesByHashAsync(
 		IReadOnlyCollection<string> filePaths,
 		int maxDegreeOfParallelism = 0,
@@ -41,8 +41,9 @@ public static class AsyncFileDiffer
 		IFileSystem fileSystem = FileSystemProvider.Current;
 
 		// Compute hashes in parallel
-		Dictionary<string, string> fileHashes = await FileHasher.ComputeFileHashesAsync(
-			filePaths, fileSystem, maxDegreeOfParallelism, cancellationToken).ConfigureAwait(false);
+		FileHasher fileHasher = new(new global::ktsu.FileSystemProvider.FileSystemProvider());
+		Dictionary<string, string> fileHashes = await fileHasher.ComputeFileHashesAsync(
+			filePaths, maxDegreeOfParallelism, cancellationToken).ConfigureAwait(false);
 
 		// Group by hash
 		Dictionary<string, FileGroup> groups = [];
@@ -107,15 +108,17 @@ public static class AsyncFileDiffer
 		if (filesWithSameName.Count == 1)
 		{
 			// Single file with this name - create a group for it
-			string hash = await FileHasher.ComputeFileHashAsync(filesWithSameName[0], fileSystem, cancellationToken).ConfigureAwait(false);
+			FileHasher fileHasher = new(new global::ktsu.FileSystemProvider.FileSystemProvider());
+			string hash = await fileHasher.ComputeFileHashAsync(filesWithSameName[0], cancellationToken).ConfigureAwait(false);
 			FileGroup group = new() { Hash = hash };
 			group.AddFilePath(filesWithSameName[0]);
 			return [group];
 		}
 
 		// Multiple files with same name - group by content hash
-		Dictionary<string, string> fileHashes = await FileHasher.ComputeFileHashesAsync(
-			filesWithSameName, fileSystem, maxDegreeOfParallelism, cancellationToken).ConfigureAwait(false);
+		FileHasher fileHasher2 = new(new global::ktsu.FileSystemProvider.FileSystemProvider());
+		Dictionary<string, string> fileHashes = await fileHasher2.ComputeFileHashesAsync(
+			filesWithSameName, maxDegreeOfParallelism, cancellationToken).ConfigureAwait(false);
 
 		Dictionary<string, FileGroup> hashGroups = [];
 		foreach (KeyValuePair<string, string> kvp in fileHashes)
@@ -254,12 +257,13 @@ public static class AsyncFileDiffer
 			IFileSystem fileSystem = FileSystemProvider.Current;
 
 			// Ensure target directory exists
-			string? targetDirectory = Path.GetDirectoryName(target);
+			string? targetDirectory = fileSystem.Path.GetDirectoryName(target);
 			if (!string.IsNullOrEmpty(targetDirectory) && !fileSystem.Directory.Exists(targetDirectory))
 			{
 				fileSystem.Directory.CreateDirectory(targetDirectory);
 			}
 
+			// Copy the file
 			using Stream sourceStream = fileSystem.File.OpenRead(source);
 			using Stream targetStream = fileSystem.File.Create(target);
 			await sourceStream.CopyToAsync(targetStream, cancellationToken).ConfigureAwait(false);
@@ -268,6 +272,7 @@ public static class AsyncFileDiffer
 		}
 		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
 		{
+			// Log error but continue with other files
 			return (source, target, false);
 		}
 		finally

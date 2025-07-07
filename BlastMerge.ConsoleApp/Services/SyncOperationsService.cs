@@ -4,6 +4,7 @@
 
 namespace ktsu.BlastMerge.ConsoleApp.Services;
 
+using System;
 using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.ConsoleApp.Text;
@@ -14,19 +15,21 @@ using Spectre.Console;
 /// <summary>
 /// Service for handling file synchronization UI operations.
 /// </summary>
-public static class SyncOperationsService
+/// <param name="fileDiffer">The file differ service.</param>
+public class SyncOperationsService(FileDiffer fileDiffer)
 {
+	private readonly FileDiffer fileDiffer = fileDiffer ?? throw new ArgumentNullException(nameof(fileDiffer));
 	/// <summary>
 	/// Offers sync options for file groups.
 	/// </summary>
 	/// <param name="fileGroups">The file groups to offer sync options for.</param>
-	public static void OfferSyncOptions(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
+	public void OfferSyncOptions(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
 	{
 		ArgumentNullException.ThrowIfNull(fileGroups);
 
 		// Convert to FileGroup objects for easier handling
 		List<string> allFiles = [.. fileGroups.SelectMany(g => g.Value)];
-		IReadOnlyCollection<FileGroup> groups = FileDiffer.GroupFilesByHash(allFiles);
+		IReadOnlyCollection<FileGroup> groups = fileDiffer.GroupFilesByHash(allFiles);
 
 		// Filter to groups with multiple files
 		List<FileGroup> groupsWithMultipleFiles = [.. groups.Where(g => g.FilePaths.Count > 1)];
@@ -76,7 +79,7 @@ public static class SyncOperationsService
 	/// Syncs all files to the newest version in each group.
 	/// </summary>
 	/// <param name="groups">The file groups to sync.</param>
-	private static void SyncToNewestVersion(List<FileGroup> groups)
+	private void SyncToNewestVersion(List<FileGroup> groups)
 	{
 		bool confirm = AnsiConsole.Confirm("[yellow]This will overwrite older versions with the newest file in each group. Continue?[/]");
 
@@ -95,7 +98,7 @@ public static class SyncOperationsService
 	/// </summary>
 	/// <param name="groups">The file groups to sync.</param>
 	/// <returns>A tuple containing the number of synced files and groups.</returns>
-	private static (int syncedFiles, int syncedGroups) PerformSyncOperation(List<FileGroup> groups)
+	private (int syncedFiles, int syncedGroups) PerformSyncOperation(List<FileGroup> groups)
 	{
 		int syncedGroups = 0;
 		int syncedFiles = 0;
@@ -119,7 +122,7 @@ public static class SyncOperationsService
 	/// <param name="group">The file group to sync.</param>
 	/// <param name="ctx">The status context for updates.</param>
 	/// <returns>The number of files successfully synced.</returns>
-	private static int SyncGroupToNewest(FileGroup group, StatusContext ctx)
+	private int SyncGroupToNewest(FileGroup group, StatusContext ctx)
 	{
 		string newestFile = GetNewestFile(group.FilePaths);
 		int syncedFiles = 0;
@@ -142,7 +145,7 @@ public static class SyncOperationsService
 	/// <param name="targetFile">The target file to sync.</param>
 	/// <param name="ctx">The status context for updates.</param>
 	/// <returns>1 if successful, 0 if failed.</returns>
-	private static int TrySyncFile(string sourceFile, string targetFile, StatusContext ctx)
+	private int TrySyncFile(string sourceFile, string targetFile, StatusContext ctx)
 	{
 		try
 		{
@@ -177,7 +180,7 @@ public static class SyncOperationsService
 	/// Allows user to choose reference files for each group.
 	/// </summary>
 	/// <param name="groups">The file groups to choose reference files for.</param>
-	private static void ChooseReferenceFiles(List<FileGroup> groups)
+	private void ChooseReferenceFiles(List<FileGroup> groups)
 	{
 		int syncedFiles = 0;
 

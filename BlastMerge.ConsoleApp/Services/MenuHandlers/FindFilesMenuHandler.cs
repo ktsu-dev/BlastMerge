@@ -4,6 +4,7 @@
 
 namespace ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 
+using System;
 using System.IO;
 using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.ConsoleApp.Text;
@@ -14,8 +15,13 @@ using Spectre.Console;
 /// Menu handler for find files operations.
 /// </summary>
 /// <param name="applicationService">The application service.</param>
-public class FindFilesMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)
+/// <param name="fileFinder">The file finder service.</param>
+/// <param name="historyInput">The history input service.</param>
+public class FindFilesMenuHandler(ApplicationService applicationService, FileFinder fileFinder, AppDataHistoryInput historyInput) : BaseMenuHandler(applicationService)
 {
+	private readonly FileFinder fileFinder = fileFinder ?? throw new ArgumentNullException(nameof(fileFinder));
+	private readonly AppDataHistoryInput historyInput = historyInput ?? throw new ArgumentNullException(nameof(historyInput));
+
 	/// <summary>
 	/// Gets the name of this menu for navigation purposes.
 	/// </summary>
@@ -31,14 +37,14 @@ public class FindFilesMenuHandler(ApplicationService applicationService) : BaseM
 		string directory;
 		string fileName;
 
-		directory = AppDataHistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
+		directory = historyInput.AskWithHistoryAsync("[cyan]Enter directory path[/]").GetAwaiter().GetResult();
 		if (string.IsNullOrWhiteSpace(directory))
 		{
 			ShowWarning(OperationCancelledMessage);
 			return;
 		}
 
-		fileName = AppDataHistoryInput.AskWithHistory("[cyan]Enter filename pattern[/]");
+		fileName = historyInput.AskWithHistoryAsync("[cyan]Enter filename pattern[/]").GetAwaiter().GetResult();
 		if (string.IsNullOrWhiteSpace(fileName))
 		{
 			ShowWarning(OperationCancelledMessage);
@@ -48,7 +54,7 @@ public class FindFilesMenuHandler(ApplicationService applicationService) : BaseM
 		AnsiConsole.Status()
 			.Start("Finding files...", ctx =>
 			{
-				IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(directory, fileName, progressCallback: path =>
+				IReadOnlyCollection<string> filePaths = FileFinder.FindFiles([], directory, fileName, [], null, path =>
 				{
 					ctx.Status($"Finding files... Found: {Path.GetFileName(path)}");
 					ctx.Refresh();

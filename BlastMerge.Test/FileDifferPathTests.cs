@@ -5,17 +5,16 @@
 namespace ktsu.BlastMerge.Test;
 
 using System;
-using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 [TestClass]
-public class FileDifferPathTests : MockFileSystemTestBase
+public class FileDifferPathTests : DependencyInjectionTestBase
 {
 	private string _dir1 = null!;
 	private string _dir2 = null!;
 	private string _emptyDir = null!;
 
-	protected override void InitializeFileSystem()
+	protected override void InitializeTestData()
 	{
 		// Create test directories
 		_dir1 = CreateDirectory("dir1");
@@ -53,8 +52,8 @@ public class FileDifferPathTests : MockFileSystemTestBase
 	public void FileDiffer_RelativePaths_HandledCorrectly()
 	{
 		// Test that relative paths work in mock file system
-		string file1 = Path.Combine(_dir1, "file1.txt");
-		string file2 = Path.Combine(_dir2, "file1.txt");
+		string file1 = MockFileSystem.Path.Combine(_dir1, "file1.txt");
+		string file2 = MockFileSystem.Path.Combine(_dir2, "file1.txt");
 
 		Assert.IsTrue(MockFileSystem.File.Exists(file1), "File1 should exist");
 		Assert.IsTrue(MockFileSystem.File.Exists(file2), "File2 should exist");

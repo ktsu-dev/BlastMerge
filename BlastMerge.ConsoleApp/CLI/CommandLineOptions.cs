@@ -4,9 +4,7 @@
 
 namespace ktsu.BlastMerge.ConsoleApp.CLI;
 
-using System.Collections.Generic;
 using CommandLine;
-using CommandLine.Text;
 
 /// <summary>
 /// Command line options for BlastMerge console application
@@ -53,24 +51,4 @@ public class CommandLineOptions
 	/// </summary>
 	[Option('l', "list-batches", HelpText = "List all saved batch configurations")]
 	public bool ListBatches { get; set; }
-
-	/// <summary>
-	/// Examples usage text
-	/// </summary>
-	[Usage(ApplicationAlias = "BlastMerge.exe")]
-	public static IEnumerable<Example> Examples
-	{
-		get
-		{
-			return
-			[
-				new("Start interactive mode", new CommandLineOptions { }),
-				new("Process files directly", new CommandLineOptions { Directory = "C:\\Projects", FileName = "README.md" }),
-				new("Run a batch configuration", new CommandLineOptions { Directory = "C:\\Projects", BatchName = "Common Repository Files" }),
-				new("List batch configurations", new CommandLineOptions { ListBatches = true }),
-				new("Show version", new CommandLineOptions { ShowVersion = true }),
-				new("Show help", new CommandLineOptions { ShowHelp = true })
-			];
-		}
-	}
 }

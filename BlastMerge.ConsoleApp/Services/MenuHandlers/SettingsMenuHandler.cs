@@ -4,6 +4,7 @@
 
 namespace ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 
+using System;
 using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.ConsoleApp.Text;
@@ -14,8 +15,10 @@ using Spectre.Console;
 /// Menu handler for configuration and settings operations.
 /// </summary>
 /// <param name="applicationService">The application service.</param>
-public class SettingsMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)
+/// <param name="historyInput">The history input service.</param>
+public class SettingsMenuHandler(ApplicationService applicationService, AppDataHistoryInput historyInput) : BaseMenuHandler(applicationService)
 {
+	private readonly AppDataHistoryInput historyInput = historyInput ?? throw new ArgumentNullException(nameof(historyInput));
 	/// <summary>
 	/// Gets the name of this menu for navigation purposes.
 	/// </summary>
@@ -66,7 +69,7 @@ public class SettingsMenuHandler(ApplicationService applicationService) : BaseMe
 	/// <summary>
 	/// Shows configuration paths.
 	/// </summary>
-	private static void ShowConfigurationPaths()
+	private void ShowConfigurationPaths()
 	{
 		ShowMenuTitle("Configuration Paths");
 
@@ -88,7 +91,7 @@ public class SettingsMenuHandler(ApplicationService applicationService) : BaseMe
 		table.AddRow(
 			"[cyan]Input History[/]",
 			"[dim]Stored in AppData[/]",
-			AppDataHistoryInput.GetAllHistory().Count > 0 ? "[green]Has Data[/]" : "[yellow]Empty[/]");
+			historyInput.GetAllHistoryAsync().GetAwaiter().GetResult().Count > 0 ? "[green]Has Data[/]" : "[yellow]Empty[/]");
 
 		table.AddRow(
 			"[cyan]Working Directory[/]",
@@ -107,7 +110,7 @@ public class SettingsMenuHandler(ApplicationService applicationService) : BaseMe
 	/// <summary>
 	/// Clears input history.
 	/// </summary>
-	private static void ClearInputHistory()
+	private void ClearInputHistory()
 	{
 		ShowMenuTitle("Clear Input History");
 
@@ -117,7 +120,7 @@ public class SettingsMenuHandler(ApplicationService applicationService) : BaseMe
 		{
 			try
 			{
-				AppDataHistoryInput.ClearAllHistory();
+				historyInput.ClearAllHistoryAsync().GetAwaiter().GetResult();
 				ShowSuccess("Input history cleared successfully.");
 			}
 			catch (InvalidOperationException ex)

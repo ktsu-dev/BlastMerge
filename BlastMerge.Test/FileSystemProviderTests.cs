@@ -5,7 +5,6 @@
 namespace ktsu.BlastMerge.Test;
 
 using System.IO.Abstractions;
-using System.IO.Abstractions.TestingHelpers;
 using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -133,7 +132,7 @@ public class FileSystemProviderTests
 		const int operationsPerThread = 100;
 		List<Task> tasks = [];
 		List<Exception> exceptions = [];
-		object lockObject = new();
+		Lock lockObject = new();
 
 		// Act - Run concurrent operations
 		for (int i = 0; i < threadCount; i++)

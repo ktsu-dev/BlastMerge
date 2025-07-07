@@ -21,6 +21,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 public class AsyncFileDifferTests : MockFileSystemTestBase
 {
 	private string _testDirectory = null!;
+	private static readonly int[] expected = [1, 2];
 
 	protected override void InitializeFileSystem()
 	{
@@ -169,7 +170,7 @@ public class AsyncFileDifferTests : MockFileSystemTestBase
 
 		// Verify one group has 2 files (same content) and other has 1 file (different content)
 		List<int> groupSizes = [.. result.Select(g => g.FilePaths.Count).OrderBy(s => s)];
-		CollectionAssert.AreEqual(new[] { 1, 2 }, groupSizes, "Should have groups of size 1 and 2");
+		CollectionAssert.AreEqual(expected, groupSizes, "Should have groups of size 1 and 2");
 	}
 
 	/// <summary>
@@ -367,7 +368,7 @@ public class AsyncFileDifferTests : MockFileSystemTestBase
 		double similarity = await AsyncFileDiffer.CalculateFileSimilarityAsync(file1, file2).ConfigureAwait(false);
 
 		// Assert
-		Assert.IsTrue(similarity > 0.0 && similarity < 1.0,
+		Assert.IsTrue(similarity is > 0.0 and < 1.0,
 			$"Similar files should have partial similarity, got {similarity}");
 	}
 

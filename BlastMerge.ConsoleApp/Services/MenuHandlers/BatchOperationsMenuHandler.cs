@@ -4,6 +4,10 @@
 
 namespace ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text.Json;
 using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.ConsoleApp.Text;
@@ -13,7 +17,17 @@ using ktsu.Extensions;
 using Spectre.Console;
 
 /// <summary>
-/// Represents the available batch management choices.
+/// Enumeration of batch operation choices.
+/// </summary>
+internal enum BatchOperationChoice
+{
+	RunBatchConfiguration,
+	ManageBatchConfigurations,
+	BackToMainMenu
+}
+
+/// <summary>
+/// Enumeration of batch management choices.
 /// </summary>
 internal enum BatchManagementChoice
 {
@@ -32,19 +46,22 @@ internal enum BatchManagementChoice
 /// Menu handler for batch operations.
 /// </summary>
 /// <param name="applicationService">The application service.</param>
-public class BatchOperationsMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)
+/// <param name="batchManager">The batch manager service.</param>
+/// <param name="historyInput">The history input service.</param>
+public class BatchOperationsMenuHandler(ApplicationService applicationService, AppDataBatchManager batchManager, AppDataHistoryInput historyInput) : BaseMenuHandler(applicationService)
 {
+	private readonly AppDataBatchManager batchManager = batchManager ?? throw new ArgumentNullException(nameof(batchManager));
+	private readonly AppDataHistoryInput historyInput = historyInput ?? throw new ArgumentNullException(nameof(historyInput));
 
 	/// <summary>
 	/// Gets the name of this menu for navigation purposes.
 	/// </summary>
 	protected override string MenuName => MenuNames.BatchOperations;
 
-	private static JsonSerializerOptions JsonSerializerOptions { get; } = new()
-	{
-		WriteIndented = true,
-		PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-	};
+	// Simple JSON serialization helper methods
+	private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+	private static string SerializeToJson<T>(T value) => JsonSerializer.Serialize(value, JsonOptions);
+	private static T? DeserializeFromJson<T>(string json) => JsonSerializer.Deserialize<T>(json);
 
 	/// <summary>
 	/// Handles batch operations.
@@ -70,7 +87,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			switch (choice)
 			{
 				case BatchOperationChoice.ManageBatchConfigurations:
-					HandleManageBatchConfigurations();
+					HandleManageBatchConfigurations().GetAwaiter().GetResult();
 					break;
 				case BatchOperationChoice.RunBatchConfiguration:
 					HandleRunBatch();
@@ -88,12 +105,12 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// <summary>
 	/// Handles the batch management submenu.
 	/// </summary>
-	private static void HandleManageBatchConfigurations()
+	private async Task HandleManageBatchConfigurations()
 	{
 		while (true)
 		{
 			BatchManagementChoice choice = GetBatchManagementChoice();
-			if (!ExecuteBatchManagementChoice(choice))
+			if (!await ExecuteBatchManagementChoice(choice).ConfigureAwait(false))
 			{
 				return;
 			}
@@ -135,12 +152,12 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// </summary>
 	/// <param name="choice">The batch management choice to execute.</param>
 	/// <returns>True to continue, false to exit the loop.</returns>
-	private static bool ExecuteBatchManagementChoice(BatchManagementChoice choice)
+	private async Task<bool> ExecuteBatchManagementChoice(BatchManagementChoice choice)
 	{
 		switch (choice)
 		{
 			case BatchManagementChoice.List:
-				HandleListBatches();
+				await HandleListBatches().ConfigureAwait(false);
 				return true;
 			case BatchManagementChoice.Create:
 				HandleCreateNewBatch();
@@ -172,11 +189,11 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// <summary>
 	/// Handles listing available batch configurations.
 	/// </summary>
-	private static void HandleListBatches()
+	private async Task HandleListBatches()
 	{
 		ShowMenuTitle("Available Batch Configurations");
 
-		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataBatchManager.GetAllBatches();
+		IReadOnlyCollection<BatchConfiguration> allBatches = await batchManager.GetAllBatchesAsync().ConfigureAwait(false);
 
 		if (allBatches.Count == 0)
 		{
@@ -209,7 +226,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// <summary>
 	/// Handles creating a new batch configuration.
 	/// </summary>
-	private static void HandleCreateNewBatch()
+	private void HandleCreateNewBatch()
 	{
 		ShowMenuTitle("Create New Batch Configuration");
 
@@ -235,16 +252,16 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// Gets a valid batch name from the user.
 	/// </summary>
 	/// <returns>The batch name, or null if cancelled.</returns>
-	private static string? GetValidBatchName()
+	private string? GetValidBatchName()
 	{
-		string batchName = AppDataHistoryInput.AskWithHistory("[cyan]Enter batch name[/]");
+		string batchName = historyInput.AskWithHistoryAsync("[cyan]Enter batch name[/]").GetAwaiter().GetResult();
 		if (string.IsNullOrWhiteSpace(batchName))
 		{
 			ShowWarning(OperationCancelledMessage);
 			return null;
 		}
 
-		BatchConfiguration? existingBatch = AppDataBatchManager.LoadBatch(batchName);
+		BatchConfiguration? existingBatch = batchManager.LoadBatchAsync(batchName).GetAwaiter().GetResult();
 		if (existingBatch != null)
 		{
 			bool overwrite = AnsiConsole.Confirm($"[yellow]A batch named '{batchName}' already exists. Overwrite it?[/]");
@@ -262,9 +279,9 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// Gathers all batch configuration data from the user.
 	/// </summary>
 	/// <returns>The gathered batch configuration data.</returns>
-	private static BatchConfigurationData GatherBatchConfigurationData()
+	private BatchConfigurationData GatherBatchConfigurationData()
 	{
-		string description = AppDataHistoryInput.AskWithHistory("[cyan]Enter description (optional)[/]");
+		string description = historyInput.AskWithHistoryAsync("[cyan]Enter description (optional)[/]").GetAwaiter().GetResult();
 		List<string> patterns = GatherFilePatterns();
 		List<string> searchPaths = GatherSearchPaths();
 		List<string> exclusionPatterns = GatherExclusionPatterns();
@@ -287,7 +304,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// Gathers file patterns from the user.
 	/// </summary>
 	/// <returns>List of file patterns.</returns>
-	private static List<string> GatherFilePatterns()
+	private List<string> GatherFilePatterns()
 	{
 		List<string> patterns = [];
 		AnsiConsole.MarkupLine("[cyan]Enter file patterns (one per line, empty line to finish):[/]");
@@ -295,7 +312,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 
 		while (true)
 		{
-			string pattern = AppDataHistoryInput.AskWithHistory($"[cyan]Pattern {patterns.Count + 1}[/]");
+			string pattern = historyInput.AskWithHistoryAsync($"[cyan]Pattern {patterns.Count + 1}[/]").GetAwaiter().GetResult();
 			if (string.IsNullOrWhiteSpace(pattern))
 			{
 				break;
@@ -310,7 +327,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// Gathers search paths from the user.
 	/// </summary>
 	/// <returns>List of search paths.</returns>
-	private static List<string> GatherSearchPaths()
+	private List<string> GatherSearchPaths()
 	{
 		List<string> searchPaths = [];
 		bool addSearchPaths = AnsiConsole.Confirm("[cyan]Add custom search paths? (If no, uses the directory provided at runtime)[/]", false);
@@ -322,7 +339,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 
 			while (true)
 			{
-				string searchPath = AppDataHistoryInput.AskWithHistory($"[cyan]Search Path {searchPaths.Count + 1}[/]");
+				string searchPath = historyInput.AskWithHistoryAsync($"[cyan]Search Path {searchPaths.Count + 1}[/]").GetAwaiter().GetResult();
 				if (string.IsNullOrWhiteSpace(searchPath))
 				{
 					break;
@@ -338,7 +355,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// Gathers exclusion patterns from the user.
 	/// </summary>
 	/// <returns>List of exclusion patterns.</returns>
-	private static List<string> GatherExclusionPatterns()
+	private List<string> GatherExclusionPatterns()
 	{
 		List<string> exclusionPatterns = [];
 		bool addExclusions = AnsiConsole.Confirm("[cyan]Add path exclusion patterns?[/]", false);
@@ -346,11 +363,11 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		if (addExclusions)
 		{
 			AnsiConsole.MarkupLine("[cyan]Enter path exclusion patterns (one per line, empty line to finish):[/]");
-			AnsiConsole.MarkupLine("[dim]Examples: */node_modules/*, */bin/*, */obj/*, .git/*, temp*[/]");
+			AnsiConsole.MarkupLine("[dim]Examples: */node_modules/*, */bin/*, */obj/*, temp*[/]");
 
 			while (true)
 			{
-				string exclusionPattern = AppDataHistoryInput.AskWithHistory($"[cyan]Exclusion Pattern {exclusionPatterns.Count + 1}[/]");
+				string exclusionPattern = historyInput.AskWithHistoryAsync($"[cyan]Exclusion Pattern {exclusionPatterns.Count + 1}[/]").GetAwaiter().GetResult();
 				if (string.IsNullOrWhiteSpace(exclusionPattern))
 				{
 					break;
@@ -388,13 +405,13 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// Saves the batch configuration and displays the result.
 	/// </summary>
 	/// <param name="batch">The batch configuration to save.</param>
-	private static void SaveAndDisplayBatchResult(BatchConfiguration batch)
+	private void SaveAndDisplayBatchResult(BatchConfiguration batch)
 	{
-		bool saved = AppDataBatchManager.SaveBatch(batch);
+		bool saved = batchManager.SaveBatchAsync(batch).GetAwaiter().GetResult();
 		if (saved)
 		{
 			// Force save any queued changes to ensure the batch is immediately available
-			AppDataBatchManager.SaveIfRequired();
+			batchManager.SaveIfRequiredAsync().GetAwaiter().GetResult();
 
 			ShowSuccess($"Batch configuration '{batch.Name}' created successfully!");
 			DisplayBatchSummary(batch);
@@ -439,7 +456,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	{
 		ShowMenuTitle("Run Batch Configuration");
 
-		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataBatchManager.GetAllBatches();
+		IReadOnlyCollection<BatchConfiguration> allBatches = batchManager.GetAllBatchesAsync().GetAwaiter().GetResult();
 
 		if (allBatches.Count == 0)
 		{
@@ -454,7 +471,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 				.AddChoices(allBatches.Select(b => b.Name)));
 
 		// Load the selected batch to check if it has search paths configured
-		BatchConfiguration? selectedBatch = AppDataBatchManager.LoadBatch(batchName);
+		BatchConfiguration? selectedBatch = batchManager.LoadBatchAsync(batchName).GetAwaiter().GetResult();
 		if (selectedBatch == null)
 		{
 			ShowError($"Batch configuration '{batchName}' not found.");
@@ -480,7 +497,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		{
 			// No search paths configured, ask for directory
 			AnsiConsole.MarkupLine("[yellow]This batch configuration doesn't have search paths configured.[/]");
-			directory = AppDataHistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
+			directory = historyInput.AskWithHistoryAsync("[cyan]Enter directory path[/]").GetAwaiter().GetResult();
 			if (string.IsNullOrWhiteSpace(directory))
 			{
 				ShowWarning(OperationCancelledMessage);
@@ -507,7 +524,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// <summary>
 	/// Views detailed information about a batch configuration.
 	/// </summary>
-	private static void HandleViewBatch()
+	private void HandleViewBatch()
 	{
 		BatchConfiguration? batch = SelectBatch("View Batch Details");
 		if (batch == null)
@@ -598,7 +615,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// <summary>
 	/// Edits an existing batch configuration.
 	/// </summary>
-	private static void HandleEditBatch()
+	private void HandleEditBatch()
 	{
 		BatchConfiguration? batch = SelectBatch("Edit Batch Configuration");
 		if (batch == null)
@@ -619,9 +636,9 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// </summary>
 	/// <param name="batch">The batch configuration being edited.</param>
 	/// <returns>The gathered edit data.</returns>
-	private static EditBatchData GatherEditBatchData(BatchConfiguration batch)
+	private EditBatchData GatherEditBatchData(BatchConfiguration batch)
 	{
-		string description = AppDataHistoryInput.AskWithHistory($"[cyan]Enter description[/] (current: {batch.Description ?? ""})", batch.Description ?? "");
+		string description = historyInput.AskWithHistoryAsync($"[cyan]Enter description[/] (current: {batch.Description ?? ""})", batch.Description ?? "").GetAwaiter().GetResult();
 		List<string> patterns = HandlePatternEditing(batch);
 		List<string> searchPaths = HandleSearchPathEditing(batch);
 		List<string> exclusionPatterns = HandleExclusionPatternEditing(batch);
@@ -644,7 +661,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// </summary>
 	/// <param name="batch">The batch configuration being edited.</param>
 	/// <returns>Updated list of patterns.</returns>
-	private static List<string> HandlePatternEditing(BatchConfiguration batch)
+	private List<string> HandlePatternEditing(BatchConfiguration batch)
 	{
 		List<string> patterns = [.. batch.FilePatterns];
 
@@ -662,7 +679,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 
 			while (true)
 			{
-				string pattern = AppDataHistoryInput.AskWithHistory($"[cyan]Pattern {patterns.Count + 1}[/]");
+				string pattern = historyInput.AskWithHistoryAsync($"[cyan]Pattern {patterns.Count + 1}[/]").GetAwaiter().GetResult();
 				if (string.IsNullOrWhiteSpace(pattern))
 				{
 					break;
@@ -685,7 +702,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// </summary>
 	/// <param name="batch">The batch configuration being edited.</param>
 	/// <returns>Updated list of search paths.</returns>
-	private static List<string> HandleSearchPathEditing(BatchConfiguration batch)
+	private List<string> HandleSearchPathEditing(BatchConfiguration batch)
 	{
 		List<string> searchPaths = [.. batch.SearchPaths];
 
@@ -711,7 +728,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 
 			while (true)
 			{
-				string searchPath = AppDataHistoryInput.AskWithHistory($"[cyan]Search Path {searchPaths.Count + 1}[/]");
+				string searchPath = historyInput.AskWithHistoryAsync($"[cyan]Search Path {searchPaths.Count + 1}[/]").GetAwaiter().GetResult();
 				if (string.IsNullOrWhiteSpace(searchPath))
 				{
 					break;
@@ -728,7 +745,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// </summary>
 	/// <param name="batch">The batch configuration being edited.</param>
 	/// <returns>Updated list of exclusion patterns.</returns>
-	private static List<string> HandleExclusionPatternEditing(BatchConfiguration batch)
+	private List<string> HandleExclusionPatternEditing(BatchConfiguration batch)
 	{
 		List<string> exclusionPatterns = [.. batch.PathExclusionPatterns];
 
@@ -750,11 +767,11 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		{
 			exclusionPatterns.Clear();
 			AnsiConsole.MarkupLine("[cyan]Enter new exclusion patterns (one per line, empty line to finish):[/]");
-			AnsiConsole.MarkupLine("[dim]Examples: */node_modules/*, */bin/*, */obj/*, .git/*, temp*[/]");
+			AnsiConsole.MarkupLine("[dim]Examples: */node_modules/*, */bin/*, */obj/*, temp*[/]");
 
 			while (true)
 			{
-				string exclusionPattern = AppDataHistoryInput.AskWithHistory($"[cyan]Exclusion Pattern {exclusionPatterns.Count + 1}[/]");
+				string exclusionPattern = historyInput.AskWithHistoryAsync($"[cyan]Exclusion Pattern {exclusionPatterns.Count + 1}[/]").GetAwaiter().GetResult();
 				if (string.IsNullOrWhiteSpace(exclusionPattern))
 				{
 					break;
@@ -792,13 +809,13 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// Saves the updated batch configuration and displays the result.
 	/// </summary>
 	/// <param name="batch">The batch configuration to save.</param>
-	private static void SaveUpdatedBatch(BatchConfiguration batch)
+	private void SaveUpdatedBatch(BatchConfiguration batch)
 	{
-		bool saved = AppDataBatchManager.SaveBatch(batch);
+		bool saved = batchManager.SaveBatchAsync(batch).GetAwaiter().GetResult();
 		if (saved)
 		{
 			// Force save any queued changes to ensure the batch is immediately available
-			AppDataBatchManager.SaveIfRequired();
+			batchManager.SaveIfRequiredAsync().GetAwaiter().GetResult();
 
 			ShowSuccess($"Batch configuration '{batch.Name}' updated successfully!");
 		}
@@ -824,7 +841,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// <summary>
 	/// Duplicates an existing batch configuration.
 	/// </summary>
-	private static void HandleDuplicateBatch()
+	private void HandleDuplicateBatch()
 	{
 		BatchConfiguration? sourceBatch = SelectBatch("Duplicate Batch Configuration");
 		if (sourceBatch == null)
@@ -832,7 +849,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			return;
 		}
 
-		string newName = AppDataHistoryInput.AskWithHistory($"[cyan]Enter new name for duplicate[/] (original: {sourceBatch.Name})");
+		string newName = historyInput.AskWithHistoryAsync($"[cyan]Enter new name for duplicate[/] (original: {sourceBatch.Name})").GetAwaiter().GetResult();
 		if (string.IsNullOrWhiteSpace(newName))
 		{
 			ShowWarning(OperationCancelledMessage);
@@ -840,7 +857,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		}
 
 		// Check if batch already exists
-		BatchConfiguration? existingBatch = AppDataBatchManager.LoadBatch(newName);
+		BatchConfiguration? existingBatch = batchManager.LoadBatchAsync(newName).GetAwaiter().GetResult();
 		if (existingBatch != null)
 		{
 			bool overwrite = AnsiConsole.Confirm($"[yellow]A batch named '{newName}' already exists. Overwrite it?[/]");
@@ -865,11 +882,11 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			LastModified = DateTime.UtcNow
 		};
 
-		bool saved = AppDataBatchManager.SaveBatch(duplicateBatch);
+		bool saved = batchManager.SaveBatchAsync(duplicateBatch).GetAwaiter().GetResult();
 		if (saved)
 		{
 			// Force save any queued changes to ensure the batch is immediately available
-			AppDataBatchManager.SaveIfRequired();
+			batchManager.SaveIfRequiredAsync().GetAwaiter().GetResult();
 
 			ShowSuccess($"Batch configuration '{newName}' created as a copy of '{sourceBatch.Name}'!");
 		}
@@ -884,7 +901,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// <summary>
 	/// Deletes a batch configuration.
 	/// </summary>
-	private static void HandleDeleteBatch()
+	private void HandleDeleteBatch()
 	{
 		BatchConfiguration? batch = SelectBatch("Delete Batch Configuration");
 		if (batch == null)
@@ -907,7 +924,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			return;
 		}
 
-		bool deleted = AppDataBatchManager.DeleteBatch(batch.Name);
+		bool deleted = batchManager.DeleteBatchAsync(batch.Name).GetAwaiter().GetResult();
 		if (deleted)
 		{
 			ShowSuccess($"Batch configuration '{batch.Name}' deleted successfully!");
@@ -923,11 +940,11 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// <summary>
 	/// Exports batch configurations to a file.
 	/// </summary>
-	private static void HandleExportBatches()
+	private void HandleExportBatches()
 	{
 		ShowMenuTitle("Export Batch Configurations");
 
-		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataBatchManager.GetAllBatches();
+		IReadOnlyCollection<BatchConfiguration> allBatches = batchManager.GetAllBatchesAsync().GetAwaiter().GetResult();
 		if (allBatches.Count == 0)
 		{
 			ShowWarning("No batch configurations to export.");
@@ -936,7 +953,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		}
 
 		string defaultFileName = $"BlastMerge_Batches_{DateTime.Now:yyyyMMdd_HHmmss}.json";
-		string exportPath = AppDataHistoryInput.AskWithHistory($"[cyan]Enter export file path[/] (default: {defaultFileName})");
+		string exportPath = historyInput.AskWithHistoryAsync($"[cyan]Enter export file path[/] (default: {defaultFileName})").GetAwaiter().GetResult();
 		if (string.IsNullOrWhiteSpace(exportPath))
 		{
 			exportPath = defaultFileName;
@@ -944,7 +961,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 
 		try
 		{
-			string json = JsonSerializer.Serialize(allBatches, JsonSerializerOptions);
+			string json = SerializeToJson(allBatches);
 			File.WriteAllText(exportPath, json);
 			ShowSuccess($"Exported {allBatches.Count} batch configurations to '{exportPath}'");
 		}
@@ -964,6 +981,10 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		{
 			ShowError($"Failed to serialize batch configurations: {ex.Message}");
 		}
+		catch (NotSupportedException ex)
+		{
+			ShowError($"Serialization not supported: {ex.Message}");
+		}
 
 		WaitForKeyPress();
 	}
@@ -971,11 +992,11 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// <summary>
 	/// Imports batch configurations from a file.
 	/// </summary>
-	private static void HandleImportBatches()
+	private void HandleImportBatches()
 	{
 		ShowMenuTitle("Import Batch Configurations");
 
-		string importPath = AppDataHistoryInput.AskWithHistory("[cyan]Enter import file path[/]");
+		string importPath = historyInput.AskWithHistoryAsync("[cyan]Enter import file path[/]").GetAwaiter().GetResult();
 		if (string.IsNullOrWhiteSpace(importPath))
 		{
 			ShowWarning(OperationCancelledMessage);
@@ -1026,6 +1047,10 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		{
 			ShowError($"Invalid JSON format: {ex.Message}");
 		}
+		catch (NotSupportedException ex)
+		{
+			ShowError($"JSON deserialization not supported: {ex.Message}");
+		}
 
 		WaitForKeyPress();
 	}
@@ -1038,7 +1063,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	private static List<BatchConfiguration>? LoadBatchesFromFile(string filePath)
 	{
 		string json = File.ReadAllText(filePath);
-		return JsonSerializer.Deserialize<List<BatchConfiguration>>(json, JsonSerializerOptions);
+		return DeserializeFromJson<List<BatchConfiguration>>(json);
 	}
 
 	/// <summary>
@@ -1062,7 +1087,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// </summary>
 	/// <param name="batches">The batches to import.</param>
 	/// <returns>The import results.</returns>
-	private static ImportBatchResults ProcessBatchImport(List<BatchConfiguration> batches)
+	private ImportBatchResults ProcessBatchImport(List<BatchConfiguration> batches)
 	{
 		ImportBatchResults results = new();
 
@@ -1101,9 +1126,9 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// </summary>
 	/// <param name="batch">The batch to check.</param>
 	/// <returns>True if the batch should be skipped, false if it should be processed.</returns>
-	private static bool HandleExistingBatch(BatchConfiguration batch)
+	private bool HandleExistingBatch(BatchConfiguration batch)
 	{
-		BatchConfiguration? existing = AppDataBatchManager.LoadBatch(batch.Name);
+		BatchConfiguration? existing = batchManager.LoadBatchAsync(batch.Name).GetAwaiter().GetResult();
 		if (existing == null)
 		{
 			return false;
@@ -1124,11 +1149,11 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// </summary>
 	/// <param name="batch">The batch to import.</param>
 	/// <returns>True if the import was successful, false otherwise.</returns>
-	private static bool ImportSingleBatch(BatchConfiguration batch)
+	private bool ImportSingleBatch(BatchConfiguration batch)
 	{
 		batch.CreatedDate = DateTime.UtcNow;
 		batch.LastModified = DateTime.UtcNow;
-		return AppDataBatchManager.SaveBatch(batch);
+		return batchManager.SaveBatchAsync(batch).GetAwaiter().GetResult();
 	}
 
 	/// <summary>
@@ -1158,11 +1183,11 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// </summary>
 	/// <param name="title">The title for the selection prompt.</param>
 	/// <returns>The selected batch configuration, or null if cancelled.</returns>
-	private static BatchConfiguration? SelectBatch(string title)
+	private BatchConfiguration? SelectBatch(string title)
 	{
 		ShowMenuTitle(title);
 
-		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataBatchManager.GetAllBatches();
+		IReadOnlyCollection<BatchConfiguration> allBatches = batchManager.GetAllBatchesAsync().GetAwaiter().GetResult();
 		if (allBatches.Count == 0)
 		{
 			ShowWarning("No batch configurations available.");

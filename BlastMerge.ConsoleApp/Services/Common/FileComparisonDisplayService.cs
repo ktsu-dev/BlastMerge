@@ -19,8 +19,10 @@ using Spectre.Console;
 /// <summary>
 /// Centralized service for file comparison display functionality.
 /// </summary>
-public static class FileComparisonDisplayService
+/// <param name="fileDiffer">The file differ service.</param>
+public class FileComparisonDisplayService(FileDiffer fileDiffer)
 {
+	private readonly FileDiffer fileDiffer = fileDiffer ?? throw new ArgumentNullException(nameof(fileDiffer));
 	/// <summary>
 	/// Executes a file operation with standard exception handling for file-related errors.
 	/// </summary>
@@ -50,14 +52,14 @@ public static class FileComparisonDisplayService
 	/// </summary>
 	/// <param name="file1">First file path.</param>
 	/// <param name="file2">Second file path.</param>
-	public static void CompareTwoFiles(string file1, string file2)
+	public void CompareTwoFiles(string file1, string file2)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
 		ExecuteFileOperation(() =>
 		{
-			IReadOnlyCollection<LineDifference> differences = FileDiffer.FindDifferences(file1, file2);
+			IReadOnlyCollection<LineDifference> differences = fileDiffer.FindDifferences(file1, file2);
 
 			if (differences.Count == 0)
 			{
@@ -76,7 +78,7 @@ public static class FileComparisonDisplayService
 	/// </summary>
 	/// <param name="file1">First file path.</param>
 	/// <param name="file2">Second file path.</param>
-	public static void ShowFileComparisonOptions(string file1, string file2)
+	public void ShowFileComparisonOptions(string file1, string file2)
 	{
 		ShowWhitespaceLegend();
 		string diffFormat = PromptForDiffFormat();
@@ -118,7 +120,7 @@ public static class FileComparisonDisplayService
 	/// <param name="diffFormat">The selected diff format.</param>
 	/// <param name="file1">First file path.</param>
 	/// <param name="file2">Second file path.</param>
-	private static void ExecuteDiffFormat(string diffFormat, string file1, string file2)
+	private void ExecuteDiffFormat(string diffFormat, string file1, string file2)
 	{
 		if (diffFormat.Contains("📊"))
 		{
@@ -140,14 +142,14 @@ public static class FileComparisonDisplayService
 	/// </summary>
 	/// <param name="file1">First file path.</param>
 	/// <param name="file2">Second file path.</param>
-	public static void ShowChangeSummary(string file1, string file2)
+	public void ShowChangeSummary(string file1, string file2)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
 		ExecuteFileOperation(() =>
 		{
-			IReadOnlyCollection<LineDifference> differences = FileDiffer.FindDifferences(file1, file2);
+			IReadOnlyCollection<LineDifference> differences = fileDiffer.FindDifferences(file1, file2);
 
 			if (differences.Count == 0)
 			{
@@ -174,7 +176,7 @@ public static class FileComparisonDisplayService
 	/// </summary>
 	/// <param name="file1">First file path.</param>
 	/// <param name="file2">Second file path.</param>
-	public static void ShowGitStyleDiff(string file1, string file2)
+	public void ShowGitStyleDiff(string file1, string file2)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
@@ -200,7 +202,7 @@ public static class FileComparisonDisplayService
 	/// </summary>
 	/// <param name="file1">Path to the first file.</param>
 	/// <param name="file2">Path to the second file.</param>
-	public static void ShowSideBySideDiff(string file1, string file2)
+	public void ShowSideBySideDiff(string file1, string file2)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);

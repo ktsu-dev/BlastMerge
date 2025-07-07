@@ -7,6 +7,7 @@ namespace ktsu.BlastMerge.ConsoleApp.CLI;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading.Tasks;
 using CommandLine;
 using ktsu.BlastMerge.Contracts;
 
@@ -23,16 +24,26 @@ public class CommandLineHandler(IApplicationService applicationService) : IComma
 	/// <returns>Exit code - 0 for success, 1 for error.</returns>
 	public int ProcessCommandLineArguments(string[] args)
 	{
+		return ProcessCommandLineArgumentsAsync(args).GetAwaiter().GetResult();
+	}
+
+	/// <summary>
+	/// Processes command line arguments and executes the appropriate action asynchronously.
+	/// </summary>
+	/// <param name="args">Command line arguments.</param>
+	/// <returns>Exit code - 0 for success, 1 for error.</returns>
+	private async Task<int> ProcessCommandLineArgumentsAsync(string[] args)
+	{
 		ArgumentNullException.ThrowIfNull(args);
 		ArgumentNullException.ThrowIfNull(applicationService);
 
 		try
 		{
 			using Parser parser = new(with => with.HelpWriter = Console.Error);
-			return parser
+			return await parser
 				.ParseArguments<CommandLineOptions>(args)
 				.MapResult(
-					ExecuteCommand,
+					async opts => await ExecuteCommandAsync(opts).ConfigureAwait(false),
 					HandleParsingErrors
 				);
 		}
@@ -53,7 +64,7 @@ public class CommandLineHandler(IApplicationService applicationService) : IComma
 	/// </summary>
 	/// <param name="options">The parsed command line options.</param>
 	/// <returns>Exit code - 0 for success, 1 for error.</returns>
-	private int ExecuteCommand(CommandLineOptions options)
+	private async Task<int> ExecuteCommandAsync(CommandLineOptions options)
 	{
 		ArgumentNullException.ThrowIfNull(options);
 
@@ -76,26 +87,26 @@ public class CommandLineHandler(IApplicationService applicationService) : IComma
 			// Handle list batches request
 			if (options.ListBatches)
 			{
-				applicationService.ListBatches();
+				await applicationService.ListBatchesAsync().ConfigureAwait(false);
 				return 0;
 			}
 
 			// Handle batch processing
 			if (!string.IsNullOrEmpty(options.BatchName) && !string.IsNullOrEmpty(options.Directory))
 			{
-				applicationService.ProcessBatch(options.Directory, options.BatchName);
+				await applicationService.ProcessBatchAsync(options.Directory, options.BatchName).ConfigureAwait(false);
 				return 0;
 			}
 
 			// Handle direct file processing
 			if (!string.IsNullOrEmpty(options.Directory) && !string.IsNullOrEmpty(options.FileName))
 			{
-				applicationService.ProcessFiles(options.Directory, options.FileName);
+				await applicationService.ProcessFilesAsync(options.Directory, options.FileName).ConfigureAwait(false);
 				return 0;
 			}
 
 			// No specific command provided - start interactive mode
-			applicationService.StartInteractiveMode();
+			await applicationService.StartInteractiveModeAsync().ConfigureAwait(false);
 			return 0;
 		}
 		catch (DirectoryNotFoundException ex)

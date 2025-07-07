@@ -5,13 +5,14 @@
 namespace ktsu.BlastMerge.Test;
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 [TestClass]
-public class PerformanceTests : MockFileSystemTestBase
+public class PerformanceTests : DependencyInjectionTestBase
 {
 	private string _testDirectory = string.Empty;
 	private string _largeFile1 = string.Empty;
@@ -21,7 +22,7 @@ public class PerformanceTests : MockFileSystemTestBase
 	private string _smallFile1 = string.Empty;
 	private string _smallFile2 = string.Empty;
 
-	protected override void InitializeFileSystem()
+	protected override void InitializeTestData()
 	{
 		_testDirectory = @"C:\temp\PerformanceTests";
 		_largeFile1 = MockFileSystem.Path.Combine(_testDirectory, "large1.txt");
@@ -80,7 +81,7 @@ public class PerformanceTests : MockFileSystemTestBase
 
 		// Act
 		stopwatch.Start();
-		string hash = FileHasher.ComputeFileHash(_largeFile1);
+		string hash = FileHasher.ComputeFileHash(_largeFile1, MockFileSystem);
 		stopwatch.Stop();
 
 		// Assert
@@ -164,7 +165,7 @@ public class PerformanceTests : MockFileSystemTestBase
 
 		// Act
 		stopwatch.Start();
-		IReadOnlyCollection<string> files = FileFinder.FindFiles(largeDir, "*.txt", fileSystem: null);
+		IReadOnlyCollection<string> files = FileFinder.FindFiles(largeDir, "*.txt", fileSystem: MockFileSystem);
 		stopwatch.Stop();
 
 		// Assert

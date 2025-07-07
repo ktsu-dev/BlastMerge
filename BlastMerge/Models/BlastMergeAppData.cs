@@ -4,23 +4,33 @@
 
 namespace ktsu.BlastMerge.Models;
 
-using System.Reflection;
-using ktsu.AppDataStorage;
+using System.Collections.ObjectModel;
 
 /// <summary>
 /// Main application data storage for BlastMerge, managing all persistent state.
 /// </summary>
-public class BlastMergeAppData : AppData<BlastMergeAppData>
+public class BlastMergeAppData
 {
 	/// <summary>
-	/// Gets or sets the collection of batch configurations.
+	/// Initializes a new instance of the BlastMergeAppData class.
 	/// </summary>
-	public Dictionary<string, BatchConfiguration> BatchConfigurations { get; init; } = [];
+	public BlastMergeAppData()
+	{
+		// Initialize collections
+		BatchConfigurations = [];
+		InputHistory = [];
+		LastBatchPatterns = [];
+	}
 
 	/// <summary>
-	/// Gets or sets the input history organized by prompt type.
+	/// Gets the collection of batch configurations.
 	/// </summary>
-	public Dictionary<string, List<string>> InputHistory { get; init; } = [];
+	public Dictionary<string, BatchConfiguration> BatchConfigurations { get; }
+
+	/// <summary>
+	/// Gets the input history organized by prompt type.
+	/// </summary>
+	public Dictionary<string, List<string>> InputHistory { get; }
 
 	/// <summary>
 	/// Gets or sets information about the most recently used batch.
@@ -33,20 +43,49 @@ public class BlastMergeAppData : AppData<BlastMergeAppData>
 	public ApplicationSettings Settings { get; set; } = new();
 
 	/// <summary>
-	/// Resets the singleton instance for testing purposes.
-	/// This method should only be used in test environments.
+	/// Gets or sets the last used source file path.
 	/// </summary>
-	/// <remarks>
-	/// This method uses reflection to clear the internal singleton cache
-	/// of the AppData base class to enable proper test isolation.
-	/// </remarks>
-	public static void ResetForTesting()
-	{
-		// Use reflection to access the static instance field in the base class
-		// This is necessary because AppData<T> doesn't provide a public reset method
-		Type baseType = typeof(AppData<BlastMergeAppData>);
-		FieldInfo? instanceField = baseType.GetField("_instance", BindingFlags.NonPublic | BindingFlags.Static);
+	public string LastSourceFilePath { get; set; } = string.Empty;
 
-		instanceField?.SetValue(null, null);
+	/// <summary>
+	/// Gets or sets the last used target file path.
+	/// </summary>
+	public string LastTargetFilePath { get; set; } = string.Empty;
+
+	/// <summary>
+	/// Gets or sets the last used output file path.
+	/// </summary>
+	public string LastOutputFilePath { get; set; } = string.Empty;
+
+	/// <summary>
+	/// Gets the last used batch operation patterns.
+	/// </summary>
+	public Collection<string> LastBatchPatterns { get; }
+
+	/// <summary>
+	/// Gets or sets whether to show line numbers in diff output.
+	/// </summary>
+	public bool ShowLineNumbers { get; set; } = true;
+
+	/// <summary>
+	/// Gets or sets whether to highlight whitespace differences.
+	/// </summary>
+	public bool HighlightWhitespace { get; set; } = true;
+
+	/// <summary>
+	/// Resets all data to default values for testing purposes.
+	/// </summary>
+	internal void ResetForTesting()
+	{
+		BatchConfigurations.Clear();
+		InputHistory.Clear();
+		RecentBatch = null;
+		Settings = new ApplicationSettings();
+		LastSourceFilePath = string.Empty;
+		LastTargetFilePath = string.Empty;
+		LastOutputFilePath = string.Empty;
+		LastBatchPatterns.Clear();
+		ShowLineNumbers = true;
+		HighlightWhitespace = true;
 	}
 }

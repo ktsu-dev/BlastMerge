@@ -7,33 +7,40 @@ namespace ktsu.BlastMerge.ConsoleApp.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using ktsu.BlastMerge.Models;
+using ktsu.BlastMerge.Services;
 using Spectre.Console;
 
 /// <summary>
-/// Handles user input with history functionality using AppDataStorage and arrow key navigation.
+/// Handles user input with history functionality using PersistenceProvider and arrow key navigation.
 /// </summary>
-public static class AppDataHistoryInput
+/// <remarks>
+/// Initializes a new instance of the AppDataHistoryInput class.
+/// </remarks>
+/// <param name="persistenceService">The persistence service to use.</param>
+public class AppDataHistoryInput(BlastMergePersistenceService persistenceService)
 {
-	/// <summary>
-	/// Gets the application data storage instance.
-	/// </summary>
-	private static BlastMergeAppData AppData => BlastMergeAppData.Get();
+	private readonly BlastMergePersistenceService persistenceService = persistenceService ?? throw new ArgumentNullException(nameof(persistenceService));
 
 	/// <summary>
 	/// Asks the user for input with history support.
 	/// </summary>
 	/// <param name="prompt">The prompt to display to the user.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <returns>The user's input.</returns>
-	public static string AskWithHistory(string prompt) => AskWithHistory(prompt, string.Empty);
+	public async Task<string> AskWithHistoryAsync(string prompt, CancellationToken cancellationToken = default) =>
+		await AskWithHistoryAsync(prompt, string.Empty, cancellationToken).ConfigureAwait(false);
 
 	/// <summary>
 	/// Asks the user for input with history support and a default value.
 	/// </summary>
 	/// <param name="prompt">The prompt to display to the user.</param>
 	/// <param name="defaultValue">The default value to use if input is empty.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <returns>The user's input or default value if empty.</returns>
-	public static string AskWithHistory(string prompt, string defaultValue)
+	public async Task<string> AskWithHistoryAsync(string prompt, string defaultValue, CancellationToken cancellationToken = default)
 	{
 		ArgumentNullException.ThrowIfNull(prompt);
 		ArgumentNullException.ThrowIfNull(defaultValue);
@@ -62,7 +69,7 @@ public static class AppDataHistoryInput
 		// Add to history if not empty and not already the most recent
 		if (!string.IsNullOrWhiteSpace(result))
 		{
-			AddToHistory(promptKey, result);
+			await AddToHistoryAsync(promptKey, result, cancellationToken).ConfigureAwait(false);
 		}
 
 		return result;
@@ -71,31 +78,29 @@ public static class AppDataHistoryInput
 	/// <summary>
 	/// Clears all input history.
 	/// </summary>
-	public static void ClearAllHistory()
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>A task representing the asynchronous operation.</returns>
+	public async Task ClearAllHistoryAsync(CancellationToken cancellationToken = default)
 	{
-		AppData.InputHistory.Clear();
+		BlastMergeAppData appData = await persistenceService.GetAsync(cancellationToken).ConfigureAwait(false);
+		appData.InputHistory.Clear();
 
-		if (AppData.Settings.AutoSaveEnabled)
-		{
-			AppData.Save();
-		}
-		else
-		{
-			BlastMergeAppData.QueueSave();
-		}
+		await persistenceService.SaveAsync(cancellationToken).ConfigureAwait(false);
 	}
 
 	/// <summary>
 	/// Gets the history for a specific prompt type.
 	/// </summary>
 	/// <param name="promptKey">The prompt key.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <returns>The history list for the prompt.</returns>
-	private static List<string> GetHistoryForPrompt(string promptKey)
+	private async Task<List<string>> GetHistoryForPromptAsync(string promptKey, CancellationToken cancellationToken = default)
 	{
-		if (!AppData.InputHistory.TryGetValue(promptKey, out List<string>? history))
+		BlastMergeAppData appData = await persistenceService.GetAsync(cancellationToken).ConfigureAwait(false);
+		if (!appData.InputHistory.TryGetValue(promptKey, out List<string>? history))
 		{
 			history = [];
-			AppData.InputHistory[promptKey] = history;
+			appData.InputHistory[promptKey] = history;
 		}
 
 		return history;
@@ -106,9 +111,11 @@ public static class AppDataHistoryInput
 	/// </summary>
 	/// <param name="promptKey">The prompt key.</param>
 	/// <param name="value">The value to add.</param>
-	private static void AddToHistory(string promptKey, string value)
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>A task representing the asynchronous operation.</returns>
+	private async Task AddToHistoryAsync(string promptKey, string value, CancellationToken cancellationToken = default)
 	{
-		List<string> history = GetHistoryForPrompt(promptKey);
+		List<string> history = await GetHistoryForPromptAsync(promptKey, cancellationToken).ConfigureAwait(false);
 
 		// Remove if already exists (move to end)
 		history.Remove(value);
@@ -117,21 +124,15 @@ public static class AppDataHistoryInput
 		history.Add(value);
 
 		// Trim to max size
-		int maxSize = AppData.Settings.MaxHistoryEntriesPerPrompt;
+		BlastMergeAppData appData = await persistenceService.GetAsync(cancellationToken).ConfigureAwait(false);
+		int maxSize = appData.Settings.MaxHistoryEntriesPerPrompt;
 		while (history.Count > maxSize)
 		{
 			history.RemoveAt(0);
 		}
 
 		// Save changes
-		if (AppData.Settings.AutoSaveEnabled)
-		{
-			AppData.Save();
-		}
-		else
-		{
-			BlastMergeAppData.QueueSave();
-		}
+		await persistenceService.SaveAsync(cancellationToken).ConfigureAwait(false);
 	}
 
 	/// <summary>
@@ -158,17 +159,23 @@ public static class AppDataHistoryInput
 	/// Gets the count of history entries for a specific prompt type.
 	/// </summary>
 	/// <param name="promptKey">The prompt key.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <returns>The number of history entries.</returns>
-	public static int GetHistoryCount(string promptKey) =>
-		AppData.InputHistory.TryGetValue(promptKey, out List<string>? history) ? history.Count : 0;
+	public async Task<int> GetHistoryCountAsync(string promptKey, CancellationToken cancellationToken = default)
+	{
+		BlastMergeAppData appData = await persistenceService.GetAsync(cancellationToken).ConfigureAwait(false);
+		return appData.InputHistory.TryGetValue(promptKey, out List<string>? history) ? history.Count : 0;
+	}
 
 	/// <summary>
 	/// Gets all history entries for debugging or inspection.
 	/// </summary>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <returns>A read-only dictionary of all history entries.</returns>
-	public static IReadOnlyDictionary<string, IReadOnlyList<string>> GetAllHistory()
+	public async Task<IReadOnlyDictionary<string, IReadOnlyList<string>>> GetAllHistoryAsync(CancellationToken cancellationToken = default)
 	{
-		return AppData.InputHistory.ToDictionary(
+		BlastMergeAppData appData = await persistenceService.GetAsync(cancellationToken).ConfigureAwait(false);
+		return appData.InputHistory.ToDictionary(
 			kvp => kvp.Key,
 			kvp => (IReadOnlyList<string>)kvp.Value.AsReadOnly());
 	}

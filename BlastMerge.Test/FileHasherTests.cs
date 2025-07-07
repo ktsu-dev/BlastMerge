@@ -13,14 +13,14 @@ using ktsu.BlastMerge.Test.Adapters;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 [TestClass]
-public class FileHasherTests : MockFileSystemTestBase
+public class FileHasherTests : DependencyInjectionTestBase
 {
 	private string _testFilePath1 = null!;
 	private string _testFilePath2 = null!;
 	private string _testFilePath3 = null!;
 	private FileHasherAdapter _fileHasherAdapter = null!;
 
-	protected override void InitializeFileSystem()
+	protected override void InitializeTestData()
 	{
 		// Create test files with different content
 		_testFilePath1 = CreateFile("test1.txt", "This is test file 1");
@@ -64,17 +64,15 @@ public class FileHasherTests : MockFileSystemTestBase
 
 		// Assert
 		Assert.IsNotNull(hash);
-		Assert.AreEqual(16, hash.Length, "Hash should be 16 characters long (64-bit FNV hash as hex)");
+		Assert.AreEqual(64, hash.Length, "Hash should be 64 characters long (SHA256 hash as hex)");
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(FileNotFoundException))]
 	public void ComputeFileHash_NonexistentFile_ThrowsFileNotFoundException()
 	{
-		// Act
-		_fileHasherAdapter.ComputeFileHash(Path.Combine(TestDirectory, "nonexistent.txt"));
-
-		// Assert is handled by ExpectedException attribute
+		// Act & Assert
+		Assert.ThrowsException<FileNotFoundException>(() =>
+			_fileHasherAdapter.ComputeFileHash(MockFileSystem.Path.Combine(TestDirectory, "nonexistent.txt")));
 	}
 
 	// NEW TESTS FOR IMPROVED COVERAGE - Testing static methods directly
@@ -178,7 +176,7 @@ public class FileHasherTests : MockFileSystemTestBase
 
 		// Assert
 		Assert.IsNotNull(hash);
-		Assert.AreEqual(16, hash.Length, "Hash should be 16 characters long");
+		Assert.AreEqual(64, hash.Length, "Hash should be 64 characters long");
 	}
 
 	[TestMethod]
@@ -203,7 +201,22 @@ public class FileHasherTests : MockFileSystemTestBase
 		string hash2 = await FileHasher.ComputeContentHashAsync(content2).ConfigureAwait(false);
 
 		// Assert
-		Assert.AreEqual(hash1, hash2, "Same content should produce same hash asynchronously");
+		Assert.AreEqual(hash1, hash2, "Same content should produce same hash when computed asynchronously");
+	}
+
+	[TestMethod]
+	public async Task ComputeContentHashAsync_DifferentContent_ReturnsDifferentHash()
+	{
+		// Arrange
+		string content1 = "Hello World";
+		string content2 = "Goodbye World";
+
+		// Act
+		string hash1 = await FileHasher.ComputeContentHashAsync(content1).ConfigureAwait(false);
+		string hash2 = await FileHasher.ComputeContentHashAsync(content2).ConfigureAwait(false);
+
+		// Assert
+		Assert.AreNotEqual(hash1, hash2, "Different content should produce different hashes when computed asynchronously");
 	}
 
 	[TestMethod]
@@ -225,30 +238,34 @@ public class FileHasherTests : MockFileSystemTestBase
 
 		// Assert
 		Assert.IsNotNull(hash);
-		Assert.AreEqual(16, hash.Length, "Hash should be 16 characters long for large files");
+		Assert.AreEqual(64, hash.Length, "Hash should be 64 characters long");
 	}
 
 	[TestMethod]
 	public void ComputeContentHash_UnicodeContent_ReturnsValidHash()
 	{
 		// Arrange
-		string unicodeContent = "Hello 世界! 🌍";
+		string unicodeContent = "Hello 世界 🌍 Мир";
 
 		// Act
 		string hash = FileHasher.ComputeContentHash(unicodeContent);
 
 		// Assert
 		Assert.IsNotNull(hash);
-		Assert.AreEqual(16, hash.Length, "Hash should handle Unicode content correctly");
+		Assert.AreEqual(64, hash.Length, "Hash should be 64 characters long");
 	}
 
 	[TestMethod]
 	public async Task ComputeFileHashesAsync_EmptyList_ReturnsEmptyDictionary()
 	{
+		// Arrange
+		List<string> emptyList = [];
+
 		// Act
-		Dictionary<string, string> results = await FileHasher.ComputeFileHashesAsync([], MockFileSystem).ConfigureAwait(false);
+		Dictionary<string, string> results = await FileHasher.ComputeFileHashesAsync(emptyList, MockFileSystem).ConfigureAwait(false);
 
 		// Assert
+		Assert.IsNotNull(results);
 		Assert.AreEqual(0, results.Count);
 	}
 }

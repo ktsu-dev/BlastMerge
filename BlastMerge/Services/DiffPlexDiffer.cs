@@ -7,7 +7,6 @@ namespace ktsu.BlastMerge.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using DiffPlex;
@@ -16,12 +15,15 @@ using DiffPlex.DiffBuilder;
 using DiffPlex.DiffBuilder.Model;
 using DiffPlex.Model;
 using ktsu.BlastMerge.Models;
+using ktsu.FileSystemProvider;
 
 /// <summary>
 /// Provides diffing functionality using DiffPlex library
 /// </summary>
-public static class DiffPlexDiffer
+/// <param name="fileSystemProvider">File system provider for dependency injection</param>
+public class DiffPlexDiffer(IFileSystemProvider fileSystemProvider)
 {
+	private readonly IFileSystem _fileSystem = fileSystemProvider.Current;
 	private static readonly Differ Differ = new();
 	private static readonly InlineDiffBuilder InlineDiffBuilder = new(Differ);
 	private static readonly SideBySideDiffBuilder SideBySideDiffBuilder = new(Differ);
@@ -33,20 +35,18 @@ public static class DiffPlexDiffer
 	/// <param name="file1">First file path</param>
 	/// <param name="file2">Second file path</param>
 	/// <returns>True if files are identical, false otherwise</returns>
-	public static bool AreFilesIdentical(string file1, string file2)
+	public bool AreFilesIdentical(string file1, string file2)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		IFileSystem fileSystem = FileSystemProvider.Current;
-
-		if (!fileSystem.File.Exists(file1) || !fileSystem.File.Exists(file2))
+		if (!_fileSystem.File.Exists(file1) || !_fileSystem.File.Exists(file2))
 		{
 			return false;
 		}
 
-		string content1 = fileSystem.File.ReadAllText(file1);
-		string content2 = fileSystem.File.ReadAllText(file2);
+		string content1 = _fileSystem.File.ReadAllText(file1);
+		string content2 = _fileSystem.File.ReadAllText(file2);
 
 		DiffResult diff = Differ.CreateDiffs(content1, content2, true, false, new LineChunker());
 		return !diff.DiffBlocks.Any();
@@ -60,20 +60,18 @@ public static class DiffPlexDiffer
 	/// <returns>DiffResult containing the differences</returns>
 	/// <exception cref="ArgumentNullException">Thrown when file1 or file2 is null</exception>
 	/// <exception cref="FileNotFoundException">Thrown when one or both files do not exist</exception>
-	public static DiffResult CreateLineDiffs(string file1, string file2)
+	public DiffResult CreateLineDiffs(string file1, string file2)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		IFileSystem fileSystem = FileSystemProvider.Current;
-
-		if (!fileSystem.File.Exists(file1) || !fileSystem.File.Exists(file2))
+		if (!_fileSystem.File.Exists(file1) || !_fileSystem.File.Exists(file2))
 		{
 			throw new FileNotFoundException("One or both files do not exist");
 		}
 
-		string content1 = fileSystem.File.ReadAllText(file1);
-		string content2 = fileSystem.File.ReadAllText(file2);
+		string content1 = _fileSystem.File.ReadAllText(file1);
+		string content2 = _fileSystem.File.ReadAllText(file2);
 
 		return DiffPlexHelper.CreateLineDiffsFromContent(content1, content2);
 	}
@@ -87,20 +85,18 @@ public static class DiffPlexDiffer
 	/// <returns>Unified diff as a string</returns>
 	/// <exception cref="ArgumentNullException">Thrown when file1 or file2 is null</exception>
 	/// <exception cref="FileNotFoundException">Thrown when one or both files do not exist</exception>
-	public static string GenerateUnifiedDiff(string file1, string file2, int contextLines = 3)
+	public string GenerateUnifiedDiff(string file1, string file2, int contextLines = 3)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		IFileSystem fileSystem = FileSystemProvider.Current;
-
-		if (!fileSystem.File.Exists(file1) || !fileSystem.File.Exists(file2))
+		if (!_fileSystem.File.Exists(file1) || !_fileSystem.File.Exists(file2))
 		{
 			throw new FileNotFoundException("One or both files do not exist");
 		}
 
-		string content1 = fileSystem.File.ReadAllText(file1);
-		string content2 = fileSystem.File.ReadAllText(file2);
+		string content1 = _fileSystem.File.ReadAllText(file1);
+		string content2 = _fileSystem.File.ReadAllText(file2);
 
 		return GenerateUnifiedDiffFromContent(content1, content2, file1, file2, contextLines);
 	}
@@ -326,20 +322,18 @@ public static class DiffPlexDiffer
 	/// <param name="file1">First file path</param>
 	/// <param name="file2">Second file path</param>
 	/// <returns>Collection of colored diff lines</returns>
-	public static Collection<ColoredDiffLine> GenerateColoredDiff(string file1, string file2)
+	public Collection<ColoredDiffLine> GenerateColoredDiff(string file1, string file2)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		IFileSystem fileSystem = FileSystemProvider.Current;
-
-		if (!fileSystem.File.Exists(file1) || !fileSystem.File.Exists(file2))
+		if (!_fileSystem.File.Exists(file1) || !_fileSystem.File.Exists(file2))
 		{
 			throw new FileNotFoundException(FilesNotFoundMessage);
 		}
 
-		string content1 = fileSystem.File.ReadAllText(file1);
-		string content2 = fileSystem.File.ReadAllText(file2);
+		string content1 = _fileSystem.File.ReadAllText(file1);
+		string content2 = _fileSystem.File.ReadAllText(file2);
 
 		DiffPaneModel diff = InlineDiffBuilder.BuildDiffModel(content1, content2);
 		Collection<ColoredDiffLine> result =
@@ -382,20 +376,49 @@ public static class DiffPlexDiffer
 	/// <param name="file1">First file path</param>
 	/// <param name="file2">Second file path</param>
 	/// <returns>Collection of line differences</returns>
-	public static IReadOnlyCollection<LineDifference> FindDifferences(string file1, string file2)
+	public IReadOnlyCollection<LineDifference> FindDifferences(string file1, string file2)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		IFileSystem fileSystem = FileSystemProvider.Current;
-
-		if (!fileSystem.File.Exists(file1) || !fileSystem.File.Exists(file2))
+		if (!_fileSystem.File.Exists(file1) || !_fileSystem.File.Exists(file2))
 		{
 			throw new FileNotFoundException(FilesNotFoundMessage);
 		}
 
-		string content1 = fileSystem.File.ReadAllText(file1);
-		string content2 = fileSystem.File.ReadAllText(file2);
+		string content1 = _fileSystem.File.ReadAllText(file1);
+		string content2 = _fileSystem.File.ReadAllText(file2);
+
+		return FindDifferencesFromContent(content1, content2);
+	}
+
+	/// <summary>
+	/// Finds differences between two string arrays without creating temporary files
+	/// </summary>
+	/// <param name="lines1">Lines from the first file</param>
+	/// <param name="lines2">Lines from the second file</param>
+	/// <returns>Collection of line differences</returns>
+	public static IReadOnlyCollection<LineDifference> FindDifferencesFromLines(string[] lines1, string[] lines2)
+	{
+		ArgumentNullException.ThrowIfNull(lines1);
+		ArgumentNullException.ThrowIfNull(lines2);
+
+		string content1 = string.Join(Environment.NewLine, lines1);
+		string content2 = string.Join(Environment.NewLine, lines2);
+
+		return FindDifferencesFromContent(content1, content2);
+	}
+
+	/// <summary>
+	/// Finds differences between two content strings without creating temporary files
+	/// </summary>
+	/// <param name="content1">Content of the first file</param>
+	/// <param name="content2">Content of the second file</param>
+	/// <returns>Collection of line differences</returns>
+	public static IReadOnlyCollection<LineDifference> FindDifferencesFromContent(string content1, string content2)
+	{
+		ArgumentNullException.ThrowIfNull(content1);
+		ArgumentNullException.ThrowIfNull(content2);
 
 		// Use inline diff for simpler processing
 		DiffPaneModel inlineDiff = InlineDiffBuilder.BuildDiffModel(content1, content2);
@@ -481,20 +504,18 @@ public static class DiffPlexDiffer
 	/// <param name="file1">First file path</param>
 	/// <param name="file2">Second file path</param>
 	/// <returns>Side-by-side diff model</returns>
-	public static SideBySideDiffModel GenerateSideBySideDiff(string file1, string file2)
+	public SideBySideDiffModel GenerateSideBySideDiff(string file1, string file2)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		IFileSystem fileSystem = FileSystemProvider.Current;
-
-		if (!fileSystem.File.Exists(file1) || !fileSystem.File.Exists(file2))
+		if (!_fileSystem.File.Exists(file1) || !_fileSystem.File.Exists(file2))
 		{
 			throw new FileNotFoundException(FilesNotFoundMessage);
 		}
 
-		string content1 = fileSystem.File.ReadAllText(file1);
-		string content2 = fileSystem.File.ReadAllText(file2);
+		string content1 = _fileSystem.File.ReadAllText(file1);
+		string content2 = _fileSystem.File.ReadAllText(file2);
 
 		return SideBySideDiffBuilder.BuildDiffModel(content1, content2);
 	}
@@ -505,7 +526,7 @@ public static class DiffPlexDiffer
 	/// <param name="file1">First file path</param>
 	/// <param name="file2">Second file path</param>
 	/// <returns>Collection of colored diff lines with only changes</returns>
-	public static Collection<ColoredDiffLine> GenerateChangeSummary(string file1, string file2)
+	public Collection<ColoredDiffLine> GenerateChangeSummary(string file1, string file2)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);

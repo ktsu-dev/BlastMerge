@@ -211,7 +211,7 @@ public static partial class BatchProcessor
 
 			// Phase 2: Hashing - Compute hashes for all files in parallel
 			progressCallback?.Invoke("🔗 PHASE 2: Computing file hashes...");
-			Dictionary<string, string> fileHashes = ExecuteHashingPhase(patternFiles, maxDegreeOfParallelism, progressCallback, fileSystem);
+			Dictionary<string, string> fileHashes = ExecuteHashingPhase(patternFiles, maxDegreeOfParallelism, progressCallback);
 
 			progressCallback?.Invoke($"✅ Hashing complete: Computed hashes for {fileHashes.Count} files");
 			progressCallback?.Invoke("");
@@ -284,8 +284,7 @@ public static partial class BatchProcessor
 	private static Dictionary<string, string> ExecuteHashingPhase(
 		Dictionary<string, IReadOnlyCollection<string>> patternFiles,
 		int maxDegreeOfParallelism,
-		Action<string>? progressCallback,
-		IFileSystem fileSystem)
+		Action<string>? progressCallback)
 	{
 		// Flatten all files and prepare for hashing
 		List<(string filePath, string fileName)> workItems = [.. patternFiles
@@ -294,7 +293,7 @@ public static partial class BatchProcessor
 
 		progressCallback?.Invoke($"⚡ Starting hash computation for {workItems.Count} files...");
 
-		return HashFilesInParallel(workItems, maxDegreeOfParallelism, progressCallback, fileSystem);
+		return HashFilesInParallel(workItems, maxDegreeOfParallelism, progressCallback);
 	}
 
 	/// <summary>
@@ -485,13 +484,11 @@ public static partial class BatchProcessor
 	/// <param name="workItems">List of files to hash with their filenames</param>
 	/// <param name="maxDegreeOfParallelism">Maximum degree of parallelism (0 for auto)</param>
 	/// <param name="progressCallback">Optional callback for progress updates</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>Dictionary mapping file paths to their hash values</returns>
 	private static Dictionary<string, string> HashFilesInParallel(
 		List<(string filePath, string fileName)> workItems,
 		int maxDegreeOfParallelism = 0,
-		Action<string>? progressCallback = null,
-		IFileSystem? fileSystem = null)
+		Action<string>? progressCallback = null)
 	{
 		Dictionary<string, string> results = [];
 		int completedItems = 0;
@@ -511,7 +508,8 @@ public static partial class BatchProcessor
 		{
 			try
 			{
-				string hash = FileHasher.ComputeFileHash(workItem.filePath, fileSystem);
+				FileHasher fileHasher = new(new global::ktsu.FileSystemProvider.FileSystemProvider());
+				string hash = fileHasher.ComputeFileHash(workItem.filePath);
 
 				lock (lockObject)
 				{

@@ -5,17 +5,17 @@
 namespace ktsu.BlastMerge.Test;
 
 using System;
-using System.IO;
+using System.Collections.Generic;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Test.Adapters;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 [TestClass]
-public class RecursiveDiffTests : MockFileSystemTestBase
+public class RecursiveDiffTests : DependencyInjectionTestBase
 {
 	private FileDifferAdapter _fileDifferAdapter = null!;
 
-	protected override void InitializeFileSystem()
+	protected override void InitializeTestData()
 	{
 		// Initialize adapter
 		_fileDifferAdapter = new FileDifferAdapter(MockFileSystem);
@@ -48,8 +48,8 @@ public class RecursiveDiffTests : MockFileSystemTestBase
 		CreateFile("dir2/subA/deep/deeper/deepest/deepfile.txt", "Deep Content Modified");
 
 		// Act - Test individual file comparison since we don't have recursive directory comparison yet
-		string deepFile1 = Path.Combine(deepDir1, "deepfile.txt");
-		string deepFile2 = Path.Combine(deepDir2, "deepfile.txt");
+		string deepFile1 = MockFileSystem.Path.Combine(deepDir1, "deepfile.txt");
+		string deepFile2 = MockFileSystem.Path.Combine(deepDir2, "deepfile.txt");
 
 		IReadOnlyCollection<LineDifference> differences = _fileDifferAdapter.FindDifferences(deepFile1, deepFile2);
 
@@ -73,8 +73,8 @@ public class RecursiveDiffTests : MockFileSystemTestBase
 		CreateFile("linktarget2/targetfile.txt", "Target Content 2");
 
 		// Test direct file comparison
-		string targetFile1 = Path.Combine(linkTarget1, "targetfile.txt");
-		string targetFile2 = Path.Combine(linkTarget2, "targetfile.txt");
+		string targetFile1 = MockFileSystem.Path.Combine(linkTarget1, "targetfile.txt");
+		string targetFile2 = MockFileSystem.Path.Combine(linkTarget2, "targetfile.txt");
 
 		IReadOnlyCollection<LineDifference> differences = _fileDifferAdapter.FindDifferences(targetFile1, targetFile2);
 
@@ -114,8 +114,8 @@ public class RecursiveDiffTests : MockFileSystemTestBase
 		{
 			for (int j = 0; j < 3; j++)
 			{
-				string file1 = Path.Combine(largeDir1, $"sub{i}", $"file{j}.txt");
-				string file2 = Path.Combine(largeDir2, $"sub{i}", $"file{j}.txt");
+				string file1 = MockFileSystem.Path.Combine(largeDir1, $"sub{i}", $"file{j}.txt");
+				string file2 = MockFileSystem.Path.Combine(largeDir2, $"sub{i}", $"file{j}.txt");
 
 				if (MockFileSystem.File.Exists(file1) && MockFileSystem.File.Exists(file2))
 				{

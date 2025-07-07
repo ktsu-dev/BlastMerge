@@ -4,6 +4,7 @@
 
 namespace ktsu.BlastMerge.ConsoleApp.Services.Common;
 
+using System;
 using System.IO;
 using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.Models;
@@ -13,8 +14,14 @@ using Spectre.Console;
 /// <summary>
 /// Centralized service for comparison operations to eliminate code duplication.
 /// </summary>
-public static class ComparisonOperationsService
+/// <param name="historyInput">The history input service.</param>
+/// <param name="fileDiffer">The file differ service.</param>
+/// <param name="fileComparisonDisplayService">The file comparison display service.</param>
+public class ComparisonOperationsService(AppDataHistoryInput historyInput, FileDiffer fileDiffer, FileComparisonDisplayService fileComparisonDisplayService)
 {
+	private readonly AppDataHistoryInput historyInput = historyInput ?? throw new ArgumentNullException(nameof(historyInput));
+	private readonly FileDiffer fileDiffer = fileDiffer ?? throw new ArgumentNullException(nameof(fileDiffer));
+	private readonly FileComparisonDisplayService fileComparisonDisplayService = fileComparisonDisplayService ?? throw new ArgumentNullException(nameof(fileComparisonDisplayService));
 	/// <summary>
 	/// Shows a menu title with consistent formatting.
 	/// </summary>
@@ -29,11 +36,11 @@ public static class ComparisonOperationsService
 	/// <summary>
 	/// Handles comparing two directories with user input and display.
 	/// </summary>
-	public static void HandleCompareTwoDirectories()
+	public void HandleCompareTwoDirectories()
 	{
 		ShowMenuTitle("Compare Two Directories");
 
-		string dir1 = AppDataHistoryInput.AskWithHistory("[cyan]Enter the first directory path:[/]");
+		string dir1 = historyInput.AskWithHistoryAsync("[cyan]Enter the first directory path:[/]").GetAwaiter().GetResult();
 		if (string.IsNullOrWhiteSpace(dir1))
 		{
 			UIHelper.ShowWarning(UIHelper.OperationCancelledMessage);
@@ -46,7 +53,7 @@ public static class ComparisonOperationsService
 			return;
 		}
 
-		string dir2 = AppDataHistoryInput.AskWithHistory("[cyan]Enter the second directory path:[/]");
+		string dir2 = historyInput.AskWithHistoryAsync("[cyan]Enter the second directory path:[/]").GetAwaiter().GetResult();
 		if (string.IsNullOrWhiteSpace(dir2))
 		{
 			UIHelper.ShowWarning(UIHelper.OperationCancelledMessage);
@@ -59,7 +66,7 @@ public static class ComparisonOperationsService
 			return;
 		}
 
-		string pattern = AppDataHistoryInput.AskWithHistory("[cyan]Enter file pattern (e.g., *.txt, *.cs):[/]", "*.*");
+		string pattern = historyInput.AskWithHistoryAsync("[cyan]Enter file pattern (e.g., *.txt, *.cs):[/]", "*.*").GetAwaiter().GetResult();
 
 		bool recursive = AnsiConsole.Confirm("[cyan]Search subdirectories recursively?[/]", false);
 
@@ -70,11 +77,11 @@ public static class ComparisonOperationsService
 	/// <summary>
 	/// Handles comparing two specific files with user input and display.
 	/// </summary>
-	public static void HandleCompareTwoSpecificFiles()
+	public void HandleCompareTwoSpecificFiles()
 	{
 		ShowMenuTitle("Compare Two Specific Files");
 
-		string file1 = AppDataHistoryInput.AskWithHistory("[cyan]Enter the first file path:[/]");
+		string file1 = historyInput.AskWithHistoryAsync("[cyan]Enter the first file path:[/]").GetAwaiter().GetResult();
 		if (string.IsNullOrWhiteSpace(file1))
 		{
 			UIHelper.ShowWarning(UIHelper.OperationCancelledMessage);
@@ -87,7 +94,7 @@ public static class ComparisonOperationsService
 			return;
 		}
 
-		string file2 = AppDataHistoryInput.AskWithHistory("[cyan]Enter the second file path:[/]");
+		string file2 = historyInput.AskWithHistoryAsync("[cyan]Enter the second file path:[/]").GetAwaiter().GetResult();
 		if (string.IsNullOrWhiteSpace(file2))
 		{
 			UIHelper.ShowWarning(UIHelper.OperationCancelledMessage);
@@ -101,7 +108,7 @@ public static class ComparisonOperationsService
 		}
 
 		// Use centralized file comparison service
-		FileComparisonDisplayService.CompareTwoFiles(file1, file2);
+		fileComparisonDisplayService.CompareTwoFiles(file1, file2);
 		UIHelper.WaitForKeyPress();
 	}
 
@@ -112,7 +119,7 @@ public static class ComparisonOperationsService
 	/// <param name="dir2">Second directory path.</param>
 	/// <param name="pattern">File search pattern.</param>
 	/// <param name="recursive">Whether to search recursively.</param>
-	public static void CompareDirectories(string dir1, string dir2, string pattern, bool recursive)
+	public void CompareDirectories(string dir1, string dir2, string pattern, bool recursive)
 	{
 		DirectoryComparisonResult? result = null;
 
@@ -120,7 +127,7 @@ public static class ComparisonOperationsService
 			.Spinner(Spinner.Known.Star)
 			.Start($"[yellow]Comparing directories...[/]", ctx =>
 			{
-				result = FileDiffer.FindDifferences(dir1, dir2, pattern, recursive);
+				result = fileDiffer.FindDifferences(dir1, dir2, pattern, recursive);
 				ctx.Status("[yellow]Creating comparison report...[/]");
 			});
 
@@ -174,7 +181,7 @@ public static class ComparisonOperationsService
 				AnsiConsole.Write(rule);
 
 				// Use centralized file comparison service
-				FileComparisonDisplayService.ShowChangeSummary(file1, file2);
+				fileComparisonDisplayService.ShowChangeSummary(file1, file2);
 			}
 		}
 	}

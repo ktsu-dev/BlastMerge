@@ -90,8 +90,8 @@ public class IntegrationTests : MockFileSystemTestBase
 
 		// Assert
 		Assert.AreEqual(1.0, similarityAC, 0.001, "Files A and C should be identical");
-		Assert.IsTrue(similarityAB > 0.0 && similarityAB < 1.0, $"Files A and B should be similar but not identical, got {similarityAB}");
-		Assert.IsTrue(similarityBC > 0.0 && similarityBC < 1.0, $"Files B and C should be similar but not identical, got {similarityBC}");
+		Assert.IsTrue(similarityAB is > 0.0 and < 1.0, $"Files A and B should be similar but not identical, got {similarityAB}");
+		Assert.IsTrue(similarityBC is > 0.0 and < 1.0, $"Files B and C should be similar but not identical, got {similarityBC}");
 	}
 
 	/// <summary>

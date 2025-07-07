@@ -4,17 +4,19 @@
 
 namespace ktsu.BlastMerge.Test;
 
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using DiffPlex.DiffBuilder.Model;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 /// <summary>
-/// Tests for DiffPlex-based diffing functionality
+/// Unit tests for the DiffPlexDiffer service
 /// </summary>
 [TestClass]
-public class DiffPlexDifferTests : MockFileSystemTestBase
+public class DiffPlexDifferTests : DependencyInjectionTestBase
 {
 	private string _file1 = string.Empty;
 	private string _file2 = string.Empty;
@@ -23,7 +25,7 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	/// <summary>
 	/// Sets up test files in the mock file system
 	/// </summary>
-	protected override void InitializeFileSystem()
+	protected override void InitializeTestData()
 	{
 		// Create test files in mock file system
 		_file1 = CreateFile("file1.txt", """
@@ -55,22 +57,12 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	[TestMethod]
 	public void AreFilesIdentical_IdenticalFiles_ReturnsTrue()
 	{
-		// Create temporary real files for testing since DiffPlexDiffer uses real file system
-		string tempFile1 = SecureTempFileHelper.CreateTempFile();
-		string tempFile2 = SecureTempFileHelper.CreateTempFile();
+		// Create temp files in the mock file system instead of real file system
+		string tempFile1 = CreateFile("temp1.txt", MockFileSystem.File.ReadAllText(_file1));
+		string tempFile2 = CreateFile("temp2.txt", MockFileSystem.File.ReadAllText(_identicalFile));
 
-		try
-		{
-			File.WriteAllText(tempFile1, MockFileSystem.File.ReadAllText(_file1));
-			File.WriteAllText(tempFile2, MockFileSystem.File.ReadAllText(_identicalFile));
-
-			bool result = DiffPlexDiffer.AreFilesIdentical(tempFile1, tempFile2);
-			Assert.IsTrue(result);
-		}
-		finally
-		{
-			SecureTempFileHelper.SafeDeleteTempFiles(fileSystem: null, tempFile1, tempFile2);
-		}
+		bool result = DiffPlexDiffer.AreFilesIdentical(tempFile1, tempFile2);
+		Assert.IsTrue(result);
 	}
 
 	/// <summary>
@@ -138,7 +130,7 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	public void GenerateSideBySideDiff_DifferentFiles_ReturnsValidModel()
 	{
 		// Use mock file system directly since DiffPlexDiffer uses FileSystemProvider.Current
-		DiffPlex.DiffBuilder.Model.SideBySideDiffModel sideBySide = DiffPlexDiffer.GenerateSideBySideDiff(_file1, _file2);
+		SideBySideDiffModel sideBySide = DiffPlexDiffer.GenerateSideBySideDiff(_file1, _file2);
 
 		Assert.IsNotNull(sideBySide);
 		Assert.IsNotNull(sideBySide.OldText);
@@ -172,22 +164,12 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	[ExpectedException(typeof(FileNotFoundException))]
 	public void GenerateUnifiedDiff_NonExistentFile_ThrowsException()
 	{
-		string nonExistentFile = Path.GetTempFileName();
-		File.Delete(nonExistentFile); // Ensure it doesn't exist
+		// Use mock file system consistently - create a file that exists and one that doesn't exist in the mock file system
+		string existingFile = CreateFile("existing.txt", MockFileSystem.File.ReadAllText(_file1));
+		string nonExistentFile = MockFileSystem.Path.Combine(TestDirectory, "nonexistent.txt");
+		// Don't create the nonExistentFile, so it won't exist in the mock file system
 
-		string tempFile1 = Path.GetTempFileName();
-		try
-		{
-			File.WriteAllText(tempFile1, MockFileSystem.File.ReadAllText(_file1));
-			DiffPlexDiffer.GenerateUnifiedDiff(tempFile1, nonExistentFile);
-		}
-		finally
-		{
-			if (File.Exists(tempFile1))
-			{
-				File.Delete(tempFile1);
-			}
-		}
+		DiffPlexDiffer.GenerateUnifiedDiff(existingFile, nonExistentFile);
 	}
 
 	/// <summary>
@@ -227,5 +209,59 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 
 		// DiffPlex should handle binary files as text and show differences
 		Assert.IsTrue(diff.Length > 0);
+	}
+
+	/// <summary>
+	/// Tests the new in-memory API for finding differences from string arrays
+	/// </summary>
+	[TestMethod]
+	public void FindDifferencesFromLines_DifferentArrays_ReturnsCorrectDifferences()
+	{
+		// Arrange
+		string[] lines1 = ["Line 1", "Line 2", "Line 3"];
+		string[] lines2 = ["Line 1", "Modified Line 2", "Line 3", "New Line 4"];
+
+		// Act
+		IReadOnlyCollection<LineDifference> differences = DiffPlexDiffer.FindDifferencesFromLines(lines1, lines2);
+
+		// Assert
+		Assert.IsTrue(differences.Count > 0);
+		Assert.IsTrue(differences.Any(d => d.Type == LineDifferenceType.Modified));
+		Assert.IsTrue(differences.Any(d => d.Type == LineDifferenceType.Added));
+	}
+
+	/// <summary>
+	/// Tests the new in-memory API for finding differences from content strings
+	/// </summary>
+	[TestMethod]
+	public void FindDifferencesFromContent_DifferentContent_ReturnsCorrectDifferences()
+	{
+		// Arrange
+		string content1 = "Line 1\nLine 2\nLine 3";
+		string content2 = "Line 1\nModified Line 2\nLine 3\nNew Line 4";
+
+		// Act
+		IReadOnlyCollection<LineDifference> differences = DiffPlexDiffer.FindDifferencesFromContent(content1, content2);
+
+		// Assert
+		Assert.IsTrue(differences.Count > 0);
+		Assert.IsTrue(differences.Any(d => d.Type == LineDifferenceType.Modified));
+		Assert.IsTrue(differences.Any(d => d.Type == LineDifferenceType.Added));
+	}
+
+	/// <summary>
+	/// Tests that identical content returns no differences
+	/// </summary>
+	[TestMethod]
+	public void FindDifferencesFromContent_IdenticalContent_ReturnsNoDifferences()
+	{
+		// Arrange
+		string content = "Line 1\nLine 2\nLine 3";
+
+		// Act
+		IReadOnlyCollection<LineDifference> differences = DiffPlexDiffer.FindDifferencesFromContent(content, content);
+
+		// Assert
+		Assert.AreEqual(0, differences.Count);
 	}
 }

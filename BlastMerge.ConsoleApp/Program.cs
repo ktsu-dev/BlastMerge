@@ -6,9 +6,16 @@ namespace ktsu.BlastMerge.ConsoleApp;
 
 using System;
 using System.Text;
+using System.Threading.Tasks;
 using ktsu.BlastMerge.ConsoleApp.CLI;
 using ktsu.BlastMerge.ConsoleApp.Services;
+using ktsu.BlastMerge.ConsoleApp.Services.Common;
+using ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
+using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.Contracts;
+using ktsu.BlastMerge.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 /// <summary>
 /// Main entry point for the BlastMerge console application.
@@ -21,19 +28,21 @@ public static class Program
 	/// </summary>
 	/// <param name="args">Command line arguments.</param>
 	/// <returns>Exit code - 0 for success, 1 for error.</returns>
-	public static int Main(string[] args)
+	public static async Task<int> Main(string[] args)
 	{
 		Console.OutputEncoding = Encoding.UTF8;
 		Console.InputEncoding = Encoding.UTF8;
 
 		try
 		{
-			// Create services with proper dependency injection pattern
-			IApplicationService applicationService = new ConsoleApplicationService();
-			CommandLineHandler commandLineHandler = new(applicationService);
+			// Set up dependency injection
+			IHost host = CreateHostBuilder(args).Build();
+
+			// Get the command line handler from DI
+			CommandLineHandler commandLineHandler = host.Services.GetRequiredService<CommandLineHandler>();
 
 			// Process command line arguments
-			return commandLineHandler.ProcessCommandLineArguments(args);
+			return await commandLineHandler.ProcessCommandLineArgumentsAsync(args).ConfigureAwait(false);
 		}
 		catch (InvalidOperationException ex)
 		{
@@ -46,4 +55,34 @@ public static class Program
 			return 1;
 		}
 	}
+
+	/// <summary>
+	/// Creates the host builder for dependency injection.
+	/// </summary>
+	/// <param name="args">Command line arguments.</param>
+	/// <returns>The host builder.</returns>
+	private static IHostBuilder CreateHostBuilder(string[] args) =>
+		Host.CreateDefaultBuilder(args)
+			.ConfigureServices((context, services) =>
+			{
+				// Register BlastMerge services
+				services.AddBlastMergeServices();
+
+				// Register console app services
+											services.AddSingleton<AppDataHistoryInput>();
+						services.AddSingleton<ComparisonOperationsService>();
+		services.AddSingleton<SyncOperationsService>();
+		services.AddSingleton<FileComparisonDisplayService>();
+		services.AddSingleton<InteractiveMergeService>();
+				services.AddSingleton<IApplicationService, ConsoleApplicationService>();
+				services.AddSingleton<CommandLineHandler>();
+
+				// Register menu handlers
+				services.AddSingleton<FindFilesMenuHandler>();
+				services.AddSingleton<BatchOperationsMenuHandler>();
+				services.AddSingleton<CompareFilesMenuHandler>();
+				services.AddSingleton<IterativeMergeMenuHandler>();
+				services.AddSingleton<SettingsMenuHandler>();
+				services.AddSingleton<HelpMenuHandler>();
+			});
 }

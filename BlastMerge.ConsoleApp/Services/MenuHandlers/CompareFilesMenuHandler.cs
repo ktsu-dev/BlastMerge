@@ -4,6 +4,7 @@
 
 namespace ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 
+using System;
 using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.ConsoleApp.Text;
@@ -14,8 +15,12 @@ using Spectre.Console;
 /// Menu handler for compare files operations.
 /// </summary>
 /// <param name="applicationService">The application service.</param>
-public class CompareFilesMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)
+/// <param name="historyInput">The history input service.</param>
+/// <param name="comparisonOperations">The comparison operations service.</param>
+public class CompareFilesMenuHandler(ApplicationService applicationService, AppDataHistoryInput historyInput, ComparisonOperationsService comparisonOperations) : BaseMenuHandler(applicationService)
 {
+	private readonly AppDataHistoryInput historyInput = historyInput ?? throw new ArgumentNullException(nameof(historyInput));
+	private readonly ComparisonOperationsService comparisonOperations = comparisonOperations ?? throw new ArgumentNullException(nameof(comparisonOperations));
 	/// <summary>
 	/// Gets the name of this menu for navigation purposes.
 	/// </summary>
@@ -74,14 +79,14 @@ public class CompareFilesMenuHandler(ApplicationService applicationService) : Ba
 		string directory;
 		string fileName;
 
-		directory = AppDataHistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
+		directory = historyInput.AskWithHistoryAsync("[cyan]Enter directory path[/]").GetAwaiter().GetResult();
 		if (string.IsNullOrWhiteSpace(directory))
 		{
 			UIHelper.ShowWarning(UIHelper.OperationCancelledMessage);
 			return;
 		}
 
-		fileName = AppDataHistoryInput.AskWithHistory("[cyan]Enter filename pattern[/]");
+		fileName = historyInput.AskWithHistoryAsync("[cyan]Enter filename pattern[/]").GetAwaiter().GetResult();
 		if (string.IsNullOrWhiteSpace(fileName))
 		{
 			UIHelper.ShowWarning(UIHelper.OperationCancelledMessage);
@@ -94,10 +99,10 @@ public class CompareFilesMenuHandler(ApplicationService applicationService) : Ba
 	/// <summary>
 	/// Handles comparing two directories.
 	/// </summary>
-	private static void HandleCompareTwoDirectories() => ComparisonOperationsService.HandleCompareTwoDirectories();
+	private void HandleCompareTwoDirectories() => comparisonOperations.HandleCompareTwoDirectories();
 
 	/// <summary>
 	/// Handles comparing two specific files.
 	/// </summary>
-	private static void HandleCompareTwoSpecificFiles() => ComparisonOperationsService.HandleCompareTwoSpecificFiles();
+	private void HandleCompareTwoSpecificFiles() => comparisonOperations.HandleCompareTwoSpecificFiles();
 }

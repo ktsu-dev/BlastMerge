@@ -6,22 +6,56 @@ namespace ktsu.BlastMerge.ConsoleApp.Services;
 
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 using ktsu.BlastMerge.ConsoleApp.Text;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
+using ktsu.FileSystemProvider;
 using Spectre.Console;
 
 /// <summary>
 /// Console-specific implementation of the application service that adds UI functionality.
 /// </summary>
+/// <remarks>
+/// Initializes a new instance of the ConsoleApplicationService class.
+/// </remarks>
+/// <param name="fileSystemProvider">The file system provider for dependency injection.</param>
+/// <param name="fileFinder">The file finder service for dependency injection.</param>
+/// <param name="fileDiffer">The file differ service for dependency injection.</param>
+/// <param name="batchManager">The batch manager service.</param>
+/// <param name="historyInput">The history input service.</param>
+/// <param name="persistenceService">The persistence service.</param>
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "<Pending>")]
-public class ConsoleApplicationService : ApplicationService
+public class ConsoleApplicationService(
+	IFileSystemProvider fileSystemProvider,
+	FileFinder fileFinder,
+	FileDiffer fileDiffer,
+	AppDataBatchManager batchManager,
+	AppDataHistoryInput historyInput,
+	BlastMergePersistenceService persistenceService,
+	ComparisonOperationsService comparisonOperations,
+	SyncOperationsService syncOperations,
+	FileComparisonDisplayService fileComparisonDisplayService,
+	InteractiveMergeService interactiveMergeService) : ApplicationService(fileSystemProvider, fileFinder, fileDiffer)
 {
+	private readonly AppDataBatchManager batchManager = batchManager ?? throw new ArgumentNullException(nameof(batchManager));
+	private readonly AppDataHistoryInput historyInput = historyInput ?? throw new ArgumentNullException(nameof(historyInput));
+	private readonly ComparisonOperationsService comparisonOperations = comparisonOperations ?? throw new ArgumentNullException(nameof(comparisonOperations));
+	private readonly SyncOperationsService syncOperations = syncOperations ?? throw new ArgumentNullException(nameof(syncOperations));
+	private readonly FileComparisonDisplayService fileComparisonDisplayService = fileComparisonDisplayService ?? throw new ArgumentNullException(nameof(fileComparisonDisplayService));
+	private readonly InteractiveMergeService interactiveMergeService = interactiveMergeService ?? throw new ArgumentNullException(nameof(interactiveMergeService));
+
+	/// <summary>
+	/// Gets the file differ service for access to file comparison operations.
+	/// </summary>
+	public new FileDiffer FileDiffer => base.FileDiffer;
+
 	// Table column names
 	private const string GroupColumnName = "Group";
 	private const string FilesColumnName = "Files";
@@ -47,7 +81,9 @@ public class ConsoleApplicationService : ApplicationService
 	/// </summary>
 	/// <param name="directory">The directory to process.</param>
 	/// <param name="fileName">The filename pattern to search for.</param>
-	public override void ProcessFiles(string directory, string fileName)
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>A task representing the asynchronous operation.</returns>
+	public override async Task ProcessFilesAsync(string directory, string fileName, CancellationToken cancellationToken = default)
 	{
 		ValidateDirectoryAndFileName(directory, fileName);
 
@@ -61,7 +97,7 @@ public class ConsoleApplicationService : ApplicationService
 			return;
 		}
 
-		IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups = CompareFiles(directory, fileName);
+		IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups = await CompareFilesAsync(directory, fileName, cancellationToken).ConfigureAwait(false);
 		if (fileGroups.Count == 0)
 		{
 			UIHelper.ShowWarning("No files to compare.");
@@ -78,15 +114,16 @@ public class ConsoleApplicationService : ApplicationService
 	/// <param name="directory">The directory to search.</param>
 	/// <param name="fileName">The filename pattern.</param>
 	/// <returns>List of discovered file paths.</returns>
-	private static List<string> DiscoverFiles(string directory, string fileName)
+	private List<string> DiscoverFiles(string directory, string fileName)
 	{
 		List<string> filePaths = [];
 		AnsiConsole.Status()
 			.Start("Discovering files...", ctx =>
 			{
-				IReadOnlyCollection<string> foundFiles = FileFinder.FindFiles(directory, fileName, fileSystem: null, progressCallback: path =>
+				IFileSystem fileSystem = ktsu.FileSystemProvider.FileSystemProvider.Current;
+				IReadOnlyCollection<string> foundFiles = FileFinder.FindFiles(directory, fileName, [], path =>
 				{
-					ctx.Status($"Discovering files... Found: {Path.GetFileName(path)}");
+					ctx.Status($"Discovering files... Found: {fileSystem.Path.GetFileName(path)}");
 					ctx.Refresh();
 				});
 				filePaths.AddRange(foundFiles);
@@ -137,10 +174,10 @@ public class ConsoleApplicationService : ApplicationService
 				FileDisplayService.ShowDifferences(fileGroups);
 				break;
 			case ProcessFileActionChoice.RunIterativeMergeOnDuplicates:
-				InteractiveMergeService.PerformIterativeMerge(fileGroups);
+				interactiveMergeService.PerformIterativeMerge(fileGroups);
 				break;
 			case ProcessFileActionChoice.SyncFiles:
-				SyncOperationsService.OfferSyncOptions(fileGroups);
+				syncOperations.OfferSyncOptions(fileGroups);
 				break;
 			case ProcessFileActionChoice.ReturnToMainMenu:
 			default:
@@ -154,26 +191,22 @@ public class ConsoleApplicationService : ApplicationService
 	/// </summary>
 	/// <param name="directory">The directory to process.</param>
 	/// <param name="batchName">The name of the batch configuration.</param>
-	public override void ProcessBatch(string directory, string batchName)
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>A task representing the asynchronous operation.</returns>
+	public override async Task ProcessBatchAsync(string directory, string batchName, CancellationToken cancellationToken = default)
 	{
 		ArgumentNullException.ThrowIfNull(directory);
 		ArgumentNullException.ThrowIfNull(batchName);
 		ValidateDirectoryExists(directory);
 
-		BatchConfiguration? batch = GetBatchConfiguration(batchName);
+		BatchConfiguration? batch = await GetBatchConfigurationAsync(batchName, cancellationToken).ConfigureAwait(false);
 		if (batch == null)
 		{
 			return;
 		}
 
 		// Record this batch as recently used
-		BlastMergeAppData appData = BlastMergeAppData.Get();
-		appData.RecentBatch = new RecentBatchInfo
-		{
-			BatchName = batchName,
-			LastUsed = DateTime.UtcNow
-		};
-		appData.Save();
+		await batchManager.RecordBatchUsageAsync(batchName, cancellationToken).ConfigureAwait(false);
 
 		ShowBatchHeader(batch, directory);
 		(int totalPatternsProcessed, int totalFilesFound, BatchResult? batchResult) = ProcessAllPatterns(directory, batch);
@@ -184,10 +217,11 @@ public class ConsoleApplicationService : ApplicationService
 	/// Gets the batch configuration by name.
 	/// </summary>
 	/// <param name="batchName">The name of the batch configuration.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <returns>The batch configuration or null if not found.</returns>
-	private static BatchConfiguration? GetBatchConfiguration(string batchName)
+	private async Task<BatchConfiguration?> GetBatchConfigurationAsync(string batchName, CancellationToken cancellationToken = default)
 	{
-		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataBatchManager.GetAllBatches();
+		IReadOnlyCollection<BatchConfiguration> allBatches = await batchManager.GetAllBatchesAsync(cancellationToken).ConfigureAwait(false);
 		BatchConfiguration? batch = allBatches.FirstOrDefault(b => b.Name.Equals(batchName, StringComparison.OrdinalIgnoreCase));
 
 		if (batch == null)
@@ -449,16 +483,19 @@ public class ConsoleApplicationService : ApplicationService
 	/// </summary>
 	/// <param name="directory">The directory to search.</param>
 	/// <param name="fileName">The file name pattern to match.</param>
-	public override void RunIterativeMerge(string directory, string fileName) =>
-		RunIterativeMergeWithCallbacks(directory, fileName, ConsoleMergeCallback, ConsoleStatusCallback, () => AlwaysContinue);
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>A task representing the asynchronous operation.</returns>
+	public override async Task RunIterativeMergeAsync(string directory, string fileName, CancellationToken cancellationToken = default) => await Task.Run(() => RunIterativeMergeWithCallbacks(directory, fileName, ConsoleMergeCallback, ConsoleStatusCallback, () => AlwaysContinue), cancellationToken).ConfigureAwait(false);
 
 	/// <summary>
 	/// Lists all available batch configurations.
 	/// </summary>
-	public override void ListBatches()
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>A task representing the asynchronous operation.</returns>
+	public override async Task ListBatchesAsync(CancellationToken cancellationToken = default)
 	{
-		IReadOnlyCollection<string> batchNames = AppDataBatchManager.ListBatches();
-		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataBatchManager.GetAllBatches();
+		IReadOnlyCollection<string> batchNames = await batchManager.ListBatchesAsync(cancellationToken).ConfigureAwait(false);
+		IReadOnlyCollection<BatchConfiguration> allBatches = await batchManager.GetAllBatchesAsync(cancellationToken).ConfigureAwait(false);
 
 		Console.WriteLine("Available batch configurations:");
 
@@ -483,13 +520,15 @@ public class ConsoleApplicationService : ApplicationService
 	/// <summary>
 	/// Starts the interactive mode with a comprehensive TUI menu system.
 	/// </summary>
-	public override void StartInteractiveMode()
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>A task representing the asynchronous operation.</returns>
+	public override async Task StartInteractiveModeAsync(CancellationToken cancellationToken = default)
 	{
 		while (true)
 		{
 			try
 			{
-				if (ProcessInteractiveMenuLoop(this))
+				if (await ProcessInteractiveMenuLoopAsync(this, cancellationToken).ConfigureAwait(false))
 				{
 					break;
 				}
@@ -507,35 +546,37 @@ public class ConsoleApplicationService : ApplicationService
 	/// Processes a single iteration of the interactive menu loop.
 	/// </summary>
 	/// <param name="instance">The console application service instance.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <returns>True if the user chose to exit, false to continue.</returns>
-	private static bool ProcessInteractiveMenuLoop(ConsoleApplicationService instance)
+	private static async Task<bool> ProcessInteractiveMenuLoopAsync(ConsoleApplicationService instance, CancellationToken cancellationToken = default)
 	{
 		// Check navigation stack to determine what menu to show
 		if (NavigationHistory.ShouldGoToMainMenu())
 		{
-			return instance.ProcessMainMenuInteraction();
+			return await instance.ProcessMainMenuInteractionAsync(cancellationToken).ConfigureAwait(false);
 		}
 
 		// Navigate back based on navigation stack
-		NavigateBasedOnStack(instance);
+		await NavigateBasedOnStackAsync(instance, cancellationToken).ConfigureAwait(false);
 		return false;
 	}
 
 	/// <summary>
 	/// Processes main menu interaction and returns whether user chose to exit.
 	/// </summary>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <returns>True if the user chose to exit, false to continue.</returns>
-	private bool ProcessMainMenuInteraction()
+	private async Task<bool> ProcessMainMenuInteractionAsync(CancellationToken cancellationToken = default)
 	{
 		ShowWelcomeScreen();
-		MenuChoice choice = ShowMainMenu();
+		MenuChoice choice = await ShowMainMenuAsync(cancellationToken).ConfigureAwait(false);
 
 		if (choice == MenuChoice.Exit)
 		{
 			return true;
 		}
 
-		ExecuteMenuChoice(choice);
+		await ExecuteMenuChoiceAsync(choice, cancellationToken).ConfigureAwait(false);
 		return false;
 	}
 
@@ -575,14 +616,15 @@ public class ConsoleApplicationService : ApplicationService
 	/// <summary>
 	/// Shows the main menu and returns the user's choice.
 	/// </summary>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <returns>The selected menu choice.</returns>
-	private static MenuChoice ShowMainMenu()
+	private async Task<MenuChoice> ShowMainMenuAsync(CancellationToken cancellationToken = default)
 	{
 		// Create a dynamic menu with recent batch info
 		Dictionary<string, MenuChoice> dynamicMenuChoices = new(MainMenuChoices);
 
 		// Update the recent batch menu text if there's a recent batch
-		string? recentBatch = GetMostRecentBatch();
+		string? recentBatch = await GetMostRecentBatchAsync(cancellationToken).ConfigureAwait(false);
 		if (!string.IsNullOrEmpty(recentBatch))
 		{
 			// Remove the old entry and add the updated one with batch name
@@ -604,10 +646,12 @@ public class ConsoleApplicationService : ApplicationService
 	/// Executes the selected menu choice.
 	/// </summary>
 	/// <param name="choice">The menu choice to execute.</param>
-	private void ExecuteMenuChoice(MenuChoice choice)
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>A task representing the asynchronous operation.</returns>
+	private async Task ExecuteMenuChoiceAsync(MenuChoice choice, CancellationToken cancellationToken = default)
 	{
 		InitializeMenuNavigation();
-		ExecuteSpecificMenuChoice(choice);
+		await ExecuteSpecificMenuChoiceAsync(choice, cancellationToken).ConfigureAwait(false);
 	}
 
 	/// <summary>
@@ -623,27 +667,29 @@ public class ConsoleApplicationService : ApplicationService
 	/// Executes the specific menu choice action.
 	/// </summary>
 	/// <param name="choice">The menu choice to execute.</param>
-	private void ExecuteSpecificMenuChoice(MenuChoice choice)
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>A task representing the asynchronous operation.</returns>
+	private async Task ExecuteSpecificMenuChoiceAsync(MenuChoice choice, CancellationToken cancellationToken = default)
 	{
 		switch (choice)
 		{
 			case MenuChoice.FindFiles:
-				new FindFilesMenuHandler(this).Enter();
+				await Task.Run(() => new FindFilesMenuHandler(this, FileFinder, historyInput).Enter(), cancellationToken).ConfigureAwait(false);
 				break;
 			case MenuChoice.IterativeMerge:
-				new IterativeMergeMenuHandler(this).Enter();
+				await Task.Run(() => new IterativeMergeMenuHandler(this, historyInput).Enter(), cancellationToken).ConfigureAwait(false);
 				break;
 			case MenuChoice.CompareFiles:
-				new CompareFilesMenuHandler(this).Enter();
+				await Task.Run(() => new CompareFilesMenuHandler(this, historyInput, comparisonOperations).Enter(), cancellationToken).ConfigureAwait(false);
 				break;
 			case MenuChoice.BatchOperations:
-				new BatchOperationsMenuHandler(this).Enter();
+				await Task.Run(() => new BatchOperationsMenuHandler(this, batchManager, historyInput).Enter(), cancellationToken).ConfigureAwait(false);
 				break;
 			case MenuChoice.RunRecentBatch:
-				HandleRunRecentBatch(this);
+				await HandleRunRecentBatchAsync(this, cancellationToken).ConfigureAwait(false);
 				break;
 			case MenuChoice.Settings:
-				new SettingsMenuHandler(this).Enter();
+				await Task.Run(() => new SettingsMenuHandler(this, historyInput).Enter(), cancellationToken).ConfigureAwait(false);
 				break;
 			default:
 				new HelpMenuHandler(this).Enter();
@@ -655,9 +701,10 @@ public class ConsoleApplicationService : ApplicationService
 	/// Handles running the most recently used batch configuration.
 	/// </summary>
 	/// <param name="instance">The console application service instance.</param>
-	private static void HandleRunRecentBatch(ConsoleApplicationService instance)
+	/// <param name="cancellationToken"></param>
+	private static async Task HandleRunRecentBatchAsync(ConsoleApplicationService instance, CancellationToken cancellationToken = default)
 	{
-		string? recentBatch = GetMostRecentBatch();
+		string? recentBatch = await instance.GetMostRecentBatchAsync(cancellationToken).ConfigureAwait(false);
 
 		if (string.IsNullOrEmpty(recentBatch))
 		{
@@ -665,14 +712,14 @@ public class ConsoleApplicationService : ApplicationService
 			return;
 		}
 
-		BatchConfiguration? selectedBatch = GetBatchConfiguration(recentBatch);
+		BatchConfiguration? selectedBatch = await instance.GetBatchConfigurationAsync(recentBatch, cancellationToken).ConfigureAwait(false);
 		if (selectedBatch == null)
 		{
 			ShowBatchNotFoundMessage(recentBatch);
 			return;
 		}
 
-		string directory = GetDirectoryForBatch(selectedBatch);
+		string directory = await GetDirectoryForBatchAsync(selectedBatch, instance, cancellationToken).ConfigureAwait(false);
 		if (string.IsNullOrWhiteSpace(directory))
 		{
 			AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
@@ -680,7 +727,7 @@ public class ConsoleApplicationService : ApplicationService
 		}
 
 		ShowRunningBatchMessage(selectedBatch, recentBatch, directory);
-		instance.ProcessBatch(directory, recentBatch);
+		await instance.ProcessBatchAsync(directory, recentBatch, cancellationToken).ConfigureAwait(false);
 		ShowCompletionMessage();
 	}
 
@@ -712,8 +759,10 @@ public class ConsoleApplicationService : ApplicationService
 	/// Gets the directory for the batch, either from configured search paths or user input.
 	/// </summary>
 	/// <param name="selectedBatch">The batch configuration.</param>
+	/// <param name="instance">The console application service instance.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <returns>The directory to use for the batch.</returns>
-	private static string GetDirectoryForBatch(BatchConfiguration selectedBatch)
+	private static async Task<string> GetDirectoryForBatchAsync(BatchConfiguration selectedBatch, ConsoleApplicationService instance, CancellationToken cancellationToken = default)
 	{
 		if (selectedBatch.SearchPaths.Count > 0)
 		{
@@ -721,7 +770,7 @@ public class ConsoleApplicationService : ApplicationService
 			return "."; // Use placeholder directory since API requires it, but it won't be used
 		}
 
-		return GetDirectoryFromUser();
+		return await GetDirectoryFromUserAsync(instance, cancellationToken).ConfigureAwait(false);
 	}
 
 	/// <summary>
@@ -741,11 +790,13 @@ public class ConsoleApplicationService : ApplicationService
 	/// <summary>
 	/// Gets the directory from user input.
 	/// </summary>
+	/// <param name="instance">The console application service instance.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <returns>The directory path entered by the user.</returns>
-	private static string GetDirectoryFromUser()
+	private static async Task<string> GetDirectoryFromUserAsync(ConsoleApplicationService instance, CancellationToken cancellationToken = default)
 	{
 		AnsiConsole.MarkupLine("[yellow]This batch configuration doesn't have search paths configured.[/]");
-		return AppDataHistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
+		return await instance.historyInput.AskWithHistoryAsync("[cyan]Enter directory path[/]", cancellationToken).ConfigureAwait(false);
 	}
 
 	/// <summary>
@@ -779,7 +830,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// Gets the most recently used batch configuration name.
 	/// </summary>
 	/// <returns>The name of the most recent batch, or null if none found.</returns>
-	private static string? GetMostRecentBatch() => BlastMergeAppData.Get().RecentBatch?.BatchName;
+	private async Task<string?> GetMostRecentBatchAsync(CancellationToken cancellationToken = default) => await batchManager.GetMostRecentBatchAsync(cancellationToken).ConfigureAwait(false);
 
 	/// <summary>
 	/// Shows the goodbye screen when exiting.
@@ -790,7 +841,9 @@ public class ConsoleApplicationService : ApplicationService
 	/// Navigates based on the current navigation stack.
 	/// </summary>
 	/// <param name="instance">The console application service instance.</param>
-	private static void NavigateBasedOnStack(ConsoleApplicationService instance)
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>A task representing the asynchronous operation.</returns>
+	private static async Task NavigateBasedOnStackAsync(ConsoleApplicationService instance, CancellationToken cancellationToken = default)
 	{
 		string? currentMenu = NavigationHistory.Peek();
 
@@ -800,34 +853,36 @@ public class ConsoleApplicationService : ApplicationService
 			return;
 		}
 
-		instance.NavigateToMenuHandler(currentMenu);
+		await instance.NavigateToMenuHandlerAsync(currentMenu, cancellationToken).ConfigureAwait(false);
 	}
 
 	/// <summary>
 	/// Routes to the appropriate menu handler based on menu name.
 	/// </summary>
 	/// <param name="menuName">The name of the menu to navigate to.</param>
-	private void NavigateToMenuHandler(string menuName)
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>A task representing the asynchronous operation.</returns>
+	private async Task NavigateToMenuHandlerAsync(string menuName, CancellationToken cancellationToken = default)
 	{
 		switch (menuName)
 		{
 			case MenuNames.FindFiles:
-				new FindFilesMenuHandler(this).Handle();
+				await Task.Run(() => new FindFilesMenuHandler(this, FileFinder, historyInput).Handle(), cancellationToken).ConfigureAwait(false);
 				break;
 			case MenuNames.IterativeMerge:
-				new IterativeMergeMenuHandler(this).Handle();
+				await Task.Run(() => new IterativeMergeMenuHandler(this, historyInput).Handle(), cancellationToken).ConfigureAwait(false);
 				break;
 			case MenuNames.CompareFiles:
-				new CompareFilesMenuHandler(this).Handle();
+				await Task.Run(() => new CompareFilesMenuHandler(this, historyInput, comparisonOperations).Handle(), cancellationToken).ConfigureAwait(false);
 				break;
 			case MenuNames.BatchOperations:
-				new BatchOperationsMenuHandler(this).Handle();
+				await Task.Run(() => new BatchOperationsMenuHandler(this, batchManager, historyInput).Handle(), cancellationToken).ConfigureAwait(false);
 				break;
 			case MenuNames.Settings:
-				new SettingsMenuHandler(this).Handle();
+				await Task.Run(() => new SettingsMenuHandler(this, historyInput).Handle(), cancellationToken).ConfigureAwait(false);
 				break;
 			case MenuNames.Help:
-				new HelpMenuHandler(this).Handle();
+				await Task.Run(() => new HelpMenuHandler(this).Handle(), cancellationToken).ConfigureAwait(false);
 				break;
 			default:
 				NavigationHistory.Clear();
@@ -906,6 +961,21 @@ public class ConsoleApplicationService : ApplicationService
 	{
 		(string leftFile, string rightFile) = DetermineFileOrder(file1, file2, existingContent);
 
+		// First, show the complete file comparison and ask what the user wants to do
+		(bool userCancelled, MergeResult? quickChoiceResult) = ShowFullFileComparisonAndAskForChoice(leftFile, rightFile, existingContent);
+		if (userCancelled)
+		{
+			return null; // User cancelled
+		}
+
+		if (quickChoiceResult != null)
+		{
+			// User chose to take one file entirely
+			ProgressReportingService.ReportMergeStepSuccess();
+			return quickChoiceResult;
+		}
+
+		// User chose piecewise merge, proceed with block-by-block resolution
 		MergeResult? result = IterativeMergeOrchestrator.PerformMergeWithConflictResolution(
 			leftFile, rightFile, existingContent,
 			(diffBlock, context, blockNumber) => GetBlockChoice(diffBlock, context, blockNumber, leftFile, rightFile));
@@ -916,6 +986,94 @@ public class ConsoleApplicationService : ApplicationService
 		}
 
 		return result;
+	}
+
+	/// <summary>
+	/// Shows the complete difference between two files and asks the user for their merge strategy choice.
+	/// </summary>
+	/// <param name="leftFile">The left file path.</param>
+	/// <param name="rightFile">The right file path.</param>
+	/// <param name="existingContent">Existing merged content.</param>
+	/// <returns>Tuple indicating if user cancelled and MergeResult if user chose to take one file entirely.</returns>
+	private static (bool userCancelled, MergeResult? result) ShowFullFileComparisonAndAskForChoice(string leftFile, string rightFile, string? existingContent)
+	{
+		// Show header
+		AnsiConsole.WriteLine();
+		AnsiConsole.MarkupLine("[yellow]═══ Starting Iterative Merge ═══[/]");
+		(string leftLabel, string rightLabel) = FileDisplayService.MakeDistinguishedPaths(leftFile, rightFile);
+		AnsiConsole.MarkupLine($"[cyan]Comparing:[/] [green]{leftLabel}[/] [cyan]vs[/] [green]{rightLabel}[/]");
+		AnsiConsole.WriteLine();
+
+		// Show the complete file comparison
+		if (existingContent != null)
+		{
+			AnsiConsole.MarkupLine("[yellow]Note: This is a continuation merge with existing content.[/]");
+			AnsiConsole.WriteLine();
+		}
+		else
+		{
+			// Show side-by-side diff of the entire files
+			FileComparisonDisplayService.ShowSideBySideDiff(leftFile, rightFile);
+			AnsiConsole.WriteLine();
+		}
+
+		// Present the user with options
+		string[] choices = existingContent != null
+			? [
+				$"📄 Take {rightLabel} entirely (replace existing content)",
+				"🔧 Continue with piecewise merge",
+				"❌ Cancel merge"
+			]
+			: [
+				$"📄 Take {leftLabel} entirely",
+				$"📄 Take {rightLabel} entirely",
+				"🔧 Proceed with piecewise merge",
+				"❌ Cancel merge"
+			];
+
+		string choice = UserInteractionService.ShowSelectionPrompt(
+			"[cyan]How would you like to merge these files?[/]",
+			choices);
+
+		// Handle the user's choice
+		if (choice.Contains("Cancel"))
+		{
+			return (true, null); // User cancelled
+		}
+
+		if (choice.Contains("piecewise") || choice.Contains("Continue"))
+		{
+			AnsiConsole.MarkupLine("[yellow]Proceeding with block-by-block merge...[/]");
+			AnsiConsole.WriteLine();
+			return (false, null); // Continue with piecewise merge
+		}
+
+		// User chose to take one file entirely
+		if (existingContent != null)
+		{
+			// For existing content merges, only option is to take the new file
+			string[] rightLines = File.ReadAllLines(rightFile);
+			return (false, new MergeResult(rightLines, []));
+		}
+		else
+		{
+			// User chose to take one of the original files entirely
+			if (choice.Contains(leftLabel))
+			{
+				string[] leftLines = File.ReadAllLines(leftFile);
+				AnsiConsole.MarkupLine($"[green]✅ Taking {leftLabel} entirely.[/]");
+				return (false, new MergeResult(leftLines, []));
+			}
+			else if (choice.Contains(rightLabel))
+			{
+				string[] rightLines = File.ReadAllLines(rightFile);
+				AnsiConsole.MarkupLine($"[green]✅ Taking {rightLabel} entirely.[/]");
+				return (false, new MergeResult(rightLines, []));
+			}
+		}
+
+		// Fallback to piecewise merge
+		return (false, null);
 	}
 
 	/// <summary>

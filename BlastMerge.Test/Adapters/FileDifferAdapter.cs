@@ -224,6 +224,64 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 		GroupFilesByHash(filePaths);
 
 	/// <summary>
+	/// Finds similar files from a collection of file paths that meet the minimum similarity threshold.
+	/// Only compares files with the same filename to prevent merging unrelated files.
+	/// </summary>
+	/// <param name="filePaths">Collection of file paths to analyze</param>
+	/// <param name="minimumSimilarityThreshold">Minimum similarity score (0.0 to 1.0) to consider files similar</param>
+	/// <returns>Collection of FileSimilarity objects for pairs that meet the threshold</returns>
+	public IReadOnlyCollection<FileSimilarity> FindMostSimilarFiles(IReadOnlyCollection<string> filePaths, double minimumSimilarityThreshold)
+	{
+		ArgumentNullException.ThrowIfNull(filePaths);
+
+		List<FileSimilarity> similarities = [];
+
+		// Group files by filename first to only compare files with the same name
+		Dictionary<string, List<string>> filenameGroups = [];
+
+		foreach (string filePath in filePaths)
+		{
+			string filename = _fileSystem.Path.GetFileName(filePath);
+
+			if (!filenameGroups.TryGetValue(filename, out List<string>? pathsWithSameName))
+			{
+				pathsWithSameName = [];
+				filenameGroups[filename] = pathsWithSameName;
+			}
+
+			pathsWithSameName.Add(filePath);
+		}
+
+		// Compare files within each filename group
+		foreach (KeyValuePair<string, List<string>> filenameGroup in filenameGroups)
+		{
+			List<string> filesWithSameName = filenameGroup.Value;
+
+			// Only compare if there are at least 2 files with the same name
+			if (filesWithSameName.Count < 2)
+			{
+				continue;
+			}
+
+			// Compare each pair of files with the same name
+			for (int i = 0; i < filesWithSameName.Count; i++)
+			{
+				for (int j = i + 1; j < filesWithSameName.Count; j++)
+				{
+					double similarity = CalculateFileSimilarity(filesWithSameName[i], filesWithSameName[j]);
+
+					if (similarity >= minimumSimilarityThreshold)
+					{
+						similarities.Add(new FileSimilarity(filesWithSameName[i], filesWithSameName[j], similarity));
+					}
+				}
+			}
+		}
+
+		return similarities.AsReadOnly();
+	}
+
+	/// <summary>
 	/// Finds the two most similar files from a collection of unique file groups.
 	/// Only compares files with the same filename to prevent merging unrelated files.
 	/// </summary>

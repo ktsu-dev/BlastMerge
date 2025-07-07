@@ -5,7 +5,6 @@
 namespace ktsu.BlastMerge.Test;
 
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using ktsu.BlastMerge.Models;
@@ -13,13 +12,13 @@ using ktsu.BlastMerge.Test.Adapters;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 [TestClass]
-public class EdgeCaseTests : MockFileSystemTestBase
+public class EdgeCaseTests : DependencyInjectionTestBase
 {
 	private FileDifferAdapter _fileDifferAdapter = null!;
 	private FileHasherAdapter _fileHasherAdapter = null!;
 	private FileFinderAdapter _fileFinderAdapter = null!;
 
-	protected override void InitializeFileSystem()
+	protected override void InitializeTestData()
 	{
 		// Initialize adapters
 		_fileDifferAdapter = new FileDifferAdapter(MockFileSystem);
@@ -88,8 +87,8 @@ public class EdgeCaseTests : MockFileSystemTestBase
 	{
 		// Arrange
 		string sourceFile = CreateFile("source.txt", "Test content");
-		string targetDir = Path.Combine(TestDirectory, "NonExistentDir");
-		string targetFile = Path.Combine(targetDir, "target.txt");
+		string targetDir = MockFileSystem.Path.Combine(TestDirectory, "NonExistentDir");
+		string targetFile = MockFileSystem.Path.Combine(targetDir, "target.txt");
 
 		// Ensure directory doesn't exist in mock file system
 		Assert.IsFalse(MockFileSystem.Directory.Exists(targetDir));
@@ -128,8 +127,8 @@ public class EdgeCaseTests : MockFileSystemTestBase
 		FileGroup[] groupArray = [.. groups];
 
 		// Find groups containing each file type
-		FileGroup? webConfigGroup = groupArray.FirstOrDefault(g => g.FilePaths.Any(p => Path.GetFileName(p) == "web.config"));
-		FileGroup? databaseConfigGroup = groupArray.FirstOrDefault(g => g.FilePaths.Any(p => Path.GetFileName(p) == "database.config"));
+		FileGroup? webConfigGroup = groupArray.FirstOrDefault(g => g.FilePaths.Any(p => MockFileSystem.Path.GetFileName(p) == "web.config"));
+		FileGroup? databaseConfigGroup = groupArray.FirstOrDefault(g => g.FilePaths.Any(p => MockFileSystem.Path.GetFileName(p) == "database.config"));
 
 		Assert.IsNotNull(webConfigGroup, "Should have a group for web.config");
 		Assert.IsNotNull(databaseConfigGroup, "Should have a group for database.config");
@@ -139,7 +138,7 @@ public class EdgeCaseTests : MockFileSystemTestBase
 		Assert.AreEqual(1, databaseConfigGroup.FilePaths.Count, "database.config should be in its own group");
 
 		// Verify app.config files are properly grouped by content
-		List<FileGroup> appConfigGroups = [.. groupArray.Where(g => g.FilePaths.Any(p => Path.GetFileName(p) == "app.config"))];
+		List<FileGroup> appConfigGroups = [.. groupArray.Where(g => g.FilePaths.Any(p => MockFileSystem.Path.GetFileName(p) == "app.config"))];
 		Assert.AreEqual(2, appConfigGroups.Count, "Should have 2 groups for app.config files (identical and modified)");
 
 		// One group should have 2 identical files, other should have 1 modified file
@@ -168,7 +167,7 @@ public class EdgeCaseTests : MockFileSystemTestBase
 		Assert.AreEqual(3, group.FilePaths.Count, "All 3 files should be in the same group");
 
 		// Verify all different filenames are present
-		List<string?> filenames = [.. group.FilePaths.Select(Path.GetFileName).OrderBy(name => name)];
+		List<string?> filenames = [.. group.FilePaths.Select(p => MockFileSystem.Path.GetFileName(p)).OrderBy(name => name)];
 		Assert.AreEqual("config.txt", filenames[0]);
 		Assert.AreEqual("notes.txt", filenames[1]);
 		Assert.AreEqual("readme.txt", filenames[2]);
@@ -199,48 +198,35 @@ public class EdgeCaseTests : MockFileSystemTestBase
 	[TestMethod]
 	public void FindMostSimilarFiles_WithDifferentFilenames_ShouldNotCompare()
 	{
-		// Arrange: Create files with different names but similar content
-		string content1 = "line1\nline2\nline3";
-		string content2 = "line1\nline2\nline4"; // Only last line differs
-
-		string file1 = CreateFile("update-readme.yml", content1);
-		string file2 = CreateFile("dotnet-sdk.yml", content2);
+		// Arrange - Create files with different names but similar content
+		string file1 = CreateFile("readme.txt", "This is some content that is similar");
+		string file2 = CreateFile("notes.txt", "This is some content that is similar with extra text");
 
 		List<string> allFiles = [file1, file2];
 
-		// Act: Group files and find most similar
-		IReadOnlyCollection<FileGroup> fileGroups = _fileDifferAdapter.GroupFilesByFilenameAndHash(allFiles);
-		FileSimilarity? similarity = _fileDifferAdapter.FindMostSimilarFiles(fileGroups);
+		// Act - This should not find similarities because filenames are different
+		IReadOnlyCollection<FileSimilarity> similarities = _fileDifferAdapter.FindMostSimilarFiles(allFiles, 0.5);
 
-		// Assert: Should not find any similar files (different filenames)
-		Assert.IsNull(similarity, "FindMostSimilarFiles should return null when files have different names");
-		Assert.AreEqual(2, fileGroups.Count, "Should have 2 separate groups for different filenames");
+		// Assert - Should not find any similarities since filenames don't match
+		Assert.AreEqual(0, similarities.Count, "Should not compare files with different names");
 	}
 
 	[TestMethod]
 	public void FindMostSimilarFiles_WithSameFilenames_ShouldCompare()
 	{
-		// Arrange: Create files with same names and similar content
-		string content1 = "line1\nline2\nline3";
-		string content2 = "line1\nline2\nline4"; // Only last line differs
-
-		string file1 = CreateFile("dir1/config.yml", content1);
-		string file2 = CreateFile("dir2/config.yml", content2);
+		// Arrange - Create files with same name but different content
+		string file1 = CreateFile("config.txt", "This is some configuration content");
+		string file2 = CreateFile("subdir/config.txt", "This is some configuration content with additional settings");
 
 		List<string> allFiles = [file1, file2];
 
-		// Act: Group files and find most similar
-		IReadOnlyCollection<FileGroup> fileGroups = _fileDifferAdapter.GroupFilesByFilenameAndHash(allFiles);
-		FileSimilarity? similarity = _fileDifferAdapter.FindMostSimilarFiles(fileGroups);
+		// Act - This should find similarities because filenames match
+		IReadOnlyCollection<FileSimilarity> similarities = _fileDifferAdapter.FindMostSimilarFiles(allFiles, 0.5);
 
-		// Assert: Should find similarity between files with same names
-		Assert.IsNotNull(similarity, "FindMostSimilarFiles should find similar files with same names");
-		Assert.IsTrue(similarity.SimilarityScore > 0, "Similarity score should be greater than 0");
+		// Assert - Should find similarity since filenames match and content is similar
+		Assert.AreEqual(1, similarities.Count, "Should compare files with same names");
 
-		// Verify both files have the same filename
-		string filename1 = Path.GetFileName(similarity.FilePath1);
-		string filename2 = Path.GetFileName(similarity.FilePath2);
-		Assert.AreEqual("config.yml", filename1);
-		Assert.AreEqual("config.yml", filename2);
+		FileSimilarity similarity = similarities.First();
+		Assert.IsTrue(similarity.SimilarityScore > 0.5, "Should have significant similarity score");
 	}
 }

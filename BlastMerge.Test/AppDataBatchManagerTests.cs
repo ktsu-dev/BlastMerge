@@ -7,63 +7,26 @@ namespace ktsu.BlastMerge.Test;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 /// <summary>
-/// Tests for the AppDataBatchManager utility class
-///
-/// NOTE: This test class uses real filesystem operations through ktsu.AppDataStorage
-/// and cannot use mock filesystems. Therefore, tests may experience isolation issues
-/// when run concurrently. The [DoNotParallelize] attribute prevents concurrent execution
-/// within this class, and individual tests clear BatchConfigurations to ensure isolation.
+/// Unit tests for AppDataBatchManager using dependency injection
 /// </summary>
 [TestClass]
-[DoNotParallelize]
-public class AppDataBatchManagerTests
+public class AppDataBatchManagerTests : DependencyInjectionTestBase
 {
-	private string _originalAppDataPath = string.Empty;
-	private string _testAppDataPath = string.Empty;
+	private AppDataBatchManager _batchManager = null!;
 
-	[TestInitialize]
-	public void Setup()
+	protected override void InitializeTestData()
 	{
-		// Reset the singleton instance to ensure test isolation
-		BlastMergeAppData.ResetForTesting();
-
-		// Create a temporary app data directory for testing
-		_testAppDataPath = SecureTempFileHelper.CreateTempDirectory();
-
-		// Store original environment variable if it exists
-		_originalAppDataPath = Environment.GetEnvironmentVariable("LOCALAPPDATA") ?? string.Empty;
-
-		// Set test app data path
-		Environment.SetEnvironmentVariable("LOCALAPPDATA", _testAppDataPath);
-	}
-
-	[TestCleanup]
-	public void Cleanup()
-	{
-		// Reset the singleton instance to ensure test isolation
-		BlastMergeAppData.ResetForTesting();
-
-		// Restore original environment variable
-		if (!string.IsNullOrEmpty(_originalAppDataPath))
-		{
-			Environment.SetEnvironmentVariable("LOCALAPPDATA", _originalAppDataPath);
-		}
-		else
-		{
-			Environment.SetEnvironmentVariable("LOCALAPPDATA", null);
-		}
-
-		// Clean up test directory
-		SecureTempFileHelper.SafeDeleteTempDirectory(_testAppDataPath);
+		_batchManager = GetService<AppDataBatchManager>();
 	}
 
 	[TestMethod]
-	public void SaveBatch_ValidBatch_SavesSuccessfully()
+	public async Task SaveBatchAsync_ValidBatch_SavesSuccessfully()
 	{
 		// Arrange
 		BatchConfiguration batch = new()
@@ -74,15 +37,16 @@ public class AppDataBatchManagerTests
 		};
 
 		// Act
-		AppDataBatchManager.SaveBatch(batch);
+		bool result = await _batchManager.SaveBatchAsync(batch);
 
 		// Assert
-		IReadOnlyCollection<string> batchNames = AppDataBatchManager.ListBatches();
+		Assert.IsTrue(result);
+		IReadOnlyCollection<string> batchNames = await _batchManager.ListBatchesAsync();
 		Assert.IsTrue(batchNames.Contains("TestBatch"));
 	}
 
 	[TestMethod]
-	public void GetBatch_ExistingBatch_ReturnsCorrectBatch()
+	public async Task LoadBatchAsync_ExistingBatch_ReturnsCorrectBatch()
 	{
 		// Arrange
 		BatchConfiguration originalBatch = new()
@@ -91,10 +55,10 @@ public class AppDataBatchManagerTests
 			FilePatterns = ["*.txt", "*.cs"],
 			SkipEmptyPatterns = true
 		};
-		AppDataBatchManager.SaveBatch(originalBatch);
+		await _batchManager.SaveBatchAsync(originalBatch);
 
 		// Act
-		BatchConfiguration? retrievedBatch = AppDataBatchManager.LoadBatch("TestBatch");
+		BatchConfiguration? retrievedBatch = await _batchManager.LoadBatchAsync("TestBatch");
 
 		// Assert
 		Assert.IsNotNull(retrievedBatch);
@@ -105,25 +69,20 @@ public class AppDataBatchManagerTests
 	}
 
 	[TestMethod]
-	public void GetBatch_NonExistentBatch_ReturnsNull()
+	public async Task LoadBatchAsync_NonExistentBatch_ReturnsNull()
 	{
 		// Act
-		BatchConfiguration? batch = AppDataBatchManager.LoadBatch("NonExistentBatch");
+		BatchConfiguration? batch = await _batchManager.LoadBatchAsync("NonExistentBatch");
 
 		// Assert
 		Assert.IsNull(batch);
 	}
 
 	[TestMethod]
-	public void ListBatches_NoBatches_ReturnsEmptyCollection()
+	public async Task ListBatchesAsync_NoBatches_ReturnsEmptyCollection()
 	{
-		// Arrange
-		// Ensure we start with a clean slate for this specific test
-		BlastMergeAppData appData = BlastMergeAppData.Get();
-		appData.BatchConfigurations.Clear();
-
 		// Act
-		IReadOnlyCollection<string> batchNames = AppDataBatchManager.ListBatches();
+		IReadOnlyCollection<string> batchNames = await _batchManager.ListBatchesAsync();
 
 		// Assert
 		Assert.IsNotNull(batchNames);
@@ -131,13 +90,9 @@ public class AppDataBatchManagerTests
 	}
 
 	[TestMethod]
-	public void ListBatches_MultipleBatches_ReturnsAllBatchNames()
+	public async Task ListBatchesAsync_MultipleBatches_ReturnsAllBatchNames()
 	{
 		// Arrange
-		// Ensure we start with a clean slate for this specific test
-		BlastMergeAppData appData = BlastMergeAppData.Get();
-		appData.BatchConfigurations.Clear();
-
 		BatchConfiguration batch1 = new()
 		{
 			Name = "Batch1",
@@ -152,11 +107,11 @@ public class AppDataBatchManagerTests
 			SkipEmptyPatterns = true
 		};
 
-		AppDataBatchManager.SaveBatch(batch1);
-		AppDataBatchManager.SaveBatch(batch2);
+		await _batchManager.SaveBatchAsync(batch1);
+		await _batchManager.SaveBatchAsync(batch2);
 
 		// Act
-		IReadOnlyCollection<string> batchNames = AppDataBatchManager.ListBatches();
+		IReadOnlyCollection<string> batchNames = await _batchManager.ListBatchesAsync();
 
 		// Assert
 		Assert.AreEqual(2, batchNames.Count);
@@ -165,13 +120,9 @@ public class AppDataBatchManagerTests
 	}
 
 	[TestMethod]
-	public void GetAllBatches_MultipleBatches_ReturnsAllBatches()
+	public async Task GetAllBatchesAsync_MultipleBatches_ReturnsAllBatches()
 	{
 		// Arrange
-		// Ensure we start with a clean slate for this specific test
-		BlastMergeAppData appData = BlastMergeAppData.Get();
-		appData.BatchConfigurations.Clear();
-
 		BatchConfiguration batch1 = new()
 		{
 			Name = "Batch1",
@@ -186,11 +137,11 @@ public class AppDataBatchManagerTests
 			SkipEmptyPatterns = true
 		};
 
-		AppDataBatchManager.SaveBatch(batch1);
-		AppDataBatchManager.SaveBatch(batch2);
+		await _batchManager.SaveBatchAsync(batch1);
+		await _batchManager.SaveBatchAsync(batch2);
 
 		// Act
-		IReadOnlyCollection<BatchConfiguration> batches = AppDataBatchManager.GetAllBatches();
+		IReadOnlyCollection<BatchConfiguration> batches = await _batchManager.GetAllBatchesAsync();
 
 		// Assert
 		Assert.AreEqual(2, batches.Count);
@@ -205,7 +156,7 @@ public class AppDataBatchManagerTests
 	}
 
 	[TestMethod]
-	public void DeleteBatch_ExistingBatch_DeletesSuccessfully()
+	public async Task DeleteBatchAsync_ExistingBatch_DeletesSuccessfully()
 	{
 		// Arrange
 		BatchConfiguration batch = new()
@@ -214,40 +165,40 @@ public class AppDataBatchManagerTests
 			FilePatterns = ["*.txt"],
 			SkipEmptyPatterns = false
 		};
-		AppDataBatchManager.SaveBatch(batch);
+		await _batchManager.SaveBatchAsync(batch);
 
 		// Verify it exists first
-		Assert.IsTrue(AppDataBatchManager.ListBatches().Contains("TestBatch"));
+		IReadOnlyCollection<string> batchesBeforeDelete = await _batchManager.ListBatchesAsync();
+		Assert.IsTrue(batchesBeforeDelete.Contains("TestBatch"));
 
 		// Act
-		bool result = AppDataBatchManager.DeleteBatch("TestBatch");
+		bool result = await _batchManager.DeleteBatchAsync("TestBatch");
 
 		// Assert
 		Assert.IsTrue(result);
-		Assert.IsFalse(AppDataBatchManager.ListBatches().Contains("TestBatch"));
+		IReadOnlyCollection<string> batchesAfterDelete = await _batchManager.ListBatchesAsync();
+		Assert.IsFalse(batchesAfterDelete.Contains("TestBatch"));
 	}
 
 	[TestMethod]
-	public void DeleteBatch_NonExistentBatch_ReturnsFalse()
+	public async Task DeleteBatchAsync_NonExistentBatch_ReturnsFalse()
 	{
 		// Act
-		bool result = AppDataBatchManager.DeleteBatch("NonExistentBatch");
+		bool result = await _batchManager.DeleteBatchAsync("NonExistentBatch");
 
 		// Assert
 		Assert.IsFalse(result);
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
-	public void SaveBatch_NullBatch_ThrowsArgumentNullException()
+	public async Task SaveBatchAsync_NullBatch_ThrowsArgumentNullException()
 	{
-		// Act
-		AppDataBatchManager.SaveBatch(null!);
+		// Act & Assert
+		await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => _batchManager.SaveBatchAsync(null!));
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentException))]
-	public void SaveBatch_EmptyBatchName_ThrowsArgumentException()
+	public async Task SaveBatchAsync_EmptyBatchName_ThrowsArgumentException()
 	{
 		// Arrange
 		BatchConfiguration batch = new()
@@ -257,44 +208,40 @@ public class AppDataBatchManagerTests
 			SkipEmptyPatterns = false
 		};
 
-		// Act
-		AppDataBatchManager.SaveBatch(batch);
+		// Act & Assert
+		await Assert.ThrowsExceptionAsync<ArgumentException>(() => _batchManager.SaveBatchAsync(batch));
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentException))]
-	public void GetBatch_EmptyBatchName_ThrowsArgumentException()
+	public async Task LoadBatchAsync_EmptyBatchName_ThrowsArgumentException()
 	{
-		// Act
-		AppDataBatchManager.LoadBatch(string.Empty);
+		// Act & Assert
+		await Assert.ThrowsExceptionAsync<ArgumentException>(() => _batchManager.LoadBatchAsync(string.Empty));
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
-	public void LoadBatch_NullBatchName_ThrowsArgumentNullException()
+	public async Task LoadBatchAsync_NullBatchName_ThrowsArgumentNullException()
 	{
-		// Act
-		AppDataBatchManager.LoadBatch(null!);
+		// Act & Assert
+		await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => _batchManager.LoadBatchAsync(null!));
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentException))]
-	public void DeleteBatch_EmptyBatchName_ThrowsArgumentException()
+	public async Task DeleteBatchAsync_EmptyBatchName_ThrowsArgumentException()
 	{
-		// Act
-		AppDataBatchManager.DeleteBatch(string.Empty);
+		// Act & Assert
+		await Assert.ThrowsExceptionAsync<ArgumentException>(() => _batchManager.DeleteBatchAsync(string.Empty));
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
-	public void DeleteBatch_NullBatchName_ThrowsArgumentNullException()
+	public async Task DeleteBatchAsync_NullBatchName_ThrowsArgumentNullException()
 	{
-		// Act
-		AppDataBatchManager.DeleteBatch(null!);
+		// Act & Assert
+		await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => _batchManager.DeleteBatchAsync(null!));
 	}
 
 	[TestMethod]
-	public void SaveBatch_UpdateExistingBatch_UpdatesSuccessfully()
+	public async Task SaveBatchAsync_UpdateExistingBatch_UpdatesSuccessfully()
 	{
 		// Arrange
 		BatchConfiguration originalBatch = new()
@@ -303,7 +250,7 @@ public class AppDataBatchManagerTests
 			FilePatterns = ["*.txt"],
 			SkipEmptyPatterns = false
 		};
-		AppDataBatchManager.SaveBatch(originalBatch);
+		await _batchManager.SaveBatchAsync(originalBatch);
 
 		BatchConfiguration updatedBatch = new()
 		{
@@ -313,10 +260,10 @@ public class AppDataBatchManagerTests
 		};
 
 		// Act
-		AppDataBatchManager.SaveBatch(updatedBatch);
+		await _batchManager.SaveBatchAsync(updatedBatch);
 
 		// Assert
-		BatchConfiguration? retrievedBatch = AppDataBatchManager.LoadBatch("TestBatch");
+		BatchConfiguration? retrievedBatch = await _batchManager.LoadBatchAsync("TestBatch");
 		Assert.IsNotNull(retrievedBatch);
 		Assert.AreEqual(2, retrievedBatch.FilePatterns.Count);
 		Assert.IsTrue(retrievedBatch.FilePatterns.Contains("*.cs"));
@@ -324,41 +271,97 @@ public class AppDataBatchManagerTests
 	}
 
 	[TestMethod]
-	public void SaveBatch_ComplexBatch_SavesAndRetrievesCorrectly()
+	public async Task SaveBatchAsync_ComplexBatch_SavesAndRetrievesCorrectly()
 	{
 		// Arrange
 		BatchConfiguration complexBatch = new()
 		{
 			Name = "ComplexBatch",
-			FilePatterns = ["*.txt", "*.cs", "*.json", "**/*.config"],
-			SkipEmptyPatterns = true
+			FilePatterns = ["*.txt", "*.cs", "*.json"],
+			SkipEmptyPatterns = true,
+			SearchPaths = [@"C:\Source", @"D:\Projects"],
+			PathExclusionPatterns = ["*/bin/*", "*/obj/*", "*node_modules*"]
 		};
 
 		// Act
-		AppDataBatchManager.SaveBatch(complexBatch);
-		BatchConfiguration? retrievedBatch = AppDataBatchManager.LoadBatch("ComplexBatch");
+		await _batchManager.SaveBatchAsync(complexBatch);
+		BatchConfiguration? retrievedBatch = await _batchManager.LoadBatchAsync("ComplexBatch");
 
 		// Assert
 		Assert.IsNotNull(retrievedBatch);
 		Assert.AreEqual("ComplexBatch", retrievedBatch.Name);
-		Assert.AreEqual(4, retrievedBatch.FilePatterns.Count);
-		Assert.IsTrue(retrievedBatch.FilePatterns.Contains("**/*.config"));
-		Assert.AreEqual(true, retrievedBatch.SkipEmptyPatterns);
+		Assert.AreEqual(3, retrievedBatch.FilePatterns.Count);
+		Assert.AreEqual(2, retrievedBatch.SearchPaths.Count);
+		Assert.AreEqual(3, retrievedBatch.PathExclusionPatterns.Count);
+		Assert.IsTrue(retrievedBatch.SkipEmptyPatterns);
 	}
 
 	[TestMethod]
-	public void GetAllBatches_NoBatches_ReturnsEmptyCollection()
+	public async Task GetAllBatchesAsync_NoBatches_ReturnsEmptyCollection()
 	{
-		// Arrange
-		// Ensure we start with a clean slate for this specific test
-		BlastMergeAppData appData = BlastMergeAppData.Get();
-		appData.BatchConfigurations.Clear();
-
 		// Act
-		IReadOnlyCollection<BatchConfiguration> batches = AppDataBatchManager.GetAllBatches();
+		IReadOnlyCollection<BatchConfiguration> batches = await _batchManager.GetAllBatchesAsync();
 
 		// Assert
 		Assert.IsNotNull(batches);
 		Assert.AreEqual(0, batches.Count);
+	}
+
+	[TestMethod]
+	public async Task RecordBatchUsageAsync_ValidBatch_RecordsUsage()
+	{
+		// Arrange
+		const string batchName = "TestBatch";
+
+		// Act
+		await _batchManager.RecordBatchUsageAsync(batchName);
+
+		// Assert
+		string? recentBatch = await _batchManager.GetMostRecentBatchAsync();
+		Assert.AreEqual(batchName, recentBatch);
+	}
+
+	[TestMethod]
+	public async Task GetMostRecentBatchAsync_NoUsage_ReturnsNull()
+	{
+		// Act
+		string? recentBatch = await _batchManager.GetMostRecentBatchAsync();
+
+		// Assert
+		Assert.IsNull(recentBatch);
+	}
+
+	[TestMethod]
+	public async Task CreateDefaultBatchIfNoneExistAsync_NoBatches_CreatesDefault()
+	{
+		// Act
+		bool result = await _batchManager.CreateDefaultBatchIfNoneExistAsync();
+
+		// Assert
+		Assert.IsTrue(result);
+		IReadOnlyCollection<string> batches = await _batchManager.ListBatchesAsync();
+		Assert.AreEqual(1, batches.Count);
+	}
+
+	[TestMethod]
+	public async Task CreateDefaultBatchIfNoneExistAsync_ExistingBatches_DoesNotCreateDefault()
+	{
+		// Arrange
+		BatchConfiguration existingBatch = new()
+		{
+			Name = "ExistingBatch",
+			FilePatterns = ["*.txt"],
+			SkipEmptyPatterns = false
+		};
+		await _batchManager.SaveBatchAsync(existingBatch);
+
+		// Act
+		bool result = await _batchManager.CreateDefaultBatchIfNoneExistAsync();
+
+		// Assert
+		Assert.IsFalse(result);
+		IReadOnlyCollection<string> batches = await _batchManager.ListBatchesAsync();
+		Assert.AreEqual(1, batches.Count);
+		Assert.IsTrue(batches.Contains("ExistingBatch"));
 	}
 }

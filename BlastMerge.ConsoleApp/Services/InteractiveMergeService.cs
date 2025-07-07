@@ -4,6 +4,7 @@
 
 namespace ktsu.BlastMerge.ConsoleApp.Services;
 
+using System;
 using System.Text;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.Models;
@@ -13,19 +14,21 @@ using Spectre.Console;
 /// <summary>
 /// Service for handling interactive merge UI operations.
 /// </summary>
-public static class InteractiveMergeService
+/// <param name="fileDiffer">The file differ service.</param>
+public class InteractiveMergeService(FileDiffer fileDiffer)
 {
+	private readonly FileDiffer fileDiffer = fileDiffer ?? throw new ArgumentNullException(nameof(fileDiffer));
 	/// <summary>
 	/// Performs iterative merge on file groups.
 	/// </summary>
 	/// <param name="fileGroups">The file groups to merge.</param>
-	public static void PerformIterativeMerge(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
+	public void PerformIterativeMerge(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
 	{
 		ArgumentNullException.ThrowIfNull(fileGroups);
 
 		// Convert to file groups by hash to find groups with multiple identical copies
 		List<string> allFiles = [.. fileGroups.SelectMany(g => g.Value)];
-		IReadOnlyCollection<FileGroup> groups = FileDiffer.GroupFilesByHash(allFiles);
+		IReadOnlyCollection<FileGroup> groups = fileDiffer.GroupFilesByHash(allFiles);
 
 		// Filter to groups with multiple files for merging
 		List<FileGroup> groupsWithMultipleFiles = [.. groups.Where(g => g.FilePaths.Count > 1)];

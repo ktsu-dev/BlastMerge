@@ -4,6 +4,7 @@
 
 namespace ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 
+using System;
 using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.ConsoleApp.Text;
 using ktsu.BlastMerge.Services;
@@ -12,8 +13,10 @@ using ktsu.BlastMerge.Services;
 /// Menu handler for iterative merge operations.
 /// </summary>
 /// <param name="applicationService">The application service.</param>
-public class IterativeMergeMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)
+/// <param name="historyInput">The history input service.</param>
+public class IterativeMergeMenuHandler(ApplicationService applicationService, AppDataHistoryInput historyInput) : BaseMenuHandler(applicationService)
 {
+	private readonly AppDataHistoryInput historyInput = historyInput ?? throw new ArgumentNullException(nameof(historyInput));
 	/// <summary>
 	/// Gets the name of this menu for navigation purposes.
 	/// </summary>
@@ -29,14 +32,14 @@ public class IterativeMergeMenuHandler(ApplicationService applicationService) : 
 		string directory;
 		string fileName;
 
-		directory = AppDataHistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
+		directory = historyInput.AskWithHistoryAsync("[cyan]Enter directory path[/]").GetAwaiter().GetResult();
 		if (string.IsNullOrWhiteSpace(directory))
 		{
 			ShowWarning(OperationCancelledMessage);
 			return;
 		}
 
-		fileName = AppDataHistoryInput.AskWithHistory("[cyan]Enter filename pattern[/]");
+		fileName = historyInput.AskWithHistoryAsync("[cyan]Enter filename pattern[/]").GetAwaiter().GetResult();
 		if (string.IsNullOrWhiteSpace(fileName))
 		{
 			ShowWarning(OperationCancelledMessage);

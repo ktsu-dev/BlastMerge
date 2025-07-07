@@ -6,26 +6,25 @@ namespace ktsu.BlastMerge.Services;
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using ktsu.BlastMerge.Models;
 
 /// <summary>
-/// Manages batch configurations using AppDataStorage for improved persistence and safety.
+/// Manages batch configurations using PersistenceProvider for improved persistence and safety.
 /// </summary>
-public static class AppDataBatchManager
+public class AppDataBatchManager(BlastMergePersistenceService persistenceService)
 {
-	/// <summary>
-	/// Gets the application data storage instance.
-	/// </summary>
-	private static BlastMergeAppData AppData => BlastMergeAppData.Get();
+	private readonly BlastMergePersistenceService persistenceService = persistenceService ?? throw new ArgumentNullException(nameof(persistenceService));
 
 	/// <summary>
 	/// Saves a batch configuration.
 	/// </summary>
 	/// <param name="batch">The batch configuration to save.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <returns>True if saved successfully, false otherwise.</returns>
-	public static bool SaveBatch(BatchConfiguration batch)
+	public async Task<bool> SaveBatchAsync(BatchConfiguration batch, CancellationToken cancellationToken = default)
 	{
 		ArgumentNullException.ThrowIfNull(batch);
 
@@ -42,28 +41,14 @@ public static class AppDataBatchManager
 		try
 		{
 			batch.LastModified = DateTime.UtcNow;
-			AppData.BatchConfigurations[batch.Name] = batch;
+			BlastMergeAppData appData = await persistenceService.GetAsync(cancellationToken).ConfigureAwait(false);
+			appData.BatchConfigurations[batch.Name] = batch;
 
-			if (AppData.Settings.AutoSaveEnabled)
-			{
-				AppData.Save();
-			}
-			else
-			{
-				BlastMergeAppData.QueueSave();
-			}
+			await persistenceService.SaveAsync(cancellationToken).ConfigureAwait(false);
 
 			return true;
 		}
-		catch (InvalidOperationException)
-		{
-			return false;
-		}
-		catch (UnauthorizedAccessException)
-		{
-			return false;
-		}
-		catch (IOException)
+		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
 			return false;
 		}
@@ -73,8 +58,9 @@ public static class AppDataBatchManager
 	/// Loads a batch configuration by name.
 	/// </summary>
 	/// <param name="name">The name of the batch to load.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <returns>The batch configuration, or null if not found.</returns>
-	public static BatchConfiguration? LoadBatch(string name)
+	public async Task<BatchConfiguration?> LoadBatchAsync(string name, CancellationToken cancellationToken = default)
 	{
 		ArgumentNullException.ThrowIfNull(name);
 
@@ -83,22 +69,28 @@ public static class AppDataBatchManager
 			throw new ArgumentException("Name cannot be null, empty, or whitespace.", nameof(name));
 		}
 
-		return AppData.BatchConfigurations.TryGetValue(name, out BatchConfiguration? batch) ? batch : null;
+		BlastMergeAppData appData = await persistenceService.GetAsync(cancellationToken).ConfigureAwait(false);
+		return appData.BatchConfigurations.TryGetValue(name, out BatchConfiguration? batch) ? batch : null;
 	}
 
 	/// <summary>
 	/// Lists all available batch configurations.
 	/// </summary>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <returns>A read-only collection of batch configuration names.</returns>
-	public static IReadOnlyCollection<string> ListBatches() =>
-		AppData.BatchConfigurations.Keys.OrderBy(name => name).ToList().AsReadOnly();
+	public async Task<IReadOnlyCollection<string>> ListBatchesAsync(CancellationToken cancellationToken = default)
+	{
+		BlastMergeAppData appData = await persistenceService.GetAsync(cancellationToken).ConfigureAwait(false);
+		return appData.BatchConfigurations.Keys.OrderBy(name => name).ToList().AsReadOnly();
+	}
 
 	/// <summary>
 	/// Deletes a batch configuration.
 	/// </summary>
 	/// <param name="name">The name of the batch to delete.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <returns>True if deleted successfully, false otherwise.</returns>
-	public static bool DeleteBatch(string name)
+	public async Task<bool> DeleteBatchAsync(string name, CancellationToken cancellationToken = default)
 	{
 		ArgumentNullException.ThrowIfNull(name);
 
@@ -109,31 +101,17 @@ public static class AppDataBatchManager
 
 		try
 		{
-			bool removed = AppData.BatchConfigurations.Remove(name);
+			BlastMergeAppData appData = await persistenceService.GetAsync(cancellationToken).ConfigureAwait(false);
+			bool removed = appData.BatchConfigurations.Remove(name);
 
 			if (removed)
 			{
-				if (AppData.Settings.AutoSaveEnabled)
-				{
-					AppData.Save();
-				}
-				else
-				{
-					BlastMergeAppData.QueueSave();
-				}
+				await persistenceService.SaveAsync(cancellationToken).ConfigureAwait(false);
 			}
 
 			return removed;
 		}
-		catch (InvalidOperationException)
-		{
-			return false;
-		}
-		catch (UnauthorizedAccessException)
-		{
-			return false;
-		}
-		catch (IOException)
+		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
 			return false;
 		}
@@ -142,10 +120,12 @@ public static class AppDataBatchManager
 	/// <summary>
 	/// Gets all batch configurations with their details.
 	/// </summary>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <returns>A read-only collection of all batch configurations.</returns>
-	public static IReadOnlyCollection<BatchConfiguration> GetAllBatches()
+	public async Task<IReadOnlyCollection<BatchConfiguration>> GetAllBatchesAsync(CancellationToken cancellationToken = default)
 	{
-		return AppData.BatchConfigurations.Values
+		BlastMergeAppData appData = await persistenceService.GetAsync(cancellationToken).ConfigureAwait(false);
+		return appData.BatchConfigurations.Values
 			.OrderBy(b => b.Name)
 			.ToList()
 			.AsReadOnly();
@@ -154,13 +134,15 @@ public static class AppDataBatchManager
 	/// <summary>
 	/// Creates and saves a default batch configuration if none exist.
 	/// </summary>
+	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <returns>True if default was created, false if batches already exist.</returns>
-	public static bool CreateDefaultBatchIfNoneExist()
+	public async Task<bool> CreateDefaultBatchIfNoneExistAsync(CancellationToken cancellationToken = default)
 	{
-		if (AppData.BatchConfigurations.Count == 0)
+		BlastMergeAppData appData = await persistenceService.GetAsync(cancellationToken).ConfigureAwait(false);
+		if (appData.BatchConfigurations.Count == 0)
 		{
 			BatchConfiguration defaultBatch = BatchConfiguration.CreateDefault();
-			return SaveBatch(defaultBatch);
+			return await SaveBatchAsync(defaultBatch, cancellationToken).ConfigureAwait(false);
 		}
 		return false;
 	}
@@ -169,7 +151,9 @@ public static class AppDataBatchManager
 	/// Records that a batch configuration was used for recent batch tracking.
 	/// </summary>
 	/// <param name="batchName">The name of the batch configuration that was used.</param>
-	public static void RecordBatchUsage(string batchName)
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>A task representing the asynchronous operation.</returns>
+	public async Task RecordBatchUsageAsync(string batchName, CancellationToken cancellationToken = default)
 	{
 		ArgumentNullException.ThrowIfNull(batchName);
 
@@ -180,30 +164,16 @@ public static class AppDataBatchManager
 
 		try
 		{
-			AppData.RecentBatch = new RecentBatchInfo
+			BlastMergeAppData appData = await persistenceService.GetAsync(cancellationToken).ConfigureAwait(false);
+			appData.RecentBatch = new RecentBatchInfo
 			{
 				BatchName = batchName,
 				LastUsed = DateTime.UtcNow
 			};
 
-			if (AppData.Settings.AutoSaveEnabled)
-			{
-				AppData.Save();
-			}
-			else
-			{
-				BlastMergeAppData.QueueSave();
-			}
+			await persistenceService.SaveAsync(cancellationToken).ConfigureAwait(false);
 		}
-		catch (InvalidOperationException)
-		{
-			// Ignore failures - recent batch tracking is not critical
-		}
-		catch (UnauthorizedAccessException)
-		{
-			// Ignore failures - recent batch tracking is not critical
-		}
-		catch (IOException)
+		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
 			// Ignore failures - recent batch tracking is not critical
 		}
@@ -212,11 +182,19 @@ public static class AppDataBatchManager
 	/// <summary>
 	/// Gets the most recently used batch configuration name.
 	/// </summary>
-	/// <value>The name of the most recent batch, or null if none found.</value>
-	public static string? MostRecentBatch => AppData.RecentBatch?.BatchName;
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>The name of the most recent batch, or null if none found.</returns>
+	public async Task<string?> GetMostRecentBatchAsync(CancellationToken cancellationToken = default)
+	{
+		BlastMergeAppData appData = await persistenceService.GetAsync(cancellationToken).ConfigureAwait(false);
+		return appData.RecentBatch?.BatchName;
+	}
 
 	/// <summary>
 	/// Forces a save of all pending changes to disk.
 	/// </summary>
-	public static void SaveIfRequired() => BlastMergeAppData.SaveIfRequired();
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>A task representing the asynchronous operation.</returns>
+	public async Task SaveIfRequiredAsync(CancellationToken cancellationToken = default) =>
+		await persistenceService.SaveAsync(cancellationToken).ConfigureAwait(false);
 }

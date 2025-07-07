@@ -1,22 +1,18 @@
 ﻿<Project Sdk="ktsu.Sdk.Test">
 
-  <PropertyGroup>
-    <NoWarn>$(NoWarn);CA1861;IDE0078;CA1849</NoWarn>
-    <!-- CA1861: Avoid using Enumerable methods on indexable collections. Instead use the collection directly. -->
-    <!-- IDE0078: Use pattern matching. -->
-    <!-- CA1849: Avoid using Enumerable methods on indexable collections. Instead use the collection directly. -->
-  </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="TestableIO.System.IO.Abstractions" />
-    <PackageReference Include="TestableIO.System.IO.Abstractions.Wrappers" />
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="ktsu.Extensions" />
+    <PackageReference Include="ktsu.PersistenceProvider" />
+    <PackageReference Include="ktsu.UniversalSerializer" />
+    <PackageReference Include="ktsu.SerializationProvider" />
+    <PackageReference Include="ktsu.FileSystemProvider" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="TestableIO.System.IO.Abstractions.TestingHelpers" />
-    <PackageReference Include="Moq" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\BlastMerge\BlastMerge.csproj" />
-    <ProjectReference Include="..\BlastMerge.ConsoleApp\BlastMerge.ConsoleApp.csproj" />
   </ItemGroup>
 
 </Project>

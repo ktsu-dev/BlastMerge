@@ -5,87 +5,99 @@
 namespace ktsu.BlastMerge.Services;
 
 using System.IO.Abstractions;
+using System.Security.Cryptography;
+using System.Text;
+using ktsu.FileSystemProvider;
 
 /// <summary>
-/// Computes hashes for files to identify unique versions
+/// Provides file hashing functionality with support for dependency injection.
 /// </summary>
-public static class FileHasher
+/// <param name="fileSystemProvider">File system provider for dependency injection</param>
+public class FileHasher(IFileSystemProvider fileSystemProvider)
 {
-	// FNV-1a constants (64-bit version)
-	private const ulong FNV_PRIME_64 = 1099511628211;
-	private const ulong FNV_OFFSET_BASIS_64 = 14695981039346656037;
-
+	private readonly IFileSystem _fileSystem = fileSystemProvider.Current;
 	/// <summary>
-	/// Computes an FNV-1a hash for a file
+	/// Computes a hash for the specified file.
 	/// </summary>
-	/// <param name="filePath">Path to the file</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to FileSystemProvider.Current)</param>
-	/// <returns>The FNV-1a hash as a hex string</returns>
-	public static string ComputeFileHash(string filePath, IFileSystem? fileSystem = null)
+	/// <param name="filePath">The path to the file to hash.</param>
+	/// <returns>A hexadecimal string representation of the file hash.</returns>
+	public string ComputeFileHash(string filePath)
 	{
-		fileSystem ??= FileSystemProvider.Current;
-		ulong hash = FNV_OFFSET_BASIS_64;
+		ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
 
-		using Stream fileStream = fileSystem.File.OpenRead(filePath);
-		byte[] buffer = new byte[4096];
-		int bytesRead;
-
-		while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) > 0)
+		if (!_fileSystem.File.Exists(filePath))
 		{
-			for (int i = 0; i < bytesRead; i++)
-			{
-				hash ^= buffer[i];
-				hash *= FNV_PRIME_64;
-			}
+			throw new FileNotFoundException($"File not found: {filePath}");
 		}
 
-		return hash.ToString("x16");
+		using FileSystemStream stream = _fileSystem.File.OpenRead(filePath);
+		using SHA256 sha256 = SHA256.Create();
+		byte[] hashBytes = sha256.ComputeHash(stream);
+
+		// Convert to hexadecimal string
+		string hash = Convert.ToHexString(hashBytes);
+
+		// For compatibility with existing code, return as lowercase with specific format
+		return hash.ToLowerInvariant();
 	}
 
 	/// <summary>
-	/// Computes an FNV-1a hash for a file asynchronously
+	/// Asynchronously computes a hash for the specified file.
 	/// </summary>
-	/// <param name="filePath">Path to the file</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to FileSystemProvider.Current)</param>
-	/// <param name="cancellationToken">Cancellation token</param>
-	/// <returns>The FNV-1a hash as a hex string</returns>
-	public static async Task<string> ComputeFileHashAsync(string filePath, IFileSystem? fileSystem = null, CancellationToken cancellationToken = default)
+	/// <param name="filePath">The path to the file to hash.</param>
+	/// <param name="cancellationToken">Token to monitor for cancellation requests.</param>
+	/// <returns>A task that represents the asynchronous operation. The task result contains a hexadecimal string representation of the file hash.</returns>
+	public async Task<string> ComputeFileHashAsync(string filePath, CancellationToken cancellationToken = default)
 	{
-		fileSystem ??= FileSystemProvider.Current;
-		ulong hash = FNV_OFFSET_BASIS_64;
+		ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
 
-		using Stream fileStream = fileSystem.File.OpenRead(filePath);
-		byte[] buffer = new byte[4096];
-		int bytesRead;
-
-		while ((bytesRead = await fileStream.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false)) > 0)
+		if (!_fileSystem.File.Exists(filePath))
 		{
-			for (int i = 0; i < bytesRead; i++)
-			{
-				hash ^= buffer[i];
-				hash *= FNV_PRIME_64;
-			}
+			throw new FileNotFoundException($"File not found: {filePath}");
 		}
 
-		return hash.ToString("x16");
+		using FileSystemStream stream = _fileSystem.File.OpenRead(filePath);
+		using SHA256 sha256 = SHA256.Create();
+		byte[] hashBytes = await sha256.ComputeHashAsync(stream, cancellationToken).ConfigureAwait(false);
+
+		// Convert to hexadecimal string
+		string hash = Convert.ToHexString(hashBytes);
+
+		// For compatibility with existing code, return as lowercase with specific format
+		return hash.ToLowerInvariant();
 	}
 
 	/// <summary>
-	/// Computes FNV-1a hashes for multiple files in parallel
+	/// Computes a hash for the specified file content.
+	/// </summary>
+	/// <param name="content">The content to hash.</param>
+	/// <returns>A hexadecimal string representation of the content hash.</returns>
+	public static string ComputeContentHash(string content)
+	{
+		ArgumentNullException.ThrowIfNull(content);
+		byte[] contentBytes = Encoding.UTF8.GetBytes(content);
+		byte[] hashBytes = SHA256.HashData(contentBytes);
+
+		// Convert to hexadecimal string
+		string hash = Convert.ToHexString(hashBytes);
+
+		// For compatibility with existing code, return as lowercase with specific format
+		return hash.ToLowerInvariant();
+	}
+
+	/// <summary>
+	/// Computes hashes for multiple files in parallel
 	/// </summary>
 	/// <param name="filePaths">Collection of file paths to hash</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to FileSystemProvider.Current)</param>
 	/// <param name="maxDegreeOfParallelism">Maximum number of concurrent operations (default: processor count)</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>Dictionary mapping file paths to their hashes</returns>
-	public static async Task<Dictionary<string, string>> ComputeFileHashesAsync(
+	public async Task<Dictionary<string, string>> ComputeFileHashesAsync(
 		IEnumerable<string> filePaths,
-		IFileSystem? fileSystem = null,
 		int maxDegreeOfParallelism = 0,
 		CancellationToken cancellationToken = default)
 	{
 		ArgumentNullException.ThrowIfNull(filePaths);
-		fileSystem ??= FileSystemProvider.Current;
 
 		if (maxDegreeOfParallelism <= 0)
 		{
@@ -97,7 +109,7 @@ public static class FileHasher
 
 		foreach (string filePath in filePaths)
 		{
-			tasks.Add(ComputeHashWithSemaphore(filePath, fileSystem, semaphore, cancellationToken));
+			tasks.Add(ComputeHashWithSemaphore(filePath, semaphore, cancellationToken));
 		}
 
 		(string filePath, string hash)[] results = await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -108,43 +120,21 @@ public static class FileHasher
 	/// <summary>
 	/// Helper method to compute hash with semaphore throttling
 	/// </summary>
-	private static async Task<(string filePath, string hash)> ComputeHashWithSemaphore(
+	private async Task<(string filePath, string hash)> ComputeHashWithSemaphore(
 		string filePath,
-		IFileSystem fileSystem,
 		SemaphoreSlim semaphore,
 		CancellationToken cancellationToken)
 	{
 		await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 		try
 		{
-			string hash = await ComputeFileHashAsync(filePath, fileSystem, cancellationToken).ConfigureAwait(false);
+			string hash = await ComputeFileHashAsync(filePath, cancellationToken).ConfigureAwait(false);
 			return (filePath, hash);
 		}
 		finally
 		{
 			semaphore.Release();
 		}
-	}
-
-	/// <summary>
-	/// Computes an FNV-1a hash for string content
-	/// </summary>
-	/// <param name="content">String content to hash</param>
-	/// <returns>The FNV-1a hash as a hex string</returns>
-	public static string ComputeContentHash(string content)
-	{
-		ArgumentNullException.ThrowIfNull(content);
-
-		ulong hash = FNV_OFFSET_BASIS_64;
-		byte[] bytes = System.Text.Encoding.UTF8.GetBytes(content);
-
-		foreach (byte b in bytes)
-		{
-			hash ^= b;
-			hash *= FNV_PRIME_64;
-		}
-
-		return hash.ToString("x16");
 	}
 
 	/// <summary>

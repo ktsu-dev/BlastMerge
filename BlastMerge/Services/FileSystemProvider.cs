@@ -4,52 +4,34 @@
 
 namespace ktsu.BlastMerge.Services;
 
-using System;
 using System.IO.Abstractions;
-using System.Threading;
 
 /// <summary>
-/// Provides centralized access to filesystem implementations
+/// Provides file system operations with support for testing and dependency injection.
 /// </summary>
 public static class FileSystemProvider
 {
-	// Use the Lazy<T> pattern for thread-safe initialization of the default instance
-	private static readonly Lazy<IFileSystem> _defaultInstance = new(() => new FileSystem());
-
-	// Use AsyncLocal to store a filesystem instance per async execution context
-	// This ensures different test threads get their own isolated instances
-	private static readonly AsyncLocal<IFileSystem?> _asyncLocalInstance = new();
+	private static readonly ktsu.FileSystemProvider.FileSystemProvider _provider = new();
 
 	/// <summary>
-	/// Gets the current filesystem instance
+	/// Gets the current file system instance.
 	/// </summary>
-	public static IFileSystem Current
-	{
-		get
-		{
-			// First check if we have a context-specific instance set
-			if (_asyncLocalInstance.Value != null)
-			{
-				return _asyncLocalInstance.Value;
-			}
-
-			// Otherwise return the default lazy-initialized instance
-			return _defaultInstance.Value;
-		}
-	}
+	public static IFileSystem Current => _provider.Current;
 
 	/// <summary>
-	/// Sets the filesystem implementation to be used by the current async context
+	/// Sets a custom file system factory for testing.
 	/// </summary>
-	/// <param name="fileSystem">The filesystem implementation</param>
-	public static void SetFileSystem(IFileSystem fileSystem)
-	{
-		ArgumentNullException.ThrowIfNull(fileSystem);
-		_asyncLocalInstance.Value = fileSystem;
-	}
+	/// <param name="factory">The file system factory to use.</param>
+	public static void SetInstance(Func<IFileSystem> factory) => _provider.SetFileSystemFactory(factory);
 
 	/// <summary>
-	/// Resets the filesystem back to the default implementation for the current async context
+	/// Sets a custom file system for testing.
 	/// </summary>
-	public static void ResetToDefault() => _asyncLocalInstance.Value = null;
+	/// <param name="fileSystem">The file system to use.</param>
+	public static void SetFileSystem(IFileSystem fileSystem) => _provider.SetFileSystemFactory(() => fileSystem);
+
+	/// <summary>
+	/// Resets the file system provider to the default implementation.
+	/// </summary>
+	public static void ResetToDefault() => _provider.ResetToDefault();
 }

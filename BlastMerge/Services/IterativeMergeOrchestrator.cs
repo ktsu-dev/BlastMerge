@@ -192,7 +192,9 @@ public static class IterativeMergeOrchestrator
 			return null;
 		}
 
-		IReadOnlyCollection<string> files = FileFinder.FindFiles(directory, fileName, fileSystem);
+		// Create a temporary FileFinder instance for static context
+		FileFinder fileFinder = new(new global::ktsu.FileSystemProvider.FileSystemProvider());
+		IReadOnlyCollection<string> files = fileFinder.FindFiles(directory, fileName);
 		List<string> filesList = [.. files];
 
 		if (filesList.Count < 2)
@@ -201,7 +203,8 @@ public static class IterativeMergeOrchestrator
 		}
 
 		// Group files by hash to find unique versions
-		IReadOnlyCollection<FileGroup> fileGroups = FileDiffer.GroupFilesByHash(files, fileSystem);
+		FileDiffer fileDiffer = new(new global::ktsu.FileSystemProvider.FileSystemProvider(), new FileHasher(new global::ktsu.FileSystemProvider.FileSystemProvider()), new DiffPlexDiffer(new global::ktsu.FileSystemProvider.FileSystemProvider()));
+		IReadOnlyCollection<FileGroup> fileGroups = fileDiffer.GroupFilesByHash(files);
 		List<FileGroup> uniqueGroups = [.. fileGroups.Where(g => g.FilePaths.Count >= 1)];
 
 		if (uniqueGroups.Count < 2)

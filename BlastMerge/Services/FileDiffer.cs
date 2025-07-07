@@ -12,12 +12,17 @@ using System.IO.Abstractions;
 using System.Linq;
 using System.Text;
 using ktsu.BlastMerge.Models;
+using ktsu.FileSystemProvider;
 
 /// <summary>
 /// Compares file contents to find differences
 /// </summary>
-public static class FileDiffer
+/// <param name="fileSystemProvider">File system provider for dependency injection</param>
+/// <param name="fileHasher">File hasher for computing file hashes</param>
+/// <param name="diffPlexDiffer">DiffPlex differ for finding differences</param>
+public class FileDiffer(IFileSystemProvider fileSystemProvider, FileHasher fileHasher, DiffPlexDiffer diffPlexDiffer)
 {
+	private readonly IFileSystemProvider _fileSystemProvider = fileSystemProvider;
 	// Merge conflict marker constants
 	private const string ConflictMarkerStart = "<<<<<<< Version 1";
 	private const string ConflictMarkerSeparator = "=======";
@@ -43,14 +48,13 @@ public static class FileDiffer
 	/// - After fix: Only files with identical names (e.g., multiple app.config files) are considered for merging
 	/// </summary>
 	/// <param name="filePaths">List of file paths to group</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>A collection of file groups where each group contains identical files</returns>
-	public static IReadOnlyCollection<FileGroup> GroupFilesByHash(IReadOnlyCollection<string> filePaths, IFileSystem? fileSystem = null)
+	public IReadOnlyCollection<FileGroup> GroupFilesByHash(IReadOnlyCollection<string> filePaths)
 	{
 		ArgumentNullException.ThrowIfNull(filePaths);
 
 		// Use the safer grouping method that considers both filename and content
-		return GroupFilesByFilenameAndHash(filePaths, fileSystem);
+		return GroupFilesByFilenameAndHash(filePaths);
 	}
 
 	/// <summary>
@@ -58,9 +62,8 @@ public static class FileDiffer
 	/// This prevents files with different names from being compared/merged together.
 	/// </summary>
 	/// <param name="filePaths">List of file paths to group</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>A collection of file groups where each group contains files with the same name and identical content</returns>
-	public static IReadOnlyCollection<FileGroup> GroupFilesByFilenameAndHash(IReadOnlyCollection<string> filePaths, IFileSystem? fileSystem = null)
+	public IReadOnlyCollection<FileGroup> GroupFilesByFilenameAndHash(IReadOnlyCollection<string> filePaths)
 	{
 		ArgumentNullException.ThrowIfNull(filePaths);
 
@@ -77,7 +80,7 @@ public static class FileDiffer
 			if (pathsWithSameName.Count == 1)
 			{
 				// Single file with this name - create a group for it
-				string hash = FileHasher.ComputeFileHash(pathsWithSameName[0], fileSystem);
+				string hash = fileHasher.ComputeFileHash(pathsWithSameName[0]);
 				FileGroup group = new() { Hash = hash };
 				group.AddFilePath(pathsWithSameName[0]);
 				allGroups.Add(group);
@@ -89,7 +92,7 @@ public static class FileDiffer
 
 				foreach (string filePath in pathsWithSameName)
 				{
-					string hash = FileHasher.ComputeFileHash(filePath, fileSystem);
+					string hash = fileHasher.ComputeFileHash(filePath);
 
 					if (!hashGroups.TryGetValue(hash, out FileGroup? group))
 					{
@@ -112,9 +115,8 @@ public static class FileDiffer
 	/// Use GroupFilesByFilenameAndHash for safer grouping that prevents unrelated files from being merged.
 	/// </summary>
 	/// <param name="filePaths">List of file paths to group</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>A collection of file groups where each group contains identical files (regardless of filename)</returns>
-	public static IReadOnlyCollection<FileGroup> GroupFilesByHashOnly(IReadOnlyCollection<string> filePaths, IFileSystem? fileSystem = null)
+	public IReadOnlyCollection<FileGroup> GroupFilesByHashOnly(IReadOnlyCollection<string> filePaths)
 	{
 		ArgumentNullException.ThrowIfNull(filePaths);
 
@@ -122,7 +124,7 @@ public static class FileDiffer
 
 		foreach (string filePath in filePaths)
 		{
-			string hash = FileHasher.ComputeFileHash(filePath, fileSystem);
+			string hash = fileHasher.ComputeFileHash(filePath);
 
 			if (!groups.TryGetValue(hash, out FileGroup? group))
 			{
@@ -142,9 +144,9 @@ public static class FileDiffer
 	/// <param name="file1">First file path</param>
 	/// <param name="file2">Second file path</param>
 	/// <returns>Collection of line differences</returns>
-	public static IReadOnlyCollection<LineDifference> FindDifferences(string file1, string file2) =>
+	public IReadOnlyCollection<LineDifference> FindDifferences(string file1, string file2) =>
 		// Use DiffPlex implementation for better performance and accuracy
-		DiffPlexDiffer.FindDifferences(file1, file2);
+		diffPlexDiffer.FindDifferences(file1, file2);
 
 	/// <summary>
 	/// Compares two directories and finds differences between files
@@ -153,15 +155,15 @@ public static class FileDiffer
 	/// <param name="dir2">Path to the second directory</param>
 	/// <param name="searchPattern">File search pattern (e.g., "*.txt")</param>
 	/// <param name="recursive">Whether to search subdirectories recursively</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>A DirectoryComparisonResult containing the comparison results</returns>
-	public static DirectoryComparisonResult FindDifferences(string dir1, string dir2, string searchPattern, bool recursive = false, IFileSystem? fileSystem = null)
+	public DirectoryComparisonResult FindDifferences(string dir1, string dir2, string searchPattern, bool recursive = false)
 	{
 		ArgumentNullException.ThrowIfNull(dir1);
 		ArgumentNullException.ThrowIfNull(dir2);
 		ArgumentNullException.ThrowIfNull(searchPattern);
 
-		fileSystem ??= new FileSystem();
+		IFileSystem fileSystem = _fileSystemProvider.Current; // Cache once for this method
+
 		SearchOption searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
 
 		// Get all files from both directories
@@ -183,13 +185,13 @@ public static class FileDiffer
 
 		foreach (string? relativePath in commonFiles)
 		{
-			string file1Path = Path.Combine(dir1, relativePath);
-			string file2Path = Path.Combine(dir2, relativePath);
+			string file1Path = fileSystem.Path.Combine(dir1, relativePath);
+			string file2Path = fileSystem.Path.Combine(dir2, relativePath);
 
 			try
 			{
 				// Use DiffPlex for better file comparison
-				if (DiffPlexDiffer.AreFilesIdentical(file1Path, file2Path))
+				if (diffPlexDiffer.AreFilesIdentical(file1Path, file2Path))
 				{
 					sameFiles.Add(relativePath);
 				}
@@ -241,7 +243,8 @@ public static class FileDiffer
 		ArgumentNullException.ThrowIfNull(file2);
 
 		// Use DiffPlex for git-style diff generation
-		string gitDiff = DiffPlexDiffer.GenerateUnifiedDiff(file1, file2);
+		DiffPlexDiffer diffPlexDiffer = new(new global::ktsu.FileSystemProvider.FileSystemProvider());
+		string gitDiff = diffPlexDiffer.GenerateUnifiedDiff(file1, file2);
 
 		if (!useColor || string.IsNullOrEmpty(gitDiff))
 		{
@@ -249,7 +252,7 @@ public static class FileDiffer
 		}
 
 		// Add color escape sequences for terminal if requested
-		Collection<ColoredDiffLine> coloredDiff = DiffPlexDiffer.GenerateColoredDiff(file1, file2);
+		Collection<ColoredDiffLine> coloredDiff = diffPlexDiffer.GenerateColoredDiff(file1, file2);
 		StringBuilder sb = new();
 
 		foreach (ColoredDiffLine line in coloredDiff)
@@ -282,7 +285,8 @@ public static class FileDiffer
 	public static Collection<ColoredDiffLine> GenerateColoredDiff(string file1, string file2, string[] lines1, string[] lines2)
 	{
 		// Use DiffPlex implementation
-		Collection<ColoredDiffLine> diffLines = DiffPlexDiffer.GenerateColoredDiff(file1, file2);
+		DiffPlexDiffer diffPlexDiffer = new(new global::ktsu.FileSystemProvider.FileSystemProvider());
+		Collection<ColoredDiffLine> diffLines = diffPlexDiffer.GenerateColoredDiff(file1, file2);
 		Collection<ColoredDiffLine> result = [.. diffLines];
 		return result;
 	}
@@ -299,7 +303,9 @@ public static class FileDiffer
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		IReadOnlyCollection<LineDifference> differences = FindDifferences(file1, file2);
+		// Create temporary FileDiffer instance for static method
+		FileDiffer fileDiffer = new(new global::ktsu.FileSystemProvider.FileSystemProvider(), new FileHasher(new global::ktsu.FileSystemProvider.FileSystemProvider()), new DiffPlexDiffer(new global::ktsu.FileSystemProvider.FileSystemProvider()));
+		IReadOnlyCollection<LineDifference> differences = fileDiffer.FindDifferences(file1, file2);
 		StringBuilder sb = new();
 
 		BuildChangeSummaryHeader(sb, file1, file2);
@@ -484,7 +490,9 @@ public static class FileDiffer
 		];
 
 		// Use DiffPlex to get differences
-		IReadOnlyCollection<LineDifference> differences = FindDifferences(file1, file2);
+		// Create temporary FileDiffer instance for static method
+		FileDiffer fileDiffer = new(new global::ktsu.FileSystemProvider.FileSystemProvider(), new FileHasher(new global::ktsu.FileSystemProvider.FileSystemProvider()), new DiffPlexDiffer(new global::ktsu.FileSystemProvider.FileSystemProvider()));
+		IReadOnlyCollection<LineDifference> differences = fileDiffer.FindDifferences(file1, file2);
 
 		// Track added and removed lines
 		List<(int, string)> addedLines = [];
@@ -708,30 +716,8 @@ public static class FileDiffer
 		ArgumentNullException.ThrowIfNull(lines1);
 		ArgumentNullException.ThrowIfNull(lines2);
 
-		string tempFile1 = SecureTempFileHelper.CreateTempFile();
-		string tempFile2 = SecureTempFileHelper.CreateTempFile();
-
-		try
-		{
-			return PerformMergeWithTempFiles(lines1, lines2, tempFile1, tempFile2, null);
-		}
-		finally
-		{
-			SecureTempFileHelper.SafeDeleteTempFiles(null, tempFile1, tempFile2);
-		}
-	}
-
-	/// <summary>
-	/// Performs the actual merge operation using temporary files
-	/// </summary>
-	private static MergeResult PerformMergeWithTempFiles(string[] lines1, string[] lines2, string tempFile1, string tempFile2, IFileSystem? fileSystem = null)
-	{
-		fileSystem ??= new FileSystem();
-
-		fileSystem.File.WriteAllLines(tempFile1, lines1);
-		fileSystem.File.WriteAllLines(tempFile2, lines2);
-
-		IReadOnlyCollection<LineDifference> differences = DiffPlexDiffer.FindDifferences(tempFile1, tempFile2);
+		// ✅ Use in-memory DiffPlex API instead of temp files
+		IReadOnlyCollection<LineDifference> differences = DiffPlexDiffer.FindDifferencesFromLines(lines1, lines2);
 		List<string> mergedLines = [];
 		List<MergeConflict> conflicts = [];
 
