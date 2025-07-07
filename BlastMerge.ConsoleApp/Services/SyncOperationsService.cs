@@ -14,19 +14,20 @@ using Spectre.Console;
 /// <summary>
 /// Service for handling file synchronization UI operations.
 /// </summary>
-public static class SyncOperationsService
+/// <param name="fileDiffer">File differ service</param>
+public class SyncOperationsService(FileDiffer fileDiffer)
 {
 	/// <summary>
 	/// Offers sync options for file groups.
 	/// </summary>
 	/// <param name="fileGroups">The file groups to offer sync options for.</param>
-	public static void OfferSyncOptions(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
+	public void OfferSyncOptions(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
 	{
 		ArgumentNullException.ThrowIfNull(fileGroups);
 
 		// Convert to FileGroup objects for easier handling
 		List<string> allFiles = [.. fileGroups.SelectMany(g => g.Value)];
-		IReadOnlyCollection<FileGroup> groups = FileDiffer.GroupFilesByHash(allFiles);
+		IReadOnlyCollection<FileGroup> groups = fileDiffer.GroupFilesByHash(allFiles);
 
 		// Filter to groups with multiple files
 		List<FileGroup> groupsWithMultipleFiles = [.. groups.Where(g => g.FilePaths.Count > 1)];
@@ -76,7 +77,7 @@ public static class SyncOperationsService
 	/// Syncs all files to the newest version in each group.
 	/// </summary>
 	/// <param name="groups">The file groups to sync.</param>
-	private static void SyncToNewestVersion(List<FileGroup> groups)
+	private void SyncToNewestVersion(List<FileGroup> groups)
 	{
 		bool confirm = AnsiConsole.Confirm("[yellow]This will overwrite older versions with the newest file in each group. Continue?[/]");
 
@@ -95,7 +96,7 @@ public static class SyncOperationsService
 	/// </summary>
 	/// <param name="groups">The file groups to sync.</param>
 	/// <returns>A tuple containing the number of synced files and groups.</returns>
-	private static (int syncedFiles, int syncedGroups) PerformSyncOperation(List<FileGroup> groups)
+	private (int syncedFiles, int syncedGroups) PerformSyncOperation(List<FileGroup> groups)
 	{
 		int syncedGroups = 0;
 		int syncedFiles = 0;
@@ -119,7 +120,7 @@ public static class SyncOperationsService
 	/// <param name="group">The file group to sync.</param>
 	/// <param name="ctx">The status context for updates.</param>
 	/// <returns>The number of files successfully synced.</returns>
-	private static int SyncGroupToNewest(FileGroup group, StatusContext ctx)
+	private int SyncGroupToNewest(FileGroup group, StatusContext ctx)
 	{
 		string newestFile = GetNewestFile(group.FilePaths);
 		int syncedFiles = 0;
@@ -142,12 +143,12 @@ public static class SyncOperationsService
 	/// <param name="targetFile">The target file to sync.</param>
 	/// <param name="ctx">The status context for updates.</param>
 	/// <returns>1 if successful, 0 if failed.</returns>
-	private static int TrySyncFile(string sourceFile, string targetFile, StatusContext ctx)
+	private int TrySyncFile(string sourceFile, string targetFile, StatusContext ctx)
 	{
 		try
 		{
 			ctx.Status($"Syncing [yellow]{Path.GetFileName(targetFile)}[/]...");
-			FileDiffer.SyncFile(sourceFile, targetFile, null);
+			fileDiffer.SyncFile(sourceFile, targetFile);
 			return 1;
 		}
 		catch (IOException ex)
@@ -177,7 +178,7 @@ public static class SyncOperationsService
 	/// Allows user to choose reference files for each group.
 	/// </summary>
 	/// <param name="groups">The file groups to choose reference files for.</param>
-	private static void ChooseReferenceFiles(List<FileGroup> groups)
+	private void ChooseReferenceFiles(List<FileGroup> groups)
 	{
 		int syncedFiles = 0;
 
@@ -196,7 +197,7 @@ public static class SyncOperationsService
 	/// <param name="groupNumber">The current group number.</param>
 	/// <param name="totalGroups">The total number of groups.</param>
 	/// <returns>The number of files synchronized in this group.</returns>
-	private static int ProcessSingleGroup(FileGroup group, int groupNumber, int totalGroups)
+	private int ProcessSingleGroup(FileGroup group, int groupNumber, int totalGroups)
 	{
 		AnsiConsole.WriteLine();
 		AnsiConsole.MarkupLine($"[cyan]Group {groupNumber} of {totalGroups}[/]");
@@ -256,7 +257,7 @@ public static class SyncOperationsService
 	/// <param name="group">The file group to synchronize.</param>
 	/// <param name="referenceFile">The reference file to sync to.</param>
 	/// <returns>The number of files successfully synchronized.</returns>
-	private static int SyncGroupToReference(FileGroup group, string referenceFile)
+	private int SyncGroupToReference(FileGroup group, string referenceFile)
 	{
 		int syncedFiles = 0;
 
@@ -266,7 +267,7 @@ public static class SyncOperationsService
 			{
 				try
 				{
-					FileDiffer.SyncFile(referenceFile, file, null);
+					fileDiffer.SyncFile(referenceFile, file);
 					syncedFiles++;
 					UIHelper.ShowSuccess($"✓ Synced {Path.GetFileName(file)}");
 				}

@@ -6,12 +6,13 @@ namespace ktsu.BlastMerge.Services;
 
 using System;
 using System.Text;
+using ktsu.BlastMerge.Contracts;
 using Spectre.Console;
 
 /// <summary>
 /// Provides functionality to visualize whitespace characters in text
 /// </summary>
-public static class WhitespaceVisualizer
+public class WhitespaceVisualizer : IWhitespaceVisualizer
 {
 	/// <summary>
 	/// Makes whitespace characters visible in text by replacing them with visible symbols
@@ -21,7 +22,7 @@ public static class WhitespaceVisualizer
 	/// <param name="showTabs">Whether to show tabs as visible characters</param>
 	/// <param name="showLineEndings">Whether to show line endings as visible characters</param>
 	/// <returns>Text with whitespace characters made visible</returns>
-	public static string MakeWhitespaceVisible(string? text, bool showSpaces = true, bool showTabs = true, bool showLineEndings = true)
+	public string MakeWhitespaceVisible(string? text, bool showSpaces = true, bool showTabs = true, bool showLineEndings = true)
 	{
 		if (string.IsNullOrEmpty(text))
 		{
@@ -60,7 +61,7 @@ public static class WhitespaceVisualizer
 	/// </summary>
 	/// <param name="text">The text to process</param>
 	/// <returns>Text with trailing whitespace highlighted</returns>
-	public static string HighlightTrailingWhitespace(string? text)
+	public string HighlightTrailingWhitespace(string? text)
 	{
 		if (string.IsNullOrEmpty(text))
 		{
@@ -105,7 +106,7 @@ public static class WhitespaceVisualizer
 	/// Creates a legend showing what the whitespace symbols mean
 	/// </summary>
 	/// <returns>A formatted legend string</returns>
-	public static string CreateWhitespaceLegend() =>
+	public string CreateWhitespaceLegend() =>
 		"[dim]Whitespace: [/]" +
 		"[dim]· = space  → = tab  ↵ = return  ¶ = newline  [/]" +
 		"[on red dim]red background = trailing whitespace[/]";
@@ -117,7 +118,7 @@ public static class WhitespaceVisualizer
 	/// <param name="showWhitespace">Whether to show whitespace characters</param>
 	/// <param name="highlightTrailing">Whether to highlight trailing whitespace</param>
 	/// <returns>Processed line ready for display</returns>
-	public static string ProcessLineForDisplay(string? line, bool showWhitespace = true, bool highlightTrailing = true)
+	public string ProcessLineForDisplay(string? line, bool showWhitespace = true, bool highlightTrailing = true)
 	{
 		if (string.IsNullOrEmpty(line))
 		{
@@ -162,7 +163,7 @@ public static class WhitespaceVisualizer
 	/// <param name="showWhitespace">Whether to show whitespace characters</param>
 	/// <param name="highlightTrailing">Whether to highlight trailing whitespace</param>
 	/// <returns>Processed line ready for markup display</returns>
-	public static string ProcessLineForMarkupDisplay(string? line, bool showWhitespace = true, bool highlightTrailing = true)
+	public string ProcessLineForMarkupDisplay(string? line, bool showWhitespace = true, bool highlightTrailing = true)
 	{
 		if (string.IsNullOrEmpty(line))
 		{
@@ -185,7 +186,7 @@ public static class WhitespaceVisualizer
 	/// <summary>
 	/// Processes a line with trailing whitespace highlighting
 	/// </summary>
-	private static string ProcessLineWithTrailingHighlight(string line, bool showWhitespace)
+	private string ProcessLineWithTrailingHighlight(string line, bool showWhitespace)
 	{
 		int trailingStart = FindTrailingWhitespaceStart(line);
 
@@ -197,7 +198,7 @@ public static class WhitespaceVisualizer
 	/// <summary>
 	/// Processes a line with whitespace visualization only
 	/// </summary>
-	private static string ProcessLineWithWhitespace(string line, bool showWhitespace = true)
+	private string ProcessLineWithWhitespace(string line, bool showWhitespace = true)
 	{
 		string processed = showWhitespace ? MakeWhitespaceVisible(line) : line;
 		return Markup.Escape(processed);
@@ -226,7 +227,7 @@ public static class WhitespaceVisualizer
 	/// <summary>
 	/// Builds a line with trailing whitespace highlighted
 	/// </summary>
-	private static string BuildLineWithTrailingHighlight(string line, int trailingStart, bool showWhitespace)
+	private string BuildLineWithTrailingHighlight(string line, int trailingStart, bool showWhitespace)
 	{
 		StringBuilder result = new();
 

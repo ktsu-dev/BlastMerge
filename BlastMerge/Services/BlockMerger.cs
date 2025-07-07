@@ -7,12 +7,14 @@ namespace ktsu.BlastMerge.Services;
 using System;
 using System.Collections.Generic;
 using DiffPlex.Model;
+using ktsu.BlastMerge.Contracts;
 using ktsu.BlastMerge.Models;
 
 /// <summary>
 /// Provides improved block-based merging functionality using DiffPlex directly
 /// </summary>
-public static class BlockMerger
+/// <param name="diffPlexHelper">Helper for DiffPlex operations</param>
+public class BlockMerger(IDiffPlexHelper diffPlexHelper)
 {
 	/// <summary>
 	/// Performs manual block-by-block selection for merging using DiffPlex directly
@@ -21,8 +23,8 @@ public static class BlockMerger
 	/// <param name="lines2">Lines from version 2</param>
 	/// <param name="blockChoiceCallback">Callback function to get user's choice for each block</param>
 	/// <returns>The manually merged result</returns>
-	public static MergeResult PerformManualBlockSelection(string[] lines1, string[] lines2,
-		Func<DiffPlex.Model.DiffBlock, BlockContext, int, BlockChoice> blockChoiceCallback)
+	public MergeResult PerformManualBlockSelection(string[] lines1, string[] lines2,
+		Func<DiffBlock, BlockContext, int, BlockChoice> blockChoiceCallback)
 	{
 		ArgumentNullException.ThrowIfNull(lines1);
 		ArgumentNullException.ThrowIfNull(lines2);
@@ -32,7 +34,7 @@ public static class BlockMerger
 		string content2 = string.Join(Environment.NewLine, lines2);
 
 		// Use DiffPlex directly to get proper diff blocks
-		DiffResult diffResult = DiffPlexHelper.CreateLineDiffsFromContent(content1, content2);
+		DiffResult diffResult = diffPlexHelper.CreateLineDiffsFromContent(content1, content2);
 
 		List<string> mergedLines = [];
 		List<MergeConflict> conflicts = [];
@@ -41,13 +43,13 @@ public static class BlockMerger
 		// Track current position in file 1
 		int currentPos1 = 0;
 
-		foreach (DiffPlex.Model.DiffBlock diffBlock in diffResult.DiffBlocks)
+		foreach (DiffBlock diffBlock in diffResult.DiffBlocks)
 		{
 			// Add unchanged content before this block
 			AddUnchangedContentBeforeBlock(lines1, ref currentPos1, diffBlock, mergedLines);
 
 			// Get context for this block using DiffPlexHelper
-			BlockContext context = DiffPlexHelper.GetBlockContext(lines1, lines2, diffBlock, 3);
+			BlockContext context = diffPlexHelper.GetBlockContext(lines1, lines2, diffBlock, 3);
 
 			// Get user's choice for this block
 			BlockChoice choice = blockChoiceCallback(diffBlock, context, blockNumber);
@@ -71,7 +73,7 @@ public static class BlockMerger
 	/// Adds unchanged content before a diff block
 	/// </summary>
 	private static void AddUnchangedContentBeforeBlock(string[] lines1,
-		ref int currentPos1, DiffPlex.Model.DiffBlock diffBlock, List<string> mergedLines)
+		ref int currentPos1, DiffBlock diffBlock, List<string> mergedLines)
 	{
 		// Add unchanged lines that appear before this diff block
 		int endPos1 = diffBlock.DeleteStartA;
@@ -103,7 +105,7 @@ public static class BlockMerger
 	/// Applies the user's choice for a DiffPlex diff block
 	/// </summary>
 	private static void ApplyDiffBlockChoice(string[] lines1, string[] lines2,
-		DiffPlex.Model.DiffBlock diffBlock, BlockChoice choice, List<string> mergedLines)
+		DiffBlock diffBlock, BlockChoice choice, List<string> mergedLines)
 	{
 		switch (choice)
 		{
@@ -133,7 +135,7 @@ public static class BlockMerger
 	/// <summary>
 	/// Applies UseVersion1 choice - takes deleted lines from the left version
 	/// </summary>
-	private static void ApplyUseVersion1(string[] lines1, DiffPlex.Model.DiffBlock diffBlock, List<string> mergedLines)
+	private static void ApplyUseVersion1(string[] lines1, DiffBlock diffBlock, List<string> mergedLines)
 	{
 		for (int i = diffBlock.DeleteStartA; i < diffBlock.DeleteStartA + diffBlock.DeleteCountA && i < lines1.Length; i++)
 		{
@@ -144,7 +146,7 @@ public static class BlockMerger
 	/// <summary>
 	/// Applies UseVersion2 choice - takes inserted lines from the right version
 	/// </summary>
-	private static void ApplyUseVersion2(string[] lines2, DiffPlex.Model.DiffBlock diffBlock, List<string> mergedLines)
+	private static void ApplyUseVersion2(string[] lines2, DiffBlock diffBlock, List<string> mergedLines)
 	{
 		for (int i = diffBlock.InsertStartB; i < diffBlock.InsertStartB + diffBlock.InsertCountB && i < lines2.Length; i++)
 		{
@@ -155,7 +157,7 @@ public static class BlockMerger
 	/// <summary>
 	/// Applies UseBoth choice - takes deleted lines first, then inserted lines
 	/// </summary>
-	private static void ApplyUseBoth(string[] lines1, string[] lines2, DiffPlex.Model.DiffBlock diffBlock, List<string> mergedLines)
+	private static void ApplyUseBoth(string[] lines1, string[] lines2, DiffBlock diffBlock, List<string> mergedLines)
 	{
 		ApplyUseVersion1(lines1, diffBlock, mergedLines);
 		ApplyUseVersion2(lines2, diffBlock, mergedLines);

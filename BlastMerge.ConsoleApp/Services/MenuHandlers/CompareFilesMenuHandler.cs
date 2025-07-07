@@ -14,7 +14,10 @@ using Spectre.Console;
 /// Menu handler for compare files operations.
 /// </summary>
 /// <param name="applicationService">The application service.</param>
-public class CompareFilesMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)
+/// <param name="comparisonOperationsService">The comparison operations service.</param>
+public class CompareFilesMenuHandler(
+	ApplicationService applicationService,
+	ComparisonOperationsService comparisonOperationsService) : BaseMenuHandler(applicationService)
 {
 	/// <summary>
 	/// Gets the name of this menu for navigation purposes.
@@ -94,10 +97,10 @@ public class CompareFilesMenuHandler(ApplicationService applicationService) : Ba
 	/// <summary>
 	/// Handles comparing two directories.
 	/// </summary>
-	private static void HandleCompareTwoDirectories() => ComparisonOperationsService.HandleCompareTwoDirectories();
+	private void HandleCompareTwoDirectories() => comparisonOperationsService.HandleCompareTwoDirectories();
 
 	/// <summary>
 	/// Handles comparing two specific files.
 	/// </summary>
-	private static void HandleCompareTwoSpecificFiles() => ComparisonOperationsService.HandleCompareTwoSpecificFiles();
+	private void HandleCompareTwoSpecificFiles() => comparisonOperationsService.HandleCompareTwoSpecificFiles();
 }

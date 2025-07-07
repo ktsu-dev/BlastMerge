@@ -2,7 +2,7 @@
   <ItemGroup>
     <PackageReference Include="Spectre.Console" />
     <PackageReference Include="CommandLineParser" />
-    <PackageReference Include="ktsu.AppDataStorage" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
   </ItemGroup>
 
   <ItemGroup>

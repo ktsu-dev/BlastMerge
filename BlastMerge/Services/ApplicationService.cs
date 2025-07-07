@@ -7,20 +7,38 @@ namespace ktsu.BlastMerge.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Abstractions;
 using ktsu.BlastMerge.Contracts;
 using ktsu.BlastMerge.Models;
+using ktsu.FileSystemProvider;
 
 /// <summary>
 /// Implementation of the main application service that handles business logic.
 /// </summary>
-/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
-public abstract class ApplicationService(IFileSystem? fileSystem = null) : IApplicationService
+/// <param name="fileSystemProvider">File system provider for file operations</param>
+/// <param name="fileHasher">File hasher service for computing file hashes</param>
+/// <param name="fileFinder">File finder service for locating files</param>
+/// <param name="fileDiffer">File differ service for comparing files</param>
+public abstract class ApplicationService(IFileSystemProvider fileSystemProvider, FileHasher fileHasher, FileFinder fileFinder, FileDiffer fileDiffer) : IApplicationService
 {
 	/// <summary>
-	/// The file system abstraction to use for file operations
+	/// The file system provider for file operations
 	/// </summary>
-	protected IFileSystem FileSystem { get; } = fileSystem ?? new FileSystem();
+	protected IFileSystemProvider FileSystemProvider { get; } = fileSystemProvider;
+
+	/// <summary>
+	/// The file hasher service for computing file hashes
+	/// </summary>
+	protected FileHasher FileHasher { get; } = fileHasher;
+
+	/// <summary>
+	/// The file finder service for locating files
+	/// </summary>
+	protected FileFinder FileFinder { get; } = fileFinder;
+
+	/// <summary>
+	/// The file differ service for comparing files
+	/// </summary>
+	protected FileDiffer FileDiffer { get; } = fileDiffer;
 
 	/// <summary>
 	/// Validates that parameters are not null and directory exists.
@@ -43,7 +61,7 @@ public abstract class ApplicationService(IFileSystem? fileSystem = null) : IAppl
 	/// <exception cref="DirectoryNotFoundException">Thrown when directory does not exist.</exception>
 	protected void ValidateDirectoryExists(string directory)
 	{
-		if (!FileSystem.Directory.Exists(directory))
+		if (!FileSystemProvider.Current.Directory.Exists(directory))
 		{
 			throw new DirectoryNotFoundException($"Directory '{directory}' does not exist.");
 		}
@@ -73,8 +91,8 @@ public abstract class ApplicationService(IFileSystem? fileSystem = null) : IAppl
 	{
 		ValidateDirectoryAndFileName(directory, fileName);
 
-		IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(directory, fileName, FileSystem);
-		IReadOnlyCollection<FileGroup> fileGroups = FileDiffer.GroupFilesByHash(filePaths, FileSystem);
+		IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(directory, fileName);
+		IReadOnlyCollection<FileGroup> fileGroups = FileDiffer.GroupFilesByHash(filePaths);
 
 		// Convert FileGroup collection to Dictionary<string, IReadOnlyCollection<string>>
 		// Use a combination of hash and index to ensure unique keys

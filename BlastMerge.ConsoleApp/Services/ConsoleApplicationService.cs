@@ -8,19 +8,39 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using DiffPlex.Model;
 using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 using ktsu.BlastMerge.ConsoleApp.Text;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
+using ktsu.FileSystemProvider;
 using Spectre.Console;
 
 /// <summary>
 /// Console-specific implementation of the application service that adds UI functionality.
 /// </summary>
+/// <param name="fileSystemProvider">File system provider for file operations</param>
+/// <param name="fileHasher">File hasher service for computing file hashes</param>
+/// <param name="fileFinder">File finder service for locating files</param>
+/// <param name="fileDiffer">File differ service for comparing files</param>
+/// <param name="syncOperationsService">Sync operations service for file synchronization</param>
+/// <param name="interactiveMergeService">Interactive merge service for file merging</param>
+/// <param name="batchProcessor">Batch processor service for batch operations</param>
+/// <param name="iterativeMergeOrchestrator">Iterative merge orchestrator service for merge operations</param>
+/// <param name="fileDisplayService">File display service for showing file information</param>
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "<Pending>")]
-public class ConsoleApplicationService : ApplicationService
+public class ConsoleApplicationService(
+	IFileSystemProvider fileSystemProvider,
+	FileHasher fileHasher,
+	FileFinder fileFinder,
+	FileDiffer fileDiffer,
+	SyncOperationsService syncOperationsService,
+	InteractiveMergeService interactiveMergeService,
+	BatchProcessor batchProcessor,
+	IterativeMergeOrchestrator iterativeMergeOrchestrator,
+	FileDisplayService fileDisplayService) : ApplicationService(fileSystemProvider, fileHasher, fileFinder, fileDiffer)
 {
 	// Table column names
 	private const string GroupColumnName = "Group";
@@ -78,13 +98,13 @@ public class ConsoleApplicationService : ApplicationService
 	/// <param name="directory">The directory to search.</param>
 	/// <param name="fileName">The filename pattern.</param>
 	/// <returns>List of discovered file paths.</returns>
-	private static List<string> DiscoverFiles(string directory, string fileName)
+	private List<string> DiscoverFiles(string directory, string fileName)
 	{
 		List<string> filePaths = [];
 		AnsiConsole.Status()
 			.Start("Discovering files...", ctx =>
 			{
-				IReadOnlyCollection<string> foundFiles = FileFinder.FindFiles(directory, fileName, fileSystem: null, progressCallback: path =>
+				IReadOnlyCollection<string> foundFiles = FileFinder.FindFiles(directory, fileName, progressCallback: path =>
 				{
 					ctx.Status($"Discovering files... Found: {Path.GetFileName(path)}");
 					ctx.Refresh();
@@ -99,7 +119,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// Executes the user-selected action on the file groups.
 	/// </summary>
 	/// <param name="fileGroups">The file groups to process.</param>
-	private static void ExecuteUserSelectedAction(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
+	private void ExecuteUserSelectedAction(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
 	{
 		Dictionary<string, ProcessFileActionChoice> processFileActionChoices = new()
 		{
@@ -126,7 +146,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// </summary>
 	/// <param name="choice">The action choice.</param>
 	/// <param name="fileGroups">The file groups to process.</param>
-	private static void ExecuteFileAction(ProcessFileActionChoice choice, IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
+	private void ExecuteFileAction(ProcessFileActionChoice choice, IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
 	{
 		switch (choice)
 		{
@@ -134,13 +154,13 @@ public class ConsoleApplicationService : ApplicationService
 				FileDisplayService.ShowDetailedFileList(fileGroups);
 				break;
 			case ProcessFileActionChoice.ShowDifferences:
-				FileDisplayService.ShowDifferences(fileGroups);
+				fileDisplayService.ShowDifferences(fileGroups);
 				break;
 			case ProcessFileActionChoice.RunIterativeMergeOnDuplicates:
-				InteractiveMergeService.PerformIterativeMerge(fileGroups);
+				interactiveMergeService.PerformIterativeMerge(fileGroups);
 				break;
 			case ProcessFileActionChoice.SyncFiles:
-				SyncOperationsService.OfferSyncOptions(fileGroups);
+				syncOperationsService.OfferSyncOptions(fileGroups);
 				break;
 			case ProcessFileActionChoice.ReturnToMainMenu:
 			default:
@@ -223,13 +243,13 @@ public class ConsoleApplicationService : ApplicationService
 	/// <param name="directory">The directory to process.</param>
 	/// <param name="batch">The batch configuration.</param>
 	/// <returns>A tuple containing the total patterns processed, total files found, and batch result.</returns>
-	private static (int totalPatternsProcessed, int totalFilesFound, BatchResult? batchResult) ProcessAllPatterns(string directory, BatchConfiguration batch)
+	private (int totalPatternsProcessed, int totalFilesFound, BatchResult? batchResult) ProcessAllPatterns(string directory, BatchConfiguration batch)
 	{
 		BatchResult? result = null;
 
 		// Use discrete phases batch processing with better separation of concerns
 		// User interaction only occurs in the resolving phase, avoiding conflicts with progress display
-		result = BatchProcessor.ProcessBatchWithDiscretePhases(
+		result = batchProcessor.ProcessBatchWithDiscretePhases(
 			batch,
 			directory,
 			ConsoleMergeCallback,
@@ -274,7 +294,7 @@ public class ConsoleApplicationService : ApplicationService
 		}
 
 		// Prepare file groups for merging using the Core library
-		IReadOnlyCollection<FileGroup>? coreFileGroups = IterativeMergeOrchestrator.PrepareFileGroupsForMerging(directory, fileName);
+		IReadOnlyCollection<FileGroup>? coreFileGroups = iterativeMergeOrchestrator.PrepareFileGroupsForMerging(directory, fileName);
 
 		if (coreFileGroups == null)
 		{
@@ -283,7 +303,7 @@ public class ConsoleApplicationService : ApplicationService
 		}
 
 		// Start iterative merge process with provided callbacks
-		MergeCompletionResult result = IterativeMergeOrchestrator.StartIterativeMergeProcess(
+		MergeCompletionResult result = iterativeMergeOrchestrator.StartIterativeMergeProcess(
 			coreFileGroups,
 			mergeCallback,
 			statusCallback,
@@ -902,11 +922,11 @@ public class ConsoleApplicationService : ApplicationService
 	/// <param name="file2">Second file path.</param>
 	/// <param name="existingContent">Existing merged content.</param>
 	/// <returns>Merge result or null if cancelled.</returns>
-	private static MergeResult? ConsoleMergeCallback(string file1, string file2, string? existingContent)
+	private MergeResult? ConsoleMergeCallback(string file1, string file2, string? existingContent)
 	{
 		(string leftFile, string rightFile) = DetermineFileOrder(file1, file2, existingContent);
 
-		MergeResult? result = IterativeMergeOrchestrator.PerformMergeWithConflictResolution(
+		MergeResult? result = iterativeMergeOrchestrator.PerformMergeWithConflictResolution(
 			leftFile, rightFile, existingContent,
 			(diffBlock, context, blockNumber) => GetBlockChoice(diffBlock, context, blockNumber, leftFile, rightFile));
 
@@ -925,7 +945,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// <param name="file2">Second file path.</param>
 	/// <param name="existingContent">Existing merged content.</param>
 	/// <returns>A tuple with the left and right file paths in the determined order.</returns>
-	private static (string leftFile, string rightFile) DetermineFileOrder(string file1, string file2, string? existingContent)
+	private (string leftFile, string rightFile) DetermineFileOrder(string file1, string file2, string? existingContent)
 	{
 		if (existingContent != null)
 		{
@@ -961,7 +981,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// <param name="leftFile">The left file path</param>
 	/// <param name="rightFile">The right file path</param>
 	/// <returns>The user's choice for the block</returns>
-	private static BlockChoice GetBlockChoice(DiffPlex.Model.DiffBlock diffBlock, BlockContext context, int blockNumber, string leftFile, string rightFile)
+	private BlockChoice GetBlockChoice(DiffPlex.Model.DiffBlock diffBlock, BlockContext context, int blockNumber, string leftFile, string rightFile)
 	{
 		DisplayBlockHeader(diffBlock, blockNumber);
 		ShowDiffBlockDisplay(diffBlock, context, leftFile, rightFile);
@@ -987,12 +1007,12 @@ public class ConsoleApplicationService : ApplicationService
 	/// <param name="context">The block context.</param>
 	/// <param name="leftFile">The left file path.</param>
 	/// <param name="rightFile">The right file path.</param>
-	private static void ShowDiffBlockDisplay(DiffPlex.Model.DiffBlock diffBlock, BlockContext context, string leftFile, string rightFile)
+	private void ShowDiffBlockDisplay(DiffPlex.Model.DiffBlock diffBlock, BlockContext context, string leftFile, string rightFile)
 	{
 		(string leftLabel, string rightLabel) = FileDisplayService.MakeDistinguishedPaths(leftFile, rightFile);
 		string[] lines1 = File.ReadAllLines(leftFile);
 		string[] lines2 = File.ReadAllLines(rightFile);
-		FileComparisonDisplayService.ShowDiffBlock(lines1, lines2, diffBlock, context, leftLabel, rightLabel);
+		fileComparisonDisplayService.ShowDiffBlock(lines1, lines2, diffBlock, context, leftLabel, rightLabel);
 	}
 
 	/// <summary>

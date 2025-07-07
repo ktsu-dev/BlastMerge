@@ -4,6 +4,7 @@
 
 namespace ktsu.BlastMerge.ConsoleApp.Services;
 
+using System.IO.Abstractions;
 using System.Text;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.Models;
@@ -13,19 +14,23 @@ using Spectre.Console;
 /// <summary>
 /// Service for handling interactive merge UI operations.
 /// </summary>
-public static class InteractiveMergeService
+/// <param name="fileDiffer">File differ service</param>
+/// <param name="fileSystem">File system abstraction</param>
+#pragma warning disable CS9113 // Parameter is unread
+public class InteractiveMergeService(FileDiffer fileDiffer, IFileSystem fileSystem)
+#pragma warning restore CS9113
 {
 	/// <summary>
 	/// Performs iterative merge on file groups.
 	/// </summary>
 	/// <param name="fileGroups">The file groups to merge.</param>
-	public static void PerformIterativeMerge(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
+	public void PerformIterativeMerge(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
 	{
 		ArgumentNullException.ThrowIfNull(fileGroups);
 
 		// Convert to file groups by hash to find groups with multiple identical copies
 		List<string> allFiles = [.. fileGroups.SelectMany(g => g.Value)];
-		IReadOnlyCollection<FileGroup> groups = FileDiffer.GroupFilesByHash(allFiles);
+		IReadOnlyCollection<FileGroup> groups = fileDiffer.GroupFilesByHash(allFiles);
 
 		// Filter to groups with multiple files for merging
 		List<FileGroup> groupsWithMultipleFiles = [.. groups.Where(g => g.FilePaths.Count > 1)];
@@ -105,7 +110,7 @@ public static class InteractiveMergeService
 	/// Performs iterative merge on a single file group.
 	/// </summary>
 	/// <param name="group">The file group to merge.</param>
-	private static void PerformGroupMerge(FileGroup group)
+	private void PerformGroupMerge(FileGroup group)
 	{
 		List<string> remainingFiles = [.. group.FilePaths];
 		UIHelper.ShowInfo($"Starting iterative merge for {remainingFiles.Count} files...");
@@ -126,7 +131,7 @@ public static class InteractiveMergeService
 	/// </summary>
 	/// <param name="remainingFiles">List of remaining files to merge.</param>
 	/// <returns>True if merge step was successful, false if should stop.</returns>
-	private static bool ProcessSingleMergeStep(List<string> remainingFiles)
+	private bool ProcessSingleMergeStep(List<string> remainingFiles)
 	{
 		FileSimilarity? mostSimilar = FindMostSimilarInGroup(remainingFiles);
 		if (mostSimilar == null)
@@ -136,7 +141,7 @@ public static class InteractiveMergeService
 		}
 
 		ShowMergeInfo(mostSimilar);
-		MergeResult mergeResult = FileDiffer.MergeFiles(mostSimilar.FilePath1, mostSimilar.FilePath2, null);
+		MergeResult mergeResult = fileDiffer.MergeFiles(mostSimilar.FilePath1, mostSimilar.FilePath2);
 
 		return HandleMergeConflicts(mergeResult) && ApplyMergeResult(mergeResult, mostSimilar, remainingFiles);
 	}
@@ -252,7 +257,7 @@ public static class InteractiveMergeService
 	/// </summary>
 	/// <param name="files">The files to compare.</param>
 	/// <returns>The most similar file pair, or null if none found.</returns>
-	private static FileSimilarity? FindMostSimilarInGroup(List<string> files)
+	private FileSimilarity? FindMostSimilarInGroup(List<string> files)
 	{
 		if (files.Count < 2)
 		{
@@ -268,7 +273,7 @@ public static class InteractiveMergeService
 			{
 				try
 				{
-					double similarity = FileDiffer.CalculateFileSimilarity(files[i], files[j], null);
+					double similarity = fileDiffer.CalculateFileSimilarity(files[i], files[j]);
 
 					if (similarity > highestSimilarity)
 					{

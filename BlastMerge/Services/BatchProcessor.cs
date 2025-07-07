@@ -4,13 +4,9 @@
 
 namespace ktsu.BlastMerge.Services;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.IO.Abstractions;
-using System.Linq;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Text;
+using ktsu.FileSystemProvider;
 
 /// <summary>
 /// Parameters for pattern processing operations
@@ -19,13 +15,12 @@ using ktsu.BlastMerge.Text;
 /// <param name="SearchPaths">The search paths to use</param>
 /// <param name="Directory">The default directory to search in</param>
 /// <param name="PathExclusionPatterns">Path exclusion patterns to apply</param>
-/// <param name="FileSystem">File system abstraction to use (optional, defaults to real filesystem)</param>
 public record PatternProcessingParameters(
 	string Pattern,
 	IReadOnlyCollection<string> SearchPaths,
 	string Directory,
 	IReadOnlyCollection<string> PathExclusionPatterns,
-	IFileSystem? FileSystem = null);
+	IFileSystemProvider FileSystemProvider);
 
 /// <summary>
 /// Callback functions for batch processing operations
@@ -43,8 +38,25 @@ public record ProcessingCallbacks(
 /// <summary>
 /// Processes batch operations for multiple file patterns
 /// </summary>
-public static partial class BatchProcessor
+/// <remarks>
+/// Initializes a new instance of the BatchProcessor class.
+/// </remarks>
+/// <param name="fileFinder">File finder service for locating files</param>
+/// <param name="fileHasher">File hasher service for computing hashes</param>
+/// <param name="iterativeMergeOrchestrator">Service for orchestrating iterative merges</param>
+/// <param name="fileSystemProvider">File system provider for file operations</param>
+public partial class BatchProcessor(
+	FileFinder fileFinder,
+	FileHasher fileHasher,
+	FileDiffer fileDiffer,
+	IterativeMergeOrchestrator iterativeMergeOrchestrator,
+	IFileSystemProvider fileSystemProvider)
 {
+	private readonly FileFinder fileFinder = fileFinder;
+	private readonly FileHasher fileHasher = fileHasher;
+	private readonly FileDiffer fileDiffer = fileDiffer;
+	private readonly IterativeMergeOrchestrator iterativeMergeOrchestrator = iterativeMergeOrchestrator;
+	private readonly IFileSystemProvider fileSystemProvider = fileSystemProvider;
 	private const string OnlyOneFileFoundMessage = "Only one file found, no merge needed";
 	private const string AllFilesIdenticalMessage = "All files are identical";
 	private const string NoFilesFoundMessage = "No files found";
@@ -59,16 +71,14 @@ public static partial class BatchProcessor
 	/// <param name="statusCallback">Callback function to report merge status</param>
 	/// <param name="continuationCallback">Callback function to ask whether to continue</param>
 	/// <param name="patternCallback">Optional callback for each pattern before processing</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>The batch processing result</returns>
-	public static BatchResult ProcessBatch(
+	public BatchResult ProcessBatch(
 		BatchConfiguration batch,
 		string directory,
 		Func<string, string, string?, MergeResult?> mergeCallback,
 		Action<MergeSessionStatus> statusCallback,
 		Func<bool> continuationCallback,
-		Func<string, bool>? patternCallback = null,
-		IFileSystem? fileSystem = null)
+		Func<string, bool>? patternCallback = null)
 	{
 		ArgumentNullException.ThrowIfNull(batch);
 		ArgumentNullException.ThrowIfNull(directory);
@@ -76,15 +86,13 @@ public static partial class BatchProcessor
 		ArgumentNullException.ThrowIfNull(statusCallback);
 		ArgumentNullException.ThrowIfNull(continuationCallback);
 
-		fileSystem ??= new FileSystem();
-
 		BatchResult result = new()
 		{
 			BatchName = batch.Name,
 			Success = true
 		};
 
-		if (!fileSystem.Directory.Exists(directory))
+		if (!fileSystemProvider.Current.Directory.Exists(directory))
 		{
 			result.Success = false;
 			result.Summary = $"Directory does not exist: {directory}";
@@ -113,8 +121,7 @@ public static partial class BatchProcessor
 				batch.PathExclusionPatterns,
 				mergeCallback,
 				statusCallback,
-				continuationCallback,
-				fileSystem);
+				continuationCallback);
 
 			result.PatternResults.Add(patternResult);
 
@@ -160,17 +167,15 @@ public static partial class BatchProcessor
 	/// <param name="continuationCallback">Callback function to ask whether to continue.</param>
 	/// <param name="progressCallback">Optional callback for progress updates during phases.</param>
 	/// <param name="maxDegreeOfParallelism">Maximum number of concurrent hashing operations (0 for auto).</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem).</param>
 	/// <returns>The batch processing result.</returns>
-	public static BatchResult ProcessBatchWithDiscretePhases(
+	public BatchResult ProcessBatchWithDiscretePhases(
 		BatchConfiguration batch,
 		string directory,
 		Func<string, string, string?, MergeResult?> mergeCallback,
 		Action<MergeSessionStatus> statusCallback,
 		Func<bool> continuationCallback,
 		Action<string>? progressCallback = null,
-		int maxDegreeOfParallelism = 0,
-		IFileSystem? fileSystem = null)
+		int maxDegreeOfParallelism = 0)
 	{
 		ArgumentNullException.ThrowIfNull(batch);
 		ArgumentNullException.ThrowIfNull(directory);
@@ -178,15 +183,13 @@ public static partial class BatchProcessor
 		ArgumentNullException.ThrowIfNull(statusCallback);
 		ArgumentNullException.ThrowIfNull(continuationCallback);
 
-		fileSystem ??= new FileSystem();
-
 		BatchResult result = new()
 		{
 			BatchName = batch.Name,
 			Success = true
 		};
 
-		if (!fileSystem.Directory.Exists(directory))
+		if (!fileSystemProvider.Current.Directory.Exists(directory))
 		{
 			result.Success = false;
 			result.Summary = $"Directory does not exist: {directory}";
@@ -197,7 +200,7 @@ public static partial class BatchProcessor
 		{
 			// Phase 1: Gathering - Discover all files for all patterns
 			progressCallback?.Invoke(ProgressMessages.Phase1GatheringFiles);
-			Dictionary<string, IReadOnlyCollection<string>> patternFiles = ExecuteGatheringPhase(batch, directory, progressCallback, fileSystem);
+			Dictionary<string, IReadOnlyCollection<string>> patternFiles = ExecuteGatheringPhase(batch, directory, progressCallback);
 
 			int totalFiles = patternFiles.Values.Sum(files => files.Count);
 			progressCallback?.Invoke($"✅ Gathering complete: Found {totalFiles} files across {batch.FilePatterns.Count} patterns");
@@ -211,7 +214,7 @@ public static partial class BatchProcessor
 
 			// Phase 2: Hashing - Compute hashes for all files in parallel
 			progressCallback?.Invoke("🔗 PHASE 2: Computing file hashes...");
-			Dictionary<string, string> fileHashes = ExecuteHashingPhase(patternFiles, maxDegreeOfParallelism, progressCallback, fileSystem);
+			Dictionary<string, string> fileHashes = ExecuteHashingPhase(patternFiles, maxDegreeOfParallelism, progressCallback);
 
 			progressCallback?.Invoke($"✅ Hashing complete: Computed hashes for {fileHashes.Count} files");
 			progressCallback?.Invoke("");
@@ -255,11 +258,10 @@ public static partial class BatchProcessor
 	/// <summary>
 	/// Phase 1: Gathering - Discovers all files for all patterns in parallel.
 	/// </summary>
-	private static Dictionary<string, IReadOnlyCollection<string>> ExecuteGatheringPhase(
+	private Dictionary<string, IReadOnlyCollection<string>> ExecuteGatheringPhase(
 		BatchConfiguration batch,
 		string directory,
-		Action<string>? progressCallback,
-		IFileSystem fileSystem)
+		Action<string>? progressCallback)
 	{
 		progressCallback?.Invoke($"📂 Scanning {batch.FilePatterns.Count} patterns across search paths...");
 
@@ -268,7 +270,7 @@ public static partial class BatchProcessor
 			? filePath => progressCallback($"  📄 Found: {filePath}")
 			: null;
 
-		Dictionary<string, IReadOnlyCollection<string>> result = GatherAllPatternFiles(batch, directory, fileDiscoveryCallback, fileSystem);
+		Dictionary<string, IReadOnlyCollection<string>> result = GatherAllPatternFiles(batch, directory);
 
 		foreach ((string pattern, IReadOnlyCollection<string> files) in result)
 		{
@@ -281,11 +283,10 @@ public static partial class BatchProcessor
 	/// <summary>
 	/// Phase 2: Hashing - Computes hashes for all files in parallel.
 	/// </summary>
-	private static Dictionary<string, string> ExecuteHashingPhase(
+	private Dictionary<string, string> ExecuteHashingPhase(
 		Dictionary<string, IReadOnlyCollection<string>> patternFiles,
 		int maxDegreeOfParallelism,
-		Action<string>? progressCallback,
-		IFileSystem fileSystem)
+		Action<string>? progressCallback)
 	{
 		// Flatten all files and prepare for hashing
 		List<(string filePath, string fileName)> workItems = [.. patternFiles
@@ -294,7 +295,7 @@ public static partial class BatchProcessor
 
 		progressCallback?.Invoke($"⚡ Starting hash computation for {workItems.Count} files...");
 
-		return HashFilesInParallel(workItems, maxDegreeOfParallelism, progressCallback, fileSystem);
+		return HashFilesInParallel(workItems, maxDegreeOfParallelism, progressCallback);
 	}
 
 	/// <summary>
@@ -350,7 +351,7 @@ public static partial class BatchProcessor
 	/// <summary>
 	/// Phase 4: Resolving - Processes the resolution queue with user interaction.
 	/// </summary>
-	private static void ExecuteResolvingPhase(
+	private void ExecuteResolvingPhase(
 		List<ResolutionItem> resolutionQueue,
 		Func<string, string, string?, MergeResult?> mergeCallback,
 		Action<MergeSessionStatus> statusCallback,
@@ -400,7 +401,7 @@ public static partial class BatchProcessor
 	/// <summary>
 	/// Processes a single resolution item, handling user interaction only for merge items.
 	/// </summary>
-	private static PatternResult ProcessResolutionItem(
+	private PatternResult ProcessResolutionItem(
 		ResolutionItem resolutionItem,
 		Func<string, string, string?, MergeResult?> mergeCallback,
 		Action<MergeSessionStatus> statusCallback,
@@ -431,7 +432,7 @@ public static partial class BatchProcessor
 
 			case ResolutionType.Merge:
 				// This is the only case that requires user interaction
-				MergeCompletionResult mergeResult = IterativeMergeOrchestrator.StartIterativeMergeProcess(
+				MergeCompletionResult mergeResult = iterativeMergeOrchestrator.StartIterativeMergeProcess(
 					resolutionItem.FileGroups,
 					mergeCallback,
 					statusCallback,
@@ -453,26 +454,20 @@ public static partial class BatchProcessor
 	/// </summary>
 	/// <param name="batch">The batch configuration</param>
 	/// <param name="directory">The default directory to search in</param>
-	/// <param name="progressCallback">Optional callback to report discovered file paths</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>Dictionary mapping pattern to found files</returns>
-	private static Dictionary<string, IReadOnlyCollection<string>> GatherAllPatternFiles(
+	private Dictionary<string, IReadOnlyCollection<string>> GatherAllPatternFiles(
 		BatchConfiguration batch,
-		string directory,
-		Action<string>? progressCallback,
-		IFileSystem fileSystem)
+		string directory)
 	{
 		// Use parallel processing to find files for all patterns simultaneously
 		ParallelQuery<(string pattern, IReadOnlyCollection<string> files)> patternResults =
 			batch.FilePatterns.AsParallel().Select(pattern =>
 			{
-				IReadOnlyCollection<string> files = FileFinder.FindFiles(
+				IReadOnlyCollection<string> files = fileFinder.FindFiles(
 					batch.SearchPaths,
 					directory,
 					pattern,
-					batch.PathExclusionPatterns,
-					fileSystem,
-					progressCallback);
+					batch.PathExclusionPatterns);
 				return (pattern, files);
 			});
 
@@ -485,13 +480,11 @@ public static partial class BatchProcessor
 	/// <param name="workItems">List of files to hash with their filenames</param>
 	/// <param name="maxDegreeOfParallelism">Maximum degree of parallelism (0 for auto)</param>
 	/// <param name="progressCallback">Optional callback for progress updates</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>Dictionary mapping file paths to their hash values</returns>
-	private static Dictionary<string, string> HashFilesInParallel(
+	private Dictionary<string, string> HashFilesInParallel(
 		List<(string filePath, string fileName)> workItems,
 		int maxDegreeOfParallelism = 0,
-		Action<string>? progressCallback = null,
-		IFileSystem? fileSystem = null)
+		Action<string>? progressCallback = null)
 	{
 		Dictionary<string, string> results = [];
 		int completedItems = 0;
@@ -511,7 +504,7 @@ public static partial class BatchProcessor
 		{
 			try
 			{
-				string hash = FileHasher.ComputeFileHash(workItem.filePath, fileSystem);
+				string hash = fileHasher.ComputeFileHash(workItem.filePath);
 
 				lock (lockObject)
 				{
@@ -596,17 +589,16 @@ public static partial class BatchProcessor
 	/// <summary>
 	/// Core method that processes a single file pattern with all options
 	/// </summary>
-	private static PatternResult ProcessSinglePatternCore(
+	private PatternResult ProcessSinglePatternCore(
 		PatternProcessingParameters parameters,
 		ProcessingCallbacks callbacks)
 	{
 		// Find all files matching the pattern
-		IReadOnlyCollection<string> files = FileFinder.FindFiles(
+		IReadOnlyCollection<string> files = fileFinder.FindFiles(
 			parameters.SearchPaths,
 			parameters.Directory,
 			parameters.Pattern,
-			parameters.PathExclusionPatterns,
-			parameters.FileSystem);
+			parameters.PathExclusionPatterns);
 
 		if (files.Count == 0)
 		{
@@ -636,7 +628,7 @@ public static partial class BatchProcessor
 
 		foreach (string file in files)
 		{
-			string content = parameters.FileSystem?.File.ReadAllText(file) ?? File.ReadAllText(file);
+			string content = parameters.FileSystemProvider.Current.File.ReadAllText(file) ?? File.ReadAllText(file);
 			if (firstContent == null)
 			{
 				firstContent = content;
@@ -667,7 +659,7 @@ public static partial class BatchProcessor
 		List<string> sortedFiles = [.. files.OrderBy(f => f)];
 
 		// Calculate similarity between the first two files
-		double similarity = FileDiffer.CalculateFileSimilarity(sortedFiles[0], sortedFiles[1], parameters.FileSystem);
+		double similarity = fileDiffer.CalculateFileSimilarity(sortedFiles[0], sortedFiles[1]);
 
 		// Merge first two files
 		mergeResult = callbacks.MergeCallback(sortedFiles[0], sortedFiles[1], outputPath);
@@ -706,7 +698,7 @@ public static partial class BatchProcessor
 			}
 
 			// Calculate similarity between this file and previous file
-			double currentSimilarity = FileDiffer.CalculateFileSimilarity(sortedFiles[i - 1], sortedFiles[i], parameters.FileSystem);
+			double currentSimilarity = fileDiffer.CalculateFileSimilarity(sortedFiles[i - 1], sortedFiles[i]);
 
 			mergeResult = callbacks.MergeCallback(sortedFiles[i - 1], sortedFiles[i], outputPath);
 
@@ -749,19 +741,17 @@ public static partial class BatchProcessor
 	/// <param name="mergeCallback">Callback function to perform individual merges</param>
 	/// <param name="statusCallback">Callback function to report merge status</param>
 	/// <param name="continuationCallback">Callback function to ask whether to continue</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>The pattern processing result</returns>
-	public static PatternResult ProcessSinglePatternWithPaths(
+	public PatternResult ProcessSinglePatternWithPaths(
 		string pattern,
 		IReadOnlyCollection<string> searchPaths,
 		string directory,
 		IReadOnlyCollection<string> pathExclusionPatterns,
 		Func<string, string, string?, MergeResult?> mergeCallback,
 		Action<MergeSessionStatus> statusCallback,
-		Func<bool> continuationCallback,
-		IFileSystem? fileSystem = null) =>
+		Func<bool> continuationCallback) =>
 		ProcessSinglePatternCore(
-			new PatternProcessingParameters(pattern, searchPaths, directory, pathExclusionPatterns, fileSystem),
+			new PatternProcessingParameters(pattern, searchPaths, directory, pathExclusionPatterns, fileSystemProvider),
 			new ProcessingCallbacks(mergeCallback, statusCallback, continuationCallback));
 
 	/// <summary>
@@ -772,20 +762,18 @@ public static partial class BatchProcessor
 	/// <param name="directory">The default directory to search in</param>
 	/// <param name="pathExclusionPatterns">Path exclusion patterns to apply</param>
 	/// <param name="callbacks">Processing callbacks for merge operations and progress reporting</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>The pattern processing result</returns>
-	public static PatternResult ProcessSinglePatternWithPaths(
+	public PatternResult ProcessSinglePatternWithPaths(
 		string pattern,
 		IReadOnlyCollection<string> searchPaths,
 		string directory,
 		IReadOnlyCollection<string> pathExclusionPatterns,
-		ProcessingCallbacks callbacks,
-		IFileSystem? fileSystem = null)
+		ProcessingCallbacks callbacks)
 	{
 		ArgumentNullException.ThrowIfNull(callbacks);
 
 		return ProcessSinglePatternCore(
-			new PatternProcessingParameters(pattern, searchPaths, directory, pathExclusionPatterns, fileSystem),
+			new PatternProcessingParameters(pattern, searchPaths, directory, pathExclusionPatterns, fileSystemProvider),
 			callbacks);
 	}
 
@@ -797,15 +785,13 @@ public static partial class BatchProcessor
 	/// <param name="mergeCallback">Callback function to perform individual merges</param>
 	/// <param name="statusCallback">Callback function to report merge status</param>
 	/// <param name="continuationCallback">Callback function to ask whether to continue</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>The pattern processing result</returns>
-	public static PatternResult ProcessSinglePattern(
+	public PatternResult ProcessSinglePattern(
 		string pattern,
 		string directory,
 		Func<string, string, string?, MergeResult?> mergeCallback,
 		Action<MergeSessionStatus> statusCallback,
-		Func<bool> continuationCallback,
-		IFileSystem? fileSystem = null)
+		Func<bool> continuationCallback)
 	{
 		return ProcessSinglePatternWithPaths(
 			pattern,
@@ -814,8 +800,7 @@ public static partial class BatchProcessor
 			[],
 			mergeCallback,
 			statusCallback,
-			continuationCallback,
-			fileSystem);
+			continuationCallback);
 	}
 
 	/// <summary>
@@ -827,18 +812,16 @@ public static partial class BatchProcessor
 	/// <param name="statusCallback">Callback function to report merge status</param>
 	/// <param name="continuationCallback">Callback function to ask whether to continue</param>
 	/// <param name="progressCallback">Optional callback to report discovered file paths</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>The pattern processing result</returns>
-	public static PatternResult ProcessSinglePattern(
+	public PatternResult ProcessSinglePattern(
 		string pattern,
 		string directory,
 		Func<string, string, string?, MergeResult?> mergeCallback,
 		Action<MergeSessionStatus> statusCallback,
 		Func<bool> continuationCallback,
-		Action<string>? progressCallback,
-		IFileSystem? fileSystem = null) =>
+		Action<string>? progressCallback) =>
 		ProcessSinglePatternCore(
-			new PatternProcessingParameters(pattern, [], directory, [], fileSystem),
+			new PatternProcessingParameters(pattern, [], directory, [], fileSystemProvider),
 			new ProcessingCallbacks(mergeCallback, statusCallback, continuationCallback, progressCallback));
 
 	/// <summary>

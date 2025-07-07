@@ -4,12 +4,13 @@
 
 namespace ktsu.BlastMerge.Services;
 
-using System.IO.Abstractions;
+using ktsu.FileSystemProvider;
 
 /// <summary>
 /// Computes hashes for files to identify unique versions
 /// </summary>
-public static class FileHasher
+/// <param name="fileSystemProvider">File system provider for file operations</param>
+public class FileHasher(IFileSystemProvider fileSystemProvider)
 {
 	// FNV-1a constants (64-bit version)
 	private const ulong FNV_PRIME_64 = 1099511628211;
@@ -19,14 +20,12 @@ public static class FileHasher
 	/// Computes an FNV-1a hash for a file
 	/// </summary>
 	/// <param name="filePath">Path to the file</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to FileSystemProvider.Current)</param>
 	/// <returns>The FNV-1a hash as a hex string</returns>
-	public static string ComputeFileHash(string filePath, IFileSystem? fileSystem = null)
+	public string ComputeFileHash(string filePath)
 	{
-		fileSystem ??= FileSystemProvider.Current;
 		ulong hash = FNV_OFFSET_BASIS_64;
 
-		using Stream fileStream = fileSystem.File.OpenRead(filePath);
+		using Stream fileStream = fileSystemProvider.Current.File.OpenRead(filePath);
 		byte[] buffer = new byte[4096];
 		int bytesRead;
 
@@ -46,15 +45,13 @@ public static class FileHasher
 	/// Computes an FNV-1a hash for a file asynchronously
 	/// </summary>
 	/// <param name="filePath">Path to the file</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to FileSystemProvider.Current)</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>The FNV-1a hash as a hex string</returns>
-	public static async Task<string> ComputeFileHashAsync(string filePath, IFileSystem? fileSystem = null, CancellationToken cancellationToken = default)
+	public async Task<string> ComputeFileHashAsync(string filePath, CancellationToken cancellationToken = default)
 	{
-		fileSystem ??= FileSystemProvider.Current;
 		ulong hash = FNV_OFFSET_BASIS_64;
 
-		using Stream fileStream = fileSystem.File.OpenRead(filePath);
+		using Stream fileStream = fileSystemProvider.Current.File.OpenRead(filePath);
 		byte[] buffer = new byte[4096];
 		int bytesRead;
 
@@ -74,18 +71,15 @@ public static class FileHasher
 	/// Computes FNV-1a hashes for multiple files in parallel
 	/// </summary>
 	/// <param name="filePaths">Collection of file paths to hash</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to FileSystemProvider.Current)</param>
 	/// <param name="maxDegreeOfParallelism">Maximum number of concurrent operations (default: processor count)</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>Dictionary mapping file paths to their hashes</returns>
-	public static async Task<Dictionary<string, string>> ComputeFileHashesAsync(
+	public async Task<Dictionary<string, string>> ComputeFileHashesAsync(
 		IEnumerable<string> filePaths,
-		IFileSystem? fileSystem = null,
 		int maxDegreeOfParallelism = 0,
 		CancellationToken cancellationToken = default)
 	{
 		ArgumentNullException.ThrowIfNull(filePaths);
-		fileSystem ??= FileSystemProvider.Current;
 
 		if (maxDegreeOfParallelism <= 0)
 		{
@@ -97,7 +91,7 @@ public static class FileHasher
 
 		foreach (string filePath in filePaths)
 		{
-			tasks.Add(ComputeHashWithSemaphore(filePath, fileSystem, semaphore, cancellationToken));
+			tasks.Add(ComputeHashWithSemaphore(filePath, semaphore, cancellationToken));
 		}
 
 		(string filePath, string hash)[] results = await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -108,16 +102,15 @@ public static class FileHasher
 	/// <summary>
 	/// Helper method to compute hash with semaphore throttling
 	/// </summary>
-	private static async Task<(string filePath, string hash)> ComputeHashWithSemaphore(
+	private async Task<(string filePath, string hash)> ComputeHashWithSemaphore(
 		string filePath,
-		IFileSystem fileSystem,
 		SemaphoreSlim semaphore,
 		CancellationToken cancellationToken)
 	{
 		await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 		try
 		{
-			string hash = await ComputeFileHashAsync(filePath, fileSystem, cancellationToken).ConfigureAwait(false);
+			string hash = await ComputeFileHashAsync(filePath, cancellationToken).ConfigureAwait(false);
 			return (filePath, hash);
 		}
 		finally

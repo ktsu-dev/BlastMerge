@@ -10,16 +10,25 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
-using DiffPlex.Model;
 using ktsu.BlastMerge.ConsoleApp.Text;
 using ktsu.BlastMerge.Models;
+using ktsu.BlastMerge.Contracts;
 using ktsu.BlastMerge.Services;
 using Spectre.Console;
+using DiffPlex.Model;
 
 /// <summary>
 /// Centralized service for file comparison display functionality.
 /// </summary>
-public static class FileComparisonDisplayService
+/// <param name="fileDiffer">File differ service</param>
+/// <param name="whitespaceVisualizer">Whitespace visualizer service</param>
+/// <param name="characterLevelDiffer">Character level differ service</param>
+#pragma warning disable CS9113 // Parameter is unread
+public class FileComparisonDisplayService(
+	FileDiffer fileDiffer,
+	IWhitespaceVisualizer whitespaceVisualizer,
+	ICharacterLevelDiffer characterLevelDiffer)
+#pragma warning restore CS9113
 {
 	/// <summary>
 	/// Executes a file operation with standard exception handling for file-related errors.
@@ -50,14 +59,15 @@ public static class FileComparisonDisplayService
 	/// </summary>
 	/// <param name="file1">First file path.</param>
 	/// <param name="file2">Second file path.</param>
-	public static void CompareTwoFiles(string file1, string file2)
+	public void CompareTwoFiles(string file1, string file2)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
+		FileDiffer differ = fileDiffer;
 		ExecuteFileOperation(() =>
 		{
-			IReadOnlyCollection<LineDifference> differences = FileDiffer.FindDifferences(file1, file2);
+			IReadOnlyCollection<LineDifference> differences = differ.FindDifferences(file1, file2);
 
 			if (differences.Count == 0)
 			{
@@ -76,7 +86,7 @@ public static class FileComparisonDisplayService
 	/// </summary>
 	/// <param name="file1">First file path.</param>
 	/// <param name="file2">Second file path.</param>
-	public static void ShowFileComparisonOptions(string file1, string file2)
+	public void ShowFileComparisonOptions(string file1, string file2)
 	{
 		ShowWhitespaceLegend();
 		string diffFormat = PromptForDiffFormat();
@@ -86,9 +96,9 @@ public static class FileComparisonDisplayService
 	/// <summary>
 	/// Shows the whitespace legend panel.
 	/// </summary>
-	private static void ShowWhitespaceLegend()
+	private void ShowWhitespaceLegend()
 	{
-		AnsiConsole.Write(new Panel(WhitespaceVisualizer.CreateWhitespaceLegend())
+		AnsiConsole.Write(new Panel(whitespaceVisualizer.CreateWhitespaceLegend())
 		{
 			Header = new PanelHeader("[dim]Whitespace Visualization Legend[/]"),
 			Border = BoxBorder.Rounded
@@ -118,7 +128,7 @@ public static class FileComparisonDisplayService
 	/// <param name="diffFormat">The selected diff format.</param>
 	/// <param name="file1">First file path.</param>
 	/// <param name="file2">Second file path.</param>
-	private static void ExecuteDiffFormat(string diffFormat, string file1, string file2)
+	private void ExecuteDiffFormat(string diffFormat, string file1, string file2)
 	{
 		if (diffFormat.Contains("📊"))
 		{
@@ -140,14 +150,15 @@ public static class FileComparisonDisplayService
 	/// </summary>
 	/// <param name="file1">First file path.</param>
 	/// <param name="file2">Second file path.</param>
-	public static void ShowChangeSummary(string file1, string file2)
+	public void ShowChangeSummary(string file1, string file2)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
+		FileDiffer differ = fileDiffer;
 		ExecuteFileOperation(() =>
 		{
-			IReadOnlyCollection<LineDifference> differences = FileDiffer.FindDifferences(file1, file2);
+			IReadOnlyCollection<LineDifference> differences = differ.FindDifferences(file1, file2);
 
 			if (differences.Count == 0)
 			{
@@ -174,16 +185,17 @@ public static class FileComparisonDisplayService
 	/// </summary>
 	/// <param name="file1">First file path.</param>
 	/// <param name="file2">Second file path.</param>
-	public static void ShowGitStyleDiff(string file1, string file2)
+	public void ShowGitStyleDiff(string file1, string file2)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
+		FileDiffer differ = fileDiffer;
 		ExecuteFileOperation(() =>
 		{
 			string[] lines1 = File.ReadAllLines(file1);
 			string[] lines2 = File.ReadAllLines(file2);
-			Collection<ColoredDiffLine> coloredDiff = FileDiffer.GenerateColoredDiff(file1, file2, lines1, lines2);
+			Collection<ColoredDiffLine> coloredDiff = differ.GenerateColoredDiff(file1, file2, lines1, lines2);
 
 			Panel panel = new(RenderColoredDiff(coloredDiff))
 			{
@@ -200,7 +212,7 @@ public static class FileComparisonDisplayService
 	/// </summary>
 	/// <param name="file1">Path to the first file.</param>
 	/// <param name="file2">Path to the second file.</param>
-	public static void ShowSideBySideDiff(string file1, string file2)
+	public void ShowSideBySideDiff(string file1, string file2)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
@@ -254,7 +266,7 @@ public static class FileComparisonDisplayService
 	/// </summary>
 	/// <param name="table">The table to populate.</param>
 	/// <param name="diffResult">The diff result with diff blocks.</param>
-	private static void PopulateTableWithDiffBlocks(Table table, DiffResult diffResult)
+	private void PopulateTableWithDiffBlocks(Table table, DiffResult diffResult)
 	{
 		string[] linesA = [.. diffResult.PiecesOld];
 		string[] linesB = [.. diffResult.PiecesNew];
@@ -274,13 +286,13 @@ public static class FileComparisonDisplayService
 	/// <param name="table">The table to populate.</param>
 	/// <param name="linesA">Lines from file A.</param>
 	/// <param name="linesB">Lines from file B.</param>
-	private static void ShowIdenticalFilesPreview(Table table, string[] linesA, string[] linesB)
+	private void ShowIdenticalFilesPreview(Table table, string[] linesA, string[] linesB)
 	{
 		int linesToShow = Math.Min(10, Math.Min(linesA.Length, linesB.Length));
 		for (int i = 0; i < linesToShow; i++)
 		{
-			string processedA = WhitespaceVisualizer.ProcessLineForMarkupDisplay(linesA[i]);
-			string processedB = WhitespaceVisualizer.ProcessLineForMarkupDisplay(linesB[i]);
+			string processedA = whitespaceVisualizer.ProcessLineForMarkupDisplay(linesA[i]);
+			string processedB = whitespaceVisualizer.ProcessLineForMarkupDisplay(linesB[i]);
 			table.AddRow((i + 1).ToString(), $"  {processedA}", (i + 1).ToString(), $"  {processedB}");
 		}
 	}
@@ -292,11 +304,11 @@ public static class FileComparisonDisplayService
 	/// <param name="linesA">Lines from file A.</param>
 	/// <param name="linesB">Lines from file B.</param>
 	/// <param name="diffBlocks">The diff blocks to process.</param>
-	private static void ProcessDiffBlocks(Table table, string[] linesA, string[] linesB, IList<DiffPlex.Model.DiffBlock> diffBlocks)
+	private void ProcessDiffBlocks(Table table, string[] linesA, string[] linesB, IList<DiffBlock> diffBlocks)
 	{
 		for (int i = 0; i < diffBlocks.Count; i++)
 		{
-			DiffPlex.Model.DiffBlock block = diffBlocks[i];
+			DiffBlock block = diffBlocks[i];
 			ProcessSingleDiffBlock(table, linesA, linesB, block);
 
 			if (i < diffBlocks.Count - 1)
@@ -313,7 +325,7 @@ public static class FileComparisonDisplayService
 	/// <param name="linesA">Lines from file A.</param>
 	/// <param name="linesB">Lines from file B.</param>
 	/// <param name="block">The diff block to process.</param>
-	private static void ProcessSingleDiffBlock(Table table, string[] linesA, string[] linesB, DiffPlex.Model.DiffBlock block)
+	private void ProcessSingleDiffBlock(Table table, string[] linesA, string[] linesB, DiffBlock block)
 	{
 		const int contextSize = 3;
 		(int startLineA, int endLineA, int startLineB, int endLineB) = CalculateBlockRanges(block, linesA.Length, linesB.Length, contextSize);
@@ -342,7 +354,7 @@ public static class FileComparisonDisplayService
 	/// <param name="contextSize">Size of context to show.</param>
 	/// <returns>Tuple of start and end line ranges for both files.</returns>
 	private static (int startLineA, int endLineA, int startLineB, int endLineB) CalculateBlockRanges(
-		DiffPlex.Model.DiffBlock block, int lengthA, int lengthB, int contextSize)
+		DiffBlock block, int lengthA, int lengthB, int contextSize)
 	{
 		int startLineA = Math.Max(0, block.DeleteStartA - contextSize);
 		int endLineA = Math.Min(lengthA - 1, block.DeleteStartA + block.DeleteCountA + contextSize - 1);
@@ -359,7 +371,7 @@ public static class FileComparisonDisplayService
 	/// <param name="linesA">All lines from file A.</param>
 	/// <param name="block">The diff block.</param>
 	/// <returns>Tuple of line number and content for display.</returns>
-	private static (string lineNum, string content) ProcessLeftSide(int lineA, string[] linesA, DiffPlex.Model.DiffBlock block)
+	private (string lineNum, string content) ProcessLeftSide(int lineA, string[] linesA, DiffBlock block)
 	{
 		if (lineA < 0 || lineA >= linesA.Length)
 		{
@@ -367,7 +379,7 @@ public static class FileComparisonDisplayService
 		}
 
 		string lineNum = (lineA + 1).ToString();
-		string processedLine = WhitespaceVisualizer.ProcessLineForMarkupDisplay(linesA[lineA]);
+		string processedLine = whitespaceVisualizer.ProcessLineForMarkupDisplay(linesA[lineA]);
 
 		bool isInDeleteRange = lineA >= block.DeleteStartA && lineA < block.DeleteStartA + block.DeleteCountA;
 		string content = isInDeleteRange ? $"[red on darkred]- {processedLine}[/]" : $"  {processedLine}";
@@ -382,7 +394,7 @@ public static class FileComparisonDisplayService
 	/// <param name="linesB">All lines from file B.</param>
 	/// <param name="block">The diff block.</param>
 	/// <returns>Tuple of line number and content for display.</returns>
-	private static (string lineNum, string content) ProcessRightSide(int lineB, string[] linesB, DiffPlex.Model.DiffBlock block)
+	private (string lineNum, string content) ProcessRightSide(int lineB, string[] linesB, DiffBlock block)
 	{
 		if (lineB < 0 || lineB >= linesB.Length)
 		{
@@ -390,7 +402,7 @@ public static class FileComparisonDisplayService
 		}
 
 		string lineNum = (lineB + 1).ToString();
-		string processedLine = WhitespaceVisualizer.ProcessLineForMarkupDisplay(linesB[lineB]);
+		string processedLine = whitespaceVisualizer.ProcessLineForMarkupDisplay(linesB[lineB]);
 
 		bool isInInsertRange = lineB >= block.InsertStartB && lineB < block.InsertStartB + block.InsertCountB;
 		string content = isInInsertRange ? $"[green on darkgreen]+ {processedLine}[/]" : $"  {processedLine}";
@@ -439,14 +451,14 @@ public static class FileComparisonDisplayService
 	/// <summary>
 	/// Shows the diff legend panel.
 	/// </summary>
-	private static void ShowDiffLegend()
+	private void ShowDiffLegend()
 	{
 		Panel legend = new(
 			"[green]+ Added lines[/]   " +
 			"[red]- Deleted lines[/]   " +
 			"[yellow]~ Modified lines[/]   " +
 			"[dim]  Unchanged lines[/]\n" +
-			WhitespaceVisualizer.CreateWhitespaceLegend())
+			whitespaceVisualizer.CreateWhitespaceLegend())
 		{
 			Header = new PanelHeader("[dim]Legend[/]"),
 			Border = BoxBorder.Rounded
@@ -460,7 +472,7 @@ public static class FileComparisonDisplayService
 	/// </summary>
 	/// <param name="coloredDiff">The colored diff lines to render.</param>
 	/// <returns>Formatted diff string with markup.</returns>
-	private static string RenderColoredDiff(IEnumerable<ColoredDiffLine> coloredDiff)
+	private string RenderColoredDiff(IEnumerable<ColoredDiffLine> coloredDiff)
 	{
 		StringBuilder sb = new();
 		List<ColoredDiffLine> lines = [.. coloredDiff];
@@ -472,7 +484,7 @@ public static class FileComparisonDisplayService
 
 			if (ShouldApplyCharacterLevelDiff(line, lines, i))
 			{
-				string formattedDiff = CharacterLevelDiffer.CreateInlineCharacterDiff(line.Content, lines[i + 1].Content);
+				string formattedDiff = characterLevelDiffer.CreateInlineCharacterDiff(line.Content, lines[i + 1].Content);
 				sb.AppendLine(formattedDiff);
 				i += 2; // Skip both lines since we processed them together
 			}
@@ -493,12 +505,12 @@ public static class FileComparisonDisplayService
 	/// <param name="lines">All lines.</param>
 	/// <param name="index">Current index.</param>
 	/// <returns>True if character-level diffing should be applied.</returns>
-	private static bool ShouldApplyCharacterLevelDiff(ColoredDiffLine line, List<ColoredDiffLine> lines, int index)
+	private bool ShouldApplyCharacterLevelDiff(ColoredDiffLine line, List<ColoredDiffLine> lines, int index)
 	{
 		return line.Color == DiffColor.Deletion &&
 			index + 1 < lines.Count &&
 			lines[index + 1].Color == DiffColor.Addition &&
-			CharacterLevelDiffer.AreLinesSimilar(line.Content, lines[index + 1].Content);
+			characterLevelDiffer.AreLinesSimilar(line.Content, lines[index + 1].Content);
 	}
 
 	/// <summary>
@@ -506,13 +518,13 @@ public static class FileComparisonDisplayService
 	/// </summary>
 	/// <param name="line">The line to format.</param>
 	/// <returns>Formatted line string.</returns>
-	private static string FormatSingleDiffLine(ColoredDiffLine line)
+	private string FormatSingleDiffLine(ColoredDiffLine line)
 	{
 		string colorMarkup = GetColorMarkup(line.Color);
 		string endMarkup = string.IsNullOrEmpty(colorMarkup) ? "" : "[/]";
 
 		string processedContent = line.Color is DiffColor.Addition or DiffColor.Deletion
-			? WhitespaceVisualizer.ProcessLineForMarkupDisplay(line.Content)
+			? whitespaceVisualizer.ProcessLineForMarkupDisplay(line.Content)
 			: line.Content;
 
 		return $"{colorMarkup}{processedContent}{endMarkup}";
@@ -543,8 +555,8 @@ public static class FileComparisonDisplayService
 	/// <param name="leftLabel">Label for the left side</param>
 	/// <param name="rightLabel">Label for the right side</param>
 	/// <returns>A formatted table showing the side-by-side diff</returns>
-	public static Table CreateSideBySideDiffTable(string[] lines1, string[] lines2,
-		DiffPlex.Model.DiffBlock diffBlock, BlockContext context,
+	public Table CreateSideBySideDiffTable(string[] lines1, string[] lines2,
+		DiffBlock diffBlock, BlockContext context,
 		string leftLabel, string rightLabel)
 	{
 		ArgumentNullException.ThrowIfNull(lines1);
@@ -574,7 +586,7 @@ public static class FileComparisonDisplayService
 	/// <summary>
 	/// Adds context lines to the diff table
 	/// </summary>
-	private static void AddContextLines(Table table, ReadOnlyCollection<string> contextLeft,
+	private void AddContextLines(Table table, ReadOnlyCollection<string> contextLeft,
 		ReadOnlyCollection<string> contextRight, int startLineNumber)
 	{
 		int maxLines = Math.Max(contextLeft.Count, contextRight.Count);
@@ -585,8 +597,8 @@ public static class FileComparisonDisplayService
 			string rightLine = i < contextRight.Count ? contextRight[i] : "";
 
 			// Apply whitespace visualization to context lines
-			string leftProcessed = WhitespaceVisualizer.ProcessLineForMarkupDisplay(leftLine);
-			string rightProcessed = WhitespaceVisualizer.ProcessLineForMarkupDisplay(rightLine);
+			string leftProcessed = whitespaceVisualizer.ProcessLineForMarkupDisplay(leftLine);
+			string rightProcessed = whitespaceVisualizer.ProcessLineForMarkupDisplay(rightLine);
 
 			table.AddRow(
 				$"[dim]{startLineNumber + i}[/]",
@@ -599,8 +611,8 @@ public static class FileComparisonDisplayService
 	/// <summary>
 	/// Adds the main diff block content to the table with character-level highlighting
 	/// </summary>
-	private static void AddDiffBlockContent(Table table, string[] lines1, string[] lines2,
-		DiffPlex.Model.DiffBlock diffBlock)
+	private void AddDiffBlockContent(Table table, string[] lines1, string[] lines2,
+		DiffBlock diffBlock)
 	{
 		int maxLines = Math.Max(diffBlock.DeleteCountA, diffBlock.InsertCountB);
 
@@ -621,7 +633,7 @@ public static class FileComparisonDisplayService
 	/// <param name="index">The current row index.</param>
 	/// <returns>Tuple of left line, right line, and line number display.</returns>
 	private static (string? originalLeftLine, string? originalRightLine, string lineNumberDisplay) GetLineContents(
-		string[] lines1, string[] lines2, DiffPlex.Model.DiffBlock diffBlock, int index)
+		string[] lines1, string[] lines2, DiffBlock diffBlock, int index)
 	{
 		string? originalLeftLine = null;
 		string? originalRightLine = null;
@@ -652,16 +664,16 @@ public static class FileComparisonDisplayService
 	/// <param name="originalLeftLine">Original left line content.</param>
 	/// <param name="originalRightLine">Original right line content.</param>
 	/// <returns>Tuple of formatted left and right lines.</returns>
-	private static (string leftLine, string rightLine) FormatDiffLines(string? originalLeftLine, string? originalRightLine)
+	private (string leftLine, string rightLine) FormatDiffLines(string? originalLeftLine, string? originalRightLine)
 	{
 		string leftLine = "";
 		string rightLine = "";
 
 		// Apply character-level diffing if both lines exist and are similar
 		if (originalLeftLine != null && originalRightLine != null &&
-			CharacterLevelDiffer.AreLinesSimilar(originalLeftLine, originalRightLine))
+			characterLevelDiffer.AreLinesSimilar(originalLeftLine, originalRightLine))
 		{
-			(string leftHighlighted, string rightHighlighted) = CharacterLevelDiffer.CreateSideBySideCharacterDiff(originalLeftLine, originalRightLine);
+			(string leftHighlighted, string rightHighlighted) = characterLevelDiffer.CreateSideBySideCharacterDiff(originalLeftLine, originalRightLine);
 			leftLine = $"[red]- {leftHighlighted}[/]";
 			rightLine = $"[green]+ {rightHighlighted}[/]";
 		}
@@ -681,26 +693,26 @@ public static class FileComparisonDisplayService
 	/// <param name="prefix">Markup prefix.</param>
 	/// <param name="suffix">Markup suffix.</param>
 	/// <returns>Formatted line.</returns>
-	private static string FormatSingleSideLine(string? originalLine, string prefix, string suffix)
+	private string FormatSingleSideLine(string? originalLine, string prefix, string suffix)
 	{
 		if (originalLine == null)
 		{
 			return "";
 		}
 
-		string processedLine = WhitespaceVisualizer.ProcessLineForMarkupDisplay(originalLine);
+		string processedLine = whitespaceVisualizer.ProcessLineForMarkupDisplay(originalLine);
 		return $"{prefix}{processedLine}{suffix}";
 	}
 
 	/// <summary>
 	/// Gets the starting line number for context before the diff block
 	/// </summary>
-	private static int GetContextStartLine(DiffPlex.Model.DiffBlock diffBlock, int contextCount) => Math.Max(1, diffBlock.DeleteStartA - contextCount + 1);
+	private static int GetContextStartLine(DiffBlock diffBlock, int contextCount) => Math.Max(1, diffBlock.DeleteStartA - contextCount + 1);
 
 	/// <summary>
 	/// Gets the starting line number for context after the diff block
 	/// </summary>
-	private static int GetContextAfterStartLine(DiffPlex.Model.DiffBlock diffBlock) => diffBlock.DeleteStartA + diffBlock.DeleteCountA + 1;
+	private static int GetContextAfterStartLine(DiffBlock diffBlock) => diffBlock.DeleteStartA + diffBlock.DeleteCountA + 1;
 
 	/// <summary>
 	/// Shows a diff block with its context in a side-by-side format
@@ -711,8 +723,8 @@ public static class FileComparisonDisplayService
 	/// <param name="context">Block context</param>
 	/// <param name="leftLabel">Label for left side</param>
 	/// <param name="rightLabel">Label for right side</param>
-	public static void ShowDiffBlock(string[] lines1, string[] lines2,
-		DiffPlex.Model.DiffBlock diffBlock, BlockContext context,
+	public void ShowDiffBlock(string[] lines1, string[] lines2,
+		DiffBlock diffBlock, BlockContext context,
 		string leftLabel, string rightLabel)
 	{
 		Table table = CreateSideBySideDiffTable(lines1, lines2, diffBlock, context, leftLabel, rightLabel);
@@ -724,7 +736,7 @@ public static class FileComparisonDisplayService
 	/// </summary>
 	/// <param name="diffBlock">The DiffPlex diff block</param>
 	/// <returns>A tuple containing (deletions, insertions) counts</returns>
-	public static (int deletions, int insertions) GetDiffBlockStatistics(DiffPlex.Model.DiffBlock diffBlock)
+	public static (int deletions, int insertions) GetDiffBlockStatistics(DiffBlock diffBlock)
 	{
 		ArgumentNullException.ThrowIfNull(diffBlock);
 		return (diffBlock.DeleteCountA, diffBlock.InsertCountB);

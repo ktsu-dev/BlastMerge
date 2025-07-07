@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build:*)",
+      "Bash(dotnet format:*)",
+      "Bash(dotnet restore:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(rg:*)",
+      "Bash(find:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(dotnet add:*)",
+      "Bash(grep:*)",
+      "Bash(dotnet test:*)",
+      "Bash(dotnet list:*)",
+      "Bash(dotnet run:*)"
+    ],
+    "deny": []
+  }
+}

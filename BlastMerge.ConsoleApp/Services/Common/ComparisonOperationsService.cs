@@ -13,7 +13,11 @@ using Spectre.Console;
 /// <summary>
 /// Centralized service for comparison operations to eliminate code duplication.
 /// </summary>
-public static class ComparisonOperationsService
+/// <param name="fileComparisonDisplayService">File comparison display service</param>
+/// <param name="fileDiffer">File differ service</param>
+public class ComparisonOperationsService(
+	FileComparisonDisplayService fileComparisonDisplayService,
+	FileDiffer fileDiffer)
 {
 	/// <summary>
 	/// Shows a menu title with consistent formatting.
@@ -29,7 +33,7 @@ public static class ComparisonOperationsService
 	/// <summary>
 	/// Handles comparing two directories with user input and display.
 	/// </summary>
-	public static void HandleCompareTwoDirectories()
+	public void HandleCompareTwoDirectories()
 	{
 		ShowMenuTitle("Compare Two Directories");
 
@@ -70,7 +74,7 @@ public static class ComparisonOperationsService
 	/// <summary>
 	/// Handles comparing two specific files with user input and display.
 	/// </summary>
-	public static void HandleCompareTwoSpecificFiles()
+	public void HandleCompareTwoSpecificFiles()
 	{
 		ShowMenuTitle("Compare Two Specific Files");
 
@@ -101,7 +105,7 @@ public static class ComparisonOperationsService
 		}
 
 		// Use centralized file comparison service
-		FileComparisonDisplayService.CompareTwoFiles(file1, file2);
+		fileComparisonDisplayService.CompareTwoFiles(file1, file2);
 		UIHelper.WaitForKeyPress();
 	}
 
@@ -112,7 +116,7 @@ public static class ComparisonOperationsService
 	/// <param name="dir2">Second directory path.</param>
 	/// <param name="pattern">File search pattern.</param>
 	/// <param name="recursive">Whether to search recursively.</param>
-	public static void CompareDirectories(string dir1, string dir2, string pattern, bool recursive)
+	public void CompareDirectories(string dir1, string dir2, string pattern, bool recursive)
 	{
 		DirectoryComparisonResult? result = null;
 
@@ -120,7 +124,7 @@ public static class ComparisonOperationsService
 			.Spinner(Spinner.Known.Star)
 			.Start($"[yellow]Comparing directories...[/]", ctx =>
 			{
-				result = FileDiffer.FindDifferences(dir1, dir2, pattern, recursive);
+				result = fileDiffer.FindDifferences(dir1, dir2, pattern, recursive);
 				ctx.Status("[yellow]Creating comparison report...[/]");
 			});
 
@@ -174,7 +178,7 @@ public static class ComparisonOperationsService
 				AnsiConsole.Write(rule);
 
 				// Use centralized file comparison service
-				FileComparisonDisplayService.ShowChangeSummary(file1, file2);
+				fileComparisonDisplayService.ShowChangeSummary(file1, file2);
 			}
 		}
 	}

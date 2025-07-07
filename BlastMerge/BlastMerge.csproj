@@ -3,6 +3,12 @@
     <PackageReference Include="DiffPlex" />
     <PackageReference Include="Spectre.Console" />
     <PackageReference Include="ktsu.AppDataStorage" />
-    <PackageReference Include="TestableIO.System.IO.Abstractions" />
+    <PackageReference Include="ktsu.PersistenceProvider" />
+    <PackageReference Include="ktsu.FileSystemProvider" />
+    <PackageReference Include="ktsu.SerializationProvider" />
+    <PackageReference Include="ktsu.UniversalSerializer" />
+    <PackageReference Include="ktsu.Semantics" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="System.IO.Abstractions" />
   </ItemGroup>
 </Project>

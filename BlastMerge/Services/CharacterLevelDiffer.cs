@@ -8,14 +8,14 @@ using System;
 using System.Text;
 using DiffPlex;
 using DiffPlex.Model;
+using ktsu.BlastMerge.Contracts;
 using Spectre.Console;
 
 /// <summary>
 /// Provides character-level diff visualization with background highlighting
 /// </summary>
-public static class CharacterLevelDiffer
+public class CharacterLevelDiffer : ICharacterLevelDiffer
 {
-	private static readonly Differ Differ = new();
 
 	/// <summary>
 	/// Creates a character-level diff visualization of two strings with background highlighting
@@ -23,13 +23,14 @@ public static class CharacterLevelDiffer
 	/// <param name="oldText">The original text</param>
 	/// <param name="newText">The modified text</param>
 	/// <returns>A tuple containing the highlighted old and new text with markup</returns>
-	public static (string highlightedOld, string highlightedNew) CreateCharacterLevelDiff(string oldText, string newText)
+	public (string highlightedOld, string highlightedNew) CreateCharacterLevelDiff(string oldText, string newText)
 	{
 		ArgumentNullException.ThrowIfNull(oldText);
 		ArgumentNullException.ThrowIfNull(newText);
 
 		// Use DiffPlex character-level diffing
-		DiffResult charDiff = Differ.CreateCharacterDiffs(oldText, newText, ignoreWhitespace: false);
+		Differ differ = new();
+		DiffResult charDiff = differ.CreateCharacterDiffs(oldText, newText, ignoreWhitespace: false);
 
 		StringBuilder oldHighlighted = new();
 		StringBuilder newHighlighted = new();
@@ -122,7 +123,7 @@ public static class CharacterLevelDiffer
 	/// <param name="oldLine">The original line</param>
 	/// <param name="newLine">The modified line</param>
 	/// <returns>A single string showing both old and new with character-level highlighting</returns>
-	public static string CreateInlineCharacterDiff(string oldLine, string newLine)
+	public string CreateInlineCharacterDiff(string oldLine, string newLine)
 	{
 		ArgumentNullException.ThrowIfNull(oldLine);
 		ArgumentNullException.ThrowIfNull(newLine);
@@ -142,7 +143,7 @@ public static class CharacterLevelDiffer
 	/// <param name="line1">First line</param>
 	/// <param name="line2">Second line</param>
 	/// <returns>True if lines are similar enough for character-level diffing</returns>
-	public static bool AreLinesSimilar(string line1, string line2)
+	public bool AreLinesSimilar(string line1, string line2)
 	{
 		ArgumentNullException.ThrowIfNull(line1);
 		ArgumentNullException.ThrowIfNull(line2);
@@ -265,7 +266,7 @@ public static class CharacterLevelDiffer
 	/// <param name="oldLine">Original line</param>
 	/// <param name="newLine">Modified line</param>
 	/// <returns>Tuple of highlighted old and new text for side-by-side display</returns>
-	public static (string leftSide, string rightSide) CreateSideBySideCharacterDiff(string oldLine, string newLine)
+	public (string leftSide, string rightSide) CreateSideBySideCharacterDiff(string oldLine, string newLine)
 	{
 		ArgumentNullException.ThrowIfNull(oldLine);
 		ArgumentNullException.ThrowIfNull(newLine);

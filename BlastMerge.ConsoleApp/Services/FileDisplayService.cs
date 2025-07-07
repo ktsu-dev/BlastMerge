@@ -13,7 +13,10 @@ using Spectre.Console;
 /// <summary>
 /// Service for displaying file information and comparisons in the console.
 /// </summary>
-public static class FileDisplayService
+/// <param name="fileComparisonDisplayService">File comparison display service</param>
+#pragma warning disable CS9113 // Parameter is unread
+public class FileDisplayService(FileComparisonDisplayService fileComparisonDisplayService)
+#pragma warning restore CS9113
 {
 	/// <summary>
 	/// Shows a detailed list of files grouped by hash.
@@ -60,7 +63,7 @@ public static class FileDisplayService
 	/// Shows differences between file groups.
 	/// </summary>
 	/// <param name="fileGroups">The file groups to show differences for.</param>
-	public static void ShowDifferences(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
+	public void ShowDifferences(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
 	{
 		ArgumentNullException.ThrowIfNull(fileGroups);
 		// Convert to FileGroup objects for easier handling
@@ -101,7 +104,7 @@ public static class FileDisplayService
 				UIHelper.ShowWarning("Comparing first two files:");
 
 				// Use centralized file comparison service
-				FileComparisonDisplayService.ShowFileComparisonOptions(file1, file2);
+				fileComparisonDisplayService.ShowFileComparisonOptions(file1, file2);
 			}
 
 			AnsiConsole.WriteLine();

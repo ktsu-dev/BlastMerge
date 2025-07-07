@@ -19,8 +19,14 @@ using Spectre.Console;
 /// <summary>
 /// Async wrapper for file operations providing improved performance through parallel processing
 /// </summary>
-public static class AsyncApplicationService
+/// <param name="fileFinder">File finder service for locating files</param>
+/// <param name="asyncFileDiffer">Async file differ service for file operations</param>
+/// <param name="fileHasher">File hasher service for computing file hashes</param>
+public class AsyncApplicationService(FileFinder fileFinder, AsyncFileDiffer asyncFileDiffer, FileHasher fileHasher)
 {
+	private readonly FileFinder _fileFinder = fileFinder;
+	private readonly AsyncFileDiffer _asyncFileDiffer = asyncFileDiffer;
+	private readonly FileHasher _fileHasher = fileHasher;
 	/// <summary>
 	/// Processes files asynchronously with progress reporting
 	/// </summary>
@@ -29,7 +35,7 @@ public static class AsyncApplicationService
 	/// <param name="maxDegreeOfParallelism">Maximum concurrent operations</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>File groups organized by content hash</returns>
-	public static async Task<IReadOnlyDictionary<string, IReadOnlyCollection<string>>> ProcessFilesAsync(
+	public async Task<IReadOnlyDictionary<string, IReadOnlyCollection<string>>> ProcessFilesAsync(
 		string directory,
 		string fileName,
 		int maxDegreeOfParallelism = 0,
@@ -47,7 +53,7 @@ public static class AsyncApplicationService
 			{
 				// Step 1: Find files
 				ctx.Status($"[yellow]Finding files...[/]");
-				filePaths = FileFinder.FindFiles(directory, fileName, progressCallback: path =>
+				filePaths = _fileFinder.FindFiles(directory, fileName, progressCallback: path =>
 					ctx.Status($"[yellow]Finding files... Found: {Path.GetFileName(path)}[/]"));
 
 				if (filePaths.Count == 0)
@@ -57,7 +63,7 @@ public static class AsyncApplicationService
 
 				// Step 2: Group files by hash (asynchronously)
 				ctx.Status($"[yellow]Computing file hashes ({filePaths.Count} files)...[/]");
-				IReadOnlyCollection<FileGroup> groups = await AsyncFileDiffer.GroupFilesByHashAsync(
+				IReadOnlyCollection<FileGroup> groups = await _asyncFileDiffer.GroupFilesByHashAsync(
 					filePaths, maxDegreeOfParallelism, cancellationToken).ConfigureAwait(false);
 
 				// Convert back to dictionary format for compatibility
@@ -79,7 +85,7 @@ public static class AsyncApplicationService
 	/// <param name="maxDegreeOfParallelism">Maximum concurrent operations</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>Directory comparison result</returns>
-	public static async Task<DirectoryComparisonResult?> CompareDirectoriesAsync(
+	public async Task<DirectoryComparisonResult?> CompareDirectoriesAsync(
 		string dir1,
 		string dir2,
 		string pattern,
@@ -100,20 +106,20 @@ public static class AsyncApplicationService
 				// Step 1: Find files in both directories
 				ctx.Status($"[yellow]Finding files in first directory...[/]");
 				string[] files1 = recursive
-					? [.. FileFinder.FindFiles(dir1, pattern, fileSystem: null)]
+					? [.. _fileFinder.FindFiles(dir1, pattern)]
 					: GetNonRecursiveFiles(dir1, pattern);
 
 				ctx.Status($"[yellow]Finding files in second directory...[/]");
 				string[] files2 = recursive
-					? [.. FileFinder.FindFiles(dir2, pattern, fileSystem: null)]
+					? [.. _fileFinder.FindFiles(dir2, pattern)]
 					: GetNonRecursiveFiles(dir2, pattern);
 
 				// Step 2: Compute hashes in parallel for better performance
 				ctx.Status($"[yellow]Computing file hashes ({files1.Length + files2.Length} files)...[/]");
-				Task<Dictionary<string, string>> hashesTask1 = FileHasher.ComputeFileHashesAsync(
-					files1, null, maxDegreeOfParallelism, cancellationToken);
-				Task<Dictionary<string, string>> hashesTask2 = FileHasher.ComputeFileHashesAsync(
-					files2, null, maxDegreeOfParallelism, cancellationToken);
+				Task<Dictionary<string, string>> hashesTask1 = _fileHasher.ComputeFileHashesAsync(
+					files1, maxDegreeOfParallelism, cancellationToken);
+				Task<Dictionary<string, string>> hashesTask2 = _fileHasher.ComputeFileHashesAsync(
+					files2, maxDegreeOfParallelism, cancellationToken);
 
 				Dictionary<string, string>[] hashResults = await Task.WhenAll(hashesTask1, hashesTask2).ConfigureAwait(false);
 				Dictionary<string, string> hashes1 = hashResults[0];
@@ -214,7 +220,7 @@ public static class AsyncApplicationService
 	/// <param name="file2">Second file path</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>Similarity score between 0.0 and 1.0</returns>
-	public static async Task<double> ComputeFileSimilarityAsync(
+	public async Task<double> ComputeFileSimilarityAsync(
 		string file1,
 		string file2,
 		CancellationToken cancellationToken = default)
@@ -222,7 +228,7 @@ public static class AsyncApplicationService
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		return await AsyncFileDiffer.CalculateFileSimilarityAsync(file1, file2, cancellationToken);
+		return await _asyncFileDiffer.CalculateFileSimilarityAsync(file1, file2, cancellationToken);
 	}
 
 	/// <summary>
@@ -232,7 +238,7 @@ public static class AsyncApplicationService
 	/// <param name="maxDegreeOfParallelism">Maximum concurrent operations</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>Dictionary mapping file paths to their content</returns>
-	public static async Task<Dictionary<string, string>> ReadFilesAsync(
+	public async Task<Dictionary<string, string>> ReadFilesAsync(
 		IEnumerable<string> filePaths,
 		int maxDegreeOfParallelism = 0,
 		CancellationToken cancellationToken = default)
@@ -246,7 +252,7 @@ public static class AsyncApplicationService
 			.Spinner(Spinner.Known.Star)
 			.StartAsync($"[yellow]Reading {fileList.Count} files...[/]", async ctx =>
 			{
-				results = await AsyncFileDiffer.ReadFilesAsync(
+				results = await _asyncFileDiffer.ReadFilesAsync(
 					fileList, maxDegreeOfParallelism, cancellationToken).ConfigureAwait(false);
 			});
 
@@ -260,7 +266,7 @@ public static class AsyncApplicationService
 	/// <param name="maxDegreeOfParallelism">Maximum concurrent operations</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>Collection of successful copy operations</returns>
-	public static async Task<IReadOnlyCollection<(string source, string target)>> CopyFilesAsync(
+	public async Task<IReadOnlyCollection<(string source, string target)>> CopyFilesAsync(
 		IEnumerable<(string source, string target)> copyOperations,
 		int maxDegreeOfParallelism = 0,
 		CancellationToken cancellationToken = default)
@@ -274,7 +280,7 @@ public static class AsyncApplicationService
 			.Spinner(Spinner.Known.Star)
 			.StartAsync($"[yellow]Copying {operationsList.Count} files...[/]", async ctx =>
 			{
-				results = await AsyncFileDiffer.CopyFilesAsync(
+				results = await _asyncFileDiffer.CopyFilesAsync(
 					operationsList, maxDegreeOfParallelism, cancellationToken).ConfigureAwait(false);
 			});
 
@@ -289,7 +295,7 @@ public static class AsyncApplicationService
 	/// <param name="maxDegreeOfParallelism">Maximum concurrent operations</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>Summary of processed files and patterns</returns>
-	public static async Task<(int patternsProcessed, int totalFilesFound)> ProcessBatchAsync(
+	public async Task<(int patternsProcessed, int totalFilesFound)> ProcessBatchAsync(
 		string directory,
 		string batchName,
 		int maxDegreeOfParallelism = 0,

@@ -6,12 +6,13 @@ namespace ktsu.BlastMerge.Services;
 
 using System;
 using System.IO;
-using System.IO.Abstractions;
+using ktsu.FileSystemProvider;
 
 /// <summary>
 /// Provides secure temporary file creation with collision handling.
 /// </summary>
-public static class SecureTempFileHelper
+/// <param name="fileSystemProvider">File system provider for file operations</param>
+public class SecureTempFileHelper(IFileSystemProvider fileSystemProvider)
 {
 	private const int MaxRetries = 100;
 
@@ -19,22 +20,19 @@ public static class SecureTempFileHelper
 	/// Gets a secure temporary path with proper permissions validation.
 	/// Performs security checks on the temp directory to ensure it's safe to use.
 	/// </summary>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to FileSystemProvider.Current)</param>
 	/// <returns>The secure temporary directory path.</returns>
 	/// <exception cref="IOException">Thrown when the temporary directory is not secure or accessible.</exception>
-	private static string GetSecureTempPath(IFileSystem? fileSystem = null)
+	private string GetSecureTempPath()
 	{
-		fileSystem ??= FileSystemProvider.Current;
-
 		// For mock file systems, use a default temp path since Path.GetTempPath() returns real system path
 		string tempPath;
-		if (fileSystem.GetType().Name.Contains("Mock"))
+		if (fileSystemProvider.Current.GetType().Name.Contains("Mock"))
 		{
 			tempPath = @"C:\temp";
 			// Ensure the mock temp directory exists
-			if (!fileSystem.Directory.Exists(tempPath))
+			if (!fileSystemProvider.Current.Directory.Exists(tempPath))
 			{
-				fileSystem.Directory.CreateDirectory(tempPath);
+				fileSystemProvider.Current.Directory.CreateDirectory(tempPath);
 			}
 		}
 		else
@@ -45,15 +43,15 @@ public static class SecureTempFileHelper
 		try
 		{
 			// Validate that we can write to the temp directory
-			string testFile = fileSystem.Path.Combine(tempPath, fileSystem.Path.GetRandomFileName());
-			using (Stream fs = fileSystem.File.Create(testFile))
+			string testFile = fileSystemProvider.Current.Path.Combine(tempPath, fileSystemProvider.Current.Path.GetRandomFileName());
+			using (Stream fs = fileSystemProvider.Current.File.Create(testFile))
 			{
 				// Write a test byte to ensure we have write permissions
 				fs.WriteByte(0);
 			}
 
 			// Clean up the test file immediately
-			fileSystem.File.Delete(testFile);
+			fileSystemProvider.Current.File.Delete(testFile);
 
 			return tempPath;
 		}
@@ -70,42 +68,38 @@ public static class SecureTempFileHelper
 	/// <summary>
 	/// Creates a secure temporary file with a unique name.
 	/// </summary>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to FileSystemProvider.Current)</param>
 	/// <returns>The full path to the created temporary file.</returns>
 	/// <exception cref="IOException">Thrown when unable to create a unique temporary file after max retries.</exception>
-	public static string CreateTempFile(IFileSystem? fileSystem = null) => CreateTempFile(".tmp", fileSystem);
+	public string CreateTempFile() => CreateTempFile(".tmp");
 
 	/// <summary>
 	/// Creates a secure temporary file with a unique name and specific extension.
 	/// Uses Path.GetRandomFileName() for security while handling collision potential.
 	/// </summary>
 	/// <param name="extension">The file extension (including the dot, e.g., ".txt").</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to FileSystemProvider.Current)</param>
 	/// <returns>The full path to the created temporary file.</returns>
 	/// <exception cref="IOException">Thrown when unable to create a unique temporary file after max retries.</exception>
-	public static string CreateTempFile(string extension, IFileSystem? fileSystem = null)
+	public string CreateTempFile(string extension)
 	{
 		ArgumentNullException.ThrowIfNull(extension);
-		fileSystem ??= FileSystemProvider.Current;
-
-		string tempPath = GetSecureTempPath(fileSystem);
+		string tempPath = GetSecureTempPath();
 
 		for (int attempt = 0; attempt < MaxRetries; attempt++)
 		{
-			string fileName = fileSystem.Path.GetRandomFileName();
+			string fileName = fileSystemProvider.Current.Path.GetRandomFileName();
 			// Replace the extension from GetRandomFileName with the desired one
-			fileName = fileSystem.Path.ChangeExtension(fileName, extension);
-			string fullPath = fileSystem.Path.Combine(tempPath, fileName);
+			fileName = fileSystemProvider.Current.Path.ChangeExtension(fileName, extension);
+			string fullPath = fileSystemProvider.Current.Path.Combine(tempPath, fileName);
 
 			try
 			{
 				// Create the file atomically to ensure uniqueness
 				// FileMode.CreateNew will fail if the file already exists
-				using Stream fs = fileSystem.File.Create(fullPath);
+				using Stream fs = fileSystemProvider.Current.File.Create(fullPath);
 				// File is created and immediately closed
 				return fullPath;
 			}
-			catch (IOException) when (fileSystem.File.Exists(fullPath))
+			catch (IOException) when (fileSystemProvider.Current.File.Exists(fullPath))
 			{
 				// File already exists, try again with a new random name
 				continue;
@@ -118,32 +112,30 @@ public static class SecureTempFileHelper
 	/// <summary>
 	/// Creates a secure temporary directory with a unique name.
 	/// </summary>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to FileSystemProvider.Current)</param>
 	/// <returns>The full path to the created temporary directory.</returns>
 	/// <exception cref="IOException">Thrown when unable to create a unique temporary directory after max retries.</exception>
-	public static string CreateTempDirectory(IFileSystem? fileSystem = null)
+	public string CreateTempDirectory()
 	{
-		fileSystem ??= FileSystemProvider.Current;
-		string tempPath = GetSecureTempPath(fileSystem);
+		string tempPath = GetSecureTempPath();
 
 		for (int attempt = 0; attempt < MaxRetries; attempt++)
 		{
-			string directoryName = fileSystem.Path.GetRandomFileName();
-			string fullPath = fileSystem.Path.Combine(tempPath, directoryName);
+			string directoryName = fileSystemProvider.Current.Path.GetRandomFileName();
+			string fullPath = fileSystemProvider.Current.Path.Combine(tempPath, directoryName);
 
 			try
 			{
 				// Check if directory already exists first
-				if (fileSystem.Directory.Exists(fullPath))
+				if (fileSystemProvider.Current.Directory.Exists(fullPath))
 				{
 					continue; // Try again with a new random name
 				}
 
 				// Create the directory
-				fileSystem.Directory.CreateDirectory(fullPath);
+				fileSystemProvider.Current.Directory.CreateDirectory(fullPath);
 
 				// Verify it was created and we can access it
-				if (fileSystem.Directory.Exists(fullPath))
+				if (fileSystemProvider.Current.Directory.Exists(fullPath))
 				{
 					return fullPath;
 				}
@@ -167,21 +159,18 @@ public static class SecureTempFileHelper
 	/// Safely deletes a temporary file, suppressing common exceptions.
 	/// </summary>
 	/// <param name="filePath">The path to the temporary file to delete.</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to FileSystemProvider.Current)</param>
-	public static void SafeDeleteTempFile(string? filePath, IFileSystem? fileSystem = null)
+	public void SafeDeleteTempFile(string? filePath)
 	{
 		if (string.IsNullOrEmpty(filePath))
 		{
 			return;
 		}
 
-		fileSystem ??= FileSystemProvider.Current;
-
 		try
 		{
-			if (fileSystem.File.Exists(filePath))
+			if (fileSystemProvider.Current.File.Exists(filePath))
 			{
-				fileSystem.File.Delete(filePath);
+				fileSystemProvider.Current.File.Delete(filePath);
 			}
 		}
 		catch (IOException)
@@ -201,9 +190,8 @@ public static class SecureTempFileHelper
 	/// <summary>
 	/// Safely deletes multiple temporary files.
 	/// </summary>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to FileSystemProvider.Current)</param>
 	/// <param name="filePaths">The paths to the temporary files to delete.</param>
-	public static void SafeDeleteTempFiles(IFileSystem? fileSystem = null, params string?[]? filePaths)
+	public void SafeDeleteTempFiles(params string?[]? filePaths)
 	{
 		if (filePaths == null)
 		{
@@ -212,7 +200,7 @@ public static class SecureTempFileHelper
 
 		foreach (string? filePath in filePaths)
 		{
-			SafeDeleteTempFile(filePath, fileSystem);
+			SafeDeleteTempFile(filePath);
 		}
 	}
 
@@ -220,21 +208,18 @@ public static class SecureTempFileHelper
 	/// Safely deletes a temporary directory and all its contents, suppressing common exceptions.
 	/// </summary>
 	/// <param name="directoryPath">The path to the temporary directory to delete.</param>
-	/// <param name="fileSystem">File system abstraction (optional, defaults to FileSystemProvider.Current)</param>
-	public static void SafeDeleteTempDirectory(string? directoryPath, IFileSystem? fileSystem = null)
+	public void SafeDeleteTempDirectory(string? directoryPath)
 	{
 		if (string.IsNullOrEmpty(directoryPath))
 		{
 			return;
 		}
 
-		fileSystem ??= FileSystemProvider.Current;
-
 		try
 		{
-			if (fileSystem.Directory.Exists(directoryPath))
+			if (fileSystemProvider.Current.Directory.Exists(directoryPath))
 			{
-				fileSystem.Directory.Delete(directoryPath, recursive: true);
+				fileSystemProvider.Current.Directory.Delete(directoryPath, recursive: true);
 			}
 		}
 		catch (IOException)

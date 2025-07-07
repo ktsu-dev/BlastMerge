@@ -8,7 +8,11 @@ using System;
 using System.Text;
 using ktsu.BlastMerge.ConsoleApp.CLI;
 using ktsu.BlastMerge.ConsoleApp.Services;
+using ktsu.BlastMerge.ConsoleApp.Services.Common;
+using ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 using ktsu.BlastMerge.Contracts;
+using ktsu.BlastMerge.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 /// <summary>
 /// Main entry point for the BlastMerge console application.
@@ -28,9 +32,33 @@ public static class Program
 
 		try
 		{
-			// Create services with proper dependency injection pattern
-			IApplicationService applicationService = new ConsoleApplicationService();
-			CommandLineHandler commandLineHandler = new(applicationService);
+			// Configure dependency injection
+			ServiceCollection services = new();
+			services.ConfigureBlastMergeServices();
+
+			// Add console-specific services  
+			services.AddSingleton<ConsoleApplicationService>();
+			services.AddSingleton<IApplicationService>(provider => provider.GetRequiredService<ConsoleApplicationService>());
+			services.AddSingleton<CommandLineHandler>();
+			services.AddSingleton<FileComparisonDisplayService>();
+			services.AddSingleton<ComparisonOperationsService>();
+			services.AddSingleton<SyncOperationsService>();
+			services.AddSingleton<InteractiveMergeService>();
+			services.AddSingleton<AsyncApplicationService>();
+			services.AddSingleton<FileDisplayService>();
+
+			// Add menu handlers
+			services.AddTransient<CompareFilesMenuHandler>();
+			services.AddTransient<FindFilesMenuHandler>();
+			services.AddTransient<HelpMenuHandler>();
+			services.AddTransient<IterativeMergeMenuHandler>();
+			services.AddTransient<SettingsMenuHandler>();
+			services.AddTransient<BatchOperationsMenuHandler>();
+
+			using ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+			// Get the command line handler from DI
+			CommandLineHandler commandLineHandler = serviceProvider.GetRequiredService<CommandLineHandler>();
 
 			// Process command line arguments
 			return commandLineHandler.ProcessCommandLineArguments(args);

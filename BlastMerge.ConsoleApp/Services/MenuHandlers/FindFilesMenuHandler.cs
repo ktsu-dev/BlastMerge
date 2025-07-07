@@ -14,7 +14,8 @@ using Spectre.Console;
 /// Menu handler for find files operations.
 /// </summary>
 /// <param name="applicationService">The application service.</param>
-public class FindFilesMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)
+/// <param name="fileFinder">The file finder service.</param>
+public class FindFilesMenuHandler(ApplicationService applicationService, FileFinder fileFinder) : BaseMenuHandler(applicationService)
 {
 	/// <summary>
 	/// Gets the name of this menu for navigation purposes.
@@ -48,7 +49,7 @@ public class FindFilesMenuHandler(ApplicationService applicationService) : BaseM
 		AnsiConsole.Status()
 			.Start("Finding files...", ctx =>
 			{
-				IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(directory, fileName, progressCallback: path =>
+				IReadOnlyCollection<string> filePaths = fileFinder.FindFiles(directory, fileName, progressCallback: path =>
 				{
 					ctx.Status($"Finding files... Found: {Path.GetFileName(path)}");
 					ctx.Refresh();

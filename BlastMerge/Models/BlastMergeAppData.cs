@@ -7,6 +7,7 @@ namespace ktsu.BlastMerge.Models;
 using System.Reflection;
 using ktsu.AppDataStorage;
 
+//TODO: replace this with application settings, removing usage of ktsu.AppDataStorage
 /// <summary>
 /// Main application data storage for BlastMerge, managing all persistent state.
 /// </summary>
