@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using DiffPlex.Model;
 using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
@@ -30,6 +29,8 @@ using Spectre.Console;
 /// <param name="batchProcessor">Batch processor service for batch operations</param>
 /// <param name="iterativeMergeOrchestrator">Iterative merge orchestrator service for merge operations</param>
 /// <param name="fileDisplayService">File display service for showing file information</param>
+/// <param name="fileComparisonDisplayService">File comparison display service for showing file comparisons</param>
+/// <param name="comparisonOperationsService">Comparison operations service for file comparison operations</param>
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "<Pending>")]
 public class ConsoleApplicationService(
 	IFileSystemProvider fileSystemProvider,
@@ -40,7 +41,9 @@ public class ConsoleApplicationService(
 	InteractiveMergeService interactiveMergeService,
 	BatchProcessor batchProcessor,
 	IterativeMergeOrchestrator iterativeMergeOrchestrator,
-	FileDisplayService fileDisplayService) : ApplicationService(fileSystemProvider, fileHasher, fileFinder, fileDiffer)
+	FileDisplayService fileDisplayService,
+	FileComparisonDisplayService fileComparisonDisplayService,
+	ComparisonOperationsService comparisonOperationsService) : ApplicationService(fileSystemProvider, fileHasher, fileFinder, fileDiffer)
 {
 	// Table column names
 	private const string GroupColumnName = "Group";
@@ -648,13 +651,13 @@ public class ConsoleApplicationService(
 		switch (choice)
 		{
 			case MenuChoice.FindFiles:
-				new FindFilesMenuHandler(this).Enter();
+				new FindFilesMenuHandler(this, FileFinder).Enter();
 				break;
 			case MenuChoice.IterativeMerge:
 				new IterativeMergeMenuHandler(this).Enter();
 				break;
 			case MenuChoice.CompareFiles:
-				new CompareFilesMenuHandler(this).Enter();
+				new CompareFilesMenuHandler(this, comparisonOperationsService).Enter();
 				break;
 			case MenuChoice.BatchOperations:
 				new BatchOperationsMenuHandler(this).Enter();
@@ -832,13 +835,13 @@ public class ConsoleApplicationService(
 		switch (menuName)
 		{
 			case MenuNames.FindFiles:
-				new FindFilesMenuHandler(this).Handle();
+				new FindFilesMenuHandler(this, FileFinder).Handle();
 				break;
 			case MenuNames.IterativeMerge:
 				new IterativeMergeMenuHandler(this).Handle();
 				break;
 			case MenuNames.CompareFiles:
-				new CompareFilesMenuHandler(this).Handle();
+				new CompareFilesMenuHandler(this, comparisonOperationsService).Handle();
 				break;
 			case MenuNames.BatchOperations:
 				new BatchOperationsMenuHandler(this).Handle();

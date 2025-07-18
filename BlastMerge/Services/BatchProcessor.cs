@@ -15,6 +15,7 @@ using ktsu.FileSystemProvider;
 /// <param name="SearchPaths">The search paths to use</param>
 /// <param name="Directory">The default directory to search in</param>
 /// <param name="PathExclusionPatterns">Path exclusion patterns to apply</param>
+/// <param name="FileSystemProvider">The file system provider for file operations</param>
 public record PatternProcessingParameters(
 	string Pattern,
 	IReadOnlyCollection<string> SearchPaths,
@@ -43,6 +44,7 @@ public record ProcessingCallbacks(
 /// </remarks>
 /// <param name="fileFinder">File finder service for locating files</param>
 /// <param name="fileHasher">File hasher service for computing hashes</param>
+/// <param name="fileDiffer">File differ service for comparing files</param>
 /// <param name="iterativeMergeOrchestrator">Service for orchestrating iterative merges</param>
 /// <param name="fileSystemProvider">File system provider for file operations</param>
 public partial class BatchProcessor(

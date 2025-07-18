@@ -31,6 +31,15 @@ public static class ServiceConfiguration
 		services.AddSingleton<IWhitespaceVisualizer, WhitespaceVisualizer>();
 		services.AddSingleton<ICharacterLevelDiffer, CharacterLevelDiffer>();
 
+		// Persistence services (temporary simplified setup)
+		// Note: Full persistence provider setup needs to be implemented
+		// services.AddSingleton<BlastMergePersistenceService>();
+		// services.AddSingleton<AppDataBatchManager>();
+		// services.AddSingleton<IApplicationSettingsService, ApplicationSettingsService>();
+		// services.AddSingleton<IBatchConfigurationService, BatchConfigurationService>();
+		// services.AddSingleton<IInputHistoryService, InputHistoryService>();
+		// services.AddSingleton<IRecentBatchService, RecentBatchService>();
+
 		// File operations services
 		services.AddTransient<FileHasher>();
 		services.AddTransient<FileFinder>();
@@ -42,8 +51,8 @@ public static class ServiceConfiguration
 		services.AddTransient<IterativeMergeOrchestrator>();
 		services.AddTransient<BatchProcessor>();
 
-		// TODO: Add persistence provider services once API is clarified
-		// For now, we have the basic file system abstraction set up
+		// Core application services
+		services.AddSingleton<ApplicationService>();
 
 		return services;
 	}

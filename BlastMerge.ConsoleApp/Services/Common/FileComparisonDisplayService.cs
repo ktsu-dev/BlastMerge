@@ -10,12 +10,12 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using DiffPlex.Model;
 using ktsu.BlastMerge.ConsoleApp.Text;
-using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Contracts;
+using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
 using Spectre.Console;
-using DiffPlex.Model;
 
 /// <summary>
 /// Centralized service for file comparison display functionality.

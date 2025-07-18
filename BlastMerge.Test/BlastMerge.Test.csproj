@@ -1,14 +1,23 @@
 ﻿<Project Sdk="ktsu.Sdk.Test">
 
+  <PropertyGroup>
+    <!-- Temporarily disable CA1849 warnings to test DI functionality -->
+    <NoWarn>$(NoWarn);CA1849</NoWarn>
+  </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="Moq" />
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="ktsu.Extensions" />
+    <PackageReference Include="ktsu.PersistenceProvider" />
+    <PackageReference Include="ktsu.UniversalSerializer" />
+    <PackageReference Include="ktsu.SerializationProvider" />
     <PackageReference Include="ktsu.FileSystemProvider" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="TestableIO.System.IO.Abstractions.TestingHelpers" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\BlastMerge\BlastMerge.csproj" />
-    <!-- <ProjectReference Include="..\BlastMerge.ConsoleApp\BlastMerge.ConsoleApp.csproj" /> -->
   </ItemGroup>
 
 </Project>
