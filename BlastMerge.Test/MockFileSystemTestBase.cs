@@ -43,35 +43,31 @@ public abstract class MockFileSystemTestBase
 		MockFileSystem = new MockFileSystem(new Dictionary<string, MockFileData>());
 		MockFileSystem.Directory.CreateDirectory(TestDirectory);
 
-		// Set this test's mock file system as the current one for all services to use
-		// Each test gets its own isolated filesystem
-		FileSystemProvider.SetFileSystem(MockFileSystem);
-
+		// Note: With the new DI approach, individual test classes should 
+		// inject their own IFileSystemProvider instance rather than using static methods
 		try
 		{
 			InitializeFileSystem();
 		}
 		catch
 		{
-			// If initialization fails, ensure we still reset the filesystem before propagating exception
-			FileSystemProvider.ResetToDefault();
+			// If initialization fails, we don't need to reset anything with DI approach
 			throw;
 		}
 	}
 
 	/// <summary>
-	/// Clean up after tests
+	/// Cleans up the mock file system
 	/// </summary>
 	[TestCleanup]
 	public virtual void Cleanup()
 	{
-		// Reset the file system back to default after test completes
-		// This ensures the next test (or real code) gets a clean slate
-		FileSystemProvider.ResetToDefault();
+		// With dependency injection, no global state to reset
+		// MockFileSystem will be garbage collected automatically
 	}
 
 	/// <summary>
-	/// Override this method to set up your specific test files and directories
+	/// Override this method to initialize the file system with test data
 	/// </summary>
 	protected virtual void InitializeFileSystem()
 	{
@@ -79,34 +75,31 @@ public abstract class MockFileSystemTestBase
 	}
 
 	/// <summary>
-	/// Creates a file in the mock filesystem
+	/// Adds a file to the mock file system
 	/// </summary>
-	/// <param name="relativePath">Path relative to the test directory</param>
-	/// <param name="content">Content to write to the file</param>
-	/// <returns>Full path to the created file</returns>
-	protected string CreateFile(string relativePath, string content)
+	/// <param name="path">The file path</param>
+	/// <param name="content">The file content</param>
+	protected void AddFile(string path, string content)
 	{
-		string fullPath = Path.Combine(TestDirectory, relativePath);
-		string? directory = Path.GetDirectoryName(fullPath);
-
-		if (!string.IsNullOrEmpty(directory) && !MockFileSystem.Directory.Exists(directory))
-		{
-			MockFileSystem.Directory.CreateDirectory(directory);
-		}
-
-		MockFileSystem.File.WriteAllText(fullPath, content);
-		return fullPath;
+		MockFileSystem.AddFile(path, new MockFileData(content));
 	}
 
 	/// <summary>
-	/// Creates a directory in the mock filesystem
+	/// Adds a directory to the mock file system
 	/// </summary>
-	/// <param name="relativePath">Path relative to the test directory</param>
-	/// <returns>Full path to the created directory</returns>
-	protected string CreateDirectory(string relativePath)
+	/// <param name="path">The directory path</param>
+	protected void AddDirectory(string path)
 	{
-		string fullPath = Path.Combine(TestDirectory, relativePath);
-		MockFileSystem.Directory.CreateDirectory(fullPath);
-		return fullPath;
+		MockFileSystem.AddDirectory(path);
+	}
+
+	/// <summary>
+	/// Gets a file system path under the test directory
+	/// </summary>
+	/// <param name="relativePath">The relative path within the test directory</param>
+	/// <returns>The full path under the test directory</returns>
+	protected string GetTestPath(string relativePath)
+	{
+		return Path.Combine(TestDirectory, relativePath);
 	}
 }

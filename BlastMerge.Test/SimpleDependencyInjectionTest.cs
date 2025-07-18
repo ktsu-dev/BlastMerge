@@ -4,54 +4,62 @@
 
 namespace ktsu.BlastMerge.Test;
 
-using System.Threading.Tasks;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 /// <summary>
-/// Simple test to verify dependency injection works
+/// Simple test to verify dependency injection is working properly
 /// </summary>
 [TestClass]
 public class SimpleDependencyInjectionTest : DependencyInjectionTestBase
 {
 	[TestMethod]
-	public async Task DependencyInjection_CanCreateServices_Success()
+	public void SimpleServiceResolution_ShouldResolveAllCoreServices()
 	{
-		// Act
-		BlastMergePersistenceService persistenceService = GetService<BlastMergePersistenceService>();
-		AppDataBatchManager batchManager = GetService<AppDataBatchManager>();
+		// Test that all core services can be resolved
+		FileHasher fileHasher = GetService<FileHasher>();
+		FileFinder fileFinder = GetService<FileFinder>();
+		FileDiffer fileDiffer = GetService<FileDiffer>();
+		BlastMergeAppData appData = GetService<BlastMergeAppData>();
 
-		// Assert
-		Assert.IsNotNull(persistenceService);
-		Assert.IsNotNull(batchManager);
-
-		// Test basic functionality
-		BlastMergeAppData data = await persistenceService.GetAsync().ConfigureAwait(false);
-		Assert.IsNotNull(data);
+		Assert.IsNotNull(fileHasher);
+		Assert.IsNotNull(fileFinder);
+		Assert.IsNotNull(fileDiffer);
+		Assert.IsNotNull(appData);
 	}
 
 	[TestMethod]
-	public async Task BatchManager_BasicOperations_Work()
+	public void AppDataBatchManager_ShouldWorkWithStaticMethods()
 	{
-		// Arrange
-		AppDataBatchManager batchManager = GetService<AppDataBatchManager>();
-		BatchConfiguration testBatch = new()
+		// Test that AppDataBatchManager static methods work
+		BatchConfiguration batchConfig = new()
 		{
-			Name = "TestBatch",
+			Name = "Test Batch",
+			Description = "Test batch configuration",
 			FilePatterns = ["*.txt"],
-			SkipEmptyPatterns = false
+			SearchPaths = [@"C:\test"],
+			PathExclusionPatterns = []
 		};
 
-		// Act
-		bool saveResult = await batchManager.SaveBatchAsync(testBatch).ConfigureAwait(false);
-		BatchConfiguration? loadedBatch = await batchManager.LoadBatchAsync("TestBatch").ConfigureAwait(false);
+		// Use static methods since AppDataBatchManager is static
+		AppDataBatchManager.SaveBatch(batchConfig);
+		BatchConfiguration? loadedBatch = AppDataBatchManager.LoadBatch(batchConfig.Name);
 
-		// Assert
-		Assert.IsTrue(saveResult);
 		Assert.IsNotNull(loadedBatch);
-		Assert.AreEqual("TestBatch", loadedBatch.Name);
-		Assert.AreEqual(1, loadedBatch.FilePatterns.Count);
-		Assert.IsTrue(loadedBatch.FilePatterns.Contains("*.txt"));
+		Assert.AreEqual(batchConfig.Name, loadedBatch.Name);
+		Assert.AreEqual(batchConfig.Description, loadedBatch.Description);
+	}
+
+	[TestMethod]
+	public void BlastMergeAppData_ShouldBeInitialized()
+	{
+		// Test that BlastMergeAppData is properly initialized
+		BlastMergeAppData appData = GetService<BlastMergeAppData>();
+
+		Assert.IsNotNull(appData);
+		Assert.IsNotNull(appData.BatchConfigurations);
+		Assert.IsNotNull(appData.InputHistory);
+		Assert.IsNotNull(appData.Settings);
 	}
 }

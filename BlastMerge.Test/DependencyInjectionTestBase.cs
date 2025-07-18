@@ -6,6 +6,7 @@ namespace ktsu.BlastMerge.Test;
 
 using System;
 using System.IO.Abstractions.TestingHelpers;
+using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
 using ktsu.FileSystemProvider;
 using ktsu.PersistenceProvider;
@@ -73,17 +74,26 @@ public abstract class DependencyInjectionTestBase
 			return new MemoryPersistenceProvider<string>(serializationProvider);
 		});
 
-		// Register our persistence service
-		services.AddSingleton<BlastMergePersistenceService>();
-
-		// Register batch manager
-		services.AddSingleton<AppDataBatchManager>();
+		// Register BlastMergeAppData with persistence provider
+		services.AddSingleton<BlastMergeAppData>(serviceProvider =>
+		{
+			IPersistenceProvider<string> persistenceProvider = serviceProvider.GetRequiredService<IPersistenceProvider<string>>();
+			BlastMergeAppData.Initialize(persistenceProvider);
+			return BlastMergeAppData.Get();
+		});
 
 		// Register core services with FileSystemProvider dependency
 		services.AddSingleton<FileHasher>();
 		services.AddSingleton<DiffPlexDiffer>();
 		services.AddSingleton<FileFinder>();
 		services.AddSingleton<FileDiffer>();
+		services.AddSingleton<WhitespaceVisualizer>();
+		services.AddSingleton<CharacterLevelDiffer>();
+		services.AddSingleton<DiffPlexHelper>();
+		services.AddSingleton<BlockMerger>();
+		services.AddSingleton<AsyncFileDiffer>();
+		services.AddSingleton<BatchProcessor>();
+		services.AddSingleton<IterativeMergeOrchestrator>();
 
 		// Add any additional test-specific services
 		ConfigureTestServices(services);

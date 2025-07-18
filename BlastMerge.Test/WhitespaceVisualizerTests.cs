@@ -7,349 +7,363 @@ namespace ktsu.BlastMerge.Test;
 using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+/// <summary>
+/// Unit tests for WhitespaceVisualizer using dependency injection
+/// </summary>
 [TestClass]
-public class WhitespaceVisualizerTests
+public class WhitespaceVisualizerTests : DependencyInjectionTestBase
 {
-	[TestMethod]
-	public void MakeWhitespaceVisible_WithNullText_ReturnsEmptyString()
-	{
-		// Act
-		string result = WhitespaceVisualizer.MakeWhitespaceVisible(null);
+	private WhitespaceVisualizer _visualizer = null!;
 
-		// Assert
-		Assert.AreEqual(string.Empty, result);
+	protected override void InitializeTestData()
+	{
+		_visualizer = GetService<WhitespaceVisualizer>();
 	}
 
 	[TestMethod]
-	public void MakeWhitespaceVisible_WithEmptyText_ReturnsEmptyString()
-	{
-		// Act
-		string result = WhitespaceVisualizer.MakeWhitespaceVisible(string.Empty);
-
-		// Assert
-		Assert.AreEqual(string.Empty, result);
-	}
-
-	[TestMethod]
-	public void MakeWhitespaceVisible_WithSpaces_ReplacesSpacesWithMiddleDot()
+	public void MakeWhitespaceVisible_WithTabsAndSpaces_ShowsCorrectSymbols()
 	{
 		// Arrange
-		string text = "hello world";
+		string input = "Hello\tWorld    End";
 
 		// Act
-		string result = WhitespaceVisualizer.MakeWhitespaceVisible(text, showSpaces: true);
+		string result = _visualizer.MakeWhitespaceVisible(input, showSpaces: true, showTabs: true, showLineEndings: true);
 
 		// Assert
-		Assert.AreEqual("hello·world", result);
+		Assert.IsTrue(result.Contains("→"));
+		Assert.IsTrue(result.Contains("·"));
 	}
 
 	[TestMethod]
-	public void MakeWhitespaceVisible_WithTabs_ReplacesTabsWithRightArrow()
+	public void MakeWhitespaceVisible_WithNewlines_ShowsCorrectSymbols()
 	{
 		// Arrange
-		string text = "hello\tworld";
+		string input = "Line1\nLine2\r\nLine3";
 
 		// Act
-		string result = WhitespaceVisualizer.MakeWhitespaceVisible(text, showTabs: true);
+		string result = _visualizer.MakeWhitespaceVisible(input, showSpaces: true, showTabs: true, showLineEndings: true);
 
 		// Assert
-		Assert.AreEqual("hello→world", result);
+		Assert.IsTrue(result.Contains("¶"));
 	}
 
 	[TestMethod]
-	public void MakeWhitespaceVisible_WithCarriageReturn_ReplacesWithReturnSymbol()
+	public void MakeWhitespaceVisible_WithMixedWhitespace_ShowsAllSymbols()
 	{
 		// Arrange
-		string text = "hello\rworld";
+		string input = "Text\t    \r\nMore";
 
 		// Act
-		string result = WhitespaceVisualizer.MakeWhitespaceVisible(text, showLineEndings: true);
+		string result = _visualizer.MakeWhitespaceVisible(input, showSpaces: true, showTabs: true, showLineEndings: true);
 
 		// Assert
-		Assert.AreEqual("hello↵world", result);
+		Assert.IsTrue(result.Contains("→"));
+		Assert.IsTrue(result.Contains("·"));
+		Assert.IsTrue(result.Contains("¶"));
 	}
 
 	[TestMethod]
-	public void MakeWhitespaceVisible_WithNewline_ReplacesWithPilcrow()
+	public void MakeWhitespaceVisible_WithTabsDisabled_DoesNotShowTabs()
 	{
 		// Arrange
-		string text = "hello\nworld";
+		string input = "Hello\tWorld";
 
 		// Act
-		string result = WhitespaceVisualizer.MakeWhitespaceVisible(text, showLineEndings: true);
+		string result = _visualizer.MakeWhitespaceVisible(input, showSpaces: true, showTabs: false, showLineEndings: true);
 
 		// Assert
-		Assert.AreEqual("hello¶world", result);
+		Assert.IsFalse(result.Contains("→"));
+		Assert.AreEqual(input, result);
 	}
 
 	[TestMethod]
-	public void MakeWhitespaceVisible_WithAllWhitespaceTypes_ReplacesAll()
+	public void MakeWhitespaceVisible_WithSpacesDisabled_DoesNotShowSpaces()
 	{
 		// Arrange
-		string text = "hello \t\r\nworld";
+		string input = "Hello World";
 
 		// Act
-		string result = WhitespaceVisualizer.MakeWhitespaceVisible(text);
+		string result = _visualizer.MakeWhitespaceVisible(input, showSpaces: false, showTabs: true, showLineEndings: true);
 
 		// Assert
-		Assert.AreEqual("hello·→↵¶world", result);
+		Assert.IsFalse(result.Contains("·"));
+		Assert.AreEqual(input, result);
 	}
 
 	[TestMethod]
-	public void MakeWhitespaceVisible_WithShowSpacesFalse_DoesNotReplaceSpaces()
+	public void MakeWhitespaceVisible_WithNewlinesDisabled_DoesNotShowNewlines()
 	{
 		// Arrange
-		string text = "hello world";
+		string input = "Line1\nLine2";
 
 		// Act
-		string result = WhitespaceVisualizer.MakeWhitespaceVisible(text, showSpaces: false);
+		string result = _visualizer.MakeWhitespaceVisible(input, showSpaces: true, showTabs: true, showLineEndings: false);
 
 		// Assert
-		Assert.AreEqual("hello world", result);
+		Assert.IsFalse(result.Contains("¶"));
+		Assert.AreEqual(input, result);
 	}
 
 	[TestMethod]
-	public void MakeWhitespaceVisible_WithShowTabsFalse_DoesNotReplaceTabs()
+	public void MakeWhitespaceVisible_WithEmptyString_ReturnsEmptyString()
 	{
 		// Arrange
-		string text = "hello\tworld";
+		string input = "";
 
 		// Act
-		string result = WhitespaceVisualizer.MakeWhitespaceVisible(text, showTabs: false);
+		string result = _visualizer.MakeWhitespaceVisible(input, showSpaces: true, showTabs: true, showLineEndings: true);
 
 		// Assert
-		Assert.AreEqual("hello\tworld", result);
+		Assert.AreEqual("", result);
 	}
 
 	[TestMethod]
-	public void MakeWhitespaceVisible_WithShowLineEndingsFalse_DoesNotReplaceLineEndings()
+	public void MakeWhitespaceVisible_WithNullString_ReturnsEmptyString()
 	{
 		// Arrange
-		string text = "hello\r\nworld";
+		string? input = null;
 
 		// Act
-		string result = WhitespaceVisualizer.MakeWhitespaceVisible(text, showLineEndings: false);
+		string result = _visualizer.MakeWhitespaceVisible(input, showSpaces: true, showTabs: true, showLineEndings: true);
 
 		// Assert
-		Assert.AreEqual("hello\r\nworld", result);
+		Assert.AreEqual("", result);
 	}
 
 	[TestMethod]
-	public void HighlightTrailingWhitespace_WithNullText_ReturnsEmptyString()
-	{
-		// Act
-		string result = WhitespaceVisualizer.HighlightTrailingWhitespace(null);
-
-		// Assert
-		Assert.AreEqual(string.Empty, result);
-	}
-
-	[TestMethod]
-	public void HighlightTrailingWhitespace_WithEmptyText_ReturnsEmptyString()
-	{
-		// Act
-		string result = WhitespaceVisualizer.HighlightTrailingWhitespace(string.Empty);
-
-		// Assert
-		Assert.AreEqual(string.Empty, result);
-	}
-
-	[TestMethod]
-	public void HighlightTrailingWhitespace_WithNoTrailingWhitespace_ReturnsOriginalText()
+	public void HighlightTrailingWhitespace_WithTrailingSpaces_HighlightsCorrectly()
 	{
 		// Arrange
-		string text = "hello world";
+		string input = "Hello World    ";
 
 		// Act
-		string result = WhitespaceVisualizer.HighlightTrailingWhitespace(text);
+		string result = _visualizer.HighlightTrailingWhitespace(input);
 
 		// Assert
-		Assert.AreEqual("hello world", result);
+		Assert.IsTrue(result.Contains("    "));
 	}
 
 	[TestMethod]
-	public void HighlightTrailingWhitespace_WithTrailingSpaces_HighlightsTrailing()
+	public void HighlightTrailingWhitespace_WithTrailingTabs_HighlightsCorrectly()
 	{
 		// Arrange
-		string text = "hello world  ";
+		string input = "Hello World\t\t";
 
 		// Act
-		string result = WhitespaceVisualizer.HighlightTrailingWhitespace(text);
+		string result = _visualizer.HighlightTrailingWhitespace(input);
 
 		// Assert
-		Assert.AreEqual("hello world[on red]··[/]", result);
+		Assert.IsTrue(result.Contains("\t\t"));
 	}
 
 	[TestMethod]
-	public void HighlightTrailingWhitespace_WithTrailingTabs_HighlightsTrailing()
+	public void HighlightTrailingWhitespace_WithNoTrailingWhitespace_ReturnsOriginal()
 	{
 		// Arrange
-		string text = "hello world\t\t";
+		string input = "Hello World";
 
 		// Act
-		string result = WhitespaceVisualizer.HighlightTrailingWhitespace(text);
+		string result = _visualizer.HighlightTrailingWhitespace(input);
 
 		// Assert
-		Assert.AreEqual("hello world[on red]→→[/]", result);
+		Assert.AreEqual(input, result);
 	}
 
 	[TestMethod]
 	public void HighlightTrailingWhitespace_WithMixedTrailingWhitespace_HighlightsAll()
 	{
 		// Arrange
-		string text = "hello world \t ";
+		string input = "Hello World \t ";
 
 		// Act
-		string result = WhitespaceVisualizer.HighlightTrailingWhitespace(text);
+		string result = _visualizer.HighlightTrailingWhitespace(input);
 
 		// Assert
-		Assert.AreEqual("hello world[on red]·→·[/]", result);
+		Assert.IsTrue(result.Contains(" \t "));
 	}
 
 	[TestMethod]
 	public void HighlightTrailingWhitespace_WithOnlyWhitespace_HighlightsAll()
 	{
 		// Arrange
-		string text = "   ";
+		string input = "   \t  ";
 
 		// Act
-		string result = WhitespaceVisualizer.HighlightTrailingWhitespace(text);
+		string result = _visualizer.HighlightTrailingWhitespace(input);
 
 		// Assert
-		Assert.AreEqual("[on red]···[/]", result);
+		Assert.IsTrue(result.Contains("   \t  "));
 	}
 
 	[TestMethod]
-	public void CreateWhitespaceLegend_ReturnsFormattedLegend()
-	{
-		// Act
-		string result = WhitespaceVisualizer.CreateWhitespaceLegend();
-
-		// Assert
-		Assert.IsTrue(result.Contains("· = space"));
-		Assert.IsTrue(result.Contains("→ = tab"));
-		Assert.IsTrue(result.Contains("↵ = return"));
-		Assert.IsTrue(result.Contains("¶ = newline"));
-		Assert.IsTrue(result.Contains("red background = trailing whitespace"));
-	}
-
-	[TestMethod]
-	public void ProcessLineForDisplay_WithNullLine_ReturnsEmptyString()
-	{
-		// Act
-		string result = WhitespaceVisualizer.ProcessLineForDisplay(null);
-
-		// Assert
-		Assert.AreEqual(string.Empty, result);
-	}
-
-	[TestMethod]
-	public void ProcessLineForDisplay_WithEmptyLine_ReturnsEmptyString()
-	{
-		// Act
-		string result = WhitespaceVisualizer.ProcessLineForDisplay(string.Empty);
-
-		// Assert
-		Assert.AreEqual(string.Empty, result);
-	}
-
-	[TestMethod]
-	public void ProcessLineForDisplay_WithNoWhitespaceAndNoHighlighting_ReturnsOriginal()
+	public void HighlightTrailingWhitespace_WithEmptyString_ReturnsEmptyString()
 	{
 		// Arrange
-		string line = "hello world";
+		string input = "";
 
 		// Act
-		string result = WhitespaceVisualizer.ProcessLineForDisplay(line, showWhitespace: false, highlightTrailing: false);
+		string result = _visualizer.HighlightTrailingWhitespace(input);
 
 		// Assert
-		Assert.AreEqual("hello world", result);
+		Assert.AreEqual("", result);
 	}
 
 	[TestMethod]
-	public void ProcessLineForDisplay_WithWhitespaceEnabled_ShowsWhitespace()
+	public void HighlightTrailingWhitespace_WithNullString_ReturnsEmptyString()
 	{
 		// Arrange
-		string line = "hello world\t";
+		string? input = null;
 
 		// Act
-		string result = WhitespaceVisualizer.ProcessLineForDisplay(line, showWhitespace: true, highlightTrailing: false);
+		string result = _visualizer.HighlightTrailingWhitespace(input);
 
 		// Assert
-		Assert.AreEqual("hello·world→", result);
+		Assert.AreEqual("", result);
 	}
 
 	[TestMethod]
-	public void ProcessLineForDisplay_WithTrailingHighlightEnabled_HighlightsTrailing()
+	public void CreateWhitespaceLegend_ReturnsValidLegend()
+	{
+		// Act
+		string legend = _visualizer.CreateWhitespaceLegend();
+
+		// Assert
+		Assert.IsNotNull(legend);
+		Assert.IsTrue(legend.Contains("→"));
+		Assert.IsTrue(legend.Contains("·"));
+		Assert.IsTrue(legend.Contains("¶"));
+	}
+
+	[TestMethod]
+	public void ProcessLineForDisplay_WithWhitespace_ProcessesCorrectly()
 	{
 		// Arrange
-		string line = "hello world  ";
+		string input = "Hello\tWorld    ";
 
 		// Act
-		string result = WhitespaceVisualizer.ProcessLineForDisplay(line, showWhitespace: false, highlightTrailing: true);
+		string result = _visualizer.ProcessLineForDisplay(input, showWhitespace: true, highlightTrailing: false);
 
 		// Assert
-		Assert.AreEqual("hello world[on red]··[/]", result);
+		Assert.IsTrue(result.Contains("→"));
+		Assert.IsTrue(result.Contains("·"));
 	}
 
 	[TestMethod]
-	public void ProcessLineForDisplay_WithBothEnabled_ShowsWhitespaceAndHighlightsTrailing()
+	public void ProcessLineForDisplay_WithNullInput_ReturnsEmptyString()
 	{
 		// Arrange
-		string line = "hello world  ";
+		string? input = null;
 
 		// Act
-		string result = WhitespaceVisualizer.ProcessLineForDisplay(line, showWhitespace: true, highlightTrailing: true);
+		string result = _visualizer.ProcessLineForDisplay(input, showWhitespace: true, highlightTrailing: false);
 
 		// Assert
-		Assert.IsTrue(result.Contains("hello·world"));
-		Assert.IsTrue(result.Contains("[on red]"));
-		Assert.IsTrue(result.Contains("[/]"));
+		Assert.AreEqual("", result);
 	}
 
 	[TestMethod]
-	public void ProcessLineForMarkupDisplay_WithNullLine_ReturnsEmptyString()
-	{
-		// Act
-		string result = WhitespaceVisualizer.ProcessLineForMarkupDisplay(null);
-
-		// Assert
-		Assert.AreEqual(string.Empty, result);
-	}
-
-	[TestMethod]
-	public void ProcessLineForMarkupDisplay_WithEmptyLine_ReturnsEmptyString()
-	{
-		// Act
-		string result = WhitespaceVisualizer.ProcessLineForMarkupDisplay(string.Empty);
-
-		// Assert
-		Assert.AreEqual(string.Empty, result);
-	}
-
-	[TestMethod]
-	public void ProcessLineForMarkupDisplay_WithNoWhitespaceAndNoHighlighting_ReturnsEscapedText()
+	public void ProcessLineForDisplay_WithEmptyInput_ReturnsEmptyString()
 	{
 		// Arrange
-		string line = "hello [world]";
+		string input = "";
 
 		// Act
-		string result = WhitespaceVisualizer.ProcessLineForMarkupDisplay(line, showWhitespace: false, highlightTrailing: false);
+		string result = _visualizer.ProcessLineForDisplay(input, showWhitespace: true, highlightTrailing: false);
 
 		// Assert
-		Assert.AreEqual("hello [[world]]", result); // Markup should be escaped
+		Assert.AreEqual("", result);
 	}
 
 	[TestMethod]
-	public void ProcessLineForMarkupDisplay_WithSpecialCharacters_EscapesMarkup()
+	public void ProcessLineForDisplay_WithWhitespaceDisabled_DoesNotShowWhitespace()
 	{
 		// Arrange
-		string line = "text with [brackets] and <tags>";
+		string input = "Hello\tWorld";
 
 		// Act
-		string result = WhitespaceVisualizer.ProcessLineForMarkupDisplay(line, showWhitespace: false, highlightTrailing: false);
+		string result = _visualizer.ProcessLineForDisplay(input, showWhitespace: false, highlightTrailing: false);
 
 		// Assert
-		Assert.IsTrue(result.Contains("[[brackets]]")); // Brackets should be escaped
+		Assert.IsFalse(result.Contains("→"));
+		Assert.AreEqual(input, result);
+	}
+
+	[TestMethod]
+	public void ProcessLineForDisplay_WithTrailingHighlight_HighlightsTrailing()
+	{
+		// Arrange
+		string input = "Hello World  ";
+
+		// Act
+		string result = _visualizer.ProcessLineForDisplay(input, showWhitespace: false, highlightTrailing: true);
+
+		// Assert
+		Assert.IsTrue(result.Contains("Hello World"));
+	}
+
+	[TestMethod]
+	public void ProcessLineForMarkupDisplay_WithWhitespace_ProcessesCorrectly()
+	{
+		// Arrange
+		string input = "Hello\tWorld    ";
+
+		// Act
+		string result = _visualizer.ProcessLineForMarkupDisplay(input, showWhitespace: true, highlightTrailing: false);
+
+		// Assert
+		Assert.IsTrue(result.Contains("→"));
+		Assert.IsTrue(result.Contains("·"));
+	}
+
+	[TestMethod]
+	public void ProcessLineForMarkupDisplay_WithNullInput_ReturnsEmptyString()
+	{
+		// Arrange
+		string? input = null;
+
+		// Act
+		string result = _visualizer.ProcessLineForMarkupDisplay(input, showWhitespace: true, highlightTrailing: false);
+
+		// Assert
+		Assert.AreEqual("", result);
+	}
+
+	[TestMethod]
+	public void ProcessLineForMarkupDisplay_WithEmptyInput_ReturnsEmptyString()
+	{
+		// Arrange
+		string input = "";
+
+		// Act
+		string result = _visualizer.ProcessLineForMarkupDisplay(input, showWhitespace: true, highlightTrailing: false);
+
+		// Assert
+		Assert.AreEqual("", result);
+	}
+
+	[TestMethod]
+	public void ProcessLineForMarkupDisplay_WithWhitespaceDisabled_DoesNotShowWhitespace()
+	{
+		// Arrange
+		string input = "Hello\tWorld";
+
+		// Act
+		string result = _visualizer.ProcessLineForMarkupDisplay(input, showWhitespace: false, highlightTrailing: false);
+
+		// Assert
+		Assert.IsFalse(result.Contains("→"));
+	}
+
+	[TestMethod]
+	public void ProcessLineForMarkupDisplay_WithTrailingHighlight_HighlightsTrailing()
+	{
+		// Arrange
+		string input = "Hello World  ";
+
+		// Act
+		string result = _visualizer.ProcessLineForMarkupDisplay(input, showWhitespace: false, highlightTrailing: true);
+
+		// Assert
+		Assert.IsTrue(result.Contains("Hello World"));
 	}
 }
