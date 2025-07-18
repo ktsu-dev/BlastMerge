@@ -5,20 +5,21 @@
 namespace ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 
 using System;
+using System.Collections.Generic;
+using System.IO;
 using ktsu.BlastMerge.ConsoleApp.Contracts;
-using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.ConsoleApp.Text;
 using ktsu.BlastMerge.Services;
 using Spectre.Console;
 
 /// <summary>
-/// Menu handler for configuration and settings operations.
+/// Menu handler for settings operations.
 /// </summary>
 /// <param name="applicationService">The application service.</param>
 /// <param name="historyInput">The history input service.</param>
-public class SettingsMenuHandler(ApplicationService applicationService, AppDataHistoryInput historyInput) : BaseMenuHandler(applicationService)
+public class SettingsMenuHandler(ApplicationService applicationService, IAppDataHistoryInput historyInput) : BaseMenuHandler(applicationService)
 {
-	private readonly AppDataHistoryInput historyInput = historyInput ?? throw new ArgumentNullException(nameof(historyInput));
+	private readonly IAppDataHistoryInput historyInput = historyInput ?? throw new ArgumentNullException(nameof(historyInput));
 	/// <summary>
 	/// Gets the name of this menu for navigation purposes.
 	/// </summary>

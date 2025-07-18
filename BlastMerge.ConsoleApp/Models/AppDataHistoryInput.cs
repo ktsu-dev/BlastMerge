@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
 using Spectre.Console;
@@ -20,7 +21,7 @@ using Spectre.Console;
 /// Initializes a new instance of the AppDataHistoryInput class.
 /// </remarks>
 /// <param name="persistenceService">The persistence service to use.</param>
-public class AppDataHistoryInput(BlastMergePersistenceService persistenceService)
+public class AppDataHistoryInput(BlastMergePersistenceService persistenceService) : IAppDataHistoryInput
 {
 	private readonly BlastMergePersistenceService persistenceService = persistenceService ?? throw new ArgumentNullException(nameof(persistenceService));
 

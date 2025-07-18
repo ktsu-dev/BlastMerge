@@ -16,7 +16,7 @@ using Spectre.Console;
 /// Service for handling file synchronization UI operations.
 /// </summary>
 /// <param name="fileDiffer">The file differ service.</param>
-public class SyncOperationsService(FileDiffer fileDiffer)
+public class SyncOperationsService(FileDiffer fileDiffer) : ISyncOperationsService
 {
 	private readonly FileDiffer fileDiffer = fileDiffer ?? throw new ArgumentNullException(nameof(fileDiffer));
 	/// <summary>
@@ -79,7 +79,7 @@ public class SyncOperationsService(FileDiffer fileDiffer)
 	/// Syncs all files to the newest version in each group.
 	/// </summary>
 	/// <param name="groups">The file groups to sync.</param>
-	private void SyncToNewestVersion(List<FileGroup> groups)
+	private static void SyncToNewestVersion(List<FileGroup> groups)
 	{
 		bool confirm = AnsiConsole.Confirm("[yellow]This will overwrite older versions with the newest file in each group. Continue?[/]");
 
@@ -98,7 +98,7 @@ public class SyncOperationsService(FileDiffer fileDiffer)
 	/// </summary>
 	/// <param name="groups">The file groups to sync.</param>
 	/// <returns>A tuple containing the number of synced files and groups.</returns>
-	private (int syncedFiles, int syncedGroups) PerformSyncOperation(List<FileGroup> groups)
+	private static (int syncedFiles, int syncedGroups) PerformSyncOperation(List<FileGroup> groups)
 	{
 		int syncedGroups = 0;
 		int syncedFiles = 0;
@@ -122,7 +122,7 @@ public class SyncOperationsService(FileDiffer fileDiffer)
 	/// <param name="group">The file group to sync.</param>
 	/// <param name="ctx">The status context for updates.</param>
 	/// <returns>The number of files successfully synced.</returns>
-	private int SyncGroupToNewest(FileGroup group, StatusContext ctx)
+	private static int SyncGroupToNewest(FileGroup group, StatusContext ctx)
 	{
 		string newestFile = GetNewestFile(group.FilePaths);
 		int syncedFiles = 0;
@@ -145,7 +145,7 @@ public class SyncOperationsService(FileDiffer fileDiffer)
 	/// <param name="targetFile">The target file to sync.</param>
 	/// <param name="ctx">The status context for updates.</param>
 	/// <returns>1 if successful, 0 if failed.</returns>
-	private int TrySyncFile(string sourceFile, string targetFile, StatusContext ctx)
+	private static int TrySyncFile(string sourceFile, string targetFile, StatusContext ctx)
 	{
 		try
 		{
@@ -180,7 +180,7 @@ public class SyncOperationsService(FileDiffer fileDiffer)
 	/// Allows user to choose reference files for each group.
 	/// </summary>
 	/// <param name="groups">The file groups to choose reference files for.</param>
-	private void ChooseReferenceFiles(List<FileGroup> groups)
+	private static void ChooseReferenceFiles(List<FileGroup> groups)
 	{
 		int syncedFiles = 0;
 

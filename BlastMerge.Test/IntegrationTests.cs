@@ -14,12 +14,19 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 /// Integration tests that verify end-to-end workflows combining multiple services
 /// </summary>
 [TestClass]
-public class IntegrationTests : MockFileSystemTestBase
+public class IntegrationTests : DependencyInjectionTestBase
 {
 	private string _testDirectory = null!;
+	private DiffPlexDiffer _diffPlexDiffer = null!;
+	private FileFinder _fileFinder = null!;
 
-	protected override void InitializeFileSystem()
+	protected override void InitializeTestData()
 	{
+		// Get services from DI
+		_diffPlexDiffer = GetService<DiffPlexDiffer>();
+		_fileFinder = GetService<FileFinder>();
+
+		// Set up test directory (relative to the DI test base directory)
 		_testDirectory = CreateDirectory("integration_test");
 
 		// Create a realistic project structure for testing
@@ -50,7 +57,7 @@ public class IntegrationTests : MockFileSystemTestBase
 		string searchPattern = "config.json";
 
 		// Act - Find all config.json files
-		IReadOnlyCollection<string> foundFiles = FileFinder.FindFiles(_testDirectory, searchPattern, MockFileSystem);
+		IReadOnlyCollection<string> foundFiles = _fileFinder.FindFiles(_testDirectory, searchPattern);
 
 		// Group by hash using AsyncFileDiffer
 		IReadOnlyCollection<FileGroup> groups = await AsyncFileDiffer.GroupFilesByHashAsync(foundFiles).ConfigureAwait(false);
@@ -105,8 +112,8 @@ public class IntegrationTests : MockFileSystemTestBase
 		string file2 = Path.Combine(_testDirectory, "repo2", "config.json");
 
 		// Act
-		IReadOnlyCollection<LineDifference> differences = DiffPlexDiffer.FindDifferences(file1, file2);
-		string gitStyleDiff = DiffPlexDiffer.GenerateUnifiedDiff(file1, file2, 2);
+		IReadOnlyCollection<LineDifference> differences = _diffPlexDiffer.FindDifferences(file1, file2);
+		string gitStyleDiff = _diffPlexDiffer.GenerateUnifiedDiff(file1, file2, 2);
 
 		// Assert
 		Assert.IsTrue(differences.Count > 0, "Should find differences between the files");

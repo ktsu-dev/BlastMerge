@@ -7,6 +7,7 @@ namespace ktsu.BlastMerge.Test;
 using System;
 using System.Collections.Generic;
 using ktsu.BlastMerge.Models;
+using ktsu.BlastMerge.Services;
 using ktsu.BlastMerge.Test.Adapters;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -17,8 +18,9 @@ public class RecursiveDiffTests : DependencyInjectionTestBase
 
 	protected override void InitializeTestData()
 	{
-		// Initialize adapter
-		_fileDifferAdapter = new FileDifferAdapter(MockFileSystem);
+		// Get DiffPlexDiffer from DI and initialize adapter
+		DiffPlexDiffer diffPlexDiffer = GetService<DiffPlexDiffer>();
+		_fileDifferAdapter = new FileDifferAdapter(MockFileSystem, diffPlexDiffer);
 
 		// Create test files in the root directories
 		CreateFile("dir1/file1.txt", "Root Content 1");

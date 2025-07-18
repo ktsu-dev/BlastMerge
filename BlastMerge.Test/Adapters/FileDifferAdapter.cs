@@ -19,9 +19,11 @@ using ktsu.BlastMerge.Services;
 /// Initializes a new instance of the FileDifferAdapter class
 /// </remarks>
 /// <param name="fileSystem">The file system to use</param>
-public class FileDifferAdapter(IFileSystem fileSystem)
+/// <param name="diffPlexDiffer">The DiffPlex differ service to use</param>
+public class FileDifferAdapter(IFileSystem fileSystem, DiffPlexDiffer diffPlexDiffer)
 {
 	private readonly IFileSystem _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
+	private readonly DiffPlexDiffer _diffPlexDiffer = diffPlexDiffer ?? throw new ArgumentNullException(nameof(diffPlexDiffer));
 
 	/// <summary>
 	/// Find differences between two files
@@ -93,9 +95,8 @@ public class FileDifferAdapter(IFileSystem fileSystem)
 			throw new FileNotFoundException("File not found", file2Path);
 		}
 
-		// Since DiffPlexDiffer.GenerateColoredDiff now uses FileSystemProvider.Current,
-		// we can call it directly
-		return DiffPlexDiffer.GenerateColoredDiff(file1Path, file2Path);
+		// Use the injected DiffPlexDiffer instance
+		return _diffPlexDiffer.GenerateColoredDiff(file1Path, file2Path);
 	}
 
 	/// <summary>

@@ -243,7 +243,7 @@ public class FileDiffer(IFileSystemProvider fileSystemProvider, FileHasher fileH
 		ArgumentNullException.ThrowIfNull(file2);
 
 		// Use DiffPlex for git-style diff generation
-		DiffPlexDiffer diffPlexDiffer = new(new global::ktsu.FileSystemProvider.FileSystemProvider());
+		DiffPlexDiffer diffPlexDiffer = new(new ktsu.FileSystemProvider.FileSystemProvider());
 		string gitDiff = diffPlexDiffer.GenerateUnifiedDiff(file1, file2);
 
 		if (!useColor || string.IsNullOrEmpty(gitDiff))
@@ -285,7 +285,7 @@ public class FileDiffer(IFileSystemProvider fileSystemProvider, FileHasher fileH
 	public static Collection<ColoredDiffLine> GenerateColoredDiff(string file1, string file2, string[] lines1, string[] lines2)
 	{
 		// Use DiffPlex implementation
-		DiffPlexDiffer diffPlexDiffer = new(new global::ktsu.FileSystemProvider.FileSystemProvider());
+		DiffPlexDiffer diffPlexDiffer = new(new ktsu.FileSystemProvider.FileSystemProvider());
 		Collection<ColoredDiffLine> diffLines = diffPlexDiffer.GenerateColoredDiff(file1, file2);
 		Collection<ColoredDiffLine> result = [.. diffLines];
 		return result;
@@ -304,7 +304,7 @@ public class FileDiffer(IFileSystemProvider fileSystemProvider, FileHasher fileH
 		ArgumentNullException.ThrowIfNull(file2);
 
 		// Create temporary FileDiffer instance for static method
-		FileDiffer fileDiffer = new(new global::ktsu.FileSystemProvider.FileSystemProvider(), new FileHasher(new global::ktsu.FileSystemProvider.FileSystemProvider()), new DiffPlexDiffer(new global::ktsu.FileSystemProvider.FileSystemProvider()));
+		FileDiffer fileDiffer = new(new ktsu.FileSystemProvider.FileSystemProvider(), new FileHasher(new ktsu.FileSystemProvider.FileSystemProvider()), new DiffPlexDiffer(new ktsu.FileSystemProvider.FileSystemProvider()));
 		IReadOnlyCollection<LineDifference> differences = fileDiffer.FindDifferences(file1, file2);
 		StringBuilder sb = new();
 
@@ -491,7 +491,7 @@ public class FileDiffer(IFileSystemProvider fileSystemProvider, FileHasher fileH
 
 		// Use DiffPlex to get differences
 		// Create temporary FileDiffer instance for static method
-		FileDiffer fileDiffer = new(new global::ktsu.FileSystemProvider.FileSystemProvider(), new FileHasher(new global::ktsu.FileSystemProvider.FileSystemProvider()), new DiffPlexDiffer(new global::ktsu.FileSystemProvider.FileSystemProvider()));
+		FileDiffer fileDiffer = new(new ktsu.FileSystemProvider.FileSystemProvider(), new FileHasher(new ktsu.FileSystemProvider.FileSystemProvider()), new DiffPlexDiffer(new ktsu.FileSystemProvider.FileSystemProvider()));
 		IReadOnlyCollection<LineDifference> differences = fileDiffer.FindDifferences(file1, file2);
 
 		// Track added and removed lines

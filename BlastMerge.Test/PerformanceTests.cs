@@ -21,10 +21,18 @@ public class PerformanceTests : DependencyInjectionTestBase
 	private string _mediumFile2 = string.Empty;
 	private string _smallFile1 = string.Empty;
 	private string _smallFile2 = string.Empty;
+	private FileDiffer _fileDiffer = null!;
+	private FileHasher _fileHasher = null!;
+	private FileFinder _fileFinder = null!;
 
 	protected override void InitializeTestData()
 	{
-		_testDirectory = @"C:\temp\PerformanceTests";
+		// Get services from DI
+		_fileDiffer = GetService<FileDiffer>();
+		_fileHasher = GetService<FileHasher>();
+		_fileFinder = GetService<FileFinder>();
+
+		_testDirectory = TestDirectory;
 		_largeFile1 = MockFileSystem.Path.Combine(_testDirectory, "large1.txt");
 		_largeFile2 = MockFileSystem.Path.Combine(_testDirectory, "large2.txt");
 		_mediumFile1 = MockFileSystem.Path.Combine(_testDirectory, "medium1.txt");
@@ -81,7 +89,7 @@ public class PerformanceTests : DependencyInjectionTestBase
 
 		// Act
 		stopwatch.Start();
-		string hash = FileHasher.ComputeFileHash(_largeFile1, MockFileSystem);
+		string hash = _fileHasher.ComputeFileHash(_largeFile1);
 		stopwatch.Stop();
 
 		// Assert
@@ -99,7 +107,7 @@ public class PerformanceTests : DependencyInjectionTestBase
 
 		// Act
 		stopwatch.Start();
-		_ = FileDiffer.FindDifferences(_smallFile1, _smallFile2);
+		_ = _fileDiffer.FindDifferences(_smallFile1, _smallFile2);
 		stopwatch.Stop();
 
 		// Assert
@@ -117,7 +125,7 @@ public class PerformanceTests : DependencyInjectionTestBase
 
 		// Act
 		stopwatch.Start();
-		_ = FileDiffer.FindDifferences(_mediumFile1, _mediumFile2);
+		_ = _fileDiffer.FindDifferences(_mediumFile1, _mediumFile2);
 		stopwatch.Stop();
 
 		// Assert
@@ -135,7 +143,7 @@ public class PerformanceTests : DependencyInjectionTestBase
 
 		// Act
 		stopwatch.Start();
-		_ = FileDiffer.FindDifferences(_largeFile1, _largeFile2);
+		_ = _fileDiffer.FindDifferences(_largeFile1, _largeFile2);
 		stopwatch.Stop();
 
 		// Assert
@@ -165,7 +173,7 @@ public class PerformanceTests : DependencyInjectionTestBase
 
 		// Act
 		stopwatch.Start();
-		IReadOnlyCollection<string> files = FileFinder.FindFiles(largeDir, "*.txt", fileSystem: MockFileSystem);
+		IReadOnlyCollection<string> files = _fileFinder.FindFiles(largeDir, "*.txt");
 		stopwatch.Stop();
 
 		// Assert

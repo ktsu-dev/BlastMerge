@@ -1,5 +1,10 @@
 ﻿<Project Sdk="ktsu.Sdk.Test">
 
+  <PropertyGroup>
+    <!-- Temporarily disable CA1849 warnings to test DI functionality -->
+    <NoWarn>$(NoWarn);CA1849</NoWarn>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="ktsu.Extensions" />

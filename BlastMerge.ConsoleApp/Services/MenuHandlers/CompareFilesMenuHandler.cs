@@ -5,6 +5,7 @@
 namespace ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 
 using System;
+using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.ConsoleApp.Text;
@@ -17,10 +18,10 @@ using Spectre.Console;
 /// <param name="applicationService">The application service.</param>
 /// <param name="historyInput">The history input service.</param>
 /// <param name="comparisonOperations">The comparison operations service.</param>
-public class CompareFilesMenuHandler(ApplicationService applicationService, AppDataHistoryInput historyInput, ComparisonOperationsService comparisonOperations) : BaseMenuHandler(applicationService)
+public class CompareFilesMenuHandler(ApplicationService applicationService, IAppDataHistoryInput historyInput, IComparisonOperationsService comparisonOperations) : BaseMenuHandler(applicationService)
 {
-	private readonly AppDataHistoryInput historyInput = historyInput ?? throw new ArgumentNullException(nameof(historyInput));
-	private readonly ComparisonOperationsService comparisonOperations = comparisonOperations ?? throw new ArgumentNullException(nameof(comparisonOperations));
+	private readonly IAppDataHistoryInput historyInput = historyInput ?? throw new ArgumentNullException(nameof(historyInput));
+	private readonly IComparisonOperationsService comparisonOperations = comparisonOperations ?? throw new ArgumentNullException(nameof(comparisonOperations));
 	/// <summary>
 	/// Gets the name of this menu for navigation purposes.
 	/// </summary>

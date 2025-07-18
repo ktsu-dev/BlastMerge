@@ -41,7 +41,7 @@ public static class AsyncFileDiffer
 		IFileSystem fileSystem = FileSystemProvider.Current;
 
 		// Compute hashes in parallel
-		FileHasher fileHasher = new(new global::ktsu.FileSystemProvider.FileSystemProvider());
+		FileHasher fileHasher = new(new ktsu.FileSystemProvider.FileSystemProvider());
 		Dictionary<string, string> fileHashes = await fileHasher.ComputeFileHashesAsync(
 			filePaths, maxDegreeOfParallelism, cancellationToken).ConfigureAwait(false);
 
@@ -108,7 +108,7 @@ public static class AsyncFileDiffer
 		if (filesWithSameName.Count == 1)
 		{
 			// Single file with this name - create a group for it
-			FileHasher fileHasher = new(new global::ktsu.FileSystemProvider.FileSystemProvider());
+			FileHasher fileHasher = new(new ktsu.FileSystemProvider.FileSystemProvider());
 			string hash = await fileHasher.ComputeFileHashAsync(filesWithSameName[0], cancellationToken).ConfigureAwait(false);
 			FileGroup group = new() { Hash = hash };
 			group.AddFilePath(filesWithSameName[0]);
@@ -116,7 +116,7 @@ public static class AsyncFileDiffer
 		}
 
 		// Multiple files with same name - group by content hash
-		FileHasher fileHasher2 = new(new global::ktsu.FileSystemProvider.FileSystemProvider());
+		FileHasher fileHasher2 = new(new ktsu.FileSystemProvider.FileSystemProvider());
 		Dictionary<string, string> fileHashes = await fileHasher2.ComputeFileHashesAsync(
 			filesWithSameName, maxDegreeOfParallelism, cancellationToken).ConfigureAwait(false);
 

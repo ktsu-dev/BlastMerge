@@ -3,24 +3,27 @@
 // Licensed under the MIT license.
 
 namespace ktsu.BlastMerge.Test;
-using System.IO;
+
+using System.Collections.ObjectModel;
 using System.Linq;
 using ktsu.BlastMerge.Models;
+using ktsu.BlastMerge.Services;
 using ktsu.BlastMerge.Test.Adapters;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 [TestClass]
-public class FileDifferDiffTests : MockFileSystemTestBase
+public class FileDifferDiffTests : DependencyInjectionTestBase
 {
 	private string _testFile1 = null!;
 	private string _testFile2 = null!;
 	private string _identicalFile = null!;
 	private FileDifferAdapter _fileDifferAdapter = null!;
 
-	protected override void InitializeFileSystem()
+	protected override void InitializeTestData()
 	{
-		// Initialize adapter
-		_fileDifferAdapter = new FileDifferAdapter(MockFileSystem);
+		// Get DiffPlexDiffer from DI and initialize adapter
+		DiffPlexDiffer diffPlexDiffer = GetService<DiffPlexDiffer>();
+		_fileDifferAdapter = new FileDifferAdapter(MockFileSystem, diffPlexDiffer);
 
 		// Create test files with known differences
 		_testFile1 = CreateFile("file1.txt", string.Join('\n', [
@@ -87,7 +90,7 @@ public class FileDifferDiffTests : MockFileSystemTestBase
 	public void GenerateColoredDiff_IdenticalFiles_OnlyContainsDefaultColorLines()
 	{
 		// Act
-		System.Collections.ObjectModel.Collection<ColoredDiffLine> coloredDiff = _fileDifferAdapter.GenerateColoredDiff(_testFile1, _identicalFile);
+		Collection<ColoredDiffLine> coloredDiff = _fileDifferAdapter.GenerateColoredDiff(_testFile1, _identicalFile);
 
 		// Assert
 		Assert.IsTrue(coloredDiff.All(l => l.Color is DiffColor.Default or DiffColor.FileHeader),
@@ -98,7 +101,7 @@ public class FileDifferDiffTests : MockFileSystemTestBase
 	public void GenerateColoredDiff_WithDifferences_ContainsColoredLines()
 	{
 		// Act
-		System.Collections.ObjectModel.Collection<ColoredDiffLine> coloredDiff = _fileDifferAdapter.GenerateColoredDiff(_testFile1, _testFile2);
+		Collection<ColoredDiffLine> coloredDiff = _fileDifferAdapter.GenerateColoredDiff(_testFile1, _testFile2);
 
 		// Assert
 		Assert.IsTrue(coloredDiff.Any(l => l.Color == DiffColor.Addition),

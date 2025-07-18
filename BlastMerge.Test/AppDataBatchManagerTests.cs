@@ -37,11 +37,11 @@ public class AppDataBatchManagerTests : DependencyInjectionTestBase
 		};
 
 		// Act
-		bool result = await _batchManager.SaveBatchAsync(batch);
+		bool result = await _batchManager.SaveBatchAsync(batch).ConfigureAwait(false);
 
 		// Assert
 		Assert.IsTrue(result);
-		IReadOnlyCollection<string> batchNames = await _batchManager.ListBatchesAsync();
+		IReadOnlyCollection<string> batchNames = await _batchManager.ListBatchesAsync().ConfigureAwait(false);
 		Assert.IsTrue(batchNames.Contains("TestBatch"));
 	}
 
@@ -55,10 +55,10 @@ public class AppDataBatchManagerTests : DependencyInjectionTestBase
 			FilePatterns = ["*.txt", "*.cs"],
 			SkipEmptyPatterns = true
 		};
-		await _batchManager.SaveBatchAsync(originalBatch);
+		await _batchManager.SaveBatchAsync(originalBatch).ConfigureAwait(false);
 
 		// Act
-		BatchConfiguration? retrievedBatch = await _batchManager.LoadBatchAsync("TestBatch");
+		BatchConfiguration? retrievedBatch = await _batchManager.LoadBatchAsync("TestBatch").ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNotNull(retrievedBatch);
@@ -72,7 +72,7 @@ public class AppDataBatchManagerTests : DependencyInjectionTestBase
 	public async Task LoadBatchAsync_NonExistentBatch_ReturnsNull()
 	{
 		// Act
-		BatchConfiguration? batch = await _batchManager.LoadBatchAsync("NonExistentBatch");
+		BatchConfiguration? batch = await _batchManager.LoadBatchAsync("NonExistentBatch").ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNull(batch);
@@ -82,7 +82,7 @@ public class AppDataBatchManagerTests : DependencyInjectionTestBase
 	public async Task ListBatchesAsync_NoBatches_ReturnsEmptyCollection()
 	{
 		// Act
-		IReadOnlyCollection<string> batchNames = await _batchManager.ListBatchesAsync();
+		IReadOnlyCollection<string> batchNames = await _batchManager.ListBatchesAsync().ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNotNull(batchNames);
@@ -107,11 +107,11 @@ public class AppDataBatchManagerTests : DependencyInjectionTestBase
 			SkipEmptyPatterns = true
 		};
 
-		await _batchManager.SaveBatchAsync(batch1);
-		await _batchManager.SaveBatchAsync(batch2);
+		await _batchManager.SaveBatchAsync(batch1).ConfigureAwait(false);
+		await _batchManager.SaveBatchAsync(batch2).ConfigureAwait(false);
 
 		// Act
-		IReadOnlyCollection<string> batchNames = await _batchManager.ListBatchesAsync();
+		IReadOnlyCollection<string> batchNames = await _batchManager.ListBatchesAsync().ConfigureAwait(false);
 
 		// Assert
 		Assert.AreEqual(2, batchNames.Count);
@@ -137,11 +137,11 @@ public class AppDataBatchManagerTests : DependencyInjectionTestBase
 			SkipEmptyPatterns = true
 		};
 
-		await _batchManager.SaveBatchAsync(batch1);
-		await _batchManager.SaveBatchAsync(batch2);
+		await _batchManager.SaveBatchAsync(batch1).ConfigureAwait(false);
+		await _batchManager.SaveBatchAsync(batch2).ConfigureAwait(false);
 
 		// Act
-		IReadOnlyCollection<BatchConfiguration> batches = await _batchManager.GetAllBatchesAsync();
+		IReadOnlyCollection<BatchConfiguration> batches = await _batchManager.GetAllBatchesAsync().ConfigureAwait(false);
 
 		// Assert
 		Assert.AreEqual(2, batches.Count);
@@ -165,18 +165,18 @@ public class AppDataBatchManagerTests : DependencyInjectionTestBase
 			FilePatterns = ["*.txt"],
 			SkipEmptyPatterns = false
 		};
-		await _batchManager.SaveBatchAsync(batch);
+		await _batchManager.SaveBatchAsync(batch).ConfigureAwait(false);
 
 		// Verify it exists first
-		IReadOnlyCollection<string> batchesBeforeDelete = await _batchManager.ListBatchesAsync();
+		IReadOnlyCollection<string> batchesBeforeDelete = await _batchManager.ListBatchesAsync().ConfigureAwait(false);
 		Assert.IsTrue(batchesBeforeDelete.Contains("TestBatch"));
 
 		// Act
-		bool result = await _batchManager.DeleteBatchAsync("TestBatch");
+		bool result = await _batchManager.DeleteBatchAsync("TestBatch").ConfigureAwait(false);
 
 		// Assert
 		Assert.IsTrue(result);
-		IReadOnlyCollection<string> batchesAfterDelete = await _batchManager.ListBatchesAsync();
+		IReadOnlyCollection<string> batchesAfterDelete = await _batchManager.ListBatchesAsync().ConfigureAwait(false);
 		Assert.IsFalse(batchesAfterDelete.Contains("TestBatch"));
 	}
 
@@ -184,7 +184,7 @@ public class AppDataBatchManagerTests : DependencyInjectionTestBase
 	public async Task DeleteBatchAsync_NonExistentBatch_ReturnsFalse()
 	{
 		// Act
-		bool result = await _batchManager.DeleteBatchAsync("NonExistentBatch");
+		bool result = await _batchManager.DeleteBatchAsync("NonExistentBatch").ConfigureAwait(false);
 
 		// Assert
 		Assert.IsFalse(result);
@@ -194,7 +194,7 @@ public class AppDataBatchManagerTests : DependencyInjectionTestBase
 	public async Task SaveBatchAsync_NullBatch_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => _batchManager.SaveBatchAsync(null!));
+		await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => _batchManager.SaveBatchAsync(null!)).ConfigureAwait(false);
 	}
 
 	[TestMethod]
@@ -209,35 +209,35 @@ public class AppDataBatchManagerTests : DependencyInjectionTestBase
 		};
 
 		// Act & Assert
-		await Assert.ThrowsExceptionAsync<ArgumentException>(() => _batchManager.SaveBatchAsync(batch));
+		await Assert.ThrowsExceptionAsync<ArgumentException>(() => _batchManager.SaveBatchAsync(batch)).ConfigureAwait(false);
 	}
 
 	[TestMethod]
 	public async Task LoadBatchAsync_EmptyBatchName_ThrowsArgumentException()
 	{
 		// Act & Assert
-		await Assert.ThrowsExceptionAsync<ArgumentException>(() => _batchManager.LoadBatchAsync(string.Empty));
+		await Assert.ThrowsExceptionAsync<ArgumentException>(() => _batchManager.LoadBatchAsync(string.Empty)).ConfigureAwait(false);
 	}
 
 	[TestMethod]
 	public async Task LoadBatchAsync_NullBatchName_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => _batchManager.LoadBatchAsync(null!));
+		await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => _batchManager.LoadBatchAsync(null!)).ConfigureAwait(false);
 	}
 
 	[TestMethod]
 	public async Task DeleteBatchAsync_EmptyBatchName_ThrowsArgumentException()
 	{
 		// Act & Assert
-		await Assert.ThrowsExceptionAsync<ArgumentException>(() => _batchManager.DeleteBatchAsync(string.Empty));
+		await Assert.ThrowsExceptionAsync<ArgumentException>(() => _batchManager.DeleteBatchAsync(string.Empty)).ConfigureAwait(false);
 	}
 
 	[TestMethod]
 	public async Task DeleteBatchAsync_NullBatchName_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => _batchManager.DeleteBatchAsync(null!));
+		await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => _batchManager.DeleteBatchAsync(null!)).ConfigureAwait(false);
 	}
 
 	[TestMethod]
@@ -250,7 +250,7 @@ public class AppDataBatchManagerTests : DependencyInjectionTestBase
 			FilePatterns = ["*.txt"],
 			SkipEmptyPatterns = false
 		};
-		await _batchManager.SaveBatchAsync(originalBatch);
+		await _batchManager.SaveBatchAsync(originalBatch).ConfigureAwait(false);
 
 		BatchConfiguration updatedBatch = new()
 		{
@@ -260,10 +260,10 @@ public class AppDataBatchManagerTests : DependencyInjectionTestBase
 		};
 
 		// Act
-		await _batchManager.SaveBatchAsync(updatedBatch);
+		await _batchManager.SaveBatchAsync(updatedBatch).ConfigureAwait(false);
 
 		// Assert
-		BatchConfiguration? retrievedBatch = await _batchManager.LoadBatchAsync("TestBatch");
+		BatchConfiguration? retrievedBatch = await _batchManager.LoadBatchAsync("TestBatch").ConfigureAwait(false);
 		Assert.IsNotNull(retrievedBatch);
 		Assert.AreEqual(2, retrievedBatch.FilePatterns.Count);
 		Assert.IsTrue(retrievedBatch.FilePatterns.Contains("*.cs"));
@@ -284,8 +284,8 @@ public class AppDataBatchManagerTests : DependencyInjectionTestBase
 		};
 
 		// Act
-		await _batchManager.SaveBatchAsync(complexBatch);
-		BatchConfiguration? retrievedBatch = await _batchManager.LoadBatchAsync("ComplexBatch");
+		await _batchManager.SaveBatchAsync(complexBatch).ConfigureAwait(false);
+		BatchConfiguration? retrievedBatch = await _batchManager.LoadBatchAsync("ComplexBatch").ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNotNull(retrievedBatch);
@@ -300,7 +300,7 @@ public class AppDataBatchManagerTests : DependencyInjectionTestBase
 	public async Task GetAllBatchesAsync_NoBatches_ReturnsEmptyCollection()
 	{
 		// Act
-		IReadOnlyCollection<BatchConfiguration> batches = await _batchManager.GetAllBatchesAsync();
+		IReadOnlyCollection<BatchConfiguration> batches = await _batchManager.GetAllBatchesAsync().ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNotNull(batches);
@@ -314,10 +314,10 @@ public class AppDataBatchManagerTests : DependencyInjectionTestBase
 		const string batchName = "TestBatch";
 
 		// Act
-		await _batchManager.RecordBatchUsageAsync(batchName);
+		await _batchManager.RecordBatchUsageAsync(batchName).ConfigureAwait(false);
 
 		// Assert
-		string? recentBatch = await _batchManager.GetMostRecentBatchAsync();
+		string? recentBatch = await _batchManager.GetMostRecentBatchAsync().ConfigureAwait(false);
 		Assert.AreEqual(batchName, recentBatch);
 	}
 
@@ -325,7 +325,7 @@ public class AppDataBatchManagerTests : DependencyInjectionTestBase
 	public async Task GetMostRecentBatchAsync_NoUsage_ReturnsNull()
 	{
 		// Act
-		string? recentBatch = await _batchManager.GetMostRecentBatchAsync();
+		string? recentBatch = await _batchManager.GetMostRecentBatchAsync().ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNull(recentBatch);
@@ -335,11 +335,11 @@ public class AppDataBatchManagerTests : DependencyInjectionTestBase
 	public async Task CreateDefaultBatchIfNoneExistAsync_NoBatches_CreatesDefault()
 	{
 		// Act
-		bool result = await _batchManager.CreateDefaultBatchIfNoneExistAsync();
+		bool result = await _batchManager.CreateDefaultBatchIfNoneExistAsync().ConfigureAwait(false);
 
 		// Assert
 		Assert.IsTrue(result);
-		IReadOnlyCollection<string> batches = await _batchManager.ListBatchesAsync();
+		IReadOnlyCollection<string> batches = await _batchManager.ListBatchesAsync().ConfigureAwait(false);
 		Assert.AreEqual(1, batches.Count);
 	}
 
@@ -353,14 +353,14 @@ public class AppDataBatchManagerTests : DependencyInjectionTestBase
 			FilePatterns = ["*.txt"],
 			SkipEmptyPatterns = false
 		};
-		await _batchManager.SaveBatchAsync(existingBatch);
+		await _batchManager.SaveBatchAsync(existingBatch).ConfigureAwait(false);
 
 		// Act
-		bool result = await _batchManager.CreateDefaultBatchIfNoneExistAsync();
+		bool result = await _batchManager.CreateDefaultBatchIfNoneExistAsync().ConfigureAwait(false);
 
 		// Assert
 		Assert.IsFalse(result);
-		IReadOnlyCollection<string> batches = await _batchManager.ListBatchesAsync();
+		IReadOnlyCollection<string> batches = await _batchManager.ListBatchesAsync().ConfigureAwait(false);
 		Assert.AreEqual(1, batches.Count);
 		Assert.IsTrue(batches.Contains("ExistingBatch"));
 	}

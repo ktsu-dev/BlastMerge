@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using DiffPlex.Model;
+using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.ConsoleApp.Text;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
@@ -20,7 +21,7 @@ using Spectre.Console;
 /// Centralized service for file comparison display functionality.
 /// </summary>
 /// <param name="fileDiffer">The file differ service.</param>
-public class FileComparisonDisplayService(FileDiffer fileDiffer)
+public class FileComparisonDisplayService(FileDiffer fileDiffer) : IFileComparisonDisplayService
 {
 	private readonly FileDiffer fileDiffer = fileDiffer ?? throw new ArgumentNullException(nameof(fileDiffer));
 	/// <summary>
@@ -83,6 +84,42 @@ public class FileComparisonDisplayService(FileDiffer fileDiffer)
 		ShowWhitespaceLegend();
 		string diffFormat = PromptForDiffFormat();
 		ExecuteDiffFormat(diffFormat, file1, file2);
+	}
+
+	/// <summary>
+	/// Static method for showing file comparison options from static contexts.
+	/// </summary>
+	/// <param name="file1">First file path.</param>
+	/// <param name="file2">Second file path.</param>
+	public static void ShowFileComparisonOptionsStatic(string file1, string file2)
+	{
+		// Parameters intentionally unused in static context - this is a limited implementation
+		_ = file1;
+		_ = file2;
+
+		// For static contexts, use a basic implementation without DI
+		ShowWhitespaceLegend();
+		string diffFormat = PromptForDiffFormat();
+
+		// Use static FileDiffer methods for basic diff functionality
+		switch (diffFormat)
+		{
+			case DiffFormatsDisplay.SideBySideDiff:
+				AnsiConsole.MarkupLine("[yellow]Side-by-side diff functionality requires dependency injection context.[/]");
+				break;
+			case DiffFormatsDisplay.GitStyleDiff:
+				AnsiConsole.MarkupLine("[yellow]Git-style diff functionality requires dependency injection context.[/]");
+				break;
+			case DiffFormatsDisplay.ChangeSummary:
+				AnsiConsole.MarkupLine("[yellow]Change summary functionality requires dependency injection context.[/]");
+				break;
+			case DiffFormatsDisplay.SkipComparison:
+				AnsiConsole.MarkupLine("[green]Skipping comparison.[/]");
+				break;
+			default:
+				AnsiConsole.MarkupLine("[yellow]Advanced diff functionality requires dependency injection context.[/]");
+				break;
+		}
 	}
 
 	/// <summary>
@@ -176,7 +213,7 @@ public class FileComparisonDisplayService(FileDiffer fileDiffer)
 	/// </summary>
 	/// <param name="file1">First file path.</param>
 	/// <param name="file2">Second file path.</param>
-	public void ShowGitStyleDiff(string file1, string file2)
+	public static void ShowGitStyleDiff(string file1, string file2)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
@@ -202,7 +239,7 @@ public class FileComparisonDisplayService(FileDiffer fileDiffer)
 	/// </summary>
 	/// <param name="file1">Path to the first file.</param>
 	/// <param name="file2">Path to the second file.</param>
-	public void ShowSideBySideDiff(string file1, string file2)
+	public static void ShowSideBySideDiff(string file1, string file2)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);

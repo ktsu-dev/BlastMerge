@@ -6,6 +6,7 @@ namespace ktsu.BlastMerge.ConsoleApp.Services.Common;
 
 using System;
 using System.IO;
+using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
@@ -17,7 +18,7 @@ using Spectre.Console;
 /// <param name="historyInput">The history input service.</param>
 /// <param name="fileDiffer">The file differ service.</param>
 /// <param name="fileComparisonDisplayService">The file comparison display service.</param>
-public class ComparisonOperationsService(AppDataHistoryInput historyInput, FileDiffer fileDiffer, FileComparisonDisplayService fileComparisonDisplayService)
+public class ComparisonOperationsService(AppDataHistoryInput historyInput, FileDiffer fileDiffer, FileComparisonDisplayService fileComparisonDisplayService) : IComparisonOperationsService
 {
 	private readonly AppDataHistoryInput historyInput = historyInput ?? throw new ArgumentNullException(nameof(historyInput));
 	private readonly FileDiffer fileDiffer = fileDiffer ?? throw new ArgumentNullException(nameof(fileDiffer));

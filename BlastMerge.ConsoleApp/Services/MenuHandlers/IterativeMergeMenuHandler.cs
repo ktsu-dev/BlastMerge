@@ -5,7 +5,7 @@
 namespace ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 
 using System;
-using ktsu.BlastMerge.ConsoleApp.Models;
+using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.ConsoleApp.Text;
 using ktsu.BlastMerge.Services;
 
@@ -14,9 +14,9 @@ using ktsu.BlastMerge.Services;
 /// </summary>
 /// <param name="applicationService">The application service.</param>
 /// <param name="historyInput">The history input service.</param>
-public class IterativeMergeMenuHandler(ApplicationService applicationService, AppDataHistoryInput historyInput) : BaseMenuHandler(applicationService)
+public class IterativeMergeMenuHandler(ApplicationService applicationService, IAppDataHistoryInput historyInput) : BaseMenuHandler(applicationService)
 {
-	private readonly AppDataHistoryInput historyInput = historyInput ?? throw new ArgumentNullException(nameof(historyInput));
+	private readonly IAppDataHistoryInput historyInput = historyInput ?? throw new ArgumentNullException(nameof(historyInput));
 	/// <summary>
 	/// Gets the name of this menu for navigation purposes.
 	/// </summary>

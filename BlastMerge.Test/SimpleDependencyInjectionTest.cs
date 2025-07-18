@@ -27,7 +27,7 @@ public class SimpleDependencyInjectionTest : DependencyInjectionTestBase
 		Assert.IsNotNull(batchManager);
 
 		// Test basic functionality
-		BlastMergeAppData data = await persistenceService.GetAsync();
+		BlastMergeAppData data = await persistenceService.GetAsync().ConfigureAwait(false);
 		Assert.IsNotNull(data);
 	}
 
@@ -44,8 +44,8 @@ public class SimpleDependencyInjectionTest : DependencyInjectionTestBase
 		};
 
 		// Act
-		bool saveResult = await batchManager.SaveBatchAsync(testBatch);
-		BatchConfiguration? loadedBatch = await batchManager.LoadBatchAsync("TestBatch");
+		bool saveResult = await batchManager.SaveBatchAsync(testBatch).ConfigureAwait(false);
+		BatchConfiguration? loadedBatch = await batchManager.LoadBatchAsync("TestBatch").ConfigureAwait(false);
 
 		// Assert
 		Assert.IsTrue(saveResult);
@@ -54,4 +54,4 @@ public class SimpleDependencyInjectionTest : DependencyInjectionTestBase
 		Assert.AreEqual(1, loadedBatch.FilePatterns.Count);
 		Assert.IsTrue(loadedBatch.FilePatterns.Contains("*.txt"));
 	}
-} 
+}

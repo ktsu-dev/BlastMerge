@@ -4,11 +4,11 @@
 
 namespace ktsu.BlastMerge.Services;
 
-using Microsoft.Extensions.DependencyInjection;
 using ktsu.FileSystemProvider;
 using ktsu.PersistenceProvider;
 using ktsu.SerializationProvider;
 using ktsu.UniversalSerializer;
+using Microsoft.Extensions.DependencyInjection;
 
 /// <summary>
 /// Service registration for BlastMerge dependencies.
@@ -24,7 +24,7 @@ public static class ServiceRegistration
 	public static IServiceCollection AddBlastMergeServices(this IServiceCollection services, string applicationName = "BlastMerge")
 	{
 		// Register file system provider
-		services.AddSingleton<IFileSystemProvider, global::ktsu.FileSystemProvider.FileSystemProvider>();
+		services.AddSingleton<IFileSystemProvider, ktsu.FileSystemProvider.FileSystemProvider>();
 
 		// Register universal serialization provider
 		services.AddSingleton<ISerializationProvider, UniversalSerializationProvider>();
@@ -53,15 +53,17 @@ public static class ServiceRegistration
 		services.AddSingleton<AppDataBatchManager>();
 
 		// Register core services with FileSystemProvider dependency
+		services.AddSingleton<FileHasher>();
+		services.AddSingleton<DiffPlexDiffer>();
 		services.AddSingleton<FileFinder>();
 		services.AddSingleton<FileDiffer>();
 
 		// Register the base application service
 		services.AddSingleton<ApplicationService>();
 
-		// Note: Many services are static utility classes and don't need DI registration:
+		// TODO: Convert remaining static services to use dependency injection:
 		// - AsyncFileDiffer, BatchProcessor, BlockMerger, CharacterLevelDiffer, 
-		// - DiffPlexDiffer, DiffPlexHelper, WhitespaceVisualizer, IterativeMergeOrchestrator
+		// - DiffPlexHelper, WhitespaceVisualizer, IterativeMergeOrchestrator
 
 		return services;
 	}

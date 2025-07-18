@@ -10,6 +10,7 @@ using System.IO.Abstractions;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
@@ -30,38 +31,33 @@ using Spectre.Console;
 /// <param name="fileDiffer">The file differ service for dependency injection.</param>
 /// <param name="batchManager">The batch manager service.</param>
 /// <param name="historyInput">The history input service.</param>
-/// <param name="persistenceService">The persistence service.</param>
+/// <param name="comparisonOperations">The comparison operations service.</param>
+/// <param name="syncOperations">The sync operations service.</param>
+/// <param name="interactiveMergeService">The interactive merge service.</param>
+/// <param name="uiService">The user interface service.</param>
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "<Pending>")]
 public class ConsoleApplicationService(
 	IFileSystemProvider fileSystemProvider,
 	FileFinder fileFinder,
 	FileDiffer fileDiffer,
 	AppDataBatchManager batchManager,
-	AppDataHistoryInput historyInput,
-	BlastMergePersistenceService persistenceService,
-	ComparisonOperationsService comparisonOperations,
-	SyncOperationsService syncOperations,
-	FileComparisonDisplayService fileComparisonDisplayService,
-	InteractiveMergeService interactiveMergeService) : ApplicationService(fileSystemProvider, fileFinder, fileDiffer)
+	IAppDataHistoryInput historyInput,
+	IComparisonOperationsService comparisonOperations,
+	ISyncOperationsService syncOperations,
+	IInteractiveMergeService interactiveMergeService,
+	IUserInterfaceService uiService) : ApplicationService(fileSystemProvider, fileFinder, fileDiffer)
 {
 	private readonly AppDataBatchManager batchManager = batchManager ?? throw new ArgumentNullException(nameof(batchManager));
-	private readonly AppDataHistoryInput historyInput = historyInput ?? throw new ArgumentNullException(nameof(historyInput));
-	private readonly ComparisonOperationsService comparisonOperations = comparisonOperations ?? throw new ArgumentNullException(nameof(comparisonOperations));
-	private readonly SyncOperationsService syncOperations = syncOperations ?? throw new ArgumentNullException(nameof(syncOperations));
-	private readonly FileComparisonDisplayService fileComparisonDisplayService = fileComparisonDisplayService ?? throw new ArgumentNullException(nameof(fileComparisonDisplayService));
-	private readonly InteractiveMergeService interactiveMergeService = interactiveMergeService ?? throw new ArgumentNullException(nameof(interactiveMergeService));
+	private readonly IAppDataHistoryInput historyInput = historyInput ?? throw new ArgumentNullException(nameof(historyInput));
+	private readonly IComparisonOperationsService comparisonOperations = comparisonOperations ?? throw new ArgumentNullException(nameof(comparisonOperations));
+	private readonly ISyncOperationsService syncOperations = syncOperations ?? throw new ArgumentNullException(nameof(syncOperations));
+	private readonly IInteractiveMergeService interactiveMergeService = interactiveMergeService ?? throw new ArgumentNullException(nameof(interactiveMergeService));
+	private readonly IUserInterfaceService uiService = uiService ?? throw new ArgumentNullException(nameof(uiService));
 
 	/// <summary>
 	/// Gets the file differ service for access to file comparison operations.
 	/// </summary>
 	public new FileDiffer FileDiffer => base.FileDiffer;
-
-	// Table column names
-	private const string GroupColumnName = "Group";
-	private const string FilesColumnName = "Files";
-	private const string StatusColumnName = "Status";
-	private const string FilenameColumnName = "Filename";
-	private const string HashColumnName = "Hash";
 
 	// Menu display text to command mappings
 	private static readonly Dictionary<string, MenuChoice> MainMenuChoices = new()
@@ -104,7 +100,7 @@ public class ConsoleApplicationService(
 			return;
 		}
 
-		ShowFileGroupSummaryTable(fileGroups, directory, filePaths.Count);
+		uiService.ShowFileGroupSummaryTable(fileGroups, directory, filePaths.Count);
 		ExecuteUserSelectedAction(fileGroups);
 	}
 
@@ -120,7 +116,7 @@ public class ConsoleApplicationService(
 		AnsiConsole.Status()
 			.Start("Discovering files...", ctx =>
 			{
-				IFileSystem fileSystem = ktsu.FileSystemProvider.FileSystemProvider.Current;
+				IFileSystem fileSystem = FileSystem;
 				IReadOnlyCollection<string> foundFiles = FileFinder.FindFiles(directory, fileName, [], path =>
 				{
 					ctx.Status($"Discovering files... Found: {fileSystem.Path.GetFileName(path)}");
@@ -136,7 +132,7 @@ public class ConsoleApplicationService(
 	/// Executes the user-selected action on the file groups.
 	/// </summary>
 	/// <param name="fileGroups">The file groups to process.</param>
-	private static void ExecuteUserSelectedAction(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
+	private void ExecuteUserSelectedAction(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
 	{
 		Dictionary<string, ProcessFileActionChoice> processFileActionChoices = new()
 		{
@@ -163,7 +159,7 @@ public class ConsoleApplicationService(
 	/// </summary>
 	/// <param name="choice">The action choice.</param>
 	/// <param name="fileGroups">The file groups to process.</param>
-	private static void ExecuteFileAction(ProcessFileActionChoice choice, IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
+	private void ExecuteFileAction(ProcessFileActionChoice choice, IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
 	{
 		switch (choice)
 		{
@@ -208,9 +204,9 @@ public class ConsoleApplicationService(
 		// Record this batch as recently used
 		await batchManager.RecordBatchUsageAsync(batchName, cancellationToken).ConfigureAwait(false);
 
-		ShowBatchHeader(batch, directory);
+		uiService.ShowBatchHeader(batch, directory);
 		(int totalPatternsProcessed, int totalFilesFound, BatchResult? batchResult) = ProcessAllPatterns(directory, batch);
-		ShowBatchCompletion(totalPatternsProcessed, totalFilesFound, batchResult);
+		uiService.ShowBatchCompletion(totalPatternsProcessed, totalFilesFound, batchResult);
 	}
 
 	/// <summary>
@@ -234,30 +230,12 @@ public class ConsoleApplicationService(
 	}
 
 	/// <summary>
-	/// Shows the batch processing header information.
-	/// </summary>
-	/// <param name="batch">The batch configuration.</param>
-	/// <param name="directory">The directory being processed.</param>
-	private static void ShowBatchHeader(BatchConfiguration batch, string directory)
-	{
-		AnsiConsole.MarkupLine($"[cyan]Processing batch configuration '[yellow]{batch.Name}[/]' in '[yellow]{directory}[/]'[/]");
-		AnsiConsole.WriteLine();
-
-		AnsiConsole.MarkupLine($"[green]Found batch configuration: {batch.Name}[/]");
-		if (!string.IsNullOrEmpty(batch.Description))
-		{
-			AnsiConsole.MarkupLine($"[dim]{batch.Description}[/]");
-		}
-		AnsiConsole.WriteLine();
-	}
-
-	/// <summary>
 	/// Processes all patterns in the batch configuration using parallel optimization.
 	/// </summary>
 	/// <param name="directory">The directory to process.</param>
 	/// <param name="batch">The batch configuration.</param>
 	/// <returns>A tuple containing the total patterns processed, total files found, and batch result.</returns>
-	private static (int totalPatternsProcessed, int totalFilesFound, BatchResult? batchResult) ProcessAllPatterns(string directory, BatchConfiguration batch)
+	private (int totalPatternsProcessed, int totalFilesFound, BatchResult? batchResult) ProcessAllPatterns(string directory, BatchConfiguration batch)
 	{
 		BatchResult? result = null;
 
@@ -293,11 +271,11 @@ public class ConsoleApplicationService(
 		ValidateDirectoryExists(directory);
 
 		// First get all files for the table display
-		IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups = CompareFiles(directory, fileName);
+		IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups = base.CompareFilesAsync(directory, fileName).GetAwaiter().GetResult();
 		int totalFiles = fileGroups.Sum(g => g.Value.Count);
 
 		// Show the improved table summary first
-		ShowFileGroupSummaryTable(fileGroups, directory, totalFiles);
+		uiService.ShowFileGroupSummaryTable(fileGroups, directory, totalFiles);
 
 		// Check if there are any groups with multiple files that can be merged
 		int groupsWithMultipleFiles = fileGroups.Count(g => g.Value.Count > 1);
@@ -329,154 +307,6 @@ public class ConsoleApplicationService(
 		// Show detailed summary of all operations
 		ProgressReportingService.ShowDetailedMergeSummary(result);
 	}
-
-	/// <summary>
-	/// Shows the batch processing completion message.
-	/// </summary>
-	/// <param name="totalPatternsProcessed">Total patterns processed.</param>
-	/// <param name="totalFilesFound">Total files found.</param>
-	/// <param name="batchResult">The batch result containing merge details.</param>
-	private static void ShowBatchCompletion(int totalPatternsProcessed, int totalFilesFound, BatchResult? batchResult = null)
-	{
-		AnsiConsole.MarkupLine($"[green]Batch processing completed![/]");
-		AnsiConsole.MarkupLine($"[dim]Processed {totalPatternsProcessed} patterns, found {totalFilesFound} total files.[/]");
-
-		// Show detailed summary for all patterns processed
-		if (batchResult != null)
-		{
-			ShowBatchDetailedSummary(batchResult);
-		}
-	}
-
-	/// <summary>
-	/// Shows detailed summary for all patterns in the batch, including those without merge operations.
-	/// </summary>
-	/// <param name="batchResult">The batch result containing pattern results.</param>
-	private static void ShowBatchDetailedSummary(BatchResult batchResult)
-	{
-		if (batchResult.PatternResults.Count == 0)
-		{
-			return; // No patterns to show
-		}
-
-		AnsiConsole.WriteLine();
-		AnsiConsole.MarkupLine($"[bold cyan]{OutputDisplay.BatchProcessingSummary}[/]");
-		AnsiConsole.WriteLine();
-
-		// Create summary table
-		Table summaryTable = new Table()
-			.Border(TableBorder.Rounded)
-			.BorderColor(Color.Blue)
-			.AddColumn("[bold]Pattern[/]")
-			.AddColumn("[bold]Files Found[/]")
-			.AddColumn("[bold]Unique Versions[/]")
-			.AddColumn("[bold]Status[/]")
-			.AddColumn("[bold]Result[/]");
-
-		foreach (PatternResult patternResult in batchResult.PatternResults)
-		{
-			string status = patternResult.Success ? "[green]✓[/]" : "[red]✗[/]";
-			string result = GetPatternResultDescription(patternResult);
-			string displayName = GetDisplayName(patternResult);
-
-			summaryTable.AddRow(
-				$"[yellow]{displayName}[/]",
-				patternResult.FilesFound.ToString(),
-				patternResult.UniqueVersions.ToString(),
-				status,
-				result
-			);
-		}
-
-		AnsiConsole.Write(summaryTable);
-
-		// Show detailed merge summaries for patterns that had actual merge operations
-		List<PatternResult> mergeResults = [.. batchResult.PatternResults
-			.Where(pr => pr.MergeResult != null)];
-
-		if (mergeResults.Count > 0)
-		{
-			AnsiConsole.WriteLine();
-			AnsiConsole.MarkupLine($"[bold cyan]{OutputDisplay.DetailedMergeOperations}[/]");
-			AnsiConsole.WriteLine();
-
-			foreach (PatternResult patternResult in mergeResults)
-			{
-				if (patternResult.MergeResult != null)
-				{
-					AnsiConsole.MarkupLine($"[bold yellow]Pattern: {patternResult.Pattern}[/]");
-					ProgressReportingService.ShowDetailedMergeSummary(patternResult.MergeResult);
-				}
-			}
-		}
-	}
-
-	/// <summary>
-	/// Gets a descriptive result for a pattern result.
-	/// </summary>
-	/// <param name="patternResult">The pattern result.</param>
-	/// <returns>A formatted description of the result.</returns>
-	private static string GetPatternResultDescription(PatternResult patternResult)
-	{
-		if (!patternResult.Success)
-		{
-			return $"[red]{patternResult.Message}[/]";
-		}
-
-		if (patternResult.FilesFound == 0)
-		{
-			return "[dim]No files[/]";
-		}
-
-		if (patternResult.FilesFound == 1)
-		{
-			return "[green]Single file[/]";
-		}
-
-		if (patternResult.UniqueVersions == 1)
-		{
-			return "[green]Identical[/]";
-		}
-
-		if (patternResult.MergeResult == null)
-		{
-			return "[yellow]Multiple versions[/]";
-		}
-
-		return patternResult.MergeResult.IsSuccessful
-			? "[green]Merged[/]"
-			: "[red]Failed[/]";
-	}
-
-	/// <summary>
-	/// Gets the display name for a pattern result, showing filename with pattern in parentheses if it's a glob.
-	/// </summary>
-	/// <param name="patternResult">The pattern result.</param>
-	/// <returns>A formatted display name.</returns>
-	private static string GetDisplayName(PatternResult patternResult)
-	{
-		// If no filename is available, fall back to pattern
-		if (string.IsNullOrEmpty(patternResult.FileName))
-		{
-			return patternResult.Pattern;
-		}
-
-		// If pattern equals filename, it's not a glob pattern
-		if (patternResult.Pattern.Equals(patternResult.FileName, StringComparison.OrdinalIgnoreCase))
-		{
-			return patternResult.FileName;
-		}
-
-		// Check if pattern contains glob characters
-		bool isGlobPattern = patternResult.Pattern.Contains('*') ||
-			patternResult.Pattern.Contains('?') ||
-			patternResult.Pattern.Contains('[') ||
-			patternResult.Pattern.Contains('{');
-
-		return isGlobPattern ? $"{patternResult.FileName} ({patternResult.Pattern})" : patternResult.FileName;
-	}
-
-	// CompareFiles method removed - using base class implementation since it's identical
 
 	/// <summary>
 	/// Runs iterative merge on files in a directory.
@@ -611,7 +441,7 @@ public class ConsoleApplicationService(
 	/// <summary>
 	/// Shows the welcome screen with application information.
 	/// </summary>
-	private static void ShowWelcomeScreen() => MenuDisplayService.ShowWelcomeScreen();
+	private void ShowWelcomeScreen() => uiService.ShowWelcomeScreen();
 
 	/// <summary>
 	/// Shows the main menu and returns the user's choice.
@@ -674,7 +504,7 @@ public class ConsoleApplicationService(
 		switch (choice)
 		{
 			case MenuChoice.FindFiles:
-				await Task.Run(() => new FindFilesMenuHandler(this, FileFinder, historyInput).Enter(), cancellationToken).ConfigureAwait(false);
+				await Task.Run(() => new FindFilesMenuHandler(this, historyInput).Enter(), cancellationToken).ConfigureAwait(false);
 				break;
 			case MenuChoice.IterativeMerge:
 				await Task.Run(() => new IterativeMergeMenuHandler(this, historyInput).Enter(), cancellationToken).ConfigureAwait(false);
@@ -835,7 +665,7 @@ public class ConsoleApplicationService(
 	/// <summary>
 	/// Shows the goodbye screen when exiting.
 	/// </summary>
-	private static void ShowGoodbyeScreen() => MenuDisplayService.ShowGoodbyeScreen();
+	private void ShowGoodbyeScreen() => uiService.ShowGoodbyeScreen();
 
 	/// <summary>
 	/// Navigates based on the current navigation stack.
@@ -867,7 +697,7 @@ public class ConsoleApplicationService(
 		switch (menuName)
 		{
 			case MenuNames.FindFiles:
-				await Task.Run(() => new FindFilesMenuHandler(this, FileFinder, historyInput).Handle(), cancellationToken).ConfigureAwait(false);
+				await Task.Run(() => new FindFilesMenuHandler(this, historyInput).Handle(), cancellationToken).ConfigureAwait(false);
 				break;
 			case MenuNames.IterativeMerge:
 				await Task.Run(() => new IterativeMergeMenuHandler(this, historyInput).Handle(), cancellationToken).ConfigureAwait(false);
@@ -891,73 +721,13 @@ public class ConsoleApplicationService(
 	}
 
 	/// <summary>
-	/// Creates and displays a summary table of file groups with improved formatting.
-	/// </summary>
-	/// <param name="fileGroups">The file groups to display.</param>
-	/// <param name="directory">The base directory for relative path calculation.</param>
-	/// <param name="totalFiles">Total number of files found.</param>
-	private static void ShowFileGroupSummaryTable(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups, string directory, int totalFiles)
-	{
-		ArgumentNullException.ThrowIfNull(fileGroups);
-		ArgumentNullException.ThrowIfNull(directory);
-
-		AnsiConsole.MarkupLine($"[green]Found {totalFiles} files in {fileGroups.Count} groups:[/]");
-		AnsiConsole.WriteLine();
-
-		// Sort fileGroups by the first filename in each group for better organization
-		List<KeyValuePair<string, IReadOnlyCollection<string>>> sortedFileGroups = [.. fileGroups
-			.OrderBy(g => Path.GetFileName(g.Value.FirstOrDefault() ?? string.Empty))];
-
-		Table table = new Table()
-			.Border(TableBorder.Rounded)
-			.BorderColor(Color.Blue)
-			.AddColumn(GroupColumnName)
-			.AddColumn(FilesColumnName)
-			.AddColumn(StatusColumnName)
-			.AddColumn(FilenameColumnName)
-			.AddColumn(HashColumnName);
-
-		foreach ((KeyValuePair<string, IReadOnlyCollection<string>> group, int groupIndex) in sortedFileGroups.Select((group, index) => (group, index + 1)))
-		{
-			string status = group.Value.Count > 1 ? "[yellow]Multiple identical copies[/]" : "[green]Unique[/]";
-
-			// Get unique filenames in this group
-			IEnumerable<string> uniqueFilenames = group.Value
-				.Select(Path.GetFileName)
-				.OfType<string>()
-				.Where(f => !string.IsNullOrEmpty(f))
-				.Distinct()
-				.OrderBy(f => f);
-
-			string filenamesDisplay = string.Join("; ", uniqueFilenames);
-			if (filenamesDisplay.Length > 50)
-			{
-				filenamesDisplay = filenamesDisplay[..47] + "...";
-			}
-
-			// Show first 8 characters of hash
-			string shortHash = group.Key.Length > 8 ? group.Key[..8] + "..." : group.Key;
-
-			table.AddRow(
-				$"[cyan]{groupIndex}[/]",
-				$"[dim]{group.Value.Count}[/]",
-				status,
-				$"[dim]{filenamesDisplay}[/]",
-				$"[dim]{shortHash}[/]");
-		}
-
-		AnsiConsole.Write(table);
-		AnsiConsole.WriteLine();
-	}
-
-	/// <summary>
 	/// Console-specific callback to perform merge operation between two files.
 	/// </summary>
 	/// <param name="file1">First file path.</param>
 	/// <param name="file2">Second file path.</param>
 	/// <param name="existingContent">Existing merged content.</param>
 	/// <returns>Merge result or null if cancelled.</returns>
-	private static MergeResult? ConsoleMergeCallback(string file1, string file2, string? existingContent)
+	private MergeResult? ConsoleMergeCallback(string file1, string file2, string? existingContent)
 	{
 		(string leftFile, string rightFile) = DetermineFileOrder(file1, file2, existingContent);
 
@@ -995,7 +765,7 @@ public class ConsoleApplicationService(
 	/// <param name="rightFile">The right file path.</param>
 	/// <param name="existingContent">Existing merged content.</param>
 	/// <returns>Tuple indicating if user cancelled and MergeResult if user chose to take one file entirely.</returns>
-	private static (bool userCancelled, MergeResult? result) ShowFullFileComparisonAndAskForChoice(string leftFile, string rightFile, string? existingContent)
+	private (bool userCancelled, MergeResult? result) ShowFullFileComparisonAndAskForChoice(string leftFile, string rightFile, string? existingContent)
 	{
 		// Show header
 		AnsiConsole.WriteLine();
@@ -1083,7 +853,7 @@ public class ConsoleApplicationService(
 	/// <param name="file2">Second file path.</param>
 	/// <param name="existingContent">Existing merged content.</param>
 	/// <returns>A tuple with the left and right file paths in the determined order.</returns>
-	private static (string leftFile, string rightFile) DetermineFileOrder(string file1, string file2, string? existingContent)
+	private (string leftFile, string rightFile) DetermineFileOrder(string file1, string file2, string? existingContent)
 	{
 		if (existingContent != null)
 		{

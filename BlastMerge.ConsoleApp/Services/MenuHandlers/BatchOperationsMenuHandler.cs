@@ -9,7 +9,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using ktsu.BlastMerge.ConsoleApp.Models;
+using System.Threading.Tasks;
+using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.ConsoleApp.Text;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
@@ -46,12 +47,12 @@ internal enum BatchManagementChoice
 /// Menu handler for batch operations.
 /// </summary>
 /// <param name="applicationService">The application service.</param>
-/// <param name="batchManager">The batch manager service.</param>
+/// <param name="batchManager">The batch manager.</param>
 /// <param name="historyInput">The history input service.</param>
-public class BatchOperationsMenuHandler(ApplicationService applicationService, AppDataBatchManager batchManager, AppDataHistoryInput historyInput) : BaseMenuHandler(applicationService)
+public class BatchOperationsMenuHandler(ApplicationService applicationService, AppDataBatchManager batchManager, IAppDataHistoryInput historyInput) : BaseMenuHandler(applicationService)
 {
 	private readonly AppDataBatchManager batchManager = batchManager ?? throw new ArgumentNullException(nameof(batchManager));
-	private readonly AppDataHistoryInput historyInput = historyInput ?? throw new ArgumentNullException(nameof(historyInput));
+	private readonly IAppDataHistoryInput historyInput = historyInput ?? throw new ArgumentNullException(nameof(historyInput));
 
 	/// <summary>
 	/// Gets the name of this menu for navigation purposes.
@@ -638,7 +639,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService, A
 	/// <returns>The gathered edit data.</returns>
 	private EditBatchData GatherEditBatchData(BatchConfiguration batch)
 	{
-		string description = historyInput.AskWithHistoryAsync($"[cyan]Enter description[/] (current: {batch.Description ?? ""})", batch.Description ?? "").GetAwaiter().GetResult();
+		string description = historyInput.AskWithHistoryAsync($"[cyan]Enter description[/] (current: {batch.Description ?? ""})").GetAwaiter().GetResult();
 		List<string> patterns = HandlePatternEditing(batch);
 		List<string> searchPaths = HandleSearchPathEditing(batch);
 		List<string> exclusionPatterns = HandleExclusionPatternEditing(batch);

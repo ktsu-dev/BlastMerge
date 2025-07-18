@@ -19,16 +19,20 @@ public class FileHasherTests : DependencyInjectionTestBase
 	private string _testFilePath2 = null!;
 	private string _testFilePath3 = null!;
 	private FileHasherAdapter _fileHasherAdapter = null!;
+	private FileHasher _fileHasher = null!;
 
 	protected override void InitializeTestData()
 	{
+		// Get FileHasher from DI
+		_fileHasher = GetService<FileHasher>();
+
+		// Initialize adapter
+		_fileHasherAdapter = new FileHasherAdapter(MockFileSystem);
+
 		// Create test files with different content
 		_testFilePath1 = CreateFile("test1.txt", "This is test file 1");
 		_testFilePath2 = CreateFile("test2.txt", "This is test file 1"); // Same content as file 1
 		_testFilePath3 = CreateFile("test3.txt", "This is test file 3"); // Different content
-
-		// Initialize the adapter
-		_fileHasherAdapter = new FileHasherAdapter(MockFileSystem);
 	}
 
 	[TestMethod]
@@ -81,8 +85,8 @@ public class FileHasherTests : DependencyInjectionTestBase
 	public async Task ComputeFileHashAsync_SameContent_ReturnsSameHash()
 	{
 		// Act
-		string hash1 = await FileHasher.ComputeFileHashAsync(_testFilePath1, MockFileSystem).ConfigureAwait(false);
-		string hash2 = await FileHasher.ComputeFileHashAsync(_testFilePath2, MockFileSystem).ConfigureAwait(false);
+		string hash1 = await _fileHasher.ComputeFileHashAsync(_testFilePath1).ConfigureAwait(false);
+		string hash2 = await _fileHasher.ComputeFileHashAsync(_testFilePath2).ConfigureAwait(false);
 
 		// Assert
 		Assert.AreEqual(hash1, hash2, "Files with identical content should have the same hash when computed asynchronously");
@@ -92,8 +96,8 @@ public class FileHasherTests : DependencyInjectionTestBase
 	public async Task ComputeFileHashAsync_DifferentContent_ReturnsDifferentHash()
 	{
 		// Act
-		string hash1 = await FileHasher.ComputeFileHashAsync(_testFilePath1, MockFileSystem).ConfigureAwait(false);
-		string hash3 = await FileHasher.ComputeFileHashAsync(_testFilePath3, MockFileSystem).ConfigureAwait(false);
+		string hash1 = await _fileHasher.ComputeFileHashAsync(_testFilePath1).ConfigureAwait(false);
+		string hash3 = await _fileHasher.ComputeFileHashAsync(_testFilePath3).ConfigureAwait(false);
 
 		// Assert
 		Assert.AreNotEqual(hash1, hash3, "Files with different content should have different hashes when computed asynchronously");
@@ -106,7 +110,7 @@ public class FileHasherTests : DependencyInjectionTestBase
 		List<string> filePaths = [_testFilePath1, _testFilePath2, _testFilePath3];
 
 		// Act
-		Dictionary<string, string> results = await FileHasher.ComputeFileHashesAsync(filePaths, MockFileSystem).ConfigureAwait(false);
+		Dictionary<string, string> results = await _fileHasher.ComputeFileHashesAsync(filePaths).ConfigureAwait(false);
 
 		// Assert
 		Assert.AreEqual(3, results.Count);
@@ -124,7 +128,7 @@ public class FileHasherTests : DependencyInjectionTestBase
 		List<string> filePaths = [_testFilePath1, _testFilePath2, _testFilePath3];
 
 		// Act
-		Dictionary<string, string> results = await FileHasher.ComputeFileHashesAsync(filePaths, MockFileSystem, maxDegreeOfParallelism: 1).ConfigureAwait(false);
+		Dictionary<string, string> results = await _fileHasher.ComputeFileHashesAsync(filePaths, maxDegreeOfParallelism: 1).ConfigureAwait(false);
 
 		// Assert
 		Assert.AreEqual(3, results.Count);
@@ -135,7 +139,7 @@ public class FileHasherTests : DependencyInjectionTestBase
 	public async Task ComputeFileHashesAsync_NullFilePaths_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () => await FileHasher.ComputeFileHashesAsync(null!, MockFileSystem).ConfigureAwait(false)).ConfigureAwait(false);
+		await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () => await _fileHasher.ComputeFileHashesAsync(null!).ConfigureAwait(false)).ConfigureAwait(false);
 	}
 
 	[TestMethod]
@@ -262,7 +266,7 @@ public class FileHasherTests : DependencyInjectionTestBase
 		List<string> emptyList = [];
 
 		// Act
-		Dictionary<string, string> results = await FileHasher.ComputeFileHashesAsync(emptyList, MockFileSystem).ConfigureAwait(false);
+		Dictionary<string, string> results = await _fileHasher.ComputeFileHashesAsync(emptyList).ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNotNull(results);

@@ -22,17 +22,14 @@ public class CommandLineHandler(IApplicationService applicationService) : IComma
 	/// </summary>
 	/// <param name="args">Command line arguments.</param>
 	/// <returns>Exit code - 0 for success, 1 for error.</returns>
-	public int ProcessCommandLineArguments(string[] args)
-	{
-		return ProcessCommandLineArgumentsAsync(args).GetAwaiter().GetResult();
-	}
+	public int ProcessCommandLineArguments(string[] args) => ProcessCommandLineArgumentsAsync(args).GetAwaiter().GetResult();
 
 	/// <summary>
 	/// Processes command line arguments and executes the appropriate action asynchronously.
 	/// </summary>
 	/// <param name="args">Command line arguments.</param>
 	/// <returns>Exit code - 0 for success, 1 for error.</returns>
-	private async Task<int> ProcessCommandLineArgumentsAsync(string[] args)
+	public async Task<int> ProcessCommandLineArgumentsAsync(string[] args)
 	{
 		ArgumentNullException.ThrowIfNull(args);
 		ArgumentNullException.ThrowIfNull(applicationService);
@@ -44,8 +41,8 @@ public class CommandLineHandler(IApplicationService applicationService) : IComma
 				.ParseArguments<CommandLineOptions>(args)
 				.MapResult(
 					async opts => await ExecuteCommandAsync(opts).ConfigureAwait(false),
-					HandleParsingErrors
-				);
+					errors => Task.FromResult(HandleParsingErrors(errors))
+				).ConfigureAwait(false);
 		}
 		catch (InvalidOperationException ex)
 		{

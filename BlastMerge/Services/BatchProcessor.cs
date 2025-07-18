@@ -508,7 +508,7 @@ public static partial class BatchProcessor
 		{
 			try
 			{
-				FileHasher fileHasher = new(new global::ktsu.FileSystemProvider.FileSystemProvider());
+				FileHasher fileHasher = new(new ktsu.FileSystemProvider.FileSystemProvider());
 				string hash = fileHasher.ComputeFileHash(workItem.filePath);
 
 				lock (lockObject)

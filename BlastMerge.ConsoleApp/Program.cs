@@ -8,10 +8,11 @@ using System;
 using System.Text;
 using System.Threading.Tasks;
 using ktsu.BlastMerge.ConsoleApp.CLI;
+using ktsu.BlastMerge.ConsoleApp.Contracts;
+using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.ConsoleApp.Services;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
-using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.Contracts;
 using ktsu.BlastMerge.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -68,12 +69,13 @@ public static class Program
 				// Register BlastMerge services
 				services.AddBlastMergeServices();
 
-				// Register console app services
-											services.AddSingleton<AppDataHistoryInput>();
-						services.AddSingleton<ComparisonOperationsService>();
-		services.AddSingleton<SyncOperationsService>();
-		services.AddSingleton<FileComparisonDisplayService>();
-		services.AddSingleton<InteractiveMergeService>();
+				// Register console app services with interfaces
+				services.AddSingleton<IAppDataHistoryInput, AppDataHistoryInput>();
+				services.AddSingleton<IComparisonOperationsService, ComparisonOperationsService>();
+				services.AddSingleton<ISyncOperationsService, SyncOperationsService>();
+				services.AddSingleton<IFileComparisonDisplayService, FileComparisonDisplayService>();
+				services.AddSingleton<IInteractiveMergeService, InteractiveMergeService>();
+				services.AddSingleton<IUserInterfaceService, UserInterfaceService>();
 				services.AddSingleton<IApplicationService, ConsoleApplicationService>();
 				services.AddSingleton<CommandLineHandler>();
 

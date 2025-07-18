@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using ktsu.BlastMerge.Models;
+using ktsu.BlastMerge.Services;
 using ktsu.BlastMerge.Test.Adapters;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -20,8 +21,9 @@ public class EdgeCaseTests : DependencyInjectionTestBase
 
 	protected override void InitializeTestData()
 	{
-		// Initialize adapters
-		_fileDifferAdapter = new FileDifferAdapter(MockFileSystem);
+		// Get DiffPlexDiffer from DI and initialize adapter
+		DiffPlexDiffer diffPlexDiffer = GetService<DiffPlexDiffer>();
+		_fileDifferAdapter = new FileDifferAdapter(MockFileSystem, diffPlexDiffer);
 		_fileHasherAdapter = new FileHasherAdapter(MockFileSystem);
 		_fileFinderAdapter = new FileFinderAdapter(MockFileSystem);
 	}

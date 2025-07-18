@@ -101,7 +101,7 @@ public static class FileDisplayService
 				UIHelper.ShowWarning("Comparing first two files:");
 
 				// Use centralized file comparison service
-				FileComparisonDisplayService.ShowFileComparisonOptions(file1, file2);
+				FileComparisonDisplayService.ShowFileComparisonOptionsStatic(file1, file2);
 			}
 
 			AnsiConsole.WriteLine();

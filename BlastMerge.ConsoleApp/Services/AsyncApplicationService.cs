@@ -7,16 +7,12 @@
 namespace ktsu.BlastMerge.ConsoleApp.Services;
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ktsu.BlastMerge.Models;
-using ktsu.BlastMerge.Services;
 using Spectre.Console;
-using System.Collections.Concurrent;
-using System.IO.Abstractions;
 
 /// <summary>
 /// Provides asynchronous file processing operations with progress reporting

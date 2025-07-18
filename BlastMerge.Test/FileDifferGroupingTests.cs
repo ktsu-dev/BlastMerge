@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using ktsu.BlastMerge.Models;
+using ktsu.BlastMerge.Services;
 using ktsu.BlastMerge.Test.Adapters;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -22,8 +23,9 @@ public class FileDifferGroupingTests : DependencyInjectionTestBase
 
 	protected override void InitializeTestData()
 	{
-		// Initialize adapter
-		_fileDifferAdapter = new FileDifferAdapter(MockFileSystem);
+		// Get DiffPlexDiffer from DI and initialize adapter
+		DiffPlexDiffer diffPlexDiffer = GetService<DiffPlexDiffer>();
+		_fileDifferAdapter = new FileDifferAdapter(MockFileSystem, diffPlexDiffer);
 
 		// Create test files (file1 and file2 have identical content)
 		_testFile1 = CreateFile("file1.txt", "This is test content 1");

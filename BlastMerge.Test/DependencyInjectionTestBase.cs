@@ -55,10 +55,13 @@ public abstract class DependencyInjectionTestBase
 		// Configure services
 		ServiceCollection services = new();
 
-		// Register mock file system provider
-		// Note: For testing, we'll use the default FileSystemProvider but the tests
-		// will use the MockFileSystem directly through adapters
-		services.AddSingleton<IFileSystemProvider, global::ktsu.FileSystemProvider.FileSystemProvider>();
+		// Register mock file system provider that uses our MockFileSystem
+		services.AddSingleton<IFileSystemProvider>(serviceProvider =>
+		{
+			ktsu.FileSystemProvider.FileSystemProvider provider = new();
+			provider.SetFileSystemFactory(() => MockFileSystem);
+			return provider;
+		});
 
 		// Register serialization provider
 		services.AddSingleton<ISerializationProvider, UniversalSerializationProvider>();
@@ -70,9 +73,17 @@ public abstract class DependencyInjectionTestBase
 			return new MemoryPersistenceProvider<string>(serializationProvider);
 		});
 
-		// Register our services
+		// Register our persistence service
 		services.AddSingleton<BlastMergePersistenceService>();
+
+		// Register batch manager
 		services.AddSingleton<AppDataBatchManager>();
+
+		// Register core services with FileSystemProvider dependency
+		services.AddSingleton<FileHasher>();
+		services.AddSingleton<DiffPlexDiffer>();
+		services.AddSingleton<FileFinder>();
+		services.AddSingleton<FileDiffer>();
 
 		// Add any additional test-specific services
 		ConfigureTestServices(services);
@@ -151,4 +162,4 @@ public abstract class DependencyInjectionTestBase
 		MockFileSystem.Directory.CreateDirectory(fullPath);
 		return fullPath;
 	}
-} 
+}

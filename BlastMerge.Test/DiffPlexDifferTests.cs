@@ -21,34 +21,20 @@ public class DiffPlexDifferTests : DependencyInjectionTestBase
 	private string _file1 = string.Empty;
 	private string _file2 = string.Empty;
 	private string _identicalFile = string.Empty;
+	private DiffPlexDiffer _diffPlexDiffer = null!;
 
 	/// <summary>
 	/// Sets up test files in the mock file system
 	/// </summary>
 	protected override void InitializeTestData()
 	{
-		// Create test files in mock file system
-		_file1 = CreateFile("file1.txt", """
-			Line 1
-			Line 2
-			Line 3
-			Line 4
-			""");
+		// Get the DiffPlexDiffer service from DI
+		_diffPlexDiffer = GetService<DiffPlexDiffer>();
 
-		_file2 = CreateFile("file2.txt", """
-			Line 1
-			Modified Line 2
-			Line 3
-			New Line 4
-			Line 5
-			""");
-
-		_identicalFile = CreateFile("identical.txt", """
-			Line 1
-			Line 2
-			Line 3
-			Line 4
-			""");
+		// Create test files in the mock file system
+		_file1 = CreateFile("file1.txt", "Line 1\nLine 2\nLine 3");
+		_file2 = CreateFile("file2.txt", "Line 1\nModified Line 2\nLine 3\nLine 4");
+		_identicalFile = CreateFile("identical.txt", "Line 1\nLine 2\nLine 3");
 	}
 
 	/// <summary>
@@ -61,7 +47,7 @@ public class DiffPlexDifferTests : DependencyInjectionTestBase
 		string tempFile1 = CreateFile("temp1.txt", MockFileSystem.File.ReadAllText(_file1));
 		string tempFile2 = CreateFile("temp2.txt", MockFileSystem.File.ReadAllText(_identicalFile));
 
-		bool result = DiffPlexDiffer.AreFilesIdentical(tempFile1, tempFile2);
+		bool result = _diffPlexDiffer.AreFilesIdentical(tempFile1, tempFile2);
 		Assert.IsTrue(result);
 	}
 
@@ -72,7 +58,7 @@ public class DiffPlexDifferTests : DependencyInjectionTestBase
 	public void AreFilesIdentical_DifferentFiles_ReturnsFalse()
 	{
 		// Use mock file system directly since DiffPlexDiffer uses FileSystemProvider.Current
-		bool result = DiffPlexDiffer.AreFilesIdentical(_file1, _file2);
+		bool result = _diffPlexDiffer.AreFilesIdentical(_file1, _file2);
 		Assert.IsFalse(result);
 	}
 
@@ -83,7 +69,7 @@ public class DiffPlexDifferTests : DependencyInjectionTestBase
 	public void GenerateUnifiedDiff_DifferentFiles_ReturnsValidDiff()
 	{
 		// Use mock file system directly since DiffPlexDiffer uses FileSystemProvider.Current
-		string diff = DiffPlexDiffer.GenerateUnifiedDiff(_file1, _file2);
+		string diff = _diffPlexDiffer.GenerateUnifiedDiff(_file1, _file2);
 
 		Assert.IsFalse(string.IsNullOrEmpty(diff));
 		Assert.IsTrue(diff.Contains($"--- {_file1}"));
@@ -98,7 +84,7 @@ public class DiffPlexDifferTests : DependencyInjectionTestBase
 	public void GenerateUnifiedDiff_IdenticalFiles_ReturnsEmptyString()
 	{
 		// Use mock file system directly since DiffPlexDiffer uses FileSystemProvider.Current
-		string diff = DiffPlexDiffer.GenerateUnifiedDiff(_file1, _identicalFile);
+		string diff = _diffPlexDiffer.GenerateUnifiedDiff(_file1, _identicalFile);
 
 		// For identical files, git returns empty string
 		Assert.AreEqual(string.Empty, diff, "Unified diff should be empty for identical files");
@@ -111,7 +97,7 @@ public class DiffPlexDifferTests : DependencyInjectionTestBase
 	public void GenerateColoredDiff_DifferentFiles_ReturnsColoredLines()
 	{
 		// Use mock file system directly since DiffPlexDiffer uses FileSystemProvider.Current
-		System.Collections.ObjectModel.Collection<ColoredDiffLine> coloredDiff = DiffPlexDiffer.GenerateColoredDiff(_file1, _file2);
+		System.Collections.ObjectModel.Collection<ColoredDiffLine> coloredDiff = _diffPlexDiffer.GenerateColoredDiff(_file1, _file2);
 
 		Assert.IsTrue(coloredDiff.Count > 0);
 
@@ -130,7 +116,7 @@ public class DiffPlexDifferTests : DependencyInjectionTestBase
 	public void GenerateSideBySideDiff_DifferentFiles_ReturnsValidModel()
 	{
 		// Use mock file system directly since DiffPlexDiffer uses FileSystemProvider.Current
-		SideBySideDiffModel sideBySide = DiffPlexDiffer.GenerateSideBySideDiff(_file1, _file2);
+		SideBySideDiffModel sideBySide = _diffPlexDiffer.GenerateSideBySideDiff(_file1, _file2);
 
 		Assert.IsNotNull(sideBySide);
 		Assert.IsNotNull(sideBySide.OldText);
@@ -146,7 +132,7 @@ public class DiffPlexDifferTests : DependencyInjectionTestBase
 	public void GenerateChangeSummary_DifferentFiles_ReturnsOnlyChanges()
 	{
 		// Use mock file system directly since DiffPlexDiffer uses FileSystemProvider.Current
-		System.Collections.ObjectModel.Collection<ColoredDiffLine> changeSummary = DiffPlexDiffer.GenerateChangeSummary(_file1, _file2);
+		System.Collections.ObjectModel.Collection<ColoredDiffLine> changeSummary = _diffPlexDiffer.GenerateChangeSummary(_file1, _file2);
 
 		Assert.IsTrue(changeSummary.Count > 0);
 
@@ -169,7 +155,7 @@ public class DiffPlexDifferTests : DependencyInjectionTestBase
 		string nonExistentFile = MockFileSystem.Path.Combine(TestDirectory, "nonexistent.txt");
 		// Don't create the nonExistentFile, so it won't exist in the mock file system
 
-		DiffPlexDiffer.GenerateUnifiedDiff(existingFile, nonExistentFile);
+		_diffPlexDiffer.GenerateUnifiedDiff(existingFile, nonExistentFile);
 	}
 
 	/// <summary>
@@ -182,11 +168,11 @@ public class DiffPlexDifferTests : DependencyInjectionTestBase
 		string emptyFile1 = CreateFile("empty1.txt", string.Empty);
 		string emptyFile2 = CreateFile("empty2.txt", string.Empty);
 
-		string diff = DiffPlexDiffer.GenerateUnifiedDiff(emptyFile1, emptyFile2);
+		string diff = _diffPlexDiffer.GenerateUnifiedDiff(emptyFile1, emptyFile2);
 		Assert.IsNotNull(diff);
 
 		// Should identify as identical
-		bool areIdentical = DiffPlexDiffer.AreFilesIdentical(emptyFile1, emptyFile2);
+		bool areIdentical = _diffPlexDiffer.AreFilesIdentical(emptyFile1, emptyFile2);
 		Assert.IsTrue(areIdentical);
 	}
 
@@ -204,7 +190,7 @@ public class DiffPlexDifferTests : DependencyInjectionTestBase
 		string binaryFile1 = CreateFile("binary1.dat", System.Text.Encoding.UTF8.GetString(binaryData1));
 		string binaryFile2 = CreateFile("binary2.dat", System.Text.Encoding.UTF8.GetString(binaryData2));
 
-		string diff = DiffPlexDiffer.GenerateUnifiedDiff(binaryFile1, binaryFile2);
+		string diff = _diffPlexDiffer.GenerateUnifiedDiff(binaryFile1, binaryFile2);
 		Assert.IsNotNull(diff);
 
 		// DiffPlex should handle binary files as text and show differences

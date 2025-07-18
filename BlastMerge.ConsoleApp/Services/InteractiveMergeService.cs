@@ -6,6 +6,7 @@ namespace ktsu.BlastMerge.ConsoleApp.Services;
 
 using System;
 using System.Text;
+using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
@@ -15,7 +16,7 @@ using Spectre.Console;
 /// Service for handling interactive merge UI operations.
 /// </summary>
 /// <param name="fileDiffer">The file differ service.</param>
-public class InteractiveMergeService(FileDiffer fileDiffer)
+public class InteractiveMergeService(FileDiffer fileDiffer) : IInteractiveMergeService
 {
 	private readonly FileDiffer fileDiffer = fileDiffer ?? throw new ArgumentNullException(nameof(fileDiffer));
 	/// <summary>
