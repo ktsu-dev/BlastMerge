@@ -3,6 +3,7 @@
     <PackageReference Include="Spectre.Console" />
     <PackageReference Include="CommandLineParser" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="ktsu.Extensions" />
   </ItemGroup>
 
   <ItemGroup>

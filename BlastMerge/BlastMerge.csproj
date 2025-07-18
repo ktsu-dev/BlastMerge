@@ -2,7 +2,6 @@
   <ItemGroup>
     <PackageReference Include="DiffPlex" />
     <PackageReference Include="Spectre.Console" />
-    <PackageReference Include="ktsu.AppDataStorage" />
     <PackageReference Include="ktsu.PersistenceProvider" />
     <PackageReference Include="ktsu.FileSystemProvider" />
     <PackageReference Include="ktsu.SerializationProvider" />

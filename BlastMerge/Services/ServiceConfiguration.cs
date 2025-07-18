@@ -5,7 +5,11 @@
 namespace ktsu.BlastMerge.Services;
 
 using ktsu.BlastMerge.Contracts;
+using ktsu.BlastMerge.Models;
 using ktsu.FileSystemProvider;
+using ktsu.PersistenceProvider;
+using ktsu.SerializationProvider;
+using ktsu.UniversalSerializer;
 using Microsoft.Extensions.DependencyInjection;
 
 /// <summary>
@@ -26,19 +30,36 @@ public static class ServiceConfiguration
 		// Environment abstraction
 		services.AddSingleton<IEnvironmentProvider, EnvironmentProvider>();
 
+		// Serialization provider setup
+		services.AddSingleton<ISerializationProvider, UniversalSerializationProvider>();
+
+		// Persistence provider setup
+		services.AddSingleton<IPersistenceProvider<string>>(serviceProvider =>
+		{
+			ISerializationProvider serializationProvider = serviceProvider.GetRequiredService<ISerializationProvider>();
+
+			// Use memory persistence provider for now (can be replaced with file-based later)
+			return new MemoryPersistenceProvider<string>(serializationProvider);
+		});
+
+		// Initialize BlastMergeAppData with persistence provider
+		services.AddSingleton<BlastMergeAppData>(serviceProvider =>
+		{
+			IPersistenceProvider<string> persistenceProvider = serviceProvider.GetRequiredService<IPersistenceProvider<string>>();
+			BlastMergeAppData.Initialize(persistenceProvider);
+			return BlastMergeAppData.Get();
+		});
+
 		// Utility services
 		services.AddSingleton<IDiffPlexHelper, DiffPlexHelper>();
 		services.AddSingleton<IWhitespaceVisualizer, WhitespaceVisualizer>();
 		services.AddSingleton<ICharacterLevelDiffer, CharacterLevelDiffer>();
 
-		// Persistence services (temporary simplified setup)
-		// Note: Full persistence provider setup needs to be implemented
-		// services.AddSingleton<BlastMergePersistenceService>();
-		// services.AddSingleton<AppDataBatchManager>();
-		// services.AddSingleton<IApplicationSettingsService, ApplicationSettingsService>();
-		// services.AddSingleton<IBatchConfigurationService, BatchConfigurationService>();
-		// services.AddSingleton<IInputHistoryService, InputHistoryService>();
-		// services.AddSingleton<IRecentBatchService, RecentBatchService>();
+		// Persistence-based services
+		services.AddSingleton<IApplicationSettingsService, ApplicationSettingsService>();
+		services.AddSingleton<IBatchConfigurationService, BatchConfigurationService>();
+		services.AddSingleton<IInputHistoryService, InputHistoryService>();
+		services.AddSingleton<IRecentBatchService, RecentBatchService>();
 
 		// File operations services
 		services.AddTransient<FileHasher>();
@@ -48,10 +69,12 @@ public static class ServiceConfiguration
 		services.AddTransient<DiffPlexDiffer>();
 		services.AddTransient<SecureTempFileHelper>();
 		services.AddTransient<BlockMerger>();
-		services.AddTransient<IterativeMergeOrchestrator>();
-		services.AddTransient<BatchProcessor>();
 
-		// Core application services
+		// Batch processing services
+		services.AddTransient<BatchProcessor>();
+		services.AddTransient<IterativeMergeOrchestrator>();
+
+		// Application service
 		services.AddSingleton<ApplicationService>();
 
 		return services;
