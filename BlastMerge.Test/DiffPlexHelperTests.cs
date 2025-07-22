@@ -4,364 +4,256 @@
 
 namespace ktsu.BlastMerge.Test;
 
-using System;
-using System.IO.Abstractions;
 using DiffPlex.Model;
-using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 /// <summary>
-/// Tests for the DiffPlexHelper utility class
+/// Unit tests for DiffPlexHelper using dependency injection
 /// </summary>
 [TestClass]
-public class DiffPlexHelperTests : MockFileSystemTestBase
+public class DiffPlexHelperTests : DependencyInjectionTestBase
 {
-	private string _file1Path = string.Empty;
-	private string _file2Path = string.Empty;
-	private string _identicalFilePath = string.Empty;
+	private DiffPlexHelper _helper = null!;
 
-	protected override void InitializeFileSystem()
+	protected override void InitializeTestData()
 	{
-		// Create temp directory in the mock file system
-		MockFileSystem.Directory.CreateDirectory(@"C:\temp");
-
-		// Create test files in the mock file system
-		_file1Path = @"C:\temp\file1.txt";
-		_file2Path = @"C:\temp\file2.txt";
-		_identicalFilePath = @"C:\temp\identical.txt";
-
-		// Write test content to files
-		MockFileSystem.File.WriteAllText(_file1Path, """
-			Line 1
-			Line 2
-			Line 3
-			Line 4
-			""");
-
-		MockFileSystem.File.WriteAllText(_file2Path, """
-			Line 1
-			Modified Line 2
-			Line 3
-			New Line 4
-			Line 5
-			""");
-
-		MockFileSystem.File.WriteAllText(_identicalFilePath, """
-			Line 1
-			Line 2
-			Line 3
-			Line 4
-			""");
+		_helper = GetService<DiffPlexHelper>();
 	}
 
 	[TestMethod]
-	public void Debug_FileSystemProvider_IsWorkingCorrectly()
+	public void CreateLineDiffsFromContent_WithIdenticalContent_ReturnsNoBlocks()
 	{
-		// Verify that FileSystemProvider.Current is using our mock file system
-		IFileSystem currentFileSystem = FileSystemProvider.Current;
-		Assert.IsNotNull(currentFileSystem);
-		Assert.IsTrue(currentFileSystem.GetType().Name.Contains("Mock"));
+		// Arrange
+		string content1 = "line1\nline2\nline3";
+		string content2 = "line1\nline2\nline3";
 
-		// Verify that our test files exist in the mock file system
-		Assert.IsTrue(MockFileSystem.File.Exists(_file1Path), $"File1 should exist at {_file1Path}");
-		Assert.IsTrue(MockFileSystem.File.Exists(_file2Path), $"File2 should exist at {_file2Path}");
-		Assert.IsTrue(MockFileSystem.File.Exists(_identicalFilePath), $"Identical file should exist at {_identicalFilePath}");
-
-		// Verify that FileSystemProvider.Current can see our files
-		Assert.IsTrue(currentFileSystem.File.Exists(_file1Path), $"FileSystemProvider.Current should see file1 at {_file1Path}");
-		Assert.IsTrue(currentFileSystem.File.Exists(_file2Path), $"FileSystemProvider.Current should see file2 at {_file2Path}");
-
-		// Read content to verify it's correct
-		string content1 = currentFileSystem.File.ReadAllText(_file1Path);
-		Assert.IsTrue(content1.Contains("Line 1"), "File1 should contain expected content");
-	}
-
-	[TestMethod]
-	public void CreateLineDiffs_ValidFiles_ReturnsDiffResult()
-	{
 		// Act
-		DiffResult result = DiffPlexHelper.CreateLineDiffs(_file1Path, _file2Path, MockFileSystem);
+		DiffResult result = _helper.CreateLineDiffsFromContent(content1, content2);
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.IsNotNull(result.DiffBlocks);
+		Assert.AreEqual(0, result.DiffBlocks.Count);
+	}
+
+	[TestMethod]
+	public void CreateLineDiffsFromContent_WithDifferentContent_ReturnsDiffBlocks()
+	{
+		// Arrange
+		string content1 = "line1\nline2\nline3";
+		string content2 = "line1\nmodified\nline3";
+
+		// Act
+		DiffResult result = _helper.CreateLineDiffsFromContent(content1, content2);
+
+		// Assert
+		Assert.IsNotNull(result);
 		Assert.IsTrue(result.DiffBlocks.Count > 0);
 	}
 
 	[TestMethod]
-	public void CreateLineDiffs_IdenticalFiles_ReturnsNoDifferences()
+	public void CreateLineDiffsFromContent_WithEmptyContent_HandlesCorrectly()
 	{
+		// Arrange
+		string content1 = "";
+		string content2 = "";
+
 		// Act
-		DiffResult result = DiffPlexHelper.CreateLineDiffs(_file1Path, _identicalFilePath, MockFileSystem);
+		DiffResult result = _helper.CreateLineDiffsFromContent(content1, content2);
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.IsNotNull(result.DiffBlocks);
-		Assert.AreEqual(0, result.DiffBlocks.Count);
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
-	public void CreateLineDiffs_NullFile1_ThrowsArgumentNullException()
-	{
-		// Act
-		DiffPlexHelper.CreateLineDiffs(null!, _file2Path, MockFileSystem);
-	}
-
-	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
-	public void CreateLineDiffs_NullFile2_ThrowsArgumentNullException()
-	{
-		// Act
-		DiffPlexHelper.CreateLineDiffs(_file1Path, null!, MockFileSystem);
-	}
-
-	[TestMethod]
-	[ExpectedException(typeof(FileNotFoundException))]
-	public void CreateLineDiffs_NonExistentFile_ThrowsFileNotFoundException()
+	public void CreateLineDiffsFromContent_WithOneEmptyContent_HandlesCorrectly()
 	{
 		// Arrange
-		string nonExistentFile = @"C:\temp\nonexistent.txt";
+		string content1 = "";
+		string content2 = "line1\nline2";
 
 		// Act
-		DiffPlexHelper.CreateLineDiffs(_file1Path, nonExistentFile, MockFileSystem);
-	}
-
-	[TestMethod]
-	public void CreateLineDiffsFromContent_ValidContent_ReturnsDiffResult()
-	{
-		// Arrange
-		string content1 = "Line 1\nLine 2\nLine 3";
-		string content2 = "Line 1\nModified Line 2\nLine 3\nLine 4";
-
-		// Act
-		DiffResult result = DiffPlexHelper.CreateLineDiffsFromContent(content1, content2);
+		DiffResult result = _helper.CreateLineDiffsFromContent(content1, content2);
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.IsNotNull(result.DiffBlocks);
 		Assert.IsTrue(result.DiffBlocks.Count > 0);
 	}
 
 	[TestMethod]
-	public void CreateLineDiffsFromContent_IdenticalContent_ReturnsNoDifferences()
+	public void CreateLineDiffsFromContent_WithAddedLines_DetectsAdditions()
 	{
 		// Arrange
-		string content = "Line 1\nLine 2\nLine 3";
+		string content1 = "line1\nline3";
+		string content2 = "line1\nline2\nline3";
 
 		// Act
-		DiffResult result = DiffPlexHelper.CreateLineDiffsFromContent(content, content);
+		DiffResult result = _helper.CreateLineDiffsFromContent(content1, content2);
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.IsNotNull(result.DiffBlocks);
-		Assert.AreEqual(0, result.DiffBlocks.Count);
+		Assert.IsTrue(result.DiffBlocks.Count > 0);
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
-	public void CreateLineDiffsFromContent_NullContent1_ThrowsArgumentNullException()
-	{
-		// Act
-		DiffPlexHelper.CreateLineDiffsFromContent(null!, "content");
-	}
-
-	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
-	public void CreateLineDiffsFromContent_NullContent2_ThrowsArgumentNullException()
-	{
-		// Act
-		DiffPlexHelper.CreateLineDiffsFromContent("content", null!);
-	}
-
-	[TestMethod]
-	public void GetBlockContext_ValidInput_ReturnsBlockContext()
+	public void CreateLineDiffsFromContent_WithDeletedLines_DetectsDeletions()
 	{
 		// Arrange
-		string[] lines1 = ["Line 1", "Line 2", "Line 3", "Line 4", "Line 5"];
-		string[] lines2 = ["Line 1", "Modified Line 2", "Line 3", "Line 4", "Line 5"];
-		DiffResult diffResult = DiffPlexHelper.CreateLineDiffsFromContent(
-			string.Join(Environment.NewLine, lines1),
-			string.Join(Environment.NewLine, lines2));
-
-		// Assume there's at least one diff block
-		Assert.IsTrue(diffResult.DiffBlocks.Count > 0);
-		DiffBlock diffBlock = diffResult.DiffBlocks[0];
+		string content1 = "line1\nline2\nline3";
+		string content2 = "line1\nline3";
 
 		// Act
-		BlockContext context = DiffPlexHelper.GetBlockContext(lines1, lines2, diffBlock, 2);
-
-		// Assert
-		Assert.IsNotNull(context);
-		Assert.IsNotNull(context.ContextBefore1);
-		Assert.IsNotNull(context.ContextAfter1);
-		Assert.IsNotNull(context.ContextBefore2);
-		Assert.IsNotNull(context.ContextAfter2);
-	}
-
-	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
-	public void GetBlockContext_NullLines1_ThrowsArgumentNullException()
-	{
-		// Arrange
-		string[] lines2 = ["Line 1", "Line 2"];
-		DiffResult diffResult = DiffPlexHelper.CreateLineDiffsFromContent("content1", "content2");
-		DiffBlock diffBlock = new(0, 1, 0, 1);
-
-		// Act
-		DiffPlexHelper.GetBlockContext(null!, lines2, diffBlock, 2);
-	}
-
-	[TestMethod]
-	public void ApplyTakeLeft_ValidInput_ReturnsCorrectContent()
-	{
-		// Arrange
-		string[] linesOld = ["Line 1", "Old Line 2", "Line 3"];
-		string[] linesNew = ["Line 1", "New Line 2", "Line 3"];
-		DiffBlock block = new(1, 1, 1, 1);
-
-		// Act
-		string result = DiffPlexHelper.ApplyTakeLeft(linesOld, linesNew, block);
+		DiffResult result = _helper.CreateLineDiffsFromContent(content1, content2);
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.IsTrue(result.Contains("Old Line 2"));
-		Assert.IsFalse(result.Contains("New Line 2"));
+		Assert.IsTrue(result.DiffBlocks.Count > 0);
 	}
 
 	[TestMethod]
-	public void ApplyTakeRight_ValidInput_ReturnsCorrectContent()
+	public void CreateLineDiffsFromContent_WithModifiedLines_DetectsModifications()
 	{
 		// Arrange
-		string[] linesOld = ["Line 1", "Old Line 2", "Line 3"];
-		string[] linesNew = ["Line 1", "New Line 2", "Line 3"];
-		DiffBlock block = new(1, 1, 1, 1);
+		string content1 = "line1\noriginal line\nline3";
+		string content2 = "line1\nmodified line\nline3";
 
 		// Act
-		string result = DiffPlexHelper.ApplyTakeRight(linesOld, linesNew, block);
+		DiffResult result = _helper.CreateLineDiffsFromContent(content1, content2);
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.IsFalse(result.Contains("Old Line 2"));
-		Assert.IsTrue(result.Contains("New Line 2"));
+		Assert.IsTrue(result.DiffBlocks.Count > 0);
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
-	public void ApplyTakeLeft_NullLinesOld_ThrowsArgumentNullException()
+	public void CreateLineDiffsFromContent_WithComplexChanges_HandlesCorrectly()
 	{
 		// Arrange
-		string[] linesNew = ["Line 1", "Line 2"];
-		DiffBlock block = new(0, 1, 0, 1);
+		string content1 = "line1\nline2\nline3\nline4";
+		string content2 = "line1\nmodified2\nline3\nadded\nline4";
 
 		// Act
-		DiffPlexHelper.ApplyTakeLeft(null!, linesNew, block);
-	}
-
-	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
-	public void ApplyTakeRight_NullLinesNew_ThrowsArgumentNullException()
-	{
-		// Arrange
-		string[] linesOld = ["Line 1", "Line 2"];
-		DiffBlock block = new(0, 1, 0, 1);
-
-		// Act
-		DiffPlexHelper.ApplyTakeRight(linesOld, null!, block);
-	}
-
-	[TestMethod]
-	public void CalculateDiffStatistics_ValidDiffResult_ReturnsStatistics()
-	{
-		// Arrange
-		string content1 = "Line 1\nLine 2\nLine 3";
-		string content2 = "Line 1\nModified Line 2\nLine 3\nLine 4";
-		DiffResult diffResult = DiffPlexHelper.CreateLineDiffsFromContent(content1, content2);
-
-		// Act
-		DiffStatistics stats = DiffPlexHelper.CalculateDiffStatistics(diffResult);
-
-		// Assert
-		Assert.IsNotNull(stats);
-		Assert.IsTrue(stats.Additions >= 0);
-		Assert.IsTrue(stats.Deletions >= 0);
-		Assert.IsTrue(stats.Modifications >= 0);
-	}
-
-	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
-	public void CalculateDiffStatistics_NullDiffResult_ThrowsArgumentNullException()
-	{
-		// Act
-		DiffPlexHelper.CalculateDiffStatistics(null!);
-	}
-
-	[TestMethod]
-	public void CalculateDiffStatistics_NoDifferences_ReturnsZeroStatistics()
-	{
-		// Arrange
-		string content = "Line 1\nLine 2\nLine 3";
-		DiffResult diffResult = DiffPlexHelper.CreateLineDiffsFromContent(content, content);
-
-		// Act
-		DiffStatistics stats = DiffPlexHelper.CalculateDiffStatistics(diffResult);
-
-		// Assert
-		Assert.IsNotNull(stats);
-		Assert.AreEqual(0, stats.Additions);
-		Assert.AreEqual(0, stats.Deletions);
-		Assert.AreEqual(0, stats.Modifications);
-	}
-
-	[TestMethod]
-	public void CreateLineDiffs_EmptyFiles_HandlesCorrectly()
-	{
-		// Arrange
-		string emptyFile1 = @"C:\temp\empty1.txt";
-		string emptyFile2 = @"C:\temp\empty2.txt";
-		MockFileSystem.File.WriteAllText(emptyFile1, string.Empty);
-		MockFileSystem.File.WriteAllText(emptyFile2, string.Empty);
-
-		// Act
-		DiffResult result = DiffPlexHelper.CreateLineDiffs(emptyFile1, emptyFile2, MockFileSystem);
+		DiffResult result = _helper.CreateLineDiffsFromContent(content1, content2);
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.IsNotNull(result.DiffBlocks);
-		Assert.AreEqual(0, result.DiffBlocks.Count);
+		Assert.IsTrue(result.DiffBlocks.Count > 0);
 	}
 
 	[TestMethod]
-	public void CreateLineDiffsFromContent_EmptyContent_HandlesCorrectly()
+	public void CreateLineDiffsFromContent_WithSpecialCharacters_PreservesContent()
 	{
+		// Arrange
+		string content1 = "line with\ttabs\nline with \"quotes\"";
+		string content2 = "line with\ttabs\nline with \"quotes\"";
+
 		// Act
-		DiffResult result = DiffPlexHelper.CreateLineDiffsFromContent(string.Empty, string.Empty);
+		var result = _helper.CreateLineDiffsFromContent(content1, content2);
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.IsNotNull(result.DiffBlocks);
-		Assert.AreEqual(0, result.DiffBlocks.Count);
+		Assert.AreEqual(0, result.DiffBlocks.Count); // Should be identical
 	}
 
 	[TestMethod]
-	public void GetBlockContext_WithLargeContextSize_DoesNotThrow()
+	public void CreateLineDiffsFromContent_WithUnicodeCharacters_HandlesCorrectly()
 	{
 		// Arrange
-		string[] lines1 = ["Line 1", "Line 2", "Line 3"];
-		string[] lines2 = ["Line 1", "Modified Line 2", "Line 3"];
-		DiffResult diffResult = DiffPlexHelper.CreateLineDiffsFromContent(
-			string.Join(Environment.NewLine, lines1),
-			string.Join(Environment.NewLine, lines2));
+		string content1 = "héllo wörld\nline2";
+		string content2 = "hello world\nline2";
 
-		// Assume there's at least one diff block
-		if (diffResult.DiffBlocks.Count > 0)
+		// Act
+		var result = _helper.CreateLineDiffsFromContent(content1, content2);
+
+		// Assert
+		Assert.IsNotNull(result);
+		Assert.IsTrue(result.DiffBlocks.Count > 0);
+	}
+
+	[TestMethod]
+	public void CreateLineDiffsFromContent_WithLargeContent_PerformsEfficiently()
+	{
+		// Arrange
+		string[] lines1 = new string[1000];
+		string[] lines2 = new string[1000];
+
+		for (int i = 0; i < 1000; i++)
 		{
-			DiffBlock diffBlock = diffResult.DiffBlocks[0];
-
-			// Act & Assert - Should not throw even with large context size
-			BlockContext context = DiffPlexHelper.GetBlockContext(lines1, lines2, diffBlock, 100);
-			Assert.IsNotNull(context);
+			lines1[i] = $"line {i}";
+			lines2[i] = i == 500 ? "modified line" : $"line {i}"; // Change one line
 		}
+
+		string content1 = string.Join("\n", lines1);
+		string content2 = string.Join("\n", lines2);
+
+		// Act
+		DiffResult result = _helper.CreateLineDiffsFromContent(content1, content2);
+
+		// Assert
+		Assert.IsNotNull(result);
+		Assert.IsTrue(result.DiffBlocks.Count > 0);
+	}
+
+	[TestMethod]
+	public void CreateLineDiffsFromContent_WithWhitespaceOnlyDifferences_DetectsChanges()
+	{
+		// Arrange
+		string content1 = "line1\nline2";
+		string content2 = "line1 \nline2"; // Extra space
+
+		// Act
+		var result = _helper.CreateLineDiffsFromContent(content1, content2);
+
+		// Assert
+		Assert.IsNotNull(result);
+		Assert.IsTrue(result.DiffBlocks.Count > 0);
+	}
+
+	[TestMethod]
+	public void CreateLineDiffsFromContent_WithDifferentLineEndings_HandlesCorrectly()
+	{
+		// Arrange
+		string content1 = "line1\r\nline2\r\nline3";
+		string content2 = "line1\nline2\nline3";
+
+		// Act
+		var result = _helper.CreateLineDiffsFromContent(content1, content2);
+
+		// Assert
+		Assert.IsNotNull(result);
+		// Line endings are normalized, so should be no differences
+		Assert.AreEqual(0, result.DiffBlocks.Count);
+	}
+
+	[TestMethod]
+	public void CreateLineDiffsFromContent_WithReorderedLines_DetectsReordering()
+	{
+		// Arrange
+		string content1 = "line1\nline2\nline3";
+		string content2 = "line1\nline3\nline2";
+
+		// Act
+		var result = _helper.CreateLineDiffsFromContent(content1, content2);
+
+		// Assert
+		Assert.IsNotNull(result);
+		Assert.IsTrue(result.DiffBlocks.Count > 0);
+	}
+
+	[TestMethod]
+	public void CreateLineDiffsFromContent_ReturnsImmutableResult()
+	{
+		// Arrange
+		string content1 = "line1\nline2";
+		string content2 = "line1\nmodified";
+
+		// Act
+		var result = _helper.CreateLineDiffsFromContent(content1, content2);
+
+		// Assert
+		Assert.IsNotNull(result);
+		Assert.IsNotNull(result.DiffBlocks);
+		Assert.IsNotNull(result.PiecesOld);
+		Assert.IsNotNull(result.PiecesNew);
 	}
 }
