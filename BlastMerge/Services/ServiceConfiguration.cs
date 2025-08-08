@@ -5,7 +5,6 @@
 namespace ktsu.BlastMerge.Services;
 
 using ktsu.BlastMerge.Contracts;
-using ktsu.BlastMerge.Models;
 using ktsu.FileSystemProvider;
 using ktsu.PersistenceProvider;
 using ktsu.SerializationProvider;
@@ -24,57 +23,36 @@ public static class ServiceConfiguration
 	/// <returns>The configured service collection.</returns>
 	public static IServiceCollection ConfigureBlastMergeServices(this IServiceCollection services)
 	{
-		// File system abstraction using ktsu.FileSystemProvider
-		services.AddFileSystemProvider();
+		return services.AddFileSystemProvider()
+			.AddPersistenceProvider()
+			.AddTransient<FileHasher>()
+			.AddTransient<FileFinder>()
+			.AddTransient<FileDiffer>()
+			.AddTransient<AsyncFileDiffer>()
+			.AddTransient<DiffPlexDiffer>()
+			.AddTransient<BlockMerger>()
+			.AddTransient<BatchProcessor>()
+			.AddTransient<IterativeMergeOrchestrator>()
+			.AddSingleton<IAppDataService, AppDataService>()
+			.AddSingleton<IDiffPlexHelper, DiffPlexHelper>()
+			.AddSingleton<IWhitespaceVisualizer, WhitespaceVisualizer>()
+			.AddSingleton<ICharacterLevelDiffer, CharacterLevelDiffer>()
+			.AddSingleton<IEnvironmentProvider, EnvironmentProvider>()
+			.AddSingleton<ISerializationProvider, UniversalSerializationProvider>();
+	}
 
-		// Environment abstraction
-		services.AddSingleton<IEnvironmentProvider, EnvironmentProvider>();
-
-		// Serialization provider setup
-		services.AddSingleton<ISerializationProvider, UniversalSerializationProvider>();
-
-		// Persistence provider setup
-		services.AddSingleton<IPersistenceProvider<string>>(serviceProvider =>
+	/// <summary>
+	/// Adds the persistence provider to the service collection.
+	/// </summary>
+	/// <param name="services">The service collection to configure.</param>
+	/// <returns>The configured service collection.</returns>
+	public static IServiceCollection AddPersistenceProvider(this IServiceCollection services)
+	{
+		return services.AddSingleton<IPersistenceProvider<string>>(serviceProvider =>
 		{
 			ISerializationProvider serializationProvider = serviceProvider.GetRequiredService<ISerializationProvider>();
 			IFileSystemProvider fileSystemProvider = serviceProvider.GetRequiredService<IFileSystemProvider>();
-
-			// Use memory persistence provider for now (can be replaced with file-based later)
 			return new AppDataPersistenceProvider<string>(fileSystemProvider, serializationProvider, nameof(BlastMerge));
 		});
-
-		// Initialize BlastMergeAppData with persistence provider
-		services.AddSingleton(serviceProvider =>
-		{
-			IPersistenceProvider<string> persistenceProvider = serviceProvider.GetRequiredService<IPersistenceProvider<string>>();
-			BlastMergeAppData.Initialize(persistenceProvider);
-			return BlastMergeAppData.Get();
-		});
-
-		// Utility services
-		services.AddSingleton<IDiffPlexHelper, DiffPlexHelper>();
-		services.AddSingleton<IWhitespaceVisualizer, WhitespaceVisualizer>();
-		services.AddSingleton<ICharacterLevelDiffer, CharacterLevelDiffer>();
-
-		// Persistence-based services
-		services.AddSingleton<IApplicationSettingsService, ApplicationSettingsService>();
-		services.AddSingleton<IBatchConfigurationService, BatchConfigurationService>();
-		services.AddSingleton<IInputHistoryService, InputHistoryService>();
-		services.AddSingleton<IRecentBatchService, RecentBatchService>();
-
-		// File operations services
-		services.AddTransient<FileHasher>();
-		services.AddTransient<FileFinder>();
-		services.AddTransient<FileDiffer>();
-		services.AddTransient<AsyncFileDiffer>();
-		services.AddTransient<DiffPlexDiffer>();
-		services.AddTransient<SecureTempFileHelper>();
-		services.AddTransient<BlockMerger>();
-
-		// Batch processing services
-		services.AddTransient<BatchProcessor>();
-		services.AddTransient<IterativeMergeOrchestrator>();
-
-		return services;
 	}
 }

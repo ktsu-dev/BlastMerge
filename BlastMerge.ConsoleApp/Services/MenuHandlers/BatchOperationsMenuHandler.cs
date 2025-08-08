@@ -176,7 +176,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	{
 		ShowMenuTitle("Available Batch Configurations");
 
-		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataBatchManager.GetAllBatches();
+		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataService.GetAllBatches();
 
 		if (allBatches.Count == 0)
 		{
@@ -244,7 +244,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			return null;
 		}
 
-		BatchConfiguration? existingBatch = AppDataBatchManager.LoadBatch(batchName);
+		BatchConfiguration? existingBatch = AppDataService.LoadBatch(batchName);
 		if (existingBatch != null)
 		{
 			bool overwrite = AnsiConsole.Confirm($"[yellow]A batch named '{batchName}' already exists. Overwrite it?[/]");
@@ -390,11 +390,11 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// <param name="batch">The batch configuration to save.</param>
 	private static void SaveAndDisplayBatchResult(BatchConfiguration batch)
 	{
-		bool saved = AppDataBatchManager.SaveBatch(batch);
+		bool saved = AppDataService.SaveBatch(batch);
 		if (saved)
 		{
 			// Force save any queued changes to ensure the batch is immediately available
-			AppDataBatchManager.SaveIfRequired();
+			AppDataService.SaveIfRequired();
 
 			ShowSuccess($"Batch configuration '{batch.Name}' created successfully!");
 			DisplayBatchSummary(batch);
@@ -439,7 +439,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	{
 		ShowMenuTitle("Run Batch Configuration");
 
-		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataBatchManager.GetAllBatches();
+		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataService.GetAllBatches();
 
 		if (allBatches.Count == 0)
 		{
@@ -454,7 +454,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 				.AddChoices(allBatches.Select(b => b.Name)));
 
 		// Load the selected batch to check if it has search paths configured
-		BatchConfiguration? selectedBatch = AppDataBatchManager.LoadBatch(batchName);
+		BatchConfiguration? selectedBatch = AppDataService.LoadBatch(batchName);
 		if (selectedBatch == null)
 		{
 			ShowError($"Batch configuration '{batchName}' not found.");
@@ -794,11 +794,11 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// <param name="batch">The batch configuration to save.</param>
 	private static void SaveUpdatedBatch(BatchConfiguration batch)
 	{
-		bool saved = AppDataBatchManager.SaveBatch(batch);
+		bool saved = AppDataService.SaveBatch(batch);
 		if (saved)
 		{
 			// Force save any queued changes to ensure the batch is immediately available
-			AppDataBatchManager.SaveIfRequired();
+			AppDataService.SaveIfRequired();
 
 			ShowSuccess($"Batch configuration '{batch.Name}' updated successfully!");
 		}
@@ -840,7 +840,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		}
 
 		// Check if batch already exists
-		BatchConfiguration? existingBatch = AppDataBatchManager.LoadBatch(newName);
+		BatchConfiguration? existingBatch = AppDataService.LoadBatch(newName);
 		if (existingBatch != null)
 		{
 			bool overwrite = AnsiConsole.Confirm($"[yellow]A batch named '{newName}' already exists. Overwrite it?[/]");
@@ -865,11 +865,11 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			LastModified = DateTime.UtcNow
 		};
 
-		bool saved = AppDataBatchManager.SaveBatch(duplicateBatch);
+		bool saved = AppDataService.SaveBatch(duplicateBatch);
 		if (saved)
 		{
 			// Force save any queued changes to ensure the batch is immediately available
-			AppDataBatchManager.SaveIfRequired();
+			AppDataService.SaveIfRequired();
 
 			ShowSuccess($"Batch configuration '{newName}' created as a copy of '{sourceBatch.Name}'!");
 		}
@@ -907,7 +907,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			return;
 		}
 
-		bool deleted = AppDataBatchManager.DeleteBatch(batch.Name);
+		bool deleted = AppDataService.DeleteBatch(batch.Name);
 		if (deleted)
 		{
 			ShowSuccess($"Batch configuration '{batch.Name}' deleted successfully!");
@@ -927,7 +927,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	{
 		ShowMenuTitle("Export Batch Configurations");
 
-		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataBatchManager.GetAllBatches();
+		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataService.GetAllBatches();
 		if (allBatches.Count == 0)
 		{
 			ShowWarning("No batch configurations to export.");
@@ -1103,7 +1103,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// <returns>True if the batch should be skipped, false if it should be processed.</returns>
 	private static bool HandleExistingBatch(BatchConfiguration batch)
 	{
-		BatchConfiguration? existing = AppDataBatchManager.LoadBatch(batch.Name);
+		BatchConfiguration? existing = AppDataService.LoadBatch(batch.Name);
 		if (existing == null)
 		{
 			return false;
@@ -1128,7 +1128,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	{
 		batch.CreatedDate = DateTime.UtcNow;
 		batch.LastModified = DateTime.UtcNow;
-		return AppDataBatchManager.SaveBatch(batch);
+		return AppDataService.SaveBatch(batch);
 	}
 
 	/// <summary>
@@ -1162,7 +1162,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	{
 		ShowMenuTitle(title);
 
-		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataBatchManager.GetAllBatches();
+		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataService.GetAllBatches();
 		if (allBatches.Count == 0)
 		{
 			ShowWarning("No batch configurations available.");

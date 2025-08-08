@@ -14,9 +14,7 @@ using Spectre.Console;
 /// Service for displaying file information and comparisons in the console.
 /// </summary>
 /// <param name="fileComparisonDisplayService">File comparison display service</param>
-#pragma warning disable CS9113 // Parameter is unread
 public class FileDisplayService(FileComparisonDisplayService fileComparisonDisplayService)
-#pragma warning restore CS9113
 {
 	/// <summary>
 	/// Shows a detailed list of files grouped by hash.

@@ -7,10 +7,12 @@ namespace ktsu.BlastMerge.ConsoleApp;
 using System;
 using System.Text;
 using ktsu.BlastMerge.ConsoleApp.CLI;
+using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.ConsoleApp.Services;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 using ktsu.BlastMerge.Contracts;
+using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -30,48 +32,33 @@ public static class Program
 		Console.OutputEncoding = Encoding.UTF8;
 		Console.InputEncoding = Encoding.UTF8;
 
-		try
-		{
-			// Configure dependency injection
-			ServiceCollection services = new();
-			services.ConfigureBlastMergeServices();
+		// Configure dependency injection
+		ServiceCollection services = new();
+		services.ConfigureBlastMergeServices();
 
-			// Add console-specific services  
-			services.AddSingleton<ConsoleApplicationService>();
-			services.AddSingleton<IApplicationService>(provider => provider.GetRequiredService<ConsoleApplicationService>());
-			services.AddSingleton<CommandLineHandler>();
-			services.AddSingleton<FileComparisonDisplayService>();
-			services.AddSingleton<ComparisonOperationsService>();
-			services.AddSingleton<SyncOperationsService>();
-			services.AddSingleton<InteractiveMergeService>();
-			services.AddSingleton<AsyncApplicationService>();
-			services.AddSingleton<FileDisplayService>();
+		// Add console-specific services
+		services.AddTransient<IApplicationService, ConsoleApplicationService>();
+		services.AddTransient<IInputHistoryService, InputHistoryService>();
+		services.AddTransient<CommandLineHandler>();
+		services.AddTransient<FileComparisonDisplayService>();
+		services.AddTransient<ComparisonOperationsService>();
+		services.AddTransient<SyncOperationsService>();
+		services.AddTransient<InteractiveMergeService>();
+		services.AddTransient<AsyncApplicationService>();
+		services.AddTransient<FileDisplayService>();
 
-			// Add menu handlers
-			services.AddTransient<CompareFilesMenuHandler>();
-			services.AddTransient<FindFilesMenuHandler>();
-			services.AddTransient<HelpMenuHandler>();
-			services.AddTransient<IterativeMergeMenuHandler>();
-			services.AddTransient<SettingsMenuHandler>();
-			services.AddTransient<BatchOperationsMenuHandler>();
+		// Add menu handlers
+		services.AddTransient<CompareFilesMenuHandler>();
+		services.AddTransient<FindFilesMenuHandler>();
+		services.AddTransient<HelpMenuHandler>();
+		services.AddTransient<IterativeMergeMenuHandler>();
+		services.AddTransient<SettingsMenuHandler>();
+		services.AddTransient<BatchOperationsMenuHandler>();
 
-			using ServiceProvider serviceProvider = services.BuildServiceProvider();
+		using ServiceProvider serviceProvider = services.BuildServiceProvider();
 
-			// Get the command line handler from DI
-			CommandLineHandler commandLineHandler = serviceProvider.GetRequiredService<CommandLineHandler>();
+		CommandLineHandler commandLineHandler = serviceProvider.GetRequiredService<CommandLineHandler>();
 
-			// Process command line arguments
-			return commandLineHandler.ProcessCommandLineArguments(args);
-		}
-		catch (InvalidOperationException ex)
-		{
-			Console.WriteLine($"Application error: {ex.Message}");
-			return 1;
-		}
-		catch (ArgumentException ex)
-		{
-			Console.WriteLine($"Invalid argument: {ex.Message}");
-			return 1;
-		}
+		return commandLineHandler.ProcessCommandLineArguments(args);
 	}
 }

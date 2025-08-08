@@ -6,12 +6,15 @@ namespace ktsu.BlastMerge.ConsoleApp.Services;
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
+using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 using ktsu.BlastMerge.ConsoleApp.Text;
+using ktsu.BlastMerge.Contracts;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
 using ktsu.FileSystemProvider;
@@ -21,6 +24,8 @@ using Spectre.Console;
 /// Console-specific implementation of the application service that adds UI functionality.
 /// </summary>
 /// <param name="fileSystemProvider">File system provider for file operations</param>
+/// <param name="appDataService">Application data service for managing application data</param>
+/// <param name="inputHistoryService">Input history service for managing input history</param>
 /// <param name="fileHasher">File hasher service for computing file hashes</param>
 /// <param name="fileFinder">File finder service for locating files</param>
 /// <param name="fileDiffer">File differ service for comparing files</param>
@@ -31,9 +36,10 @@ using Spectre.Console;
 /// <param name="fileDisplayService">File display service for showing file information</param>
 /// <param name="fileComparisonDisplayService">File comparison display service for showing file comparisons</param>
 /// <param name="comparisonOperationsService">Comparison operations service for file comparison operations</param>
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "<Pending>")]
 public class ConsoleApplicationService(
 	IFileSystemProvider fileSystemProvider,
+	IAppDataService appDataService,
+	IInputHistoryService inputHistoryService,
 	FileHasher fileHasher,
 	FileFinder fileFinder,
 	FileDiffer fileDiffer,
@@ -43,7 +49,8 @@ public class ConsoleApplicationService(
 	IterativeMergeOrchestrator iterativeMergeOrchestrator,
 	FileDisplayService fileDisplayService,
 	FileComparisonDisplayService fileComparisonDisplayService,
-	ComparisonOperationsService comparisonOperationsService) : ApplicationService(fileSystemProvider, fileHasher, fileFinder, fileDiffer)
+	ComparisonOperationsService comparisonOperationsService)
+	: ApplicationService(fileSystemProvider, fileHasher, fileFinder, fileDiffer)
 {
 	// Table column names
 	private const string GroupColumnName = "Group";
@@ -189,14 +196,7 @@ public class ConsoleApplicationService(
 			return;
 		}
 
-		// Record this batch as recently used
-		BlastMergeAppData appData = BlastMergeAppData.Get();
-		appData.RecentBatch = new RecentBatchInfo
-		{
-			BatchName = batchName,
-			LastUsed = DateTime.UtcNow
-		};
-		appData.Save();
+		inputHistoryService.AddToHistory(nameof(ProcessBatch), batchName);
 
 		ShowBatchHeader(batch, directory);
 		(int totalPatternsProcessed, int totalFilesFound, BatchResult? batchResult) = ProcessAllPatterns(directory, batch);
@@ -208,9 +208,9 @@ public class ConsoleApplicationService(
 	/// </summary>
 	/// <param name="batchName">The name of the batch configuration.</param>
 	/// <returns>The batch configuration or null if not found.</returns>
-	private static BatchConfiguration? GetBatchConfiguration(string batchName)
+	private BatchConfiguration? GetBatchConfiguration(string batchName)
 	{
-		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataBatchManager.GetAllBatches();
+		IReadOnlyCollection<BatchConfiguration> allBatches = appDataService.AppData.BatchConfigurations.Values;
 		BatchConfiguration? batch = allBatches.FirstOrDefault(b => b.Name.Equals(batchName, StringComparison.OrdinalIgnoreCase));
 
 		if (batch == null)
@@ -227,16 +227,13 @@ public class ConsoleApplicationService(
 	/// </summary>
 	/// <param name="batch">The batch configuration.</param>
 	/// <param name="directory">The directory being processed.</param>
+	[Pure]
 	private static void ShowBatchHeader(BatchConfiguration batch, string directory)
 	{
 		AnsiConsole.MarkupLine($"[cyan]Processing batch configuration '[yellow]{batch.Name}[/]' in '[yellow]{directory}[/]'[/]");
 		AnsiConsole.WriteLine();
 
 		AnsiConsole.MarkupLine($"[green]Found batch configuration: {batch.Name}[/]");
-		if (!string.IsNullOrEmpty(batch.Description))
-		{
-			AnsiConsole.MarkupLine($"[dim]{batch.Description}[/]");
-		}
 		AnsiConsole.WriteLine();
 	}
 
@@ -480,25 +477,18 @@ public class ConsoleApplicationService(
 	/// </summary>
 	public override void ListBatches()
 	{
-		IReadOnlyCollection<string> batchNames = AppDataBatchManager.ListBatches();
-		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataBatchManager.GetAllBatches();
-
 		Console.WriteLine("Available batch configurations:");
 
-		if (batchNames.Count == 0)
+		if (appDataService.AppData.BatchConfigurations.Count == 0)
 		{
 			Console.WriteLine("  No batch configurations found.");
 			Console.WriteLine("  Default configurations can be created automatically.");
 			return;
 		}
 
-		foreach (BatchConfiguration batch in allBatches)
+		foreach ((string batchName, BatchConfiguration batch) in appDataService.AppData.BatchConfigurations)
 		{
 			Console.WriteLine($"  - {batch.Name}");
-			if (!string.IsNullOrEmpty(batch.Description))
-			{
-				Console.WriteLine($"    {batch.Description}");
-			}
 			Console.WriteLine($"    Patterns: {batch.FilePatterns.Count}");
 		}
 	}
@@ -599,7 +589,7 @@ public class ConsoleApplicationService(
 	/// Shows the main menu and returns the user's choice.
 	/// </summary>
 	/// <returns>The selected menu choice.</returns>
-	private static MenuChoice ShowMainMenu()
+	private MenuChoice ShowMainMenu()
 	{
 		// Create a dynamic menu with recent batch info
 		Dictionary<string, MenuChoice> dynamicMenuChoices = new(MainMenuChoices);
@@ -648,6 +638,7 @@ public class ConsoleApplicationService(
 	/// <param name="choice">The menu choice to execute.</param>
 	private void ExecuteSpecificMenuChoice(MenuChoice choice)
 	{
+		// TODO: use dependency injection for menu handlers
 		switch (choice)
 		{
 			case MenuChoice.FindFiles:
@@ -663,7 +654,7 @@ public class ConsoleApplicationService(
 				new BatchOperationsMenuHandler(this).Enter();
 				break;
 			case MenuChoice.RunRecentBatch:
-				HandleRunRecentBatch(this);
+				HandleRunRecentBatch();
 				break;
 			case MenuChoice.Settings:
 				new SettingsMenuHandler(this).Enter();
@@ -677,8 +668,7 @@ public class ConsoleApplicationService(
 	/// <summary>
 	/// Handles running the most recently used batch configuration.
 	/// </summary>
-	/// <param name="instance">The console application service instance.</param>
-	private static void HandleRunRecentBatch(ConsoleApplicationService instance)
+	private void HandleRunRecentBatch()
 	{
 		string? recentBatch = GetMostRecentBatch();
 
@@ -703,13 +693,14 @@ public class ConsoleApplicationService(
 		}
 
 		ShowRunningBatchMessage(selectedBatch, recentBatch, directory);
-		instance.ProcessBatch(directory, recentBatch);
+		ProcessBatch(directory, recentBatch);
 		ShowCompletionMessage();
 	}
 
 	/// <summary>
 	/// Shows the message when no recent batch is found.
 	/// </summary>
+	[Pure]
 	private static void ShowNoRecentBatchMessage()
 	{
 		AnsiConsole.MarkupLine("[yellow]No recent batch configurations found.[/]");
@@ -723,6 +714,7 @@ public class ConsoleApplicationService(
 	/// Shows the message when a batch configuration is not found.
 	/// </summary>
 	/// <param name="batchName">The batch name that was not found.</param>
+	[Pure]
 	private static void ShowBatchNotFoundMessage(string batchName)
 	{
 		AnsiConsole.MarkupLine($"[red]Batch configuration '{batchName}' not found.[/]");
@@ -736,7 +728,7 @@ public class ConsoleApplicationService(
 	/// </summary>
 	/// <param name="selectedBatch">The batch configuration.</param>
 	/// <returns>The directory to use for the batch.</returns>
-	private static string GetDirectoryForBatch(BatchConfiguration selectedBatch)
+	private string GetDirectoryForBatch(BatchConfiguration selectedBatch)
 	{
 		if (selectedBatch.SearchPaths.Count > 0)
 		{
@@ -751,6 +743,7 @@ public class ConsoleApplicationService(
 	/// Shows the configured search paths for the batch.
 	/// </summary>
 	/// <param name="selectedBatch">The batch configuration.</param>
+	[Pure]
 	private static void ShowConfiguredSearchPaths(BatchConfiguration selectedBatch)
 	{
 		AnsiConsole.MarkupLine($"[green]Using configured search paths ({selectedBatch.SearchPaths.Count} paths)[/]");
@@ -765,10 +758,10 @@ public class ConsoleApplicationService(
 	/// Gets the directory from user input.
 	/// </summary>
 	/// <returns>The directory path entered by the user.</returns>
-	private static string GetDirectoryFromUser()
+	private string GetDirectoryFromUser()
 	{
 		AnsiConsole.MarkupLine("[yellow]This batch configuration doesn't have search paths configured.[/]");
-		return AppDataHistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
+		return inputHistoryService.AskWithHistory("[cyan]Enter directory path[/]");
 	}
 
 	/// <summary>
@@ -802,7 +795,9 @@ public class ConsoleApplicationService(
 	/// Gets the most recently used batch configuration name.
 	/// </summary>
 	/// <returns>The name of the most recent batch, or null if none found.</returns>
-	private static string? GetMostRecentBatch() => BlastMergeAppData.Get().RecentBatch?.BatchName;
+	private string? GetMostRecentBatch() =>
+		inputHistoryService.GetLastInput(nameof(ProcessBatch))
+		?? appDataService.AppData.BatchConfigurations.Keys.LastOrDefault();
 
 	/// <summary>
 	/// Shows the goodbye screen when exiting.

@@ -2,30 +2,28 @@
 // All rights reserved.
 // Licensed under the MIT license.
 
-namespace ktsu.BlastMerge.ConsoleApp.Models;
+namespace ktsu.BlastMerge.ConsoleApp.Services;
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics.Contracts;
 using System.Linq;
-using ktsu.BlastMerge.Models;
+using ktsu.BlastMerge.ConsoleApp.Contracts;
+using ktsu.BlastMerge.Contracts;
 using Spectre.Console;
 
 /// <summary>
 /// Handles user input with history functionality using AppDataStorage and arrow key navigation.
 /// </summary>
-public static class AppDataHistoryInput
+public class InputHistoryService(IAppDataService appDataService) : IInputHistoryService
 {
-	/// <summary>
-	/// Gets the application data storage instance.
-	/// </summary>
-	private static BlastMergeAppData AppData => BlastMergeAppData.Get();
-
 	/// <summary>
 	/// Asks the user for input with history support.
 	/// </summary>
 	/// <param name="prompt">The prompt to display to the user.</param>
 	/// <returns>The user's input.</returns>
-	public static string AskWithHistory(string prompt) => AskWithHistory(prompt, string.Empty);
+	public string AskWithHistory(string prompt) => AskWithHistory(prompt, string.Empty);
 
 	/// <summary>
 	/// Asks the user for input with history support and a default value.
@@ -33,7 +31,7 @@ public static class AppDataHistoryInput
 	/// <param name="prompt">The prompt to display to the user.</param>
 	/// <param name="defaultValue">The default value to use if input is empty.</param>
 	/// <returns>The user's input or default value if empty.</returns>
-	public static string AskWithHistory(string prompt, string defaultValue)
+	public string AskWithHistory(string prompt, string defaultValue)
 	{
 		ArgumentNullException.ThrowIfNull(prompt);
 		ArgumentNullException.ThrowIfNull(defaultValue);
@@ -71,18 +69,10 @@ public static class AppDataHistoryInput
 	/// <summary>
 	/// Clears all input history.
 	/// </summary>
-	public static void ClearAllHistory()
+	public void ClearAllHistory()
 	{
-		AppData.InputHistory.Clear();
-
-		if (AppData.Settings.AutoSaveEnabled)
-		{
-			AppData.Save();
-		}
-		else
-		{
-			BlastMergeAppData.QueueSave();
-		}
+		appDataService.AppData.InputHistory.Clear();
+		appDataService.SaveAsync().Wait();
 	}
 
 	/// <summary>
@@ -90,12 +80,13 @@ public static class AppDataHistoryInput
 	/// </summary>
 	/// <param name="promptKey">The prompt key.</param>
 	/// <returns>The history list for the prompt.</returns>
-	private static List<string> GetHistoryForPrompt(string promptKey)
+	private Collection<string> GetHistoryForPrompt(string promptKey)
 	{
-		if (!AppData.InputHistory.TryGetValue(promptKey, out List<string>? history))
+		if (!appDataService.AppData.InputHistory.TryGetValue(promptKey, out Collection<string>? history))
 		{
 			history = [];
-			AppData.InputHistory[promptKey] = history;
+			appDataService.AppData.InputHistory[promptKey] = history;
+			appDataService.SaveAsync().Wait();
 		}
 
 		return history;
@@ -106,32 +97,27 @@ public static class AppDataHistoryInput
 	/// </summary>
 	/// <param name="promptKey">The prompt key.</param>
 	/// <param name="value">The value to add.</param>
-	private static void AddToHistory(string promptKey, string value)
+	public void AddToHistory(string promptKey, string value)
 	{
-		List<string> history = GetHistoryForPrompt(promptKey);
+		Collection<string> history = GetHistoryForPrompt(promptKey);
 
-		// Remove if already exists (move to end)
 		history.Remove(value);
-
-		// Add to end
 		history.Add(value);
 
-		// Trim to max size
-		int maxSize = AppData.Settings.MaxHistoryEntriesPerPrompt;
-		while (history.Count > maxSize)
-		{
-			history.RemoveAt(0);
-		}
+		appDataService.SaveAsync().Wait();
+	}
 
-		// Save changes
-		if (AppData.Settings.AutoSaveEnabled)
-		{
-			AppData.Save();
-		}
-		else
-		{
-			BlastMergeAppData.QueueSave();
-		}
+	/// <summary>
+	/// Gets the last input for a specific prompt.
+	/// </summary>
+	/// <param name="prompt">The prompt text.</param>
+	/// <returns>The last input for the prompt.</returns>
+	public string GetLastInput(string prompt)
+	{
+		ArgumentNullException.ThrowIfNull(prompt);
+		string promptKey = GetPromptKey(prompt);
+		Collection<string> history = GetHistoryForPrompt(promptKey);
+		return history.LastOrDefault() ?? string.Empty;
 	}
 
 	/// <summary>
@@ -139,6 +125,7 @@ public static class AppDataHistoryInput
 	/// </summary>
 	/// <param name="prompt">The prompt text.</param>
 	/// <returns>A key for organizing history.</returns>
+	[Pure]
 	private static string GetPromptKey(string prompt)
 	{
 		// Clean the prompt text for use as a key
@@ -155,20 +142,12 @@ public static class AppDataHistoryInput
 	}
 
 	/// <summary>
-	/// Gets the count of history entries for a specific prompt type.
-	/// </summary>
-	/// <param name="promptKey">The prompt key.</param>
-	/// <returns>The number of history entries.</returns>
-	public static int GetHistoryCount(string promptKey) =>
-		AppData.InputHistory.TryGetValue(promptKey, out List<string>? history) ? history.Count : 0;
-
-	/// <summary>
 	/// Gets all history entries for debugging or inspection.
 	/// </summary>
 	/// <returns>A read-only dictionary of all history entries.</returns>
-	public static IReadOnlyDictionary<string, IReadOnlyList<string>> GetAllHistory()
+	public IReadOnlyDictionary<string, IReadOnlyList<string>> GetAllHistory()
 	{
-		return AppData.InputHistory.ToDictionary(
+		return appDataService.AppData.InputHistory.ToDictionary(
 			kvp => kvp.Key,
 			kvp => (IReadOnlyList<string>)kvp.Value.AsReadOnly());
 	}

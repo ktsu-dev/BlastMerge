@@ -23,12 +23,10 @@ using Spectre.Console;
 /// <param name="fileDiffer">File differ service</param>
 /// <param name="whitespaceVisualizer">Whitespace visualizer service</param>
 /// <param name="characterLevelDiffer">Character level differ service</param>
-#pragma warning disable CS9113 // Parameter is unread
 public class FileComparisonDisplayService(
 	FileDiffer fileDiffer,
 	IWhitespaceVisualizer whitespaceVisualizer,
 	ICharacterLevelDiffer characterLevelDiffer)
-#pragma warning restore CS9113
 {
 	/// <summary>
 	/// Executes a file operation with standard exception handling for file-related errors.

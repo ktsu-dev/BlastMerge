@@ -2,8 +2,6 @@
 // All rights reserved.
 // Licensed under the MIT license.
 
-#pragma warning disable CA2007 // Consider calling ConfigureAwait on the awaited task
-
 namespace ktsu.BlastMerge.ConsoleApp.Services;
 
 using System;
@@ -70,7 +68,7 @@ public class AsyncApplicationService(FileFinder fileFinder, AsyncFileDiffer asyn
 				Dictionary<string, IReadOnlyCollection<string>> result = groups.ToDictionary(group => group.Hash, group => group.FilePaths);
 
 				fileGroups = result;
-			});
+			}).ConfigureAwait(false);
 
 		return fileGroups;
 	}
@@ -128,7 +126,7 @@ public class AsyncApplicationService(FileFinder fileFinder, AsyncFileDiffer asyn
 				// Step 3: Create comparison result using pre-computed hashes
 				ctx.Status($"[yellow]Creating comparison report...[/]");
 				result = CreateDirectoryComparisonResult(dir1, dir2, files1, files2, hashes1, hashes2);
-			});
+			}).ConfigureAwait(false);
 
 		return result;
 	}
@@ -228,7 +226,7 @@ public class AsyncApplicationService(FileFinder fileFinder, AsyncFileDiffer asyn
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
 
-		return await _asyncFileDiffer.CalculateFileSimilarityAsync(file1, file2, cancellationToken);
+		return await _asyncFileDiffer.CalculateFileSimilarityAsync(file1, file2, cancellationToken).ConfigureAwait(false);
 	}
 
 	/// <summary>
@@ -254,7 +252,7 @@ public class AsyncApplicationService(FileFinder fileFinder, AsyncFileDiffer asyn
 			{
 				results = await _asyncFileDiffer.ReadFilesAsync(
 					fileList, maxDegreeOfParallelism, cancellationToken).ConfigureAwait(false);
-			});
+			}).ConfigureAwait(false);
 
 		return results;
 	}
@@ -282,7 +280,7 @@ public class AsyncApplicationService(FileFinder fileFinder, AsyncFileDiffer asyn
 			{
 				results = await _asyncFileDiffer.CopyFilesAsync(
 					operationsList, maxDegreeOfParallelism, cancellationToken).ConfigureAwait(false);
-			});
+			}).ConfigureAwait(false);
 
 		return results;
 	}
@@ -304,7 +302,7 @@ public class AsyncApplicationService(FileFinder fileFinder, AsyncFileDiffer asyn
 		ArgumentNullException.ThrowIfNull(directory);
 		ArgumentNullException.ThrowIfNull(batchName);
 
-		BatchConfiguration? batch = AppDataBatchManager.LoadBatch(batchName);
+		BatchConfiguration? batch = AppDataService.LoadBatch(batchName);
 		if (batch == null)
 		{
 			AnsiConsole.MarkupLine($"[red]Error: Batch configuration '{batchName}' not found.[/]");
@@ -328,18 +326,18 @@ public class AsyncApplicationService(FileFinder fileFinder, AsyncFileDiffer asyn
 					int filesInPattern = fileGroups.Values.Sum(g => g.Count);
 					totalFilesFound += filesInPattern;
 
-					if (filesInPattern > 0 || !batch.SkipEmptyPatterns)
+					if (filesInPattern > 0)
 					{
 						totalPatternsProcessed++;
 					}
 
-					if (batch.PromptBeforeEachPattern && filesInPattern > 0)
+					if (filesInPattern > 0)
 					{
 						// Could implement interactive async prompt here if needed
 						await Task.Delay(100, cancellationToken).ConfigureAwait(false); // Placeholder
 					}
 				}
-			});
+			}).ConfigureAwait(false);
 
 		return (totalPatternsProcessed, totalFilesFound);
 	}

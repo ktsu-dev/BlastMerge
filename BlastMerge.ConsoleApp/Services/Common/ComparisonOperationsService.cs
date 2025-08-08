@@ -5,7 +5,6 @@
 namespace ktsu.BlastMerge.ConsoleApp.Services.Common;
 
 using System.IO;
-using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
 using Spectre.Console;
@@ -16,6 +15,7 @@ using Spectre.Console;
 /// <param name="fileComparisonDisplayService">File comparison display service</param>
 /// <param name="fileDiffer">File differ service</param>
 public class ComparisonOperationsService(
+	IInputHistoryService inputHistoryService,
 	FileComparisonDisplayService fileComparisonDisplayService,
 	FileDiffer fileDiffer)
 {

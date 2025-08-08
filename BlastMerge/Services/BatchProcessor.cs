@@ -104,7 +104,7 @@ public partial class BatchProcessor(
 		foreach (string pattern in batch.FilePatterns)
 		{
 			// Check if user wants to skip this pattern (if callback provided)
-			if (batch.PromptBeforeEachPattern && patternCallback != null && !patternCallback(pattern))
+			if (patternCallback != null && !patternCallback(pattern))
 			{
 				PatternResult skippedResult = new()
 				{
@@ -128,7 +128,7 @@ public partial class BatchProcessor(
 			result.PatternResults.Add(patternResult);
 
 			// Skip empty patterns if configured to do so
-			if (!patternResult.Success && batch.SkipEmptyPatterns && patternResult.FilesFound == 0)
+			if (!patternResult.Success && patternResult.FilesFound == 0)
 			{
 				patternResult.Success = true; // Don't count as failure if we're skipping empty patterns
 				patternResult.Message = "No files found (skipped)";
@@ -831,9 +831,8 @@ public partial class BatchProcessor(
 	/// </summary>
 	/// <param name="name">Name for the batch</param>
 	/// <param name="patterns">List of file patterns</param>
-	/// <param name="description">Optional description</param>
 	/// <returns>A new batch configuration</returns>
-	public static BatchConfiguration CreateCustomBatch(string name, IEnumerable<string> patterns, string description = "")
+	public static BatchConfiguration CreateCustomBatch(string name, IEnumerable<string> patterns)
 	{
 		ArgumentNullException.ThrowIfNull(name);
 		ArgumentNullException.ThrowIfNull(patterns);
@@ -841,10 +840,7 @@ public partial class BatchProcessor(
 		return new BatchConfiguration
 		{
 			Name = name,
-			Description = description,
 			FilePatterns = [.. patterns.Where(p => !string.IsNullOrWhiteSpace(p))],
-			SkipEmptyPatterns = true,
-			PromptBeforeEachPattern = false
 		};
 	}
 }
