@@ -34,7 +34,7 @@ public class IntegrationTests : DependencyInjectionTestBase
 	{
 		// Act & Assert - Test the overall workflow
 		// This is a high-level integration test that verifies the components work together
-		await Task.CompletedTask; // Placeholder for actual file operations
+		await Task.CompletedTask.ConfigureAwait(false); // Placeholder for actual file operations
 		Assert.IsTrue(true); // Test completes successfully
 	}
 
@@ -49,7 +49,7 @@ public class IntegrationTests : DependencyInjectionTestBase
 		];
 
 		// Act
-		IReadOnlyCollection<FileGroup> groups = await _asyncFileDiffer.GroupFilesByHashAsync(filePaths);
+		IReadOnlyCollection<FileGroup> groups = await _asyncFileDiffer.GroupFilesByHashAsync(filePaths).ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNotNull(groups);
@@ -65,14 +65,14 @@ public class IntegrationTests : DependencyInjectionTestBase
 		string file3 = @"C:\test\similarity3.txt";
 
 		// Act
-		double sim1 = await _asyncFileDiffer.CalculateFileSimilarityAsync(file1, file2);
-		double sim2 = await _asyncFileDiffer.CalculateFileSimilarityAsync(file2, file3);
-		double sim3 = await _asyncFileDiffer.CalculateFileSimilarityAsync(file1, file3);
+		double sim1 = await _asyncFileDiffer.CalculateFileSimilarityAsync(file1, file2).ConfigureAwait(false);
+		double sim2 = await _asyncFileDiffer.CalculateFileSimilarityAsync(file2, file3).ConfigureAwait(false);
+		double sim3 = await _asyncFileDiffer.CalculateFileSimilarityAsync(file1, file3).ConfigureAwait(false);
 
 		// Assert
-		Assert.IsTrue(sim1 >= 0.0 && sim1 <= 1.0);
-		Assert.IsTrue(sim2 >= 0.0 && sim2 <= 1.0);
-		Assert.IsTrue(sim3 >= 0.0 && sim3 <= 1.0);
+		Assert.IsTrue(sim1 is >= 0.0 and <= 1.0);
+		Assert.IsTrue(sim2 is >= 0.0 and <= 1.0);
+		Assert.IsTrue(sim3 is >= 0.0 and <= 1.0);
 	}
 
 	[TestMethod]
@@ -109,7 +109,7 @@ public class IntegrationTests : DependencyInjectionTestBase
 		];
 
 		// Act
-		Dictionary<string, string> content = await _asyncFileDiffer.ReadFilesAsync(filePaths);
+		Dictionary<string, string> content = await _asyncFileDiffer.ReadFilesAsync(filePaths).ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNotNull(content);
@@ -126,7 +126,7 @@ public class IntegrationTests : DependencyInjectionTestBase
 		];
 
 		// Act
-		IReadOnlyCollection<(string source, string target)> results = await _asyncFileDiffer.CopyFilesAsync(operations);
+		IReadOnlyCollection<(string source, string target)> results = await _asyncFileDiffer.CopyFilesAsync(operations).ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNotNull(results);
@@ -144,7 +144,7 @@ public class IntegrationTests : DependencyInjectionTestBase
 		];
 
 		// Act
-		IReadOnlyCollection<FileGroup> groups = await _asyncFileDiffer.GroupFilesByFilenameAndHashAsync(filePaths);
+		IReadOnlyCollection<FileGroup> groups = await _asyncFileDiffer.GroupFilesByFilenameAndHashAsync(filePaths).ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNotNull(groups);
@@ -163,14 +163,14 @@ public class IntegrationTests : DependencyInjectionTestBase
 
 		// Act - Multi-step workflow
 		// Step 1: Read files
-		Dictionary<string, string> content = await _asyncFileDiffer.ReadFilesAsync(filePaths);
-		
+		Dictionary<string, string> content = await _asyncFileDiffer.ReadFilesAsync(filePaths).ConfigureAwait(false);
+
 		// Step 2: Calculate similarity
-		double similarity = await _asyncFileDiffer.CalculateFileSimilarityAsync(filePaths[0], filePaths[1]);
+		double similarity = await _asyncFileDiffer.CalculateFileSimilarityAsync(filePaths[0], filePaths[1]).ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNotNull(content);
-		Assert.IsTrue(similarity >= 0.0 && similarity <= 1.0);
+		Assert.IsTrue(similarity is >= 0.0 and <= 1.0);
 	}
 
 	[TestMethod]
@@ -184,7 +184,7 @@ public class IntegrationTests : DependencyInjectionTestBase
 		}
 
 		// Act
-		IReadOnlyCollection<FileGroup> groups = await _asyncFileDiffer.GroupFilesByHashAsync(filePaths);
+		IReadOnlyCollection<FileGroup> groups = await _asyncFileDiffer.GroupFilesByHashAsync(filePaths).ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNotNull(groups);
@@ -277,12 +277,12 @@ public class IntegrationTests : DependencyInjectionTestBase
 		Task<Dictionary<string, string>> readingTask = _asyncFileDiffer.ReadFilesAsync(filePaths);
 		Task<double> similarityTask = _asyncFileDiffer.CalculateFileSimilarityAsync(filePaths[0], filePaths[1]);
 
-		await Task.WhenAll(groupingTask, readingTask, similarityTask);
+		await Task.WhenAll(groupingTask, readingTask, similarityTask).ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNotNull(groupingTask.Result);
 		Assert.IsNotNull(readingTask.Result);
-		Assert.IsTrue(similarityTask.Result >= 0.0 && similarityTask.Result <= 1.0);
+		Assert.IsTrue(similarityTask.Result is >= 0.0 and <= 1.0);
 	}
 
 	[TestMethod]

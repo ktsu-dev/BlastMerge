@@ -27,9 +27,9 @@ public class FileDifferAdapter(FileDiffer fileDiffer) : IFileDiffer
 		ArgumentNullException.ThrowIfNull(file2Path);
 
 		// Use FileDiffer to find differences and convert to string collection
-		var differences = fileDiffer.FindDifferences(file1Path, file2Path);
-		var stringDifferences = differences.Select(d => 
-			$"Line {d.LineNumber1}: {d.Content1} -> Line {d.LineNumber2}: {d.Content2}").ToList();
+		IReadOnlyCollection<Models.LineDifference> differences = fileDiffer.FindDifferences(file1Path, file2Path);
+		List<string> stringDifferences = [.. differences.Select(d =>
+			$"Line {d.LineNumber1}: {d.Content1} -> Line {d.LineNumber2}: {d.Content2}")];
 
 		return stringDifferences.AsReadOnly();
 	}

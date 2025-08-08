@@ -6,7 +6,6 @@ namespace ktsu.BlastMerge.Test;
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
@@ -37,7 +36,6 @@ public class PerformanceTests : DependencyInjectionTestBase
 	{
 		// Arrange
 		string testContent = new('A', 10000); // 10KB of content
-		string testFilePath = @"C:\test\large_file.txt";
 
 		// Act
 		string hash1 = FileHasher.ComputeContentHash(testContent);
@@ -61,7 +59,7 @@ public class PerformanceTests : DependencyInjectionTestBase
 		}
 
 		// Act
-		var groups = _fileDiffer.GroupFilesByHash(filePaths);
+		IReadOnlyCollection<FileGroup> groups = _fileDiffer.GroupFilesByHash(filePaths);
 
 		// Assert
 		Assert.IsNotNull(groups);
@@ -77,7 +75,7 @@ public class PerformanceTests : DependencyInjectionTestBase
 		string searchPattern = "*.txt";
 
 		// Act
-		var foundFiles = _fileFinder.FindFiles(searchDirectory, searchPattern);
+		IReadOnlyCollection<string> foundFiles = _fileFinder.FindFiles(searchDirectory, searchPattern);
 
 		// Assert
 		Assert.IsNotNull(foundFiles);
@@ -96,8 +94,8 @@ public class PerformanceTests : DependencyInjectionTestBase
 		}
 
 		// Act
-		var task = _asyncFileDiffer.GroupFilesByHashAsync(filePaths);
-		var groups = task.Result;
+		Task<IReadOnlyCollection<FileGroup>> task = _asyncFileDiffer.GroupFilesByHashAsync(filePaths);
+		IReadOnlyCollection<FileGroup> groups = task.Result;
 
 		// Assert
 		Assert.IsNotNull(groups);
@@ -113,7 +111,7 @@ public class PerformanceTests : DependencyInjectionTestBase
 		string file2 = @"C:\test\large_diff\file2.txt";
 
 		// Act
-		var differences = _fileDiffer.FindDifferences(file1, file2);
+		IReadOnlyCollection<LineDifference> differences = _fileDiffer.FindDifferences(file1, file2);
 
 		// Assert
 		Assert.IsNotNull(differences);
@@ -132,7 +130,7 @@ public class PerformanceTests : DependencyInjectionTestBase
 		double similarity = _fileDiffer.CalculateFileSimilarity(file1, file2);
 
 		// Assert
-		Assert.IsTrue(similarity >= 0.0 && similarity <= 1.0);
+		Assert.IsTrue(similarity is >= 0.0 and <= 1.0);
 	}
 
 	[TestMethod]
@@ -148,7 +146,7 @@ public class PerformanceTests : DependencyInjectionTestBase
 		}
 
 		// Act
-		var groups = _fileDiffer.GroupFilesByFilenameAndHash(filePaths);
+		IReadOnlyCollection<FileGroup> groups = _fileDiffer.GroupFilesByFilenameAndHash(filePaths);
 
 		// Assert
 		Assert.IsNotNull(groups);
@@ -167,7 +165,7 @@ public class PerformanceTests : DependencyInjectionTestBase
 		];
 
 		// Act
-		var similarity = _fileDiffer.FindMostSimilarFiles(testGroups);
+		FileSimilarity? similarity = _fileDiffer.FindMostSimilarFiles(testGroups);
 
 		// Assert
 		// Result can be null if no similar files found
@@ -183,7 +181,7 @@ public class PerformanceTests : DependencyInjectionTestBase
 		string file2 = @"C:\test\merge\file2.txt";
 
 		// Act
-		var mergeResult = _fileDiffer.MergeFiles(file1, file2);
+		MergeResult mergeResult = _fileDiffer.MergeFiles(file1, file2);
 
 		// Assert
 		Assert.IsNotNull(mergeResult);
@@ -216,8 +214,8 @@ public class PerformanceTests : DependencyInjectionTestBase
 		}
 
 		// Act
-		var task = _asyncFileDiffer.ReadFilesAsync(filePaths);
-		var content = task.Result;
+		Task<Dictionary<string, string>> task = _asyncFileDiffer.ReadFilesAsync(filePaths);
+		Dictionary<string, string> content = task.Result;
 
 		// Assert
 		Assert.IsNotNull(content);
@@ -236,8 +234,8 @@ public class PerformanceTests : DependencyInjectionTestBase
 		}
 
 		// Act
-		var task = _asyncFileDiffer.CopyFilesAsync(copyOperations);
-		var results = task.Result;
+		Task<IReadOnlyCollection<(string source, string target)>> task = _asyncFileDiffer.CopyFilesAsync(copyOperations);
+		IReadOnlyCollection<(string source, string target)> results = task.Result;
 
 		// Assert
 		Assert.IsNotNull(results);
@@ -304,7 +302,7 @@ public class PerformanceTests : DependencyInjectionTestBase
 		string searchPattern = "*.txt";
 
 		// Act
-		var foundFiles = _fileFinder.FindFiles(searchDirectory, searchPattern, true);
+		IReadOnlyCollection<string> foundFiles = _fileFinder.FindFiles(searchDirectory, searchPattern, true);
 
 		// Assert
 		Assert.IsNotNull(foundFiles);
@@ -320,11 +318,11 @@ public class PerformanceTests : DependencyInjectionTestBase
 		string file2 = @"C:\test\async_similarity\file2.txt";
 
 		// Act
-		var task = _asyncFileDiffer.CalculateFileSimilarityAsync(file1, file2);
+		Task<double> task = _asyncFileDiffer.CalculateFileSimilarityAsync(file1, file2);
 		double similarity = task.Result;
 
 		// Assert
-		Assert.IsTrue(similarity >= 0.0 && similarity <= 1.0);
+		Assert.IsTrue(similarity is >= 0.0 and <= 1.0);
 	}
 
 	[TestMethod]
@@ -339,7 +337,7 @@ public class PerformanceTests : DependencyInjectionTestBase
 		double similarity = FileDiffer.CalculateLineSimilarity(lines1, lines2);
 
 		// Assert
-		Assert.IsTrue(similarity >= 0.0 && similarity <= 1.0);
+		Assert.IsTrue(similarity is >= 0.0 and <= 1.0);
 	}
 
 	[TestMethod]
@@ -351,7 +349,7 @@ public class PerformanceTests : DependencyInjectionTestBase
 		string[] lines2 = ["Line 1", "Modified Line 2", "Line 3"];
 
 		// Act
-		var mergeResult = FileDiffer.MergeLines(lines1, lines2);
+		MergeResult mergeResult = FileDiffer.MergeLines(lines1, lines2);
 
 		// Assert
 		Assert.IsNotNull(mergeResult);

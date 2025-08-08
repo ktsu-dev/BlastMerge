@@ -5,8 +5,7 @@
 namespace ktsu.BlastMerge.Test;
 
 using System;
-using System.Collections.Generic;
-using ktsu.BlastMerge.Models;
+using System.Collections.ObjectModel;
 using ktsu.BlastMerge.Services;
 using ktsu.BlastMerge.Test.Adapters;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -53,7 +52,7 @@ public class RecursiveDiffTests : DependencyInjectionTestBase
 		string deepFile1 = MockFileSystem.Path.Combine(deepDir1, "deepfile.txt");
 		string deepFile2 = MockFileSystem.Path.Combine(deepDir2, "deepfile.txt");
 
-		IReadOnlyCollection<LineDifference> differences = _fileDifferAdapter.FindDifferences(deepFile1, deepFile2);
+		ReadOnlyCollection<string> differences = _fileDifferAdapter.FindDifferences(deepFile1, deepFile2);
 
 		// Assert
 		Assert.IsNotNull(differences);
@@ -78,7 +77,7 @@ public class RecursiveDiffTests : DependencyInjectionTestBase
 		string targetFile1 = MockFileSystem.Path.Combine(linkTarget1, "targetfile.txt");
 		string targetFile2 = MockFileSystem.Path.Combine(linkTarget2, "targetfile.txt");
 
-		IReadOnlyCollection<LineDifference> differences = _fileDifferAdapter.FindDifferences(targetFile1, targetFile2);
+		ReadOnlyCollection<string> differences = _fileDifferAdapter.FindDifferences(targetFile1, targetFile2);
 
 		// Assert
 		Assert.IsNotNull(differences);
@@ -121,7 +120,7 @@ public class RecursiveDiffTests : DependencyInjectionTestBase
 
 				if (MockFileSystem.File.Exists(file1) && MockFileSystem.File.Exists(file2))
 				{
-					IReadOnlyCollection<LineDifference> differences = _fileDifferAdapter.FindDifferences(file1, file2);
+					ReadOnlyCollection<string> differences = _fileDifferAdapter.FindDifferences(file1, file2);
 					// Just ensure the comparison works
 					Assert.IsNotNull(differences);
 				}

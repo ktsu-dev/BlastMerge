@@ -148,7 +148,7 @@ public class DiffPlexHelperTests : DependencyInjectionTestBase
 		string content2 = "line with\ttabs\nline with \"quotes\"";
 
 		// Act
-		var result = _helper.CreateLineDiffsFromContent(content1, content2);
+		DiffResult result = _helper.CreateLineDiffsFromContent(content1, content2);
 
 		// Assert
 		Assert.IsNotNull(result);
@@ -163,7 +163,7 @@ public class DiffPlexHelperTests : DependencyInjectionTestBase
 		string content2 = "hello world\nline2";
 
 		// Act
-		var result = _helper.CreateLineDiffsFromContent(content1, content2);
+		DiffResult result = _helper.CreateLineDiffsFromContent(content1, content2);
 
 		// Assert
 		Assert.IsNotNull(result);
@@ -202,7 +202,7 @@ public class DiffPlexHelperTests : DependencyInjectionTestBase
 		string content2 = "line1 \nline2"; // Extra space
 
 		// Act
-		var result = _helper.CreateLineDiffsFromContent(content1, content2);
+		DiffResult result = _helper.CreateLineDiffsFromContent(content1, content2);
 
 		// Assert
 		Assert.IsNotNull(result);
@@ -217,7 +217,7 @@ public class DiffPlexHelperTests : DependencyInjectionTestBase
 		string content2 = "line1\nline2\nline3";
 
 		// Act
-		var result = _helper.CreateLineDiffsFromContent(content1, content2);
+		DiffResult result = _helper.CreateLineDiffsFromContent(content1, content2);
 
 		// Assert
 		Assert.IsNotNull(result);
@@ -233,7 +233,7 @@ public class DiffPlexHelperTests : DependencyInjectionTestBase
 		string content2 = "line1\nline3\nline2";
 
 		// Act
-		var result = _helper.CreateLineDiffsFromContent(content1, content2);
+		DiffResult result = _helper.CreateLineDiffsFromContent(content1, content2);
 
 		// Assert
 		Assert.IsNotNull(result);
@@ -248,7 +248,7 @@ public class DiffPlexHelperTests : DependencyInjectionTestBase
 		string content2 = "line1\nmodified";
 
 		// Act
-		var result = _helper.CreateLineDiffsFromContent(content1, content2);
+		DiffResult result = _helper.CreateLineDiffsFromContent(content1, content2);
 
 		// Assert
 		Assert.IsNotNull(result);

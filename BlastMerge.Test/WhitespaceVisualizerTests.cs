@@ -30,8 +30,8 @@ public class WhitespaceVisualizerTests : DependencyInjectionTestBase
 		string result = _visualizer.MakeWhitespaceVisible(input, showSpaces: true, showTabs: true, showLineEndings: true);
 
 		// Assert
-		Assert.IsTrue(result.Contains("→"));
-		Assert.IsTrue(result.Contains("·"));
+		Assert.IsTrue(result.Contains('→'));
+		Assert.IsTrue(result.Contains('·'));
 	}
 
 	[TestMethod]
@@ -44,7 +44,7 @@ public class WhitespaceVisualizerTests : DependencyInjectionTestBase
 		string result = _visualizer.MakeWhitespaceVisible(input, showSpaces: true, showTabs: true, showLineEndings: true);
 
 		// Assert
-		Assert.IsTrue(result.Contains("¶"));
+		Assert.IsTrue(result.Contains('¶'));
 	}
 
 	[TestMethod]
@@ -57,9 +57,9 @@ public class WhitespaceVisualizerTests : DependencyInjectionTestBase
 		string result = _visualizer.MakeWhitespaceVisible(input, showSpaces: true, showTabs: true, showLineEndings: true);
 
 		// Assert
-		Assert.IsTrue(result.Contains("→"));
-		Assert.IsTrue(result.Contains("·"));
-		Assert.IsTrue(result.Contains("¶"));
+		Assert.IsTrue(result.Contains('→'));
+		Assert.IsTrue(result.Contains('·'));
+		Assert.IsTrue(result.Contains('¶'));
 	}
 
 	[TestMethod]
@@ -72,7 +72,7 @@ public class WhitespaceVisualizerTests : DependencyInjectionTestBase
 		string result = _visualizer.MakeWhitespaceVisible(input, showSpaces: true, showTabs: false, showLineEndings: true);
 
 		// Assert
-		Assert.IsFalse(result.Contains("→"));
+		Assert.IsFalse(result.Contains('→'));
 		Assert.AreEqual(input, result);
 	}
 
@@ -86,7 +86,7 @@ public class WhitespaceVisualizerTests : DependencyInjectionTestBase
 		string result = _visualizer.MakeWhitespaceVisible(input, showSpaces: false, showTabs: true, showLineEndings: true);
 
 		// Assert
-		Assert.IsFalse(result.Contains("·"));
+		Assert.IsFalse(result.Contains('·'));
 		Assert.AreEqual(input, result);
 	}
 
@@ -100,7 +100,7 @@ public class WhitespaceVisualizerTests : DependencyInjectionTestBase
 		string result = _visualizer.MakeWhitespaceVisible(input, showSpaces: true, showTabs: true, showLineEndings: false);
 
 		// Assert
-		Assert.IsFalse(result.Contains("¶"));
+		Assert.IsFalse(result.Contains('¶'));
 		Assert.AreEqual(input, result);
 	}
 
@@ -229,9 +229,9 @@ public class WhitespaceVisualizerTests : DependencyInjectionTestBase
 
 		// Assert
 		Assert.IsNotNull(legend);
-		Assert.IsTrue(legend.Contains("→"));
-		Assert.IsTrue(legend.Contains("·"));
-		Assert.IsTrue(legend.Contains("¶"));
+		Assert.IsTrue(legend.Contains('→'));
+		Assert.IsTrue(legend.Contains('·'));
+		Assert.IsTrue(legend.Contains('¶'));
 	}
 
 	[TestMethod]
@@ -244,8 +244,8 @@ public class WhitespaceVisualizerTests : DependencyInjectionTestBase
 		string result = _visualizer.ProcessLineForDisplay(input, showWhitespace: true, highlightTrailing: false);
 
 		// Assert
-		Assert.IsTrue(result.Contains("→"));
-		Assert.IsTrue(result.Contains("·"));
+		Assert.IsTrue(result.Contains('→'));
+		Assert.IsTrue(result.Contains('·'));
 	}
 
 	[TestMethod]
@@ -284,7 +284,7 @@ public class WhitespaceVisualizerTests : DependencyInjectionTestBase
 		string result = _visualizer.ProcessLineForDisplay(input, showWhitespace: false, highlightTrailing: false);
 
 		// Assert
-		Assert.IsFalse(result.Contains("→"));
+		Assert.IsFalse(result.Contains('→'));
 		Assert.AreEqual(input, result);
 	}
 
@@ -311,8 +311,8 @@ public class WhitespaceVisualizerTests : DependencyInjectionTestBase
 		string result = _visualizer.ProcessLineForMarkupDisplay(input, showWhitespace: true, highlightTrailing: false);
 
 		// Assert
-		Assert.IsTrue(result.Contains("→"));
-		Assert.IsTrue(result.Contains("·"));
+		Assert.IsTrue(result.Contains('→'));
+		Assert.IsTrue(result.Contains('·'));
 	}
 
 	[TestMethod]
@@ -351,7 +351,7 @@ public class WhitespaceVisualizerTests : DependencyInjectionTestBase
 		string result = _visualizer.ProcessLineForMarkupDisplay(input, showWhitespace: false, highlightTrailing: false);
 
 		// Assert
-		Assert.IsFalse(result.Contains("→"));
+		Assert.IsFalse(result.Contains('→'));
 	}
 
 	[TestMethod]

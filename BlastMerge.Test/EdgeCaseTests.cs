@@ -5,6 +5,7 @@
 namespace ktsu.BlastMerge.Test;
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using ktsu.BlastMerge.Models;
@@ -36,7 +37,7 @@ public class EdgeCaseTests : DependencyInjectionTestBase
 		string emptyFile2 = CreateFile("empty2.txt", string.Empty);
 
 		// Act
-		IReadOnlyCollection<LineDifference> differences = _fileDifferAdapter.FindDifferences(emptyFile1, emptyFile2);
+		ReadOnlyCollection<string> differences = _fileDifferAdapter.FindDifferences(emptyFile1, emptyFile2);
 		string gitDiff = _fileDifferAdapter.GenerateGitStyleDiff(emptyFile1, emptyFile2);
 
 		// Assert

@@ -30,7 +30,7 @@ public class AsyncFileDifferTests : DependencyInjectionTestBase
 		List<string> filePaths = [@"C:\test\file1.txt", @"C:\test\file2.txt"];
 
 		// Act
-		IReadOnlyCollection<FileGroup> result = await _differ.GroupFilesByHashAsync(filePaths);
+		IReadOnlyCollection<FileGroup> result = await _differ.GroupFilesByHashAsync(filePaths).ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNotNull(result);
@@ -43,7 +43,7 @@ public class AsyncFileDifferTests : DependencyInjectionTestBase
 		List<string> filePaths = [];
 
 		// Act
-		IReadOnlyCollection<FileGroup> result = await _differ.GroupFilesByHashAsync(filePaths);
+		IReadOnlyCollection<FileGroup> result = await _differ.GroupFilesByHashAsync(filePaths).ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNotNull(result);
@@ -57,7 +57,7 @@ public class AsyncFileDifferTests : DependencyInjectionTestBase
 		List<string> filePaths = [@"C:\test\file1.txt", @"C:\test\file2.txt"];
 
 		// Act
-		IReadOnlyCollection<FileGroup> result = await _differ.GroupFilesByHashAsync(filePaths, maxDegreeOfParallelism: 1);
+		IReadOnlyCollection<FileGroup> result = await _differ.GroupFilesByHashAsync(filePaths, maxDegreeOfParallelism: 1).ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNotNull(result);
@@ -168,7 +168,7 @@ public class AsyncFileDifferTests : DependencyInjectionTestBase
 		double similarity = await _differ.CalculateFileSimilarityAsync(file1, file2).ConfigureAwait(false);
 
 		// Assert
-		Assert.IsTrue(similarity >= 0.0 && similarity <= 1.0);
+		Assert.IsTrue(similarity is >= 0.0 and <= 1.0);
 	}
 
 	[TestMethod]
@@ -180,10 +180,10 @@ public class AsyncFileDifferTests : DependencyInjectionTestBase
 		using CancellationTokenSource cts = new();
 
 		// Act
-		double similarity = await _differ.CalculateFileSimilarityAsync(file1, file2, cts.Token);
+		double similarity = await _differ.CalculateFileSimilarityAsync(file1, file2, cts.Token).ConfigureAwait(false);
 
 		// Assert
-		Assert.IsTrue(similarity >= 0.0 && similarity <= 1.0);
+		Assert.IsTrue(similarity is >= 0.0 and <= 1.0);
 	}
 
 	[TestMethod]
@@ -193,7 +193,7 @@ public class AsyncFileDifferTests : DependencyInjectionTestBase
 		List<(string source, string target)> operations = [(@"C:\test\file1.txt", @"C:\test\copied.txt")];
 
 		// Act
-		IReadOnlyCollection<(string source, string target)> result = await _differ.CopyFilesAsync(operations);
+		IReadOnlyCollection<(string source, string target)> result = await _differ.CopyFilesAsync(operations).ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNotNull(result);
@@ -206,7 +206,7 @@ public class AsyncFileDifferTests : DependencyInjectionTestBase
 		List<(string source, string target)> operations = [];
 
 		// Act
-		IReadOnlyCollection<(string source, string target)> result = await _differ.CopyFilesAsync(operations);
+		IReadOnlyCollection<(string source, string target)> result = await _differ.CopyFilesAsync(operations).ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNotNull(result);
@@ -220,7 +220,7 @@ public class AsyncFileDifferTests : DependencyInjectionTestBase
 		List<(string source, string target)> operations = [(@"C:\test\file1.txt", @"C:\test\copied.txt")];
 
 		// Act
-		IReadOnlyCollection<(string source, string target)> result = await _differ.CopyFilesAsync(operations, maxDegreeOfParallelism: 1);
+		IReadOnlyCollection<(string source, string target)> result = await _differ.CopyFilesAsync(operations, maxDegreeOfParallelism: 1).ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNotNull(result);
@@ -237,7 +237,7 @@ public class AsyncFileDifferTests : DependencyInjectionTestBase
 		}
 
 		// Act
-		IReadOnlyCollection<FileGroup> result = await _differ.GroupFilesByHashAsync(filePaths);
+		IReadOnlyCollection<FileGroup> result = await _differ.GroupFilesByHashAsync(filePaths).ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNotNull(result);
@@ -254,7 +254,7 @@ public class AsyncFileDifferTests : DependencyInjectionTestBase
 		}
 
 		// Act
-		Dictionary<string, string> result = await _differ.ReadFilesAsync(filePaths);
+		Dictionary<string, string> result = await _differ.ReadFilesAsync(filePaths).ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNotNull(result);
@@ -268,10 +268,10 @@ public class AsyncFileDifferTests : DependencyInjectionTestBase
 		string file2 = @"C:\test\file-with-dashes.txt";
 
 		// Act
-		double similarity = await _differ.CalculateFileSimilarityAsync(file1, file2);
+		double similarity = await _differ.CalculateFileSimilarityAsync(file1, file2).ConfigureAwait(false);
 
 		// Assert
-		Assert.IsTrue(similarity >= 0.0 && similarity <= 1.0);
+		Assert.IsTrue(similarity is >= 0.0 and <= 1.0);
 	}
 
 	[TestMethod]
@@ -283,7 +283,7 @@ public class AsyncFileDifferTests : DependencyInjectionTestBase
 		];
 
 		// Act
-		IReadOnlyCollection<(string source, string target)> result = await _differ.CopyFilesAsync(operations);
+		IReadOnlyCollection<(string source, string target)> result = await _differ.CopyFilesAsync(operations).ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNotNull(result);
@@ -300,7 +300,7 @@ public class AsyncFileDifferTests : DependencyInjectionTestBase
 		];
 
 		// Act
-		IReadOnlyCollection<FileGroup> result = await _differ.GroupFilesByFilenameAndHashAsync(filePaths);
+		IReadOnlyCollection<FileGroup> result = await _differ.GroupFilesByFilenameAndHashAsync(filePaths).ConfigureAwait(false);
 
 		// Assert
 		Assert.IsNotNull(result);

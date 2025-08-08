@@ -57,7 +57,7 @@ public class FileDifferDiffTests : DependencyInjectionTestBase
 	public void FindDifferences_IdenticalFiles_ReturnsEmptyCollection()
 	{
 		// Act
-		IReadOnlyCollection<LineDifference> differences = _fileDifferAdapter.FindDifferences(_testFile1, _identicalFile);
+		ReadOnlyCollection<string> differences = _fileDifferAdapter.FindDifferences(_testFile1, _identicalFile);
 
 		// Assert
 		Assert.AreEqual(0, differences.Count, "Should return no differences for identical files");

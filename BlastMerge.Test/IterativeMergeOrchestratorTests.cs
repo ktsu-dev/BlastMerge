@@ -119,7 +119,7 @@ public class IterativeMergeOrchestratorTests : DependencyInjectionTestBase
 	public void StartIterativeMergeProcess_WithEmptyFileGroups_ReturnsEmptyResult()
 	{
 		// Arrange
-		var fileGroups = new List<FileGroup>();
+		List<FileGroup> fileGroups = [];
 
 		// Act
 		MergeCompletionResult result = _orchestrator.StartIterativeMergeProcess(
@@ -136,10 +136,10 @@ public class IterativeMergeOrchestratorTests : DependencyInjectionTestBase
 	public void StartIterativeMergeProcess_WithCancellation_StopsProcessing()
 	{
 		// Arrange
-		var fileGroups = new List<FileGroup>
-		{
+		List<FileGroup> fileGroups =
+		[
 			new([@"C:\test\file1.txt", @"C:\test\file2.txt"])
-		};
+		];
 
 		// Act
 		MergeCompletionResult result = _orchestrator.StartIterativeMergeProcess(
@@ -156,10 +156,10 @@ public class IterativeMergeOrchestratorTests : DependencyInjectionTestBase
 	public void StartIterativeMergeProcess_WithNullMergeResult_HandlesGracefully()
 	{
 		// Arrange
-		var fileGroups = new List<FileGroup>
-		{
+		List<FileGroup> fileGroups =
+		[
 			new([@"C:\test\file1.txt", @"C:\test\file2.txt"])
-		};
+		];
 
 		// Act
 		MergeCompletionResult result = _orchestrator.StartIterativeMergeProcess(
@@ -176,10 +176,10 @@ public class IterativeMergeOrchestratorTests : DependencyInjectionTestBase
 	public void StartIterativeMergeProcess_WithStatusCallback_CallsCallback()
 	{
 		// Arrange
-		var fileGroups = new List<FileGroup>
-		{
+		List<FileGroup> fileGroups =
+		[
 			new([@"C:\test\file1.txt", @"C:\test\file2.txt"])
-		};
+		];
 
 		List<MergeSessionStatus> statusUpdates = [];
 
@@ -199,11 +199,11 @@ public class IterativeMergeOrchestratorTests : DependencyInjectionTestBase
 	public void StartIterativeMergeProcess_WithMultipleFileGroups_ProcessesAll()
 	{
 		// Arrange
-		var fileGroups = new List<FileGroup>
-		{
+		List<FileGroup> fileGroups =
+		[
 			new([@"C:\test\group1_file1.txt", @"C:\test\group1_file2.txt"]),
 			new([@"C:\test\group2_file1.txt", @"C:\test\group2_file2.txt"])
-		};
+		];
 
 		// Act
 		MergeCompletionResult result = _orchestrator.StartIterativeMergeProcess(
@@ -220,10 +220,10 @@ public class IterativeMergeOrchestratorTests : DependencyInjectionTestBase
 	public void StartIterativeMergeProcess_WithSingleFileGroup_ProcessesCorrectly()
 	{
 		// Arrange
-		var fileGroups = new List<FileGroup>
-		{
+		List<FileGroup> fileGroups =
+		[
 			new([@"C:\test\single_file.txt"])
-		};
+		];
 
 		// Act
 		MergeCompletionResult result = _orchestrator.StartIterativeMergeProcess(
@@ -240,7 +240,7 @@ public class IterativeMergeOrchestratorTests : DependencyInjectionTestBase
 	public void StartIterativeMergeProcess_WithLargeFileGroups_HandlesEfficiently()
 	{
 		// Arrange
-		var fileGroups = new List<FileGroup>();
+		List<FileGroup> fileGroups = [];
 		for (int i = 0; i < 10; i++)
 		{
 			fileGroups.Add(new FileGroup([$@"C:\test\group{i}_file1.txt", $@"C:\test\group{i}_file2.txt"]));
@@ -261,10 +261,10 @@ public class IterativeMergeOrchestratorTests : DependencyInjectionTestBase
 	public void StartIterativeMergeProcess_WithComplexMergeLogic_ExecutesCorrectly()
 	{
 		// Arrange
-		var fileGroups = new List<FileGroup>
-		{
+		List<FileGroup> fileGroups =
+		[
 			new([@"C:\test\complex1.txt", @"C:\test\complex2.txt"])
-		};
+		];
 
 		int mergeCallCount = 0;
 
@@ -328,7 +328,7 @@ public class IterativeMergeOrchestratorTests : DependencyInjectionTestBase
 		MergeCompletionResult result = _orchestrator.StartIterativeMergeProcess(
 			fileGroups,
 			(file1, file2, output) => new MergeResult(["merged content"], []),
-			status => allStatuses.Add(status),
+			allStatuses.Add,
 			() => true);
 
 		// Assert
