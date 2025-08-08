@@ -7,8 +7,8 @@ namespace ktsu.BlastMerge.Test.Adapters;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Abstractions;
 using System.Linq;
+using ktsu.FileSystemProvider;
 
 /// <summary>
 /// Adapter for FileFinder that works with a mock filesystem
@@ -16,11 +16,9 @@ using System.Linq;
 /// <remarks>
 /// Initializes a new instance of the FileFinderAdapter class
 /// </remarks>
-/// <param name="fileSystem">The file system to use</param>
-public class FileFinderAdapter(IFileSystem fileSystem)
+/// <param name="fileSystemProvider">The file system to use</param>
+public class FileFinderAdapter(IFileSystemProvider fileSystemProvider)
 {
-	private readonly IFileSystem _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
-
 	/// <summary>
 	/// Recursively finds all files with the specified filename
 	/// </summary>
@@ -34,11 +32,11 @@ public class FileFinderAdapter(IFileSystem fileSystem)
 		try
 		{
 			// Search in current directory
-			string[] filesInCurrentDir = _fileSystem.Directory.GetFiles(rootDirectory, fileName, SearchOption.TopDirectoryOnly);
+			string[] filesInCurrentDir = fileSystemProvider.Current.Directory.GetFiles(rootDirectory, fileName, SearchOption.TopDirectoryOnly);
 			result.AddRange(filesInCurrentDir);
 
 			// Search in subdirectories
-			foreach (string directory in _fileSystem.Directory.GetDirectories(rootDirectory))
+			foreach (string directory in fileSystemProvider.Current.Directory.GetDirectories(rootDirectory))
 			{
 				try
 				{
@@ -97,7 +95,7 @@ public class FileFinderAdapter(IFileSystem fileSystem)
 
 		foreach (string searchPath in directoriesToSearch)
 		{
-			if (_fileSystem.Directory.Exists(searchPath))
+			if (fileSystemProvider.Current.Directory.Exists(searchPath))
 			{
 				System.Collections.ObjectModel.ReadOnlyCollection<string> filesInPath = FindFilesWithExclusions(searchPath, fileName, pathExclusionPatterns);
 				result.AddRange(filesInPath);
@@ -152,7 +150,7 @@ public class FileFinderAdapter(IFileSystem fileSystem)
 		string fileName,
 		IReadOnlyCollection<string> pathExclusionPatterns)
 	{
-		string[] filesInCurrentDir = _fileSystem.Directory.GetFiles(rootDirectory, fileName, SearchOption.TopDirectoryOnly);
+		string[] filesInCurrentDir = fileSystemProvider.Current.Directory.GetFiles(rootDirectory, fileName, SearchOption.TopDirectoryOnly);
 
 		foreach (string file in filesInCurrentDir)
 		{
@@ -172,7 +170,7 @@ public class FileFinderAdapter(IFileSystem fileSystem)
 		string fileName,
 		IReadOnlyCollection<string> pathExclusionPatterns)
 	{
-		foreach (string directory in _fileSystem.Directory.GetDirectories(rootDirectory))
+		foreach (string directory in fileSystemProvider.Current.Directory.GetDirectories(rootDirectory))
 		{
 			try
 			{
@@ -209,7 +207,7 @@ public class FileFinderAdapter(IFileSystem fileSystem)
 			return false;
 		}
 
-		string normalizedPath = _fileSystem.Path.GetFullPath(path).Replace(_fileSystem.Path.DirectorySeparatorChar, '/');
+		string normalizedPath = fileSystemProvider.Current.Path.GetFullPath(path).Replace(fileSystemProvider.Current.Path.DirectorySeparatorChar, '/');
 
 		foreach (string pattern in exclusionPatterns)
 		{
@@ -319,11 +317,11 @@ public class FileFinderAdapter(IFileSystem fileSystem)
 	{
 		try
 		{
-			string gitPath = _fileSystem.Path.Combine(directoryPath, ".git");
+			string gitPath = fileSystemProvider.Current.Path.Combine(directoryPath, ".git");
 
 			// Git submodules have a .git file (not directory) that contains a reference
 			// to the actual git directory location
-			return _fileSystem.File.Exists(gitPath) && !_fileSystem.Directory.Exists(gitPath);
+			return fileSystemProvider.Current.File.Exists(gitPath) && !fileSystemProvider.Current.Directory.Exists(gitPath);
 		}
 		catch (Exception ex) when (ex is UnauthorizedAccessException
 								or DirectoryNotFoundException

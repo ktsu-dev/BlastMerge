@@ -25,8 +25,8 @@ public class EdgeCaseTests : DependencyInjectionTestBase
 		// Get DiffPlexDiffer from DI and initialize adapter
 		FileDiffer fileDiffer = GetService<FileDiffer>();
 		_fileDifferAdapter = new FileDifferAdapter(fileDiffer);
-		_fileHasherAdapter = new FileHasherAdapter(MockFileSystem);
-		_fileFinderAdapter = new FileFinderAdapter(MockFileSystem);
+		_fileHasherAdapter = new FileHasherAdapter((FileSystemProvider.IFileSystemProvider)MockFileSystem);
+		_fileFinderAdapter = new FileFinderAdapter((FileSystemProvider.IFileSystemProvider)MockFileSystem);
 	}
 
 	[TestMethod]

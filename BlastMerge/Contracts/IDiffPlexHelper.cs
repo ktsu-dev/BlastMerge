@@ -4,9 +4,9 @@
 
 namespace ktsu.BlastMerge.Contracts;
 
-using System.IO.Abstractions;
 using DiffPlex.Model;
 using ktsu.BlastMerge.Models;
+using ktsu.FileSystemProvider;
 
 /// <summary>
 /// Interface for DiffPlex helper operations that provides ProjectDirector-style diff functionality
@@ -18,9 +18,9 @@ public interface IDiffPlexHelper
 	/// </summary>
 	/// <param name="file1">Path to the first file</param>
 	/// <param name="file2">Path to the second file</param>
-	/// <param name="fileSystem">File system abstraction</param>
+	/// <param name="fileSystemProvider">File system abstraction</param>
 	/// <returns>DiffPlex DiffResult with DiffBlocks</returns>
-	public DiffResult CreateLineDiffs(string file1, string file2, IFileSystem fileSystem);
+	public DiffResult CreateLineDiffs(string file1, string file2, IFileSystemProvider fileSystemProvider);
 
 	/// <summary>
 	/// Creates a line-based diff result between two strings using DiffPlex directly

@@ -4,20 +4,20 @@
 
 namespace ktsu.BlastMerge.ConsoleApp.Services;
 
-using System.IO.Abstractions;
 using System.Text;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
+using ktsu.FileSystemProvider;
 using Spectre.Console;
 
 /// <summary>
 /// Service for handling interactive merge UI operations.
 /// </summary>
 /// <param name="fileDiffer">File differ service</param>
-/// <param name="fileSystem">File system abstraction</param>
+/// <param name="fileSystemProvider">File system abstraction</param>
 #pragma warning disable CS9113 // Parameter is unread
-public class InteractiveMergeService(FileDiffer fileDiffer, IFileSystem fileSystem)
+public class InteractiveMergeService(FileDiffer fileDiffer, IFileSystemProvider fileSystemProvider)
 #pragma warning restore CS9113
 {
 	/// <summary>

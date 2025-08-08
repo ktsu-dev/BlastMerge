@@ -35,7 +35,7 @@ public class FileFinderTests : DependencyInjectionTestBase
 		CreateFile(MockFileSystem.Path.Combine("SearchPath2", "test.txt"), "Search path 2 test file");
 
 		// Initialize the adapter
-		_fileFinderAdapter = new FileFinderAdapter(MockFileSystem);
+		_fileFinderAdapter = new FileFinderAdapter((FileSystemProvider.IFileSystemProvider)MockFileSystem);
 	}
 
 	[TestMethod]

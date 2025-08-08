@@ -13,6 +13,7 @@ using DiffPlex;
 using DiffPlex.Model;
 using ktsu.BlastMerge.Contracts;
 using ktsu.BlastMerge.Models;
+using ktsu.FileSystemProvider;
 
 /// <summary>
 /// Helper class that provides ProjectDirector-style diff functionality using DiffPlex directly
@@ -24,13 +25,15 @@ public class DiffPlexHelper : IDiffPlexHelper
 	/// </summary>
 	/// <param name="file1">Path to the first file</param>
 	/// <param name="file2">Path to the second file</param>
-	/// <param name="fileSystem">File system abstraction</param>
+	/// <param name="fileSystemProvider">File system abstraction</param>
 	/// <returns>DiffPlex DiffResult with DiffBlocks</returns>
-	public DiffResult CreateLineDiffs(string file1, string file2, IFileSystem fileSystem)
+	public DiffResult CreateLineDiffs(string file1, string file2, IFileSystemProvider fileSystemProvider)
 	{
 		ArgumentNullException.ThrowIfNull(file1);
 		ArgumentNullException.ThrowIfNull(file2);
-		ArgumentNullException.ThrowIfNull(fileSystem);
+		ArgumentNullException.ThrowIfNull(fileSystemProvider);
+
+		IFileSystem fileSystem = fileSystemProvider.Current;
 
 		if (!fileSystem.File.Exists(file1) || !fileSystem.File.Exists(file2))
 		{

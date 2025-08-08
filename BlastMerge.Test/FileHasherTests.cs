@@ -27,7 +27,7 @@ public class FileHasherTests : DependencyInjectionTestBase
 		_fileHasher = GetService<FileHasher>();
 
 		// Initialize adapter
-		_fileHasherAdapter = new FileHasherAdapter(MockFileSystem);
+		_fileHasherAdapter = new FileHasherAdapter((FileSystemProvider.IFileSystemProvider)MockFileSystem);
 
 		// Create test files with different content
 		_testFilePath1 = CreateFile("test1.txt", "This is test file 1");

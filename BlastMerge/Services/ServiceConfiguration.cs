@@ -37,9 +37,10 @@ public static class ServiceConfiguration
 		services.AddSingleton<IPersistenceProvider<string>>(serviceProvider =>
 		{
 			ISerializationProvider serializationProvider = serviceProvider.GetRequiredService<ISerializationProvider>();
+			IFileSystemProvider fileSystemProvider = serviceProvider.GetRequiredService<IFileSystemProvider>();
 
 			// Use memory persistence provider for now (can be replaced with file-based later)
-			return new MemoryPersistenceProvider<string>(serializationProvider);
+			return new AppDataPersistenceProvider<string>(fileSystemProvider, serializationProvider, nameof(BlastMerge));
 		});
 
 		// Initialize BlastMergeAppData with persistence provider
@@ -73,9 +74,6 @@ public static class ServiceConfiguration
 		// Batch processing services
 		services.AddTransient<BatchProcessor>();
 		services.AddTransient<IterativeMergeOrchestrator>();
-
-		// Application service
-		services.AddSingleton<ApplicationService>();
 
 		return services;
 	}
