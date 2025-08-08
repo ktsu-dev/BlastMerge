@@ -728,6 +728,18 @@ public class FileDiffer(FileHasher fileHasher, DiffPlexDiffer diffPlexDiffer, IF
 		List<MergeConflict> conflicts = [];
 
 		return ProcessDifferences(differences, lines1, lines2, mergedLines, conflicts);
+
+	}
+
+	/// <summary>
+	/// Helper to expose differences from a DiffPlex DiffResult
+	/// </summary>
+	public static IReadOnlyCollection<LineDifference> FindDifferencesFromDiffResult(DiffResult diffResult, string[] lines1, string[] lines2)
+	{
+		ArgumentNullException.ThrowIfNull(diffResult);
+		ArgumentNullException.ThrowIfNull(lines1);
+		ArgumentNullException.ThrowIfNull(lines2);
+		return ConvertDiffPlexToLineDifferences(diffResult, lines1, lines2).AsReadOnly();
 	}
 
 	/// <summary>

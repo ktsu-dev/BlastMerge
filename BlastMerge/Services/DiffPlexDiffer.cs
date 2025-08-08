@@ -25,6 +25,29 @@ using ktsu.FileSystemProvider;
 /// <param name="diffPlexHelper">Helper for DiffPlex operations</param>
 public class DiffPlexDiffer(IFileSystemProvider fileSystemProvider, IDiffPlexHelper diffPlexHelper)
 {
+	/// <summary>
+	/// In-memory API: find differences from arrays of lines
+	/// </summary>
+	public static IReadOnlyCollection<LineDifference> FindDifferencesFromLines(string[] lines1, string[] lines2)
+	{
+		ArgumentNullException.ThrowIfNull(lines1);
+		ArgumentNullException.ThrowIfNull(lines2);
+		Differ d = new();
+		DiffResult result = d.CreateLineDiffs(string.Join('\n', lines1), string.Join('\n', lines2), ignoreWhitespace: true);
+		return FileDiffer.FindDifferencesFromDiffResult(result, lines1, lines2);
+	}
+
+	/// <summary>
+	/// In-memory API: find differences from content strings
+	/// </summary>
+	public static IReadOnlyCollection<LineDifference> FindDifferencesFromContent(string content1, string content2)
+	{
+		ArgumentNullException.ThrowIfNull(content1);
+		ArgumentNullException.ThrowIfNull(content2);
+		string[] lines1 = content1.Split('\n');
+		string[] lines2 = content2.Split('\n');
+		return FindDifferencesFromLines(lines1, lines2);
+	}
 	private readonly Differ differ = new();
 	private const string FilesNotFoundMessage = "One or both files do not exist";
 

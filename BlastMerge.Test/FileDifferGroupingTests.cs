@@ -24,8 +24,8 @@ public class FileDifferGroupingTests : DependencyInjectionTestBase
 	protected override void InitializeTestData()
 	{
 		// Get DiffPlexDiffer from DI and initialize adapter
-		DiffPlexDiffer diffPlexDiffer = GetService<DiffPlexDiffer>();
-		_fileDifferAdapter = new FileDifferAdapter(MockFileSystem, diffPlexDiffer);
+		FileDiffer fileDiffer = GetService<FileDiffer>();
+		_fileDifferAdapter = new FileDifferAdapter(fileDiffer);
 
 		// Create test files (file1 and file2 have identical content)
 		_testFile1 = CreateFile("file1.txt", "This is test content 1");

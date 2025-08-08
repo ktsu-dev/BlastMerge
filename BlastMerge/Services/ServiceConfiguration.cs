@@ -43,7 +43,7 @@ public static class ServiceConfiguration
 		});
 
 		// Initialize BlastMergeAppData with persistence provider
-		services.AddSingleton<BlastMergeAppData>(serviceProvider =>
+		services.AddSingleton(serviceProvider =>
 		{
 			IPersistenceProvider<string> persistenceProvider = serviceProvider.GetRequiredService<IPersistenceProvider<string>>();
 			BlastMergeAppData.Initialize(persistenceProvider);

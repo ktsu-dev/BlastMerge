@@ -18,8 +18,8 @@ public class RecursiveDiffTests : DependencyInjectionTestBase
 	protected override void InitializeTestData()
 	{
 		// Get DiffPlexDiffer from DI and initialize adapter
-		DiffPlexDiffer diffPlexDiffer = GetService<DiffPlexDiffer>();
-		_fileDifferAdapter = new FileDifferAdapter(MockFileSystem, diffPlexDiffer);
+		FileDiffer fileDiffer = GetService<FileDiffer>();
+		_fileDifferAdapter = new FileDifferAdapter(fileDiffer);
 
 		// Create test files in the root directories
 		CreateFile("dir1/file1.txt", "Root Content 1");

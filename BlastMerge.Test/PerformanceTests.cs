@@ -4,7 +4,6 @@
 
 namespace ktsu.BlastMerge.Test;
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using ktsu.BlastMerge.Models;
@@ -19,14 +18,12 @@ public class PerformanceTests : DependencyInjectionTestBase
 {
 	private AsyncFileDiffer _asyncFileDiffer = null!;
 	private FileDiffer _fileDiffer = null!;
-	private FileHasher _fileHasher = null!;
 	private FileFinder _fileFinder = null!;
 
 	protected override void InitializeTestData()
 	{
 		_asyncFileDiffer = GetService<AsyncFileDiffer>();
 		_fileDiffer = GetService<FileDiffer>();
-		_fileHasher = GetService<FileHasher>();
 		_fileFinder = GetService<FileFinder>();
 	}
 
@@ -169,7 +166,7 @@ public class PerformanceTests : DependencyInjectionTestBase
 
 		// Assert
 		// Result can be null if no similar files found
-		Assert.IsTrue(similarity == null || similarity.Similarity >= 0.0);
+		Assert.IsTrue(similarity == null || similarity.SimilarityScore >= 0.0);
 	}
 
 	[TestMethod]
@@ -185,8 +182,8 @@ public class PerformanceTests : DependencyInjectionTestBase
 
 		// Assert
 		Assert.IsNotNull(mergeResult);
-		Assert.IsNotNull(mergeResult.MergedContent);
-		Assert.IsNotNull(mergeResult.ConflictSections);
+		Assert.IsNotNull(mergeResult.MergedLines);
+		Assert.IsNotNull(mergeResult.Conflicts);
 	}
 
 	[TestMethod]
@@ -286,7 +283,7 @@ public class PerformanceTests : DependencyInjectionTestBase
 		}
 
 		// Act
-		var hashes = contents.Select(content => _fileHasher.ComputeContentHash(content)).ToList();
+		List<string> hashes = [.. contents.Select(FileHasher.ComputeContentHash)];
 
 		// Assert
 		Assert.AreEqual(contents.Count, hashes.Count);
@@ -302,7 +299,7 @@ public class PerformanceTests : DependencyInjectionTestBase
 		string searchPattern = "*.txt";
 
 		// Act
-		IReadOnlyCollection<string> foundFiles = _fileFinder.FindFiles(searchDirectory, searchPattern, true);
+		IReadOnlyCollection<string> foundFiles = _fileFinder.FindFiles(searchDirectory, searchPattern);
 
 		// Assert
 		Assert.IsNotNull(foundFiles);
@@ -353,8 +350,8 @@ public class PerformanceTests : DependencyInjectionTestBase
 
 		// Assert
 		Assert.IsNotNull(mergeResult);
-		Assert.IsNotNull(mergeResult.MergedContent);
-		Assert.IsNotNull(mergeResult.ConflictSections);
+		Assert.IsNotNull(mergeResult.MergedLines);
+		Assert.IsNotNull(mergeResult.Conflicts);
 	}
 
 	[TestMethod]

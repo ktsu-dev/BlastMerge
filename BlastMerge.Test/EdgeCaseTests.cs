@@ -23,8 +23,8 @@ public class EdgeCaseTests : DependencyInjectionTestBase
 	protected override void InitializeTestData()
 	{
 		// Get DiffPlexDiffer from DI and initialize adapter
-		DiffPlexDiffer diffPlexDiffer = GetService<DiffPlexDiffer>();
-		_fileDifferAdapter = new FileDifferAdapter(MockFileSystem, diffPlexDiffer);
+		FileDiffer fileDiffer = GetService<FileDiffer>();
+		_fileDifferAdapter = new FileDifferAdapter(fileDiffer);
 		_fileHasherAdapter = new FileHasherAdapter(MockFileSystem);
 		_fileFinderAdapter = new FileFinderAdapter(MockFileSystem);
 	}

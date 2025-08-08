@@ -22,8 +22,8 @@ public class FileDifferDiffTests : DependencyInjectionTestBase
 	protected override void InitializeTestData()
 	{
 		// Get DiffPlexDiffer from DI and initialize adapter
-		DiffPlexDiffer diffPlexDiffer = GetService<DiffPlexDiffer>();
-		_fileDifferAdapter = new FileDifferAdapter(MockFileSystem, diffPlexDiffer);
+		FileDiffer fileDiffer = GetService<FileDiffer>();
+		_fileDifferAdapter = new FileDifferAdapter(fileDiffer);
 
 		// Create test files with known differences
 		_testFile1 = CreateFile("file1.txt", string.Join('\n', [

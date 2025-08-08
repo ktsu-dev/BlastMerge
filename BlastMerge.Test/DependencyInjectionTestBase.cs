@@ -75,7 +75,7 @@ public abstract class DependencyInjectionTestBase
 		});
 
 		// Register BlastMergeAppData with persistence provider
-		services.AddSingleton<BlastMergeAppData>(serviceProvider =>
+		services.AddSingleton(serviceProvider =>
 		{
 			IPersistenceProvider<string> persistenceProvider = serviceProvider.GetRequiredService<IPersistenceProvider<string>>();
 			BlastMergeAppData.Initialize(persistenceProvider);
