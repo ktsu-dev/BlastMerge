@@ -12,7 +12,6 @@ using ktsu.BlastMerge.ConsoleApp.Services;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 using ktsu.BlastMerge.Contracts;
-using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
 using Microsoft.Extensions.DependencyInjection;
 

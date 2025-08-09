@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ktsu.BlastMerge.Contracts;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
 using Spectre.Console;
@@ -17,10 +18,7 @@ using Spectre.Console;
 /// <summary>
 /// Async wrapper for file operations providing improved performance through parallel processing
 /// </summary>
-/// <param name="fileFinder">File finder service for locating files</param>
-/// <param name="asyncFileDiffer">Async file differ service for file operations</param>
-/// <param name="fileHasher">File hasher service for computing file hashes</param>
-public class AsyncApplicationService(FileFinder fileFinder, AsyncFileDiffer asyncFileDiffer, FileHasher fileHasher)
+public class AsyncApplicationService(FileFinder fileFinder, AsyncFileDiffer asyncFileDiffer, FileHasher fileHasher, IAppDataService appDataService)
 {
 	private readonly FileFinder _fileFinder = fileFinder;
 	private readonly AsyncFileDiffer _asyncFileDiffer = asyncFileDiffer;
@@ -302,8 +300,7 @@ public class AsyncApplicationService(FileFinder fileFinder, AsyncFileDiffer asyn
 		ArgumentNullException.ThrowIfNull(directory);
 		ArgumentNullException.ThrowIfNull(batchName);
 
-		BatchConfiguration? batch = AppDataService.LoadBatch(batchName);
-		if (batch == null)
+		if (!appDataService.AppData.BatchConfigurations.TryGetValue(batchName, out BatchConfiguration? batchConfiguration))
 		{
 			AnsiConsole.MarkupLine($"[red]Error: Batch configuration '{batchName}' not found.[/]");
 			return (0, 0);
@@ -316,7 +313,7 @@ public class AsyncApplicationService(FileFinder fileFinder, AsyncFileDiffer asyn
 			.Spinner(Spinner.Known.Star)
 			.StartAsync($"[yellow]Processing batch '{batchName}'...[/]", async ctx =>
 			{
-				foreach (string pattern in batch.FilePatterns)
+				foreach (string pattern in batchConfiguration.FilePatterns)
 				{
 					ctx.Status($"[yellow]Processing pattern: {pattern}...[/]");
 

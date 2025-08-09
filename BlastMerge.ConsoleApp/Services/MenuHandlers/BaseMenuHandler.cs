@@ -6,14 +6,12 @@ namespace ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 
 using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
-using ktsu.BlastMerge.Services;
 using Spectre.Console;
 
 /// <summary>
 /// Base class for menu handlers providing common functionality.
 /// </summary>
-/// <param name="applicationService">The application service.</param>
-public abstract class BaseMenuHandler(ApplicationService applicationService) : IMenuHandler
+public abstract class BaseMenuHandler : IMenuHandler
 {
 	/// <summary>
 	/// Common message for press any key prompts.
@@ -24,11 +22,6 @@ public abstract class BaseMenuHandler(ApplicationService applicationService) : I
 	/// Common message for operation cancelled.
 	/// </summary>
 	protected const string OperationCancelledMessage = "Operation cancelled.";
-
-	/// <summary>
-	/// Gets the application service.
-	/// </summary>
-	protected ApplicationService ApplicationService { get; } = applicationService ?? throw new ArgumentNullException(nameof(applicationService));
 
 	/// <summary>
 	/// Gets the name of this menu for navigation purposes.

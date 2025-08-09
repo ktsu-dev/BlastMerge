@@ -4,6 +4,7 @@
 
 namespace ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 
+using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.ConsoleApp.Text;
@@ -13,11 +14,11 @@ using Spectre.Console;
 /// <summary>
 /// Menu handler for compare files operations.
 /// </summary>
-/// <param name="applicationService">The application service.</param>
-/// <param name="comparisonOperationsService">The comparison operations service.</param>
 public class CompareFilesMenuHandler(
 	ApplicationService applicationService,
-	ComparisonOperationsService comparisonOperationsService) : BaseMenuHandler(applicationService)
+	IInputHistoryService inputHistoryService,
+	ComparisonOperationsService comparisonOperationsService)
+	: BaseMenuHandler
 {
 	/// <summary>
 	/// Gets the name of this menu for navigation purposes.
@@ -77,21 +78,21 @@ public class CompareFilesMenuHandler(
 		string directory;
 		string fileName;
 
-		directory = AppDataHistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
+		directory = inputHistoryService.AskWithHistory("[cyan]Enter directory path[/]");
 		if (string.IsNullOrWhiteSpace(directory))
 		{
 			UIHelper.ShowWarning(UIHelper.OperationCancelledMessage);
 			return;
 		}
 
-		fileName = AppDataHistoryInput.AskWithHistory("[cyan]Enter filename pattern[/]");
+		fileName = inputHistoryService.AskWithHistory("[cyan]Enter filename pattern[/]");
 		if (string.IsNullOrWhiteSpace(fileName))
 		{
 			UIHelper.ShowWarning(UIHelper.OperationCancelledMessage);
 			return;
 		}
 
-		ApplicationService.ProcessFiles(directory, fileName);
+		applicationService.ProcessFiles(directory, fileName);
 	}
 
 	/// <summary>

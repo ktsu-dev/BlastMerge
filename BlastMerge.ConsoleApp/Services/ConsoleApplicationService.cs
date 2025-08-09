@@ -26,7 +26,6 @@ using Spectre.Console;
 /// <param name="fileSystemProvider">File system provider for file operations</param>
 /// <param name="appDataService">Application data service for managing application data</param>
 /// <param name="inputHistoryService">Input history service for managing input history</param>
-/// <param name="fileHasher">File hasher service for computing file hashes</param>
 /// <param name="fileFinder">File finder service for locating files</param>
 /// <param name="fileDiffer">File differ service for comparing files</param>
 /// <param name="syncOperationsService">Sync operations service for file synchronization</param>
@@ -36,11 +35,10 @@ using Spectre.Console;
 /// <param name="fileDisplayService">File display service for showing file information</param>
 /// <param name="fileComparisonDisplayService">File comparison display service for showing file comparisons</param>
 /// <param name="comparisonOperationsService">Comparison operations service for file comparison operations</param>
-public class ConsoleApplicationService(
+public sealed class ConsoleApplicationService(
 	IFileSystemProvider fileSystemProvider,
 	IAppDataService appDataService,
 	IInputHistoryService inputHistoryService,
-	FileHasher fileHasher,
 	FileFinder fileFinder,
 	FileDiffer fileDiffer,
 	SyncOperationsService syncOperationsService,
@@ -50,7 +48,7 @@ public class ConsoleApplicationService(
 	FileDisplayService fileDisplayService,
 	FileComparisonDisplayService fileComparisonDisplayService,
 	ComparisonOperationsService comparisonOperationsService)
-	: ApplicationService(fileSystemProvider, fileHasher, fileFinder, fileDiffer)
+	: IApplicationService
 {
 	// Table column names
 	private const string GroupColumnName = "Group";
@@ -73,11 +71,64 @@ public class ConsoleApplicationService(
 	};
 
 	/// <summary>
+	/// Validates that parameters are not null and directory exists.
+	/// </summary>
+	/// <param name="directory">The directory to validate.</param>
+	/// <param name="fileName">The filename pattern to validate.</param>
+	/// <exception cref="ArgumentNullException">Thrown when directory or fileName is null.</exception>
+	/// <exception cref="DirectoryNotFoundException">Thrown when directory does not exist.</exception>
+	private void ValidateDirectoryAndFileName(string directory, string fileName)
+	{
+		ArgumentNullException.ThrowIfNull(directory);
+		ArgumentNullException.ThrowIfNull(fileName);
+		ValidateDirectoryExists(directory);
+	}
+
+	/// <summary>
+	/// Validates that the directory exists.
+	/// </summary>
+	/// <param name="directory">The directory to validate.</param>
+	/// <exception cref="DirectoryNotFoundException">Thrown when directory does not exist.</exception>
+	private void ValidateDirectoryExists(string directory)
+	{
+		if (!fileSystemProvider.Current.Directory.Exists(directory))
+		{
+			throw new DirectoryNotFoundException($"Directory '{directory}' does not exist.");
+		}
+	}
+
+	/// <summary>
+	/// Compares files in a directory and returns file groups.
+	/// </summary>
+	/// <param name="directory">The directory containing files to compare.</param>
+	/// <param name="fileName">The filename pattern to search for.</param>
+	/// <returns>Dictionary of file groups organized by hash.</returns>
+	public IReadOnlyDictionary<string, IReadOnlyCollection<string>> CompareFiles(string directory, string fileName)
+	{
+		ValidateDirectoryAndFileName(directory, fileName);
+
+		IReadOnlyCollection<string> filePaths = fileFinder.FindFiles(directory, fileName);
+		IReadOnlyCollection<FileGroup> fileGroups = fileDiffer.GroupFilesByHash(filePaths);
+
+		// Convert FileGroup collection to Dictionary<string, IReadOnlyCollection<string>>
+		// Use a combination of hash and index to ensure unique keys
+		Dictionary<string, IReadOnlyCollection<string>> result = [];
+		int index = 0;
+		foreach (FileGroup group in fileGroups)
+		{
+			string key = $"{group.Hash}_{index++}";
+			result[key] = group.FilePaths;
+		}
+
+		return result.AsReadOnly();
+	}
+
+	/// <summary>
 	/// Processes files in a directory with a specified filename pattern.
 	/// </summary>
 	/// <param name="directory">The directory to process.</param>
 	/// <param name="fileName">The filename pattern to search for.</param>
-	public override void ProcessFiles(string directory, string fileName)
+	public void ProcessFiles(string directory, string fileName)
 	{
 		ValidateDirectoryAndFileName(directory, fileName);
 
@@ -114,7 +165,7 @@ public class ConsoleApplicationService(
 		AnsiConsole.Status()
 			.Start("Discovering files...", ctx =>
 			{
-				IReadOnlyCollection<string> foundFiles = FileFinder.FindFiles(directory, fileName, progressCallback: path =>
+				IReadOnlyCollection<string> foundFiles = fileFinder.FindFiles(directory, fileName, progressCallback: path =>
 				{
 					ctx.Status($"Discovering files... Found: {Path.GetFileName(path)}");
 					ctx.Refresh();
@@ -184,7 +235,7 @@ public class ConsoleApplicationService(
 	/// </summary>
 	/// <param name="directory">The directory to process.</param>
 	/// <param name="batchName">The name of the batch configuration.</param>
-	public override void ProcessBatch(string directory, string batchName)
+	public void ProcessBatch(string directory, string batchName)
 	{
 		ArgumentNullException.ThrowIfNull(directory);
 		ArgumentNullException.ThrowIfNull(batchName);
@@ -469,13 +520,13 @@ public class ConsoleApplicationService(
 	/// </summary>
 	/// <param name="directory">The directory to search.</param>
 	/// <param name="fileName">The file name pattern to match.</param>
-	public override void RunIterativeMerge(string directory, string fileName) =>
+	public void RunIterativeMerge(string directory, string fileName) =>
 		RunIterativeMergeWithCallbacks(directory, fileName, ConsoleMergeCallback, ConsoleStatusCallback, () => AlwaysContinue);
 
 	/// <summary>
 	/// Lists all available batch configurations.
 	/// </summary>
-	public override void ListBatches()
+	public void ListBatches()
 	{
 		Console.WriteLine("Available batch configurations:");
 
@@ -496,7 +547,7 @@ public class ConsoleApplicationService(
 	/// <summary>
 	/// Starts the interactive mode with a comprehensive TUI menu system.
 	/// </summary>
-	public override void StartInteractiveMode()
+	public void StartInteractiveMode()
 	{
 		while (true)
 		{
@@ -642,16 +693,16 @@ public class ConsoleApplicationService(
 		switch (choice)
 		{
 			case MenuChoice.FindFiles:
-				new FindFilesMenuHandler(this, FileFinder).Enter();
+				new FindFilesMenuHandler(inputHistoryService, fileFinder).Enter();
 				break;
 			case MenuChoice.IterativeMerge:
 				new IterativeMergeMenuHandler(this).Enter();
 				break;
 			case MenuChoice.CompareFiles:
-				new CompareFilesMenuHandler(this, comparisonOperationsService).Enter();
+				new CompareFilesMenuHandler(this, inputHistoryService, comparisonOperationsService).Enter();
 				break;
 			case MenuChoice.BatchOperations:
-				new BatchOperationsMenuHandler(this).Enter();
+				new BatchOperationsMenuHandler(this, appDataService, inputHistoryService).Enter();
 				break;
 			case MenuChoice.RunRecentBatch:
 				HandleRunRecentBatch();
@@ -830,16 +881,16 @@ public class ConsoleApplicationService(
 		switch (menuName)
 		{
 			case MenuNames.FindFiles:
-				new FindFilesMenuHandler(this, FileFinder).Handle();
+				new FindFilesMenuHandler(inputHistoryService, fileFinder).Handle();
 				break;
 			case MenuNames.IterativeMerge:
 				new IterativeMergeMenuHandler(this).Handle();
 				break;
 			case MenuNames.CompareFiles:
-				new CompareFilesMenuHandler(this, comparisonOperationsService).Handle();
+				new CompareFilesMenuHandler(this, inputHistoryService, comparisonOperationsService).Handle();
 				break;
 			case MenuNames.BatchOperations:
-				new BatchOperationsMenuHandler(this).Handle();
+				new BatchOperationsMenuHandler(this, appDataService, inputHistoryService).Handle();
 				break;
 			case MenuNames.Settings:
 				new SettingsMenuHandler(this).Handle();
@@ -952,7 +1003,7 @@ public class ConsoleApplicationService(
 		}
 
 		// For new merges, count changes to determine order (fewer changes on left)
-		IReadOnlyCollection<LineDifference> differences = FileDiffer.FindDifferences(file1, file2);
+		IReadOnlyCollection<LineDifference> differences = fileDiffer.FindDifferences(file1, file2);
 		int changesInFile1 = differences.Count(d => d.LineNumber1.HasValue);
 		int changesInFile2 = differences.Count(d => d.LineNumber2.HasValue);
 

@@ -5,7 +5,7 @@
 namespace ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 
 using System.IO;
-using ktsu.BlastMerge.ConsoleApp.Models;
+using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.ConsoleApp.Text;
 using ktsu.BlastMerge.Services;
 using Spectre.Console;
@@ -13,9 +13,10 @@ using Spectre.Console;
 /// <summary>
 /// Menu handler for find files operations.
 /// </summary>
-/// <param name="applicationService">The application service.</param>
-/// <param name="fileFinder">The file finder service.</param>
-public class FindFilesMenuHandler(ApplicationService applicationService, FileFinder fileFinder) : BaseMenuHandler(applicationService)
+public class FindFilesMenuHandler(
+	IInputHistoryService inputHistoryService,
+	FileFinder fileFinder)
+	: BaseMenuHandler
 {
 	/// <summary>
 	/// Gets the name of this menu for navigation purposes.
@@ -32,14 +33,14 @@ public class FindFilesMenuHandler(ApplicationService applicationService, FileFin
 		string directory;
 		string fileName;
 
-		directory = AppDataHistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
+		directory = inputHistoryService.AskWithHistory("[cyan]Enter directory path[/]");
 		if (string.IsNullOrWhiteSpace(directory))
 		{
 			ShowWarning(OperationCancelledMessage);
 			return;
 		}
 
-		fileName = AppDataHistoryInput.AskWithHistory("[cyan]Enter filename pattern[/]");
+		fileName = inputHistoryService.AskWithHistory("[cyan]Enter filename pattern[/]");
 		if (string.IsNullOrWhiteSpace(fileName))
 		{
 			ShowWarning(OperationCancelledMessage);

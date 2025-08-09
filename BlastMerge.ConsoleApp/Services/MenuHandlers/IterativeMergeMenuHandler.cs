@@ -4,15 +4,17 @@
 
 namespace ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 
-using ktsu.BlastMerge.ConsoleApp.Models;
+using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.ConsoleApp.Text;
-using ktsu.BlastMerge.Services;
+using ktsu.BlastMerge.Contracts;
 
 /// <summary>
 /// Menu handler for iterative merge operations.
 /// </summary>
-/// <param name="applicationService">The application service.</param>
-public class IterativeMergeMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)
+public class IterativeMergeMenuHandler(
+	IApplicationService applicationService,
+	IInputHistoryService inputHistoryService)
+	: BaseMenuHandler
 {
 	/// <summary>
 	/// Gets the name of this menu for navigation purposes.
@@ -29,21 +31,21 @@ public class IterativeMergeMenuHandler(ApplicationService applicationService) : 
 		string directory;
 		string fileName;
 
-		directory = AppDataHistoryInput.AskWithHistory("[cyan]Enter directory path[/]");
+		directory = inputHistoryService.AskWithHistory("[cyan]Enter directory path[/]");
 		if (string.IsNullOrWhiteSpace(directory))
 		{
 			ShowWarning(OperationCancelledMessage);
 			return;
 		}
 
-		fileName = AppDataHistoryInput.AskWithHistory("[cyan]Enter filename pattern[/]");
+		fileName = inputHistoryService.AskWithHistory("[cyan]Enter filename pattern[/]");
 		if (string.IsNullOrWhiteSpace(fileName))
 		{
 			ShowWarning(OperationCancelledMessage);
 			return;
 		}
 
-		ApplicationService.RunIterativeMerge(directory, fileName);
+		applicationService.RunIterativeMerge(directory, fileName);
 		WaitForKeyPress();
 		GoBack();
 	}

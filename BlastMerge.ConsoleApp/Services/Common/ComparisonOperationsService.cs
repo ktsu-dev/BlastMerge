@@ -5,6 +5,7 @@
 namespace ktsu.BlastMerge.ConsoleApp.Services.Common;
 
 using System.IO;
+using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
 using Spectre.Console;
@@ -12,8 +13,6 @@ using Spectre.Console;
 /// <summary>
 /// Centralized service for comparison operations to eliminate code duplication.
 /// </summary>
-/// <param name="fileComparisonDisplayService">File comparison display service</param>
-/// <param name="fileDiffer">File differ service</param>
 public class ComparisonOperationsService(
 	IInputHistoryService inputHistoryService,
 	FileComparisonDisplayService fileComparisonDisplayService,
@@ -37,7 +36,7 @@ public class ComparisonOperationsService(
 	{
 		ShowMenuTitle("Compare Two Directories");
 
-		string dir1 = AppDataHistoryInput.AskWithHistory("[cyan]Enter the first directory path:[/]");
+		string dir1 = inputHistoryService.AskWithHistory("[cyan]Enter the first directory path:[/]");
 		if (string.IsNullOrWhiteSpace(dir1))
 		{
 			UIHelper.ShowWarning(UIHelper.OperationCancelledMessage);
@@ -50,7 +49,7 @@ public class ComparisonOperationsService(
 			return;
 		}
 
-		string dir2 = AppDataHistoryInput.AskWithHistory("[cyan]Enter the second directory path:[/]");
+		string dir2 = inputHistoryService.AskWithHistory("[cyan]Enter the second directory path:[/]");
 		if (string.IsNullOrWhiteSpace(dir2))
 		{
 			UIHelper.ShowWarning(UIHelper.OperationCancelledMessage);
@@ -63,7 +62,7 @@ public class ComparisonOperationsService(
 			return;
 		}
 
-		string pattern = AppDataHistoryInput.AskWithHistory("[cyan]Enter file pattern (e.g., *.txt, *.cs):[/]", "*.*");
+		string pattern = inputHistoryService.AskWithHistory("[cyan]Enter file pattern (e.g., *.txt, *.cs):[/]", "*.*");
 
 		bool recursive = AnsiConsole.Confirm("[cyan]Search subdirectories recursively?[/]", false);
 
@@ -78,7 +77,7 @@ public class ComparisonOperationsService(
 	{
 		ShowMenuTitle("Compare Two Specific Files");
 
-		string file1 = AppDataHistoryInput.AskWithHistory("[cyan]Enter the first file path:[/]");
+		string file1 = inputHistoryService.AskWithHistory("[cyan]Enter the first file path:[/]");
 		if (string.IsNullOrWhiteSpace(file1))
 		{
 			UIHelper.ShowWarning(UIHelper.OperationCancelledMessage);
@@ -91,7 +90,7 @@ public class ComparisonOperationsService(
 			return;
 		}
 
-		string file2 = AppDataHistoryInput.AskWithHistory("[cyan]Enter the second file path:[/]");
+		string file2 = inputHistoryService.AskWithHistory("[cyan]Enter the second file path:[/]");
 		if (string.IsNullOrWhiteSpace(file2))
 		{
 			UIHelper.ShowWarning(UIHelper.OperationCancelledMessage);
