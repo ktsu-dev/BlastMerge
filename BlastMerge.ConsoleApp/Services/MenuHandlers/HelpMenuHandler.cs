@@ -5,14 +5,12 @@
 namespace ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 
 using ktsu.BlastMerge.ConsoleApp.Contracts;
-using ktsu.BlastMerge.Services;
 using Spectre.Console;
 
 /// <summary>
 /// Menu handler for help and information operations.
 /// </summary>
-/// <param name="applicationService">The application service.</param>
-public class HelpMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)
+public class HelpMenuHandler : BaseMenuHandler
 {
 	/// <summary>
 	/// Gets the name of this menu for navigation purposes.

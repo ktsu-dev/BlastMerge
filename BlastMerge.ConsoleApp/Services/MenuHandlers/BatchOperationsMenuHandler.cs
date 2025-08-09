@@ -11,7 +11,6 @@ using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.ConsoleApp.Text;
 using ktsu.BlastMerge.Contracts;
 using ktsu.BlastMerge.Models;
-using ktsu.BlastMerge.Services;
 using ktsu.Extensions;
 using Spectre.Console;
 
@@ -35,7 +34,7 @@ internal enum BatchManagementChoice
 /// Menu handler for batch operations.
 /// </summary>
 public class BatchOperationsMenuHandler(
-	ApplicationService applicationService,
+	IApplicationService applicationService,
 	IAppDataService appDataService,
 	IInputHistoryService inputHistoryService)
 	: BaseMenuHandler

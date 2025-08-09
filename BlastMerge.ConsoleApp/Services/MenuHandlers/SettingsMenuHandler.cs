@@ -5,16 +5,15 @@
 namespace ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 
 using ktsu.BlastMerge.ConsoleApp.Contracts;
-using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.ConsoleApp.Text;
-using ktsu.BlastMerge.Services;
 using Spectre.Console;
 
 /// <summary>
 /// Menu handler for configuration and settings operations.
 /// </summary>
-/// <param name="applicationService">The application service.</param>
-public class SettingsMenuHandler(ApplicationService applicationService) : BaseMenuHandler(applicationService)
+public class SettingsMenuHandler(
+	IInputHistoryService inputHistoryService)
+	: BaseMenuHandler
 {
 	/// <summary>
 	/// Gets the name of this menu for navigation purposes.
@@ -66,7 +65,7 @@ public class SettingsMenuHandler(ApplicationService applicationService) : BaseMe
 	/// <summary>
 	/// Shows configuration paths.
 	/// </summary>
-	private static void ShowConfigurationPaths()
+	private void ShowConfigurationPaths()
 	{
 		ShowMenuTitle("Configuration Paths");
 
@@ -88,7 +87,7 @@ public class SettingsMenuHandler(ApplicationService applicationService) : BaseMe
 		table.AddRow(
 			"[cyan]Input History[/]",
 			"[dim]Stored in AppData[/]",
-			AppDataHistoryInput.GetAllHistory().Count > 0 ? "[green]Has Data[/]" : "[yellow]Empty[/]");
+			inputHistoryService.GetAllHistory().Count > 0 ? "[green]Has Data[/]" : "[yellow]Empty[/]");
 
 		table.AddRow(
 			"[cyan]Working Directory[/]",
@@ -107,7 +106,7 @@ public class SettingsMenuHandler(ApplicationService applicationService) : BaseMe
 	/// <summary>
 	/// Clears input history.
 	/// </summary>
-	private static void ClearInputHistory()
+	private void ClearInputHistory()
 	{
 		ShowMenuTitle("Clear Input History");
 
@@ -117,7 +116,7 @@ public class SettingsMenuHandler(ApplicationService applicationService) : BaseMe
 		{
 			try
 			{
-				AppDataHistoryInput.ClearAllHistory();
+				inputHistoryService.ClearAllHistory();
 				ShowSuccess("Input history cleared successfully.");
 			}
 			catch (InvalidOperationException ex)

@@ -8,14 +8,14 @@ using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.ConsoleApp.Models;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.ConsoleApp.Text;
-using ktsu.BlastMerge.Services;
+using ktsu.BlastMerge.Contracts;
 using Spectre.Console;
 
 /// <summary>
 /// Menu handler for compare files operations.
 /// </summary>
 public class CompareFilesMenuHandler(
-	ApplicationService applicationService,
+	IApplicationService applicationService,
 	IInputHistoryService inputHistoryService,
 	ComparisonOperationsService comparisonOperationsService)
 	: BaseMenuHandler

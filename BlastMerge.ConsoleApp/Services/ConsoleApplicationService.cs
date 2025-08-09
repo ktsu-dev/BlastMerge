@@ -696,7 +696,7 @@ public sealed class ConsoleApplicationService(
 				new FindFilesMenuHandler(inputHistoryService, fileFinder).Enter();
 				break;
 			case MenuChoice.IterativeMerge:
-				new IterativeMergeMenuHandler(this).Enter();
+				new IterativeMergeMenuHandler(this, inputHistoryService).Enter();
 				break;
 			case MenuChoice.CompareFiles:
 				new CompareFilesMenuHandler(this, inputHistoryService, comparisonOperationsService).Enter();
@@ -708,10 +708,10 @@ public sealed class ConsoleApplicationService(
 				HandleRunRecentBatch();
 				break;
 			case MenuChoice.Settings:
-				new SettingsMenuHandler(this).Enter();
+				new SettingsMenuHandler(inputHistoryService).Enter();
 				break;
 			default:
-				new HelpMenuHandler(this).Enter();
+				new HelpMenuHandler().Enter();
 				break;
 		}
 	}
@@ -884,7 +884,7 @@ public sealed class ConsoleApplicationService(
 				new FindFilesMenuHandler(inputHistoryService, fileFinder).Handle();
 				break;
 			case MenuNames.IterativeMerge:
-				new IterativeMergeMenuHandler(this).Handle();
+				new IterativeMergeMenuHandler(this, inputHistoryService).Handle();
 				break;
 			case MenuNames.CompareFiles:
 				new CompareFilesMenuHandler(this, inputHistoryService, comparisonOperationsService).Handle();
@@ -893,10 +893,10 @@ public sealed class ConsoleApplicationService(
 				new BatchOperationsMenuHandler(this, appDataService, inputHistoryService).Handle();
 				break;
 			case MenuNames.Settings:
-				new SettingsMenuHandler(this).Handle();
+				new SettingsMenuHandler(inputHistoryService).Handle();
 				break;
 			case MenuNames.Help:
-				new HelpMenuHandler(this).Handle();
+				new HelpMenuHandler().Handle();
 				break;
 			default:
 				NavigationHistory.Clear();
