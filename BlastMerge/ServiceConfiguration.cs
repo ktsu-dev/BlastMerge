@@ -2,13 +2,16 @@
 // All rights reserved.
 // Licensed under the MIT license.
 
-namespace ktsu.BlastMerge.Services;
+namespace ktsu.BlastMerge;
 
 using ktsu.BlastMerge.Contracts;
+using ktsu.BlastMerge.Services;
 using ktsu.FileSystemProvider;
 using ktsu.PersistenceProvider;
 using ktsu.SerializationProvider;
+using ktsu.SerializationProvider.Extensions;
 using ktsu.UniversalSerializer;
+using ktsu.UniversalSerializer.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 
 /// <summary>
@@ -25,6 +28,9 @@ public static class ServiceConfiguration
 	{
 		return services.AddFileSystemProvider()
 			.AddPersistenceProvider()
+			.AddSerializationProvider<UniversalSerializationProvider>()
+			.AddUniversalSerializer()
+			.AddJsonSerializer()
 			.AddTransient<FileHasher>()
 			.AddTransient<FileFinder>()
 			.AddTransient<FileDiffer>()
@@ -37,8 +43,7 @@ public static class ServiceConfiguration
 			.AddSingleton<IDiffPlexHelper, DiffPlexHelper>()
 			.AddSingleton<IWhitespaceVisualizer, WhitespaceVisualizer>()
 			.AddSingleton<ICharacterLevelDiffer, CharacterLevelDiffer>()
-			.AddSingleton<IEnvironmentProvider, EnvironmentProvider>()
-			.AddSingleton<ISerializationProvider, UniversalSerializationProvider>();
+			.AddSingleton<IEnvironmentProvider, EnvironmentProvider>();
 	}
 
 	/// <summary>

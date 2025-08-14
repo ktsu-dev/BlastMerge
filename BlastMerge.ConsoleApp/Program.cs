@@ -6,13 +6,13 @@ namespace ktsu.BlastMerge.ConsoleApp;
 
 using System;
 using System.Text;
+using ktsu.BlastMerge;
 using ktsu.BlastMerge.ConsoleApp.CLI;
 using ktsu.BlastMerge.ConsoleApp.Contracts;
 using ktsu.BlastMerge.ConsoleApp.Services;
 using ktsu.BlastMerge.ConsoleApp.Services.Common;
 using ktsu.BlastMerge.ConsoleApp.Services.MenuHandlers;
 using ktsu.BlastMerge.Contracts;
-using ktsu.BlastMerge.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 /// <summary>
