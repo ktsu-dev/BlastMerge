@@ -63,6 +63,120 @@ $ErrorActionPreference = "Stop"
 
 # ----- Helper Functions -----
 
+function Test-IsLibraryOnlyProject {
+    param (
+        [string]$RootDir,
+        [hashtable]$ProjectInfo
+    )
+
+    $hasApplications = $false
+    $hasLibraries = $false
+    $isMainProjectLibrary = $false
+
+    # Get the repository name to identify the main project
+    $repoName = (Get-Item -Path $RootDir).Name
+
+    # Check for generated NuGet packages in bin directories (indicator, not definitive)
+    $nupkgFiles = Get-ChildItem -Path $RootDir -Filter "*.nupkg" -Recurse -File -ErrorAction SilentlyContinue |
+                  Where-Object { $_.Directory.Name -eq "Release" -or $_.Directory.Name -eq "Debug" }
+    if ($nupkgFiles.Count -gt 0) {
+        Write-Host "Detected NuGet package files" -ForegroundColor Yellow
+        $hasLibraries = $true
+    }
+
+    # Check for C# projects
+    if ($ProjectInfo.type -eq "csharp") {
+        $csprojFiles = Get-ChildItem -Path $RootDir -Filter "*.csproj" -Recurse -File -Depth 3
+
+        foreach ($csprojFile in $csprojFiles) {
+            $csprojContent = Get-Content -Path $csprojFile.FullName -Raw
+            $projectName = $csprojFile.BaseName
+
+            # Check if this is the main project (matches repository name)
+            $isMainProject = ($projectName -eq $repoName)
+
+            # Skip test projects
+            $isTestProject = ($csprojContent -match 'Sdk="[^"]*\.Test["/]' -or
+                            $csprojContent -match 'Sdk="[^"]*Sdk\.Test["/]' -or
+                            $csprojContent -match 'Sdk="[^"]*Test[^"]*"' -or
+                            $projectName -match "Test" -or
+                            $projectName -match "\.Tests$")
+
+            # Skip demo/example projects
+            $isDemoProject = ($projectName -match "Demo|Example|Sample" -or
+                            $projectName.Contains("Demo") -or
+                            $projectName.Contains("Example") -or
+                            $projectName.Contains("Sample"))
+
+            if ($isTestProject -or $isDemoProject) {
+                continue
+            }
+
+            # Explicitly check if it's an executable
+            $isExecutable = ($csprojContent -match "<OutputType>\s*Exe\s*</OutputType>" -or
+                           $csprojContent -match "<OutputType>\s*WinExe\s*</OutputType>" -or
+                           $csprojContent -match 'Sdk="[^"]*\.App["/]' -or
+                           $csprojContent -match 'Sdk="[^"]*Sdk\.App["/]')
+
+            # Check if it's a library (explicit markers or implicit)
+            $isLibrary = ($csprojContent -match "<OutputType>\s*Library\s*</OutputType>" -or
+                         $csprojContent -match "<PackageId>" -or
+                         $csprojContent -match "<GeneratePackageOnBuild>\s*true\s*</GeneratePackageOnBuild>" -or
+                         $csprojContent -match "<IsPackable>\s*true\s*</IsPackable>" -or
+                         $csprojContent -match 'Sdk="[^"]*\.Lib["/]' -or
+                         $csprojContent -match 'Sdk="[^"]*Sdk\.Lib["/]' -or
+                         $csprojContent -match 'Sdk="[^"]*Library[^"]*"' -or
+                         $csprojContent -match "<TargetFrameworks>" -or  # Multiple target frameworks often = library
+                         (-not $isExecutable))  # No explicit exe = library by default
+
+            if ($isLibrary) {
+                $hasLibraries = $true
+                if ($isMainProject) {
+                    $isMainProjectLibrary = $true
+                }
+            }
+
+            if ($isExecutable) {
+                $hasApplications = $true
+            }
+        }
+    }
+
+    # Check for Node.js library patterns
+    if ($ProjectInfo.type -eq "node") {
+        $packageJsonPath = Join-Path -Path $RootDir -ChildPath "package.json"
+        if (Test-Path $packageJsonPath) {
+            $packageJson = Get-Content -Path $packageJsonPath -Raw | ConvertFrom-Json
+            # Check if it's a library (no bin field, or private: true)
+            if (-not $packageJson.bin -or $packageJson.private -eq $true) {
+                $hasLibraries = $true
+            } else {
+                $hasApplications = $true
+            }
+        }
+    }
+
+    # Check for standalone NuGet package indicators (separate from project files)
+    $nuspecFiles = Get-ChildItem -Path $RootDir -Filter "*.nuspec" -Recurse -File -Depth 2
+    if ($nuspecFiles.Count -gt 0) {
+        $hasLibraries = $true
+    }
+
+    # Return true if the main project is a library and we have no main applications (demos don't count)
+    return $isMainProjectLibrary -and -not $hasApplications
+}
+
+function Exit-GracefullyForLibrary {
+    param (
+        [string]$Message = "Detected library project - no executable artifacts expected."
+    )
+
+    Write-Host $Message -ForegroundColor Yellow
+    Write-Host "Skipping winget manifest generation as this appears to be a library/NuGet package." -ForegroundColor Yellow
+    Write-Host "Winget manifests are intended for executable applications, not libraries." -ForegroundColor Cyan
+    exit 0
+}
+
 function Get-MSBuildProperties {
     param (
         [string]$ProjectPath
@@ -187,6 +301,10 @@ function Get-MSBuildProperties {
 }
 
 function Get-GitRemoteInfo {
+    param (
+        [string]$RootDir
+    )
+
     try {
         # Get the GitHub URL from git remote
         $remoteUrl = git remote get-url origin 2>$null
@@ -205,11 +323,13 @@ function Get-GitRemoteInfo {
     }
 
     # Try to extract from PROJECT_URL.url file if available
-    $projectUrlFile = Join-Path -Path $rootDir -ChildPath "PROJECT_URL.url"
-    if (Test-Path $projectUrlFile) {
-        $content = Get-Content -Path $projectUrlFile -Raw
-        if ($content -match "URL=https://github.com/([^/]+)/([^/\r\n]+)") {
-            return "$($Matches[1])/$($Matches[2])"
+    if ($RootDir) {
+        $projectUrlFile = Join-Path -Path $RootDir -ChildPath "PROJECT_URL.url"
+        if (Test-Path $projectUrlFile) {
+            $content = Get-Content -Path $projectUrlFile -Raw
+            if ($content -match "URL=https://github.com/([^/]+)/([^/\r\n]+)") {
+                return "$($Matches[1])/$($Matches[2])"
+            }
         }
     }
 
@@ -626,7 +746,7 @@ if ($ConfigFile -and (Test-Path $ConfigFile)) {
 
 # Detect repository info if not provided
 if (-not $GitHubRepo) {
-    $detectedRepo = Get-GitRemoteInfo
+    $detectedRepo = Get-GitRemoteInfo -RootDir $rootDir
     if ($detectedRepo) {
         $GitHubRepo = $detectedRepo
         Write-Host "Detected GitHub repository: $GitHubRepo" -ForegroundColor Green
@@ -648,6 +768,11 @@ $repo = $ownerRepo[1]
 # Detect project info from repository
 $projectInfo = Find-ProjectInfo -RootDir $rootDir
 Write-Host "Detected project: $($projectInfo.name) (Type: $($projectInfo.type))" -ForegroundColor Green
+
+# Early check for library-only projects to avoid unnecessary processing
+if (Test-IsLibraryOnlyProject -RootDir $rootDir -ProjectInfo $projectInfo) {
+    Exit-GracefullyForLibrary -Message "Detected library-only solution with no applications."
+}
 
 # Check for explicit version provided
 if ($projectInfo.version -and -not $Version) {
@@ -698,6 +823,11 @@ try {
     Write-Host "Found release: $($release.name)" -ForegroundColor Green
     $releaseDate = [DateTime]::Parse($release.published_at).ToString("yyyy-MM-dd")
 } catch {
+    # Check if this might be a library-only project before failing
+    if (Test-IsLibraryOnlyProject -RootDir $rootDir -ProjectInfo $projectInfo) {
+        Exit-GracefullyForLibrary -Message "Failed to fetch release information, but detected library-only solution."
+    }
+
     Write-Error "Failed to fetch release information: $_"
     exit 1
 }
@@ -753,8 +883,13 @@ foreach ($arch in $architectures) {
 
 # Check if we have at least one hash
 if ($sha256Hashes.Count -eq 0) {
-    Write-Error "Could not obtain any SHA256 hashes. Please check that the artifact name pattern matches your release files."
-    exit 1
+    # Check if this appears to be a library-only project (no executable artifacts)
+    if (Test-IsLibraryOnlyProject -RootDir $rootDir -ProjectInfo $projectInfo) {
+        Exit-GracefullyForLibrary
+    } else {
+        Write-Error "Could not obtain any SHA256 hashes. Please check that the artifact name pattern matches your release files."
+        exit 1
+    }
 }
 
 # Update version manifest
@@ -897,6 +1032,11 @@ try {
         Write-Host "Manifest files uploaded to release." -ForegroundColor Green
     }
 } catch {
+    # Check if upload failure might be due to missing release artifacts for library-only projects
+    if ($_.Exception.Message -match "not found|404" -and (Test-IsLibraryOnlyProject -RootDir $rootDir -ProjectInfo $projectInfo)) {
+        Exit-GracefullyForLibrary -Message "Release upload failed, likely due to library-only solution having no executable artifacts."
+    }
+
     Write-Host "GitHub CLI not available or error uploading files: $_" -ForegroundColor Yellow
     Write-Host "Manifest files were created but not uploaded to the release." -ForegroundColor Yellow
 }
