@@ -77,9 +77,9 @@ public class MockFileSystemTests
 
 		// Assert
 		Assert.AreEqual(3, files.Count, "Should find 3 files");
-		Assert.IsTrue(files.Any(f => f.EndsWith("file1.txt")), "Should find file1.txt");
-		Assert.IsTrue(files.Any(f => f.EndsWith("file2.txt")), "Should find file2.txt");
-		Assert.IsTrue(files.Any(f => f.EndsWith("file3.txt")), "Should find file3.txt");
+		Assert.IsTrue(files.Any(f => f.EndsWith("file1.txt", StringComparison.Ordinal)), "Should find file1.txt");
+		Assert.IsTrue(files.Any(f => f.EndsWith("file2.txt", StringComparison.Ordinal)), "Should find file2.txt");
+		Assert.IsTrue(files.Any(f => f.EndsWith("file3.txt", StringComparison.Ordinal)), "Should find file3.txt");
 	}
 
 	[TestMethod]
@@ -121,8 +121,8 @@ public class MockFileSystemTests
 
 		// Assert
 		Assert.AreEqual(2, differences.Count, "Should find 2 difference lines");
-		Assert.IsTrue(differences[0].StartsWith('-'), "First line should be a removal");
-		Assert.IsTrue(differences[1].StartsWith('+'), "Second line should be an addition");
+		StringAssert.StartsWith(differences[0], "-", "First line should be a removal");
+		StringAssert.StartsWith(differences[1], "+", "Second line should be an addition");
 	}
 
 	[TestMethod]

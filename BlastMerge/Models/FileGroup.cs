@@ -14,12 +14,12 @@ using System.Collections.ObjectModel;
 /// <param name="Hash"> Gets the hash that identifies this group </param>
 public record FileGroup(string Hash = "")
 {
-	private readonly Collection<string> filePaths = [];
+	private readonly Collection<string> filePathsCollection = [];
 
 	/// <summary>
 	/// Gets the list of file paths in this group
 	/// </summary>
-	public IReadOnlyCollection<string> FilePaths => filePaths.AsReadOnly();
+	public IReadOnlyCollection<string> FilePaths => filePathsCollection.AsReadOnly();
 
 	/// <summary>
 	/// Initializes a new instance of the FileGroup class with the specified file paths
@@ -30,7 +30,7 @@ public record FileGroup(string Hash = "")
 		ArgumentNullException.ThrowIfNull(filePaths);
 		foreach (string filePath in filePaths)
 		{
-			this.filePaths.Add(filePath);
+			filePathsCollection.Add(filePath);
 		}
 	}
 
@@ -38,6 +38,6 @@ public record FileGroup(string Hash = "")
 	/// Adds a file path to this group
 	/// </summary>
 	/// <param name="filePath">The file path to add</param>
-	public void AddFilePath(string filePath) => filePaths.Add(filePath);
+	public void AddFilePath(string filePath) => filePathsCollection.Add(filePath);
 }
 

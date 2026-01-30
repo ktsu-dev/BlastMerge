@@ -4,6 +4,7 @@
 
 namespace ktsu.BlastMerge.Test;
 
+using System.Linq;
 using ktsu.BlastMerge.Models;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -49,14 +50,14 @@ public class ModelTests
 
 		// Assert
 		Assert.AreEqual(2, result.SameFiles.Count);
-		Assert.IsTrue(result.SameFiles.Contains("same1.txt"));
-		Assert.IsTrue(result.SameFiles.Contains("same2.txt"));
+		CollectionAssert.Contains(result.SameFiles.ToList(), "same1.txt");
+		CollectionAssert.Contains(result.SameFiles.ToList(), "same2.txt");
 		Assert.AreEqual(1, result.ModifiedFiles.Count);
-		Assert.IsTrue(result.ModifiedFiles.Contains("modified.txt"));
+		CollectionAssert.Contains(result.ModifiedFiles.ToList(), "modified.txt");
 		Assert.AreEqual(1, result.OnlyInDir1.Count);
-		Assert.IsTrue(result.OnlyInDir1.Contains("only1.txt"));
+		CollectionAssert.Contains(result.OnlyInDir1.ToList(), "only1.txt");
 		Assert.AreEqual(1, result.OnlyInDir2.Count);
-		Assert.IsTrue(result.OnlyInDir2.Contains("only2.txt"));
+		CollectionAssert.Contains(result.OnlyInDir2.ToList(), "only2.txt");
 	}
 
 	#endregion
@@ -76,7 +77,7 @@ public class ModelTests
 
 		// Assert
 		Assert.AreEqual(10, stats.TotalChanges);
-		Assert.IsTrue(stats.HasDifferences);
+		Assert.IsTrue(stats.HasDifferences, "Stats with changes should have differences");
 	}
 
 	[TestMethod]
@@ -92,7 +93,7 @@ public class ModelTests
 
 		// Assert
 		Assert.AreEqual(0, stats.TotalChanges);
-		Assert.IsFalse(stats.HasDifferences);
+		Assert.IsFalse(stats.HasDifferences, "Stats with no changes should not have differences");
 	}
 
 	[TestMethod]
@@ -105,7 +106,7 @@ public class ModelTests
 			Deletions = 0,
 			Modifications = 0
 		};
-		Assert.IsTrue(stats1.HasDifferences);
+		Assert.IsTrue(stats1.HasDifferences, "Stats with additions should have differences");
 
 		// Test with deletions only
 		DiffStatistics stats2 = new()
@@ -114,7 +115,7 @@ public class ModelTests
 			Deletions = 1,
 			Modifications = 0
 		};
-		Assert.IsTrue(stats2.HasDifferences);
+		Assert.IsTrue(stats2.HasDifferences, "Stats with deletions should have differences");
 
 		// Test with modifications only
 		DiffStatistics stats3 = new()
@@ -123,7 +124,7 @@ public class ModelTests
 			Deletions = 0,
 			Modifications = 1
 		};
-		Assert.IsTrue(stats3.HasDifferences);
+		Assert.IsTrue(stats3.HasDifferences, "Stats with modifications should have differences");
 	}
 
 	#endregion
@@ -189,7 +190,7 @@ public class ModelTests
 		// Assert
 		Assert.AreEqual("/source/file.txt", result.Source);
 		Assert.AreEqual("/target/file.txt", result.Target);
-		Assert.IsTrue(result.Success);
+		Assert.IsTrue(result.Success, "FileCopyResult should indicate success");
 	}
 
 	#endregion
@@ -208,7 +209,7 @@ public class ModelTests
 		);
 
 		// Assert
-		Assert.IsTrue(result.IsSuccessful);
+		Assert.IsTrue(result.IsSuccessful, "MergeCompletionResult should indicate success");
 		Assert.AreEqual("merged content", result.FinalMergedContent);
 		Assert.AreEqual(10, result.FinalLineCount);
 		Assert.AreEqual("test.txt", result.OriginalFileName);
@@ -300,7 +301,7 @@ public class ModelTests
 		// Assert
 		Assert.AreEqual(string.Empty, result.Pattern);
 		Assert.IsNull(result.FileName);
-		Assert.IsFalse(result.Success);
+		Assert.IsFalse(result.Success, "Default PatternResult should not indicate success");
 		Assert.AreEqual(0, result.FilesFound);
 		Assert.AreEqual(0, result.UniqueVersions);
 		Assert.AreEqual(string.Empty, result.Message);
@@ -328,7 +329,7 @@ public class ModelTests
 		// Assert
 		Assert.AreEqual("*.txt", result.Pattern);
 		Assert.AreEqual("test.txt", result.FileName);
-		Assert.IsTrue(result.Success);
+		Assert.IsTrue(result.Success, "PatternResult should indicate success when set");
 		Assert.AreEqual(5, result.FilesFound);
 		Assert.AreEqual(2, result.UniqueVersions);
 		Assert.AreEqual("Success message", result.Message);

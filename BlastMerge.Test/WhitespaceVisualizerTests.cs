@@ -226,11 +226,11 @@ public class WhitespaceVisualizerTests
 		string result = WhitespaceVisualizer.CreateWhitespaceLegend();
 
 		// Assert
-		Assert.IsTrue(result.Contains("· = space"));
-		Assert.IsTrue(result.Contains("→ = tab"));
-		Assert.IsTrue(result.Contains("↵ = return"));
-		Assert.IsTrue(result.Contains("¶ = newline"));
-		Assert.IsTrue(result.Contains("red background = trailing whitespace"));
+		StringAssert.Contains(result, "· = space");
+		StringAssert.Contains(result, "→ = tab");
+		StringAssert.Contains(result, "↵ = return");
+		StringAssert.Contains(result, "¶ = newline");
+		StringAssert.Contains(result, "red background = trailing whitespace");
 	}
 
 	[TestMethod]
@@ -302,9 +302,9 @@ public class WhitespaceVisualizerTests
 		string result = WhitespaceVisualizer.ProcessLineForDisplay(line, showWhitespace: true, highlightTrailing: true);
 
 		// Assert
-		Assert.IsTrue(result.Contains("hello·world"));
-		Assert.IsTrue(result.Contains("[on red]"));
-		Assert.IsTrue(result.Contains("[/]"));
+		StringAssert.Contains(result, "hello·world");
+		StringAssert.Contains(result, "[on red]");
+		StringAssert.Contains(result, "[/]");
 	}
 
 	[TestMethod]
@@ -350,6 +350,6 @@ public class WhitespaceVisualizerTests
 		string result = WhitespaceVisualizer.ProcessLineForMarkupDisplay(line, showWhitespace: false, highlightTrailing: false);
 
 		// Assert
-		Assert.IsTrue(result.Contains("[[brackets]]")); // Brackets should be escaped
+		StringAssert.Contains(result, "[[brackets]]", "Brackets should be escaped");
 	}
 }

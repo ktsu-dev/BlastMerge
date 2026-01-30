@@ -92,7 +92,7 @@ public class EdgeCaseTests : MockFileSystemTestBase
 		string targetFile = Path.Combine(targetDir, "target.txt");
 
 		// Ensure directory doesn't exist in mock file system
-		Assert.IsFalse(MockFileSystem.Directory.Exists(targetDir));
+		Assert.IsFalse(MockFileSystem.Directory.Exists(targetDir), "Target directory should not exist before sync");
 
 		// Act
 		_fileDifferAdapter.SyncFile(sourceFile, targetFile);

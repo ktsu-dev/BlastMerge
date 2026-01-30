@@ -65,7 +65,7 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 			File.WriteAllText(tempFile2, MockFileSystem.File.ReadAllText(_identicalFile));
 
 			bool result = DiffPlexDiffer.AreFilesIdentical(tempFile1, tempFile2);
-			Assert.IsTrue(result);
+			Assert.IsTrue(result, "Identical files should be detected as identical");
 		}
 		finally
 		{
@@ -81,7 +81,7 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	{
 		// Use mock file system directly since DiffPlexDiffer uses FileSystemProvider.Current
 		bool result = DiffPlexDiffer.AreFilesIdentical(_file1, _file2);
-		Assert.IsFalse(result);
+		Assert.IsFalse(result, "Different files should not be detected as identical");
 	}
 
 	/// <summary>
@@ -93,10 +93,10 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 		// Use mock file system directly since DiffPlexDiffer uses FileSystemProvider.Current
 		string diff = DiffPlexDiffer.GenerateUnifiedDiff(_file1, _file2);
 
-		Assert.IsFalse(string.IsNullOrEmpty(diff));
-		Assert.IsTrue(diff.Contains($"--- {_file1}"));
-		Assert.IsTrue(diff.Contains($"+++ {_file2}"));
-		Assert.IsTrue(diff.Contains("@@"));
+		Assert.IsFalse(string.IsNullOrEmpty(diff), "Unified diff should not be empty for different files");
+		Assert.IsTrue(diff.Contains($"--- {_file1}"), "Unified diff should contain source file header");
+		Assert.IsTrue(diff.Contains($"+++ {_file2}"), "Unified diff should contain target file header");
+		Assert.IsTrue(diff.Contains("@@"), "Unified diff should contain hunk headers");
 	}
 
 	/// <summary>
@@ -121,14 +121,14 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 		// Use mock file system directly since DiffPlexDiffer uses FileSystemProvider.Current
 		System.Collections.ObjectModel.Collection<ColoredDiffLine> coloredDiff = DiffPlexDiffer.GenerateColoredDiff(_file1, _file2);
 
-		Assert.IsTrue(coloredDiff.Count > 0);
+		Assert.IsTrue(coloredDiff.Count > 0, "Colored diff should contain at least one line");
 
 		// Should contain file headers
-		Assert.IsTrue(coloredDiff.Any(line => line.Color == DiffColor.FileHeader));
+		Assert.IsTrue(coloredDiff.Any(line => line.Color == DiffColor.FileHeader), "Colored diff should contain file header lines");
 
 		// Should contain additions and deletions
-		Assert.IsTrue(coloredDiff.Any(line => line.Color == DiffColor.Addition));
-		Assert.IsTrue(coloredDiff.Any(line => line.Color == DiffColor.Deletion));
+		Assert.IsTrue(coloredDiff.Any(line => line.Color == DiffColor.Addition), "Colored diff should contain addition lines");
+		Assert.IsTrue(coloredDiff.Any(line => line.Color == DiffColor.Deletion), "Colored diff should contain deletion lines");
 	}
 
 	/// <summary>
@@ -143,8 +143,8 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 		Assert.IsNotNull(sideBySide);
 		Assert.IsNotNull(sideBySide.OldText);
 		Assert.IsNotNull(sideBySide.NewText);
-		Assert.IsTrue(sideBySide.OldText.Lines.Count > 0);
-		Assert.IsTrue(sideBySide.NewText.Lines.Count > 0);
+		Assert.IsTrue(sideBySide.OldText.Lines.Count > 0, "Side-by-side diff should have old text lines");
+		Assert.IsTrue(sideBySide.NewText.Lines.Count > 0, "Side-by-side diff should have new text lines");
 	}
 
 	/// <summary>
@@ -156,13 +156,14 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 		// Use mock file system directly since DiffPlexDiffer uses FileSystemProvider.Current
 		System.Collections.ObjectModel.Collection<ColoredDiffLine> changeSummary = DiffPlexDiffer.GenerateChangeSummary(_file1, _file2);
 
-		Assert.IsTrue(changeSummary.Count > 0);
+		Assert.IsTrue(changeSummary.Count > 0, "Change summary should contain at least one line");
 
 		// Should not contain unchanged lines (default color)
 		List<ColoredDiffLine> unchangedLines = [.. changeSummary.Where(line => line.Color == DiffColor.Default)];
 		// File headers might have default color, but content should not
 		Assert.IsTrue(unchangedLines.Count == 0 || unchangedLines.All(line =>
-			line.Content.Contains(_file1) || line.Content.Contains(_file2) || string.IsNullOrEmpty(line.Content.Trim())));
+			line.Content.Contains(_file1) || line.Content.Contains(_file2) || string.IsNullOrEmpty(line.Content.Trim())),
+			"Change summary should only contain file headers or changes, not unchanged content lines");
 	}
 
 	/// <summary>
@@ -205,7 +206,7 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 
 		// Should identify as identical
 		bool areIdentical = DiffPlexDiffer.AreFilesIdentical(emptyFile1, emptyFile2);
-		Assert.IsTrue(areIdentical);
+		Assert.IsTrue(areIdentical, "Empty files should be detected as identical");
 	}
 
 	/// <summary>
@@ -226,6 +227,6 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 		Assert.IsNotNull(diff);
 
 		// DiffPlex should handle binary files as text and show differences
-		Assert.IsTrue(diff.Length > 0);
+		Assert.IsTrue(diff.Length > 0, "Binary file diff should produce output showing differences");
 	}
 }

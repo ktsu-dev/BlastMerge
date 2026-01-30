@@ -7,6 +7,7 @@ namespace ktsu.BlastMerge.Test;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using ktsu.BlastMerge.Services;
 using ktsu.BlastMerge.Test.Adapters;
@@ -112,9 +113,9 @@ public class FileHasherTests : MockFileSystemTestBase
 
 		// Assert
 		Assert.AreEqual(3, results.Count);
-		Assert.IsTrue(results.ContainsKey(_testFilePath1));
-		Assert.IsTrue(results.ContainsKey(_testFilePath2));
-		Assert.IsTrue(results.ContainsKey(_testFilePath3));
+		CollectionAssert.Contains(results.Keys.ToList(), _testFilePath1, "Results should contain hash for testFilePath1");
+		CollectionAssert.Contains(results.Keys.ToList(), _testFilePath2, "Results should contain hash for testFilePath2");
+		CollectionAssert.Contains(results.Keys.ToList(), _testFilePath3, "Results should contain hash for testFilePath3");
 		Assert.AreEqual(results[_testFilePath1], results[_testFilePath2]); // Same content
 		Assert.AreNotEqual(results[_testFilePath1], results[_testFilePath3]); // Different content
 	}

@@ -61,7 +61,7 @@ public class DiffPlexHelperTests : MockFileSystemTestBase
 		// Verify that FileSystemProvider.Current is using our mock file system
 		IFileSystem currentFileSystem = FileSystemProvider.Current;
 		Assert.IsNotNull(currentFileSystem);
-		Assert.IsTrue(currentFileSystem.GetType().Name.Contains("Mock"));
+		Assert.IsTrue(currentFileSystem.GetType().Name.Contains("Mock"), "FileSystemProvider.Current should be using a Mock file system");
 
 		// Verify that our test files exist in the mock file system
 		Assert.IsTrue(MockFileSystem.File.Exists(_file1Path), $"File1 should exist at {_file1Path}");
@@ -74,7 +74,7 @@ public class DiffPlexHelperTests : MockFileSystemTestBase
 
 		// Read content to verify it's correct
 		string content1 = currentFileSystem.File.ReadAllText(_file1Path);
-		Assert.IsTrue(content1.Contains("Line 1"), "File1 should contain expected content");
+		Assert.IsTrue(content1.Contains("Line 1", StringComparison.Ordinal), "File1 should contain expected content");
 	}
 
 	[TestMethod]
@@ -86,7 +86,7 @@ public class DiffPlexHelperTests : MockFileSystemTestBase
 		// Assert
 		Assert.IsNotNull(result);
 		Assert.IsNotNull(result.DiffBlocks);
-		Assert.IsTrue(result.DiffBlocks.Count > 0);
+		Assert.IsTrue(result.DiffBlocks.Count > 0, "DiffBlocks should contain at least one difference");
 	}
 
 	[TestMethod]
@@ -141,7 +141,7 @@ public class DiffPlexHelperTests : MockFileSystemTestBase
 		// Assert
 		Assert.IsNotNull(result);
 		Assert.IsNotNull(result.DiffBlocks);
-		Assert.IsTrue(result.DiffBlocks.Count > 0);
+		Assert.IsTrue(result.DiffBlocks.Count > 0, "DiffBlocks should contain at least one difference");
 	}
 
 	[TestMethod]
@@ -186,7 +186,7 @@ public class DiffPlexHelperTests : MockFileSystemTestBase
 			string.Join(Environment.NewLine, lines2));
 
 		// Assume there's at least one diff block
-		Assert.IsTrue(diffResult.DiffBlocks.Count > 0);
+		Assert.IsTrue(diffResult.DiffBlocks.Count > 0, "DiffBlocks should contain at least one difference for this test to proceed");
 		DiffPlex.Model.DiffBlock diffBlock = diffResult.DiffBlocks[0];
 
 		// Act
@@ -226,8 +226,8 @@ public class DiffPlexHelperTests : MockFileSystemTestBase
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.IsTrue(result.Contains("Old Line 2"));
-		Assert.IsFalse(result.Contains("New Line 2"));
+		Assert.IsTrue(result.Contains("Old Line 2", StringComparison.Ordinal), "Result should contain 'Old Line 2' when taking the left side");
+		Assert.IsFalse(result.Contains("New Line 2", StringComparison.Ordinal), "Result should not contain 'New Line 2' when taking the left side");
 	}
 
 	[TestMethod]
@@ -243,8 +243,8 @@ public class DiffPlexHelperTests : MockFileSystemTestBase
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.IsFalse(result.Contains("Old Line 2"));
-		Assert.IsTrue(result.Contains("New Line 2"));
+		Assert.IsFalse(result.Contains("Old Line 2", StringComparison.Ordinal), "Result should not contain 'Old Line 2' when taking the right side");
+		Assert.IsTrue(result.Contains("New Line 2", StringComparison.Ordinal), "Result should contain 'New Line 2' when taking the right side");
 	}
 
 	[TestMethod]
@@ -284,9 +284,9 @@ public class DiffPlexHelperTests : MockFileSystemTestBase
 
 		// Assert
 		Assert.IsNotNull(stats);
-		Assert.IsTrue(stats.Additions >= 0);
-		Assert.IsTrue(stats.Deletions >= 0);
-		Assert.IsTrue(stats.Modifications >= 0);
+		Assert.IsTrue(stats.Additions >= 0, "Additions count should be non-negative");
+		Assert.IsTrue(stats.Deletions >= 0, "Deletions count should be non-negative");
+		Assert.IsTrue(stats.Modifications >= 0, "Modifications count should be non-negative");
 	}
 
 	[TestMethod]

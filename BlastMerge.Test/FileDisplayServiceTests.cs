@@ -225,8 +225,8 @@ public class FileDisplayServiceTests : MockFileSystemTestBase
 
 		// Assert
 		// Both should resolve to their respective lib/file.txt after normalization
-		Assert.IsTrue(result1.EndsWith("lib/file.txt"));
-		Assert.IsTrue(result2.EndsWith("lib/file.txt"));
+		Assert.IsTrue(result1.EndsWith("lib/file.txt"), "Result 1 should end with 'lib/file.txt' after normalization");
+		Assert.IsTrue(result2.EndsWith("lib/file.txt"), "Result 2 should end with 'lib/file.txt' after normalization");
 		Assert.AreNotEqual(result1, result2); // Should still be distinguishable
 	}
 
@@ -313,7 +313,7 @@ public class FileDisplayServiceTests : MockFileSystemTestBase
 
 		// Assert
 		// Should handle Unix paths and return appropriate relative structure
-		Assert.IsTrue(result.Contains("file.txt"));
+		Assert.IsTrue(result.Contains("file.txt"), "Result should contain the filename 'file.txt'");
 	}
 
 	#endregion

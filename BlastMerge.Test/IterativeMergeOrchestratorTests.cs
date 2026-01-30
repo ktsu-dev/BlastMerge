@@ -138,9 +138,9 @@ public class IterativeMergeOrchestratorTests : MockFileSystemTestBase
 			fileGroups, MergeCallback, StatusCallback, ContinuationCallback);
 
 		// Assert
-		Assert.IsTrue(result.IsSuccessful);
-		Assert.IsTrue(mergeCallbackCalled);
-		Assert.IsTrue(statusCallbackCalled);
+		Assert.IsTrue(result.IsSuccessful, "Merge process should complete successfully");
+		Assert.IsTrue(mergeCallbackCalled, "Merge callback should have been invoked");
+		Assert.IsTrue(statusCallbackCalled, "Status callback should have been invoked");
 		Assert.AreEqual(1, result.TotalMergeOperations);
 		Assert.AreEqual(2, result.InitialFileGroups);
 		Assert.AreEqual(2, result.TotalFilesMerged);
@@ -170,7 +170,7 @@ public class IterativeMergeOrchestratorTests : MockFileSystemTestBase
 			fileGroups, MergeCallback, StatusCallback, ContinuationCallback);
 
 		// Assert
-		Assert.IsFalse(result.IsSuccessful);
+		Assert.IsFalse(result.IsSuccessful, "Merge process should not be successful when cancelled");
 		Assert.AreEqual("cancelled", result.OriginalFileName);
 		Assert.AreEqual(0, result.TotalMergeOperations);
 	}
@@ -234,7 +234,7 @@ public class IterativeMergeOrchestratorTests : MockFileSystemTestBase
 			fileGroups, MergeCallback, StatusCallback, ContinuationCallback);
 
 		// Assert
-		Assert.IsTrue(result.IsSuccessful);
+		Assert.IsTrue(result.IsSuccessful, "Merge process with single group should complete successfully");
 		Assert.IsFalse(mergeCallbackCalled, "Merge callback should not be called with single group");
 		Assert.AreEqual(0, result.TotalMergeOperations);
 		Assert.AreEqual(1, result.InitialFileGroups);
@@ -299,7 +299,7 @@ public class IterativeMergeOrchestratorTests : MockFileSystemTestBase
 			fileGroups, MergeCallback, StatusCallback, ContinuationCallback);
 
 		// Assert
-		Assert.IsTrue(result.IsSuccessful);
+		Assert.IsTrue(result.IsSuccessful, "Merge process with multiple files should complete successfully");
 
 		// Verify all files were updated with merged content
 		Assert.AreEqual("merged version", MockFileSystem.File.ReadAllText(file1a));

@@ -78,7 +78,7 @@ public class AppDataBatchManagerTests
 
 		// Assert
 		IReadOnlyCollection<string> batchNames = AppDataBatchManager.ListBatches();
-		Assert.IsTrue(batchNames.Contains("TestBatch"));
+		Assert.IsTrue(batchNames.Contains("TestBatch"), "Batch names should contain the saved batch 'TestBatch'");
 	}
 
 	[TestMethod]
@@ -99,8 +99,8 @@ public class AppDataBatchManagerTests
 		// Assert
 		Assert.IsNotNull(retrievedBatch);
 		Assert.AreEqual("TestBatch", retrievedBatch.Name);
-		Assert.IsTrue(retrievedBatch.FilePatterns.Contains("*.txt"));
-		Assert.IsTrue(retrievedBatch.FilePatterns.Contains("*.cs"));
+		Assert.IsTrue(retrievedBatch.FilePatterns.Contains("*.txt"), "Retrieved batch should contain file pattern '*.txt'");
+		Assert.IsTrue(retrievedBatch.FilePatterns.Contains("*.cs"), "Retrieved batch should contain file pattern '*.cs'");
 		Assert.AreEqual(true, retrievedBatch.SkipEmptyPatterns);
 	}
 
@@ -160,8 +160,8 @@ public class AppDataBatchManagerTests
 
 		// Assert
 		Assert.AreEqual(2, batchNames.Count);
-		Assert.IsTrue(batchNames.Contains("Batch1"));
-		Assert.IsTrue(batchNames.Contains("Batch2"));
+		Assert.IsTrue(batchNames.Contains("Batch1"), "Batch names should contain 'Batch1'");
+		Assert.IsTrue(batchNames.Contains("Batch2"), "Batch names should contain 'Batch2'");
 	}
 
 	[TestMethod]
@@ -217,14 +217,14 @@ public class AppDataBatchManagerTests
 		AppDataBatchManager.SaveBatch(batch);
 
 		// Verify it exists first
-		Assert.IsTrue(AppDataBatchManager.ListBatches().Contains("TestBatch"));
+		Assert.IsTrue(AppDataBatchManager.ListBatches().Contains("TestBatch"), "Batch 'TestBatch' should exist before deletion");
 
 		// Act
 		bool result = AppDataBatchManager.DeleteBatch("TestBatch");
 
 		// Assert
-		Assert.IsTrue(result);
-		Assert.IsFalse(AppDataBatchManager.ListBatches().Contains("TestBatch"));
+		Assert.IsTrue(result, "DeleteBatch should return true when deleting an existing batch");
+		Assert.IsFalse(AppDataBatchManager.ListBatches().Contains("TestBatch"), "Batch 'TestBatch' should not exist after deletion");
 	}
 
 	[TestMethod]
@@ -234,7 +234,7 @@ public class AppDataBatchManagerTests
 		bool result = AppDataBatchManager.DeleteBatch("NonExistentBatch");
 
 		// Assert
-		Assert.IsFalse(result);
+		Assert.IsFalse(result, "DeleteBatch should return false when attempting to delete a non-existent batch");
 	}
 
 	[TestMethod]
@@ -319,7 +319,7 @@ public class AppDataBatchManagerTests
 		BatchConfiguration? retrievedBatch = AppDataBatchManager.LoadBatch("TestBatch");
 		Assert.IsNotNull(retrievedBatch);
 		Assert.AreEqual(2, retrievedBatch.FilePatterns.Count);
-		Assert.IsTrue(retrievedBatch.FilePatterns.Contains("*.cs"));
+		Assert.IsTrue(retrievedBatch.FilePatterns.Contains("*.cs"), "Updated batch should contain the new file pattern '*.cs'");
 		Assert.AreEqual(true, retrievedBatch.SkipEmptyPatterns);
 	}
 
@@ -342,7 +342,7 @@ public class AppDataBatchManagerTests
 		Assert.IsNotNull(retrievedBatch);
 		Assert.AreEqual("ComplexBatch", retrievedBatch.Name);
 		Assert.AreEqual(4, retrievedBatch.FilePatterns.Count);
-		Assert.IsTrue(retrievedBatch.FilePatterns.Contains("**/*.config"));
+		Assert.IsTrue(retrievedBatch.FilePatterns.Contains("**/*.config"), "Complex batch should contain the glob pattern '**/*.config'");
 		Assert.AreEqual(true, retrievedBatch.SkipEmptyPatterns);
 	}
 

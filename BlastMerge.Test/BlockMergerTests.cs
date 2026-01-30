@@ -80,8 +80,8 @@ public class BlockMergerTests
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.IsTrue(result.MergedLines.Contains("modified_in_v1"));
-		Assert.IsFalse(result.MergedLines.Contains("modified_in_v2"));
+		CollectionAssert.Contains(result.MergedLines.ToList(), "modified_in_v1");
+		CollectionAssert.DoesNotContain(result.MergedLines.ToList(), "modified_in_v2");
 	}
 
 	[TestMethod]
@@ -97,8 +97,8 @@ public class BlockMergerTests
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.IsFalse(result.MergedLines.Contains("modified_in_v1"));
-		Assert.IsTrue(result.MergedLines.Contains("modified_in_v2"));
+		CollectionAssert.DoesNotContain(result.MergedLines.ToList(), "modified_in_v1");
+		CollectionAssert.Contains(result.MergedLines.ToList(), "modified_in_v2");
 	}
 
 	[TestMethod]
@@ -114,8 +114,8 @@ public class BlockMergerTests
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.IsTrue(result.MergedLines.Contains("modified_in_v1"));
-		Assert.IsTrue(result.MergedLines.Contains("modified_in_v2"));
+		CollectionAssert.Contains(result.MergedLines.ToList(), "modified_in_v1");
+		CollectionAssert.Contains(result.MergedLines.ToList(), "modified_in_v2");
 	}
 
 	[TestMethod]
@@ -131,11 +131,11 @@ public class BlockMergerTests
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.IsFalse(result.MergedLines.Contains("modified_in_v1"));
-		Assert.IsFalse(result.MergedLines.Contains("modified_in_v2"));
+		CollectionAssert.DoesNotContain(result.MergedLines.ToList(), "modified_in_v1");
+		CollectionAssert.DoesNotContain(result.MergedLines.ToList(), "modified_in_v2");
 		// Should still contain unchanged lines
-		Assert.IsTrue(result.MergedLines.Contains("line1"));
-		Assert.IsTrue(result.MergedLines.Contains("line3"));
+		CollectionAssert.Contains(result.MergedLines.ToList(), "line1");
+		CollectionAssert.Contains(result.MergedLines.ToList(), "line3");
 	}
 
 	[TestMethod]
@@ -167,8 +167,8 @@ public class BlockMergerTests
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.IsTrue(result.MergedLines.Contains("line1"));
-		Assert.IsTrue(result.MergedLines.Contains("line2"));
+		CollectionAssert.Contains(result.MergedLines.ToList(), "line1");
+		CollectionAssert.Contains(result.MergedLines.ToList(), "line2");
 	}
 
 	[TestMethod]
@@ -210,9 +210,9 @@ public class BlockMergerTests
 		// Assert
 		Assert.IsNotNull(result);
 		// Should contain unchanged lines
-		Assert.IsTrue(result.MergedLines.Contains("line1"));
-		Assert.IsTrue(result.MergedLines.Contains("line3"));
-		Assert.IsTrue(result.MergedLines.Contains("line5"));
+		CollectionAssert.Contains(result.MergedLines.ToList(), "line1");
+		CollectionAssert.Contains(result.MergedLines.ToList(), "line3");
+		CollectionAssert.Contains(result.MergedLines.ToList(), "line5");
 	}
 
 	[TestMethod]
@@ -228,9 +228,9 @@ public class BlockMergerTests
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.IsTrue(result.MergedLines.Contains("line1"));
-		Assert.IsTrue(result.MergedLines.Contains("added_line"));
-		Assert.IsTrue(result.MergedLines.Contains("line2"));
+		CollectionAssert.Contains(result.MergedLines.ToList(), "line1");
+		CollectionAssert.Contains(result.MergedLines.ToList(), "added_line");
+		CollectionAssert.Contains(result.MergedLines.ToList(), "line2");
 	}
 
 	[TestMethod]
@@ -246,9 +246,9 @@ public class BlockMergerTests
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.IsTrue(result.MergedLines.Contains("line1"));
-		Assert.IsTrue(result.MergedLines.Contains("deleted_line"));
-		Assert.IsTrue(result.MergedLines.Contains("line2"));
+		CollectionAssert.Contains(result.MergedLines.ToList(), "line1");
+		CollectionAssert.Contains(result.MergedLines.ToList(), "deleted_line");
+		CollectionAssert.Contains(result.MergedLines.ToList(), "line2");
 	}
 
 	[TestMethod]
@@ -264,15 +264,15 @@ public class BlockMergerTests
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.IsTrue(result.MergedLines.Contains("start"));
-		Assert.IsTrue(result.MergedLines.Contains("middle"));
-		Assert.IsTrue(result.MergedLines.Contains("end"));
+		CollectionAssert.Contains(result.MergedLines.ToList(), "start");
+		CollectionAssert.Contains(result.MergedLines.ToList(), "middle");
+		CollectionAssert.Contains(result.MergedLines.ToList(), "end");
 
 		// Should contain both old and new content
-		Assert.IsTrue(result.MergedLines.Contains("old_content"));
-		Assert.IsTrue(result.MergedLines.Contains("new_content"));
-		Assert.IsTrue(result.MergedLines.Contains("more_old"));
-		Assert.IsTrue(result.MergedLines.Contains("more_new"));
+		CollectionAssert.Contains(result.MergedLines.ToList(), "old_content");
+		CollectionAssert.Contains(result.MergedLines.ToList(), "new_content");
+		CollectionAssert.Contains(result.MergedLines.ToList(), "more_old");
+		CollectionAssert.Contains(result.MergedLines.ToList(), "more_new");
 	}
 
 	[TestMethod]

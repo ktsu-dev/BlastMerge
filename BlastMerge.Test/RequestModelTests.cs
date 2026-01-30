@@ -30,7 +30,7 @@ public class RequestModelTests
 		bool isValid = request.IsValid();
 
 		// Assert
-		Assert.IsTrue(isValid);
+		Assert.IsTrue(isValid, "Request with valid directory and filename should be valid");
 		Assert.AreEqual("C:\\test\\directory", request.Directory);
 		Assert.AreEqual("*.txt", request.FileName);
 	}
@@ -48,7 +48,7 @@ public class RequestModelTests
 		bool isValid = request.IsValid();
 
 		// Assert
-		Assert.IsFalse(isValid);
+		Assert.IsFalse(isValid, "Request with null directory should be invalid");
 	}
 
 	/// <summary>
@@ -64,7 +64,7 @@ public class RequestModelTests
 		bool isValid = request.IsValid();
 
 		// Assert
-		Assert.IsFalse(isValid);
+		Assert.IsFalse(isValid, "Request with empty directory should be invalid");
 	}
 
 	/// <summary>
@@ -80,7 +80,7 @@ public class RequestModelTests
 		bool isValid = request.IsValid();
 
 		// Assert
-		Assert.IsFalse(isValid);
+		Assert.IsFalse(isValid, "Request with whitespace directory should be invalid");
 	}
 
 	/// <summary>
@@ -96,7 +96,7 @@ public class RequestModelTests
 		bool isValid = request.IsValid();
 
 		// Assert
-		Assert.IsFalse(isValid);
+		Assert.IsFalse(isValid, "Request with null filename should be invalid");
 	}
 
 	/// <summary>
@@ -112,7 +112,7 @@ public class RequestModelTests
 		bool isValid = request.IsValid();
 
 		// Assert
-		Assert.IsFalse(isValid);
+		Assert.IsFalse(isValid, "Request with empty filename should be invalid");
 	}
 
 	/// <summary>
@@ -128,7 +128,7 @@ public class RequestModelTests
 		bool isValid = request.IsValid();
 
 		// Assert
-		Assert.IsFalse(isValid);
+		Assert.IsFalse(isValid, "Request with whitespace filename should be invalid");
 	}
 
 	/// <summary>
@@ -165,7 +165,7 @@ public class RequestModelTests
 		bool isValid = request.IsValid();
 
 		// Assert
-		Assert.IsTrue(isValid);
+		Assert.IsTrue(isValid, "Request with valid directory and batch name should be valid");
 		Assert.AreEqual("C:\\test\\directory", request.Directory);
 		Assert.AreEqual("TestBatch", request.BatchName);
 	}
@@ -183,7 +183,7 @@ public class RequestModelTests
 		bool isValid = request.IsValid();
 
 		// Assert
-		Assert.IsFalse(isValid);
+		Assert.IsFalse(isValid, "Request with null directory should be invalid");
 	}
 
 	/// <summary>
@@ -199,7 +199,7 @@ public class RequestModelTests
 		bool isValid = request.IsValid();
 
 		// Assert
-		Assert.IsFalse(isValid);
+		Assert.IsFalse(isValid, "Request with empty directory should be invalid");
 	}
 
 	/// <summary>
@@ -215,7 +215,7 @@ public class RequestModelTests
 		bool isValid = request.IsValid();
 
 		// Assert
-		Assert.IsFalse(isValid);
+		Assert.IsFalse(isValid, "Request with whitespace directory should be invalid");
 	}
 
 	/// <summary>
@@ -231,7 +231,7 @@ public class RequestModelTests
 		bool isValid = request.IsValid();
 
 		// Assert
-		Assert.IsFalse(isValid);
+		Assert.IsFalse(isValid, "Request with null batch name should be invalid");
 	}
 
 	/// <summary>
@@ -247,7 +247,7 @@ public class RequestModelTests
 		bool isValid = request.IsValid();
 
 		// Assert
-		Assert.IsFalse(isValid);
+		Assert.IsFalse(isValid, "Request with empty batch name should be invalid");
 	}
 
 	/// <summary>
@@ -263,7 +263,7 @@ public class RequestModelTests
 		bool isValid = request.IsValid();
 
 		// Assert
-		Assert.IsFalse(isValid);
+		Assert.IsFalse(isValid, "Request with whitespace batch name should be invalid");
 	}
 
 	/// <summary>
@@ -305,8 +305,8 @@ public class RequestModelTests
 		Assert.AreEqual(0, config.SearchPaths.Count);
 		Assert.IsNotNull(config.PathExclusionPatterns);
 		Assert.AreEqual(0, config.PathExclusionPatterns.Count);
-		Assert.IsTrue(config.CreatedDate <= DateTime.UtcNow);
-		Assert.IsTrue(config.LastModified <= DateTime.UtcNow);
+		Assert.IsTrue(config.CreatedDate <= DateTime.UtcNow, "CreatedDate should be less than or equal to current UTC time");
+		Assert.IsTrue(config.LastModified <= DateTime.UtcNow, "LastModified should be less than or equal to current UTC time");
 	}
 
 	/// <summary>
@@ -338,16 +338,16 @@ public class RequestModelTests
 		Assert.AreEqual("Test batch configuration", config.Description);
 		Assert.AreSame(patterns, config.FilePatterns);
 		Assert.AreEqual(2, config.FilePatterns.Count);
-		Assert.IsTrue(config.FilePatterns.Contains("*.txt"));
-		Assert.IsTrue(config.FilePatterns.Contains("*.cs"));
+		CollectionAssert.Contains(config.FilePatterns, "*.txt");
+		CollectionAssert.Contains(config.FilePatterns, "*.cs");
 		Assert.AreSame(searchPaths, config.SearchPaths);
 		Assert.AreEqual(2, config.SearchPaths.Count);
-		Assert.IsTrue(config.SearchPaths.Contains("C:\\src"));
-		Assert.IsTrue(config.SearchPaths.Contains("C:\\tests"));
+		CollectionAssert.Contains(config.SearchPaths, "C:\\src");
+		CollectionAssert.Contains(config.SearchPaths, "C:\\tests");
 		Assert.AreSame(exclusions, config.PathExclusionPatterns);
 		Assert.AreEqual(2, config.PathExclusionPatterns.Count);
-		Assert.IsTrue(config.PathExclusionPatterns.Contains("*\\bin\\*"));
-		Assert.IsTrue(config.PathExclusionPatterns.Contains("*\\obj\\*"));
+		CollectionAssert.Contains(config.PathExclusionPatterns, "*\\bin\\*");
+		CollectionAssert.Contains(config.PathExclusionPatterns, "*\\obj\\*");
 		Assert.AreEqual(testDate, config.CreatedDate);
 		Assert.AreEqual(testDate, config.LastModified);
 	}

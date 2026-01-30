@@ -30,8 +30,8 @@ public class BatchProcessorTests : MockFileSystemTestBase
 		Assert.AreEqual(name, result.Name);
 		Assert.AreEqual(description, result.Description);
 		CollectionAssert.AreEqual(patterns, result.FilePatterns.ToArray());
-		Assert.IsFalse(result.PromptBeforeEachPattern);
-		Assert.IsTrue(result.SkipEmptyPatterns);
+		Assert.IsFalse(result.PromptBeforeEachPattern, "PromptBeforeEachPattern should be false by default");
+		Assert.IsTrue(result.SkipEmptyPatterns, "SkipEmptyPatterns should be true by default");
 	}
 
 	[TestMethod]
@@ -70,8 +70,8 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			() => true);
 
 		// Assert
-		Assert.IsFalse(result.Success);
-		Assert.IsTrue(result.Summary.Contains("Directory does not exist"));
+		Assert.IsFalse(result.Success, "Batch processing should fail for non-existent directory");
+		Assert.IsTrue(result.Summary.Contains("Directory does not exist"), "Summary should indicate directory does not exist");
 	}
 
 	[TestMethod]
@@ -131,7 +131,7 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			MockFileSystem);
 
 		// Assert
-		Assert.IsTrue(result.Success);
+		Assert.IsTrue(result.Success, "Batch processing should succeed for valid directory with matching files");
 		Assert.AreEqual("Test Batch", result.BatchName);
 		Assert.AreEqual(1, result.TotalPatternsProcessed);
 		Assert.AreEqual(1, result.SuccessfulPatterns);
@@ -170,7 +170,7 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			MockFileSystem);
 
 		// Assert
-		Assert.IsFalse(result.Success); // Should fail when SkipEmptyPatterns is false
+		Assert.IsFalse(result.Success, "Batch should fail when SkipEmptyPatterns is false and no files match"); // Should fail when SkipEmptyPatterns is false
 		Assert.AreEqual(1, result.TotalPatternsProcessed);
 		Assert.AreEqual(0, result.SuccessfulPatterns);
 	}
@@ -200,7 +200,7 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			MockFileSystem);
 
 		// Assert
-		Assert.IsTrue(result.Success); // Should succeed when SkipEmptyPatterns is true
+		Assert.IsTrue(result.Success, "Batch should succeed when SkipEmptyPatterns is true and no files match"); // Should succeed when SkipEmptyPatterns is true
 		Assert.AreEqual(1, result.TotalPatternsProcessed);
 		Assert.AreEqual(1, result.SuccessfulPatterns);
 		Assert.AreEqual("No files found (skipped)", result.PatternResults.First().Message);
@@ -233,7 +233,7 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			MockFileSystem);
 
 		// Assert
-		Assert.IsTrue(result.Success);
+		Assert.IsTrue(result.Success, "Single pattern processing should succeed with multiple matching files");
 		Assert.AreEqual("*.txt", result.Pattern);
 		Assert.AreEqual(2, result.FilesFound);
 		Assert.AreEqual("Merge completed successfully", result.Message);
@@ -261,8 +261,8 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			fileSystem: MockFileSystem);
 
 		// Assert
-		Assert.IsTrue(result.Success);
-		Assert.IsTrue(result.Message.Contains("Only one file found"));
+		Assert.IsTrue(result.Success, "Processing should succeed when only one file matches pattern");
+		Assert.IsTrue(result.Message.Contains("Only one file found"), "Message should indicate only one file was found");
 		Assert.AreEqual(1, result.FilesFound);
 	}
 
@@ -282,8 +282,8 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			fileSystem: MockFileSystem);
 
 		// Assert
-		Assert.IsFalse(result.Success);
-		Assert.IsTrue(result.Message.Contains("No files found"));
+		Assert.IsFalse(result.Success, "Processing should fail when no files match pattern");
+		Assert.IsTrue(result.Message.Contains("No files found"), "Message should indicate no files were found");
 		Assert.AreEqual(0, result.FilesFound);
 	}
 
@@ -392,7 +392,7 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			fileSystem: MockFileSystem);
 
 		// Assert
-		Assert.IsTrue(result.Success);
+		Assert.IsTrue(result.Success, "Processing should succeed when files are found in specified search paths");
 		Assert.AreEqual(2, result.FilesFound);
 	}
 
@@ -478,7 +478,7 @@ public class BatchProcessorTests : MockFileSystemTestBase
 		Assert.AreEqual("*.cs", promptedPatterns[1]);
 		Assert.AreEqual(2, result.PatternResults.Count);
 		// The second pattern (*.cs) should be skipped, but since there's only one file, it gets "Only one file found" message
-		Assert.IsTrue(result.PatternResults[1].Message.Contains("Only one file found") || result.PatternResults[1].Message.Contains("Skipped by user"));
+		Assert.IsTrue(result.PatternResults[1].Message.Contains("Only one file found") || result.PatternResults[1].Message.Contains("Skipped by user"), "Second pattern should report 'Only one file found' or 'Skipped by user'");
 	}
 
 	[TestMethod]
@@ -508,11 +508,11 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			MockFileSystem);
 
 		// Assert
-		Assert.IsTrue(result.Success);
+		Assert.IsTrue(result.Success, "Batch should succeed when all patterns have matching files");
 		Assert.AreEqual(2, result.TotalPatternsProcessed);
 		Assert.AreEqual(2, result.SuccessfulPatterns);
 		Assert.AreEqual(2, result.PatternResults.Count);
-		Assert.IsTrue(result.Summary.Contains("2/2 patterns"));
+		Assert.IsTrue(result.Summary.Contains("2/2 patterns"), "Summary should indicate all patterns were processed successfully");
 	}
 
 	[TestMethod]
@@ -542,11 +542,11 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			MockFileSystem);
 
 		// Assert
-		Assert.IsFalse(result.Success);
+		Assert.IsFalse(result.Success, "Batch should fail when some patterns have no matching files and SkipEmptyPatterns is false");
 		Assert.AreEqual(2, result.TotalPatternsProcessed);
 		Assert.AreEqual(1, result.SuccessfulPatterns);
-		Assert.IsTrue(result.Summary.Contains("1 failed patterns"));
-		Assert.IsTrue(result.Summary.Contains("1/2 patterns"));
+		Assert.IsTrue(result.Summary.Contains("1 failed patterns"), "Summary should indicate one pattern failed");
+		Assert.IsTrue(result.Summary.Contains("1/2 patterns"), "Summary should show partial pattern success ratio");
 	}
 
 	[TestMethod]
@@ -568,8 +568,8 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			fileSystem: MockFileSystem);
 
 		// Assert
-		Assert.IsTrue(result.Success);
-		Assert.IsTrue(result.Message.Contains("All files are identical"));
+		Assert.IsTrue(result.Success, "Processing should succeed when all files are identical");
+		Assert.IsTrue(result.Message.Contains("All files are identical"), "Message should indicate all files are identical");
 		Assert.AreEqual(3, result.FilesFound);
 	}
 
@@ -594,7 +594,7 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			MockFileSystem);
 
 		// Assert
-		Assert.IsTrue(result.Success);
+		Assert.IsTrue(result.Success, "Processing with progress callback should succeed");
 		// Progress messages may not be generated for simple patterns, so just check the result is successful
 		// Assert.IsTrue(progressMessages.Count > 0, "Should have received progress messages");
 	}
@@ -625,7 +625,7 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			MockFileSystem);
 
 		// Assert
-		Assert.IsTrue(result.Success);
+		Assert.IsTrue(result.Success, "Processing should succeed when exclusion patterns are applied");
 		Assert.AreEqual(2, result.FilesFound); // Should exclude the file in bin directory
 	}
 
@@ -657,7 +657,7 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			MockFileSystem);
 
 		// Assert
-		Assert.IsTrue(result.Success);
+		Assert.IsTrue(result.Success, "Processing should succeed when searching specified paths");
 		Assert.AreEqual(2, result.FilesFound); // Should find files in search paths only
 	}
 
@@ -689,7 +689,7 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			MockFileSystem);
 
 		// Assert
-		Assert.IsTrue(result.Success);
+		Assert.IsTrue(result.Success, "Batch processing with discrete phases should succeed");
 		Assert.IsTrue(progressMessages.Count > 0, "Should have received progress messages");
 		Assert.IsTrue(progressMessages.Any(m => m.Contains("PHASE 1")), "Should report Phase 1");
 		Assert.IsTrue(progressMessages.Any(m => m.Contains("PHASE 2") || m.Contains("Computing file hashes")), "Should report Phase 2");
@@ -722,8 +722,8 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			MockFileSystem);
 
 		// Assert
-		Assert.IsTrue(result.Success); // Should succeed but with no work done
-		Assert.IsTrue(result.Summary.Contains("No files found"));
+		Assert.IsTrue(result.Success, "Batch should succeed with no work done when no files match"); // Should succeed but with no work done
+		Assert.IsTrue(result.Summary.Contains("No files found"), "Summary should indicate no files were found");
 	}
 
 	[TestMethod]
@@ -752,9 +752,9 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			MockFileSystem);
 
 		// Assert
-		Assert.IsTrue(result.Success);
+		Assert.IsTrue(result.Success, "Batch should succeed with custom parallelism setting");
 		// The discrete phases method creates pattern results differently, so check the overall success
-		Assert.IsTrue(result.TotalPatternsProcessed >= 1);
+		Assert.IsTrue(result.TotalPatternsProcessed >= 1, "At least one pattern should be processed");
 	}
 
 	[TestMethod]
@@ -775,7 +775,7 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			fileSystem: MockFileSystem);
 
 		// Assert
-		Assert.IsFalse(result.Success);
+		Assert.IsFalse(result.Success, "Processing should fail when merge callback returns null (cancellation)");
 		Assert.AreEqual(2, result.FilesFound);
 	}
 
@@ -808,7 +808,7 @@ public class BatchProcessorTests : MockFileSystemTestBase
 			fileSystem: MockFileSystem);
 
 		// Assert
-		Assert.IsFalse(result.Success); // Should fail due to incomplete processing
+		Assert.IsFalse(result.Success, "Processing should fail when continuation callback returns false"); // Should fail due to incomplete processing
 		Assert.AreEqual(3, result.FilesFound);
 	}
 

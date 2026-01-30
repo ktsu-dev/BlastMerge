@@ -63,13 +63,13 @@ public class IntegrationTests : MockFileSystemTestBase
 		FileGroup? largerGroup = groups.FirstOrDefault(g => g.FilePaths.Count > 1);
 		Assert.IsNotNull(largerGroup, "Should have a group with multiple files");
 		Assert.AreEqual(2, largerGroup.FilePaths.Count, "Should have 2 identical files");
-		Assert.IsTrue(largerGroup.FilePaths.Any(p => p.Contains("repo1")), "Should include repo1 file");
-		Assert.IsTrue(largerGroup.FilePaths.Any(p => p.Contains("repo3")), "Should include repo3 file");
+		Assert.IsTrue(largerGroup.FilePaths.Any(p => p.Contains("repo1", StringComparison.Ordinal)), "Should include repo1 file");
+		Assert.IsTrue(largerGroup.FilePaths.Any(p => p.Contains("repo3", StringComparison.Ordinal)), "Should include repo3 file");
 
 		// Verify one group has 1 file (repo2 is different)
 		FileGroup? singleGroup = groups.FirstOrDefault(g => g.FilePaths.Count == 1);
 		Assert.IsNotNull(singleGroup, "Should have a group with single file");
-		Assert.IsTrue(singleGroup.FilePaths.First().Contains("repo2"), "Should be the repo2 file");
+		StringAssert.Contains(singleGroup.FilePaths.First(), "repo2", "Should be the repo2 file");
 	}
 
 	/// <summary>
@@ -110,10 +110,10 @@ public class IntegrationTests : MockFileSystemTestBase
 
 		// Assert
 		Assert.IsTrue(differences.Count > 0, "Should find differences between the files");
-		Assert.IsTrue(gitStyleDiff.Contains("project1"), "Diff should contain content from first file");
-		Assert.IsTrue(gitStyleDiff.Contains("project2"), "Diff should contain content from second file");
-		Assert.IsTrue(gitStyleDiff.Contains("true"), "Diff should show debug:true");
-		Assert.IsTrue(gitStyleDiff.Contains("false"), "Diff should show debug:false");
+		StringAssert.Contains(gitStyleDiff, "project1", "Diff should contain content from first file");
+		StringAssert.Contains(gitStyleDiff, "project2", "Diff should contain content from second file");
+		StringAssert.Contains(gitStyleDiff, "true", "Diff should show debug:true");
+		StringAssert.Contains(gitStyleDiff, "false", "Diff should show debug:false");
 	}
 
 	/// <summary>
@@ -134,9 +134,9 @@ public class IntegrationTests : MockFileSystemTestBase
 
 		// Assert
 		Assert.AreEqual(3, fileContents.Count, "Should read all 3 files");
-		Assert.IsTrue(fileContents[filesToRead[0]].Contains("# Project"), "README should contain header");
-		Assert.IsTrue(fileContents[filesToRead[1]].Contains("MIT License"), "LICENSE should contain license text");
-		Assert.IsTrue(fileContents[filesToRead[2]].Contains("Hello World"), "Main.cs should contain hello world");
+		StringAssert.Contains(fileContents[filesToRead[0]], "# Project", "README should contain header");
+		StringAssert.Contains(fileContents[filesToRead[1]], "MIT License", "LICENSE should contain license text");
+		StringAssert.Contains(fileContents[filesToRead[2]], "Hello World", "Main.cs should contain hello world");
 	}
 
 	/// <summary>
@@ -159,7 +159,7 @@ public class IntegrationTests : MockFileSystemTestBase
 		Assert.AreEqual(targetFile, results.First().target, "Should return correct target");
 
 		// Verify file was actually copied
-		Assert.IsTrue(MockFileSystem.File.Exists(targetFile), "Target file should exist");
+		Assert.IsTrue(MockFileSystem.File.Exists(targetFile), "Target file should exist after copy");
 		string originalContent = MockFileSystem.File.ReadAllText(sourceFile);
 		string copiedContent = MockFileSystem.File.ReadAllText(targetFile);
 		Assert.AreEqual(originalContent, copiedContent, "Copied content should match original");
@@ -188,8 +188,8 @@ public class IntegrationTests : MockFileSystemTestBase
 		bool hasGroupWithTwoFiles = groups.Any(g => g.FilePaths.Count == 2);
 		bool hasGroupWithOneFile = groups.Any(g => g.FilePaths.Count == 1);
 
-		Assert.IsTrue(hasGroupWithTwoFiles, "Should have a group with 2 files");
-		Assert.IsTrue(hasGroupWithOneFile, "Should have a group with 1 file");
+		Assert.IsTrue(hasGroupWithTwoFiles, "Should have a group with 2 identical files");
+		Assert.IsTrue(hasGroupWithOneFile, "Should have a group with 1 unique file");
 	}
 
 	/// <summary>
@@ -237,7 +237,7 @@ public class IntegrationTests : MockFileSystemTestBase
 		stopwatch.Stop();
 
 		// Assert
-		Assert.IsTrue(groups.Count > 0, "Should create groups");
+		Assert.IsTrue(groups.Count > 0, "Should create at least one group from the files");
 		Assert.IsTrue(stopwatch.ElapsedMilliseconds < 10000, $"Should complete within 10 seconds, took {stopwatch.ElapsedMilliseconds}ms");
 
 		// Verify logical correctness

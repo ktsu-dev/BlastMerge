@@ -37,8 +37,8 @@ public class FileDifferPathTests : MockFileSystemTestBase
 	{
 		// Since we don't have directory comparison in our adapter yet,
 		// let's test individual file operations
-		Assert.IsTrue(MockFileSystem.Directory.Exists(_emptyDir));
-		Assert.IsTrue(MockFileSystem.Directory.Exists(_dir2));
+		Assert.IsTrue(MockFileSystem.Directory.Exists(_emptyDir), "Empty directory should exist");
+		Assert.IsTrue(MockFileSystem.Directory.Exists(_dir2), "Directory 2 should exist");
 
 		// Verify empty directory has no files
 		string[] emptyDirFiles = MockFileSystem.Directory.GetFiles(_emptyDir, "*.txt");

@@ -166,7 +166,7 @@ public class ApplicationServiceTests : MockFileSystemTestBase
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.IsTrue(result.Count > 0);
+		Assert.IsTrue(result.Count > 0, "Result should contain at least one file group");
 
 		// Each file should be in its own group since they have different filenames
 		// (GroupFilesByFilenameAndHash groups by filename first, then by content)

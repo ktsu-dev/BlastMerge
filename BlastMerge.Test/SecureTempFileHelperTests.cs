@@ -31,8 +31,8 @@ public class SecureTempFileHelperTests : MockFileSystemTestBase
 		string tempFile = SecureTempFileHelper.CreateTempFile();
 
 		// Assert
-		Assert.IsTrue(MockFileSystem.File.Exists(tempFile));
-		Assert.IsTrue(tempFile.StartsWith(@"C:\temp"));
+		Assert.IsTrue(MockFileSystem.File.Exists(tempFile), "Temp file should exist after creation");
+		StringAssert.StartsWith(tempFile, @"C:\temp", "Temp file should be in temp directory");
 	}
 
 	[TestMethod]
@@ -45,9 +45,9 @@ public class SecureTempFileHelperTests : MockFileSystemTestBase
 		string tempFile = SecureTempFileHelper.CreateTempFile(extension);
 
 		// Assert
-		Assert.IsTrue(MockFileSystem.File.Exists(tempFile));
-		Assert.IsTrue(tempFile.EndsWith(extension));
-		Assert.IsTrue(tempFile.StartsWith(@"C:\temp"));
+		Assert.IsTrue(MockFileSystem.File.Exists(tempFile), "Temp file should exist after creation");
+		StringAssert.EndsWith(tempFile, extension, "Temp file should have the specified extension");
+		StringAssert.StartsWith(tempFile, @"C:\temp", "Temp file should be in temp directory");
 	}
 
 	[TestMethod]
@@ -59,8 +59,8 @@ public class SecureTempFileHelperTests : MockFileSystemTestBase
 
 		// Assert
 		Assert.AreNotEqual(tempFile1, tempFile2);
-		Assert.IsTrue(MockFileSystem.File.Exists(tempFile1));
-		Assert.IsTrue(MockFileSystem.File.Exists(tempFile2));
+		Assert.IsTrue(MockFileSystem.File.Exists(tempFile1), "First temp file should exist");
+		Assert.IsTrue(MockFileSystem.File.Exists(tempFile2), "Second temp file should exist");
 
 		// Cleanup
 		SecureTempFileHelper.SafeDeleteTempFiles(MockFileSystem, tempFile1, tempFile2);
@@ -73,8 +73,8 @@ public class SecureTempFileHelperTests : MockFileSystemTestBase
 		string tempDir = SecureTempFileHelper.CreateTempDirectory();
 
 		// Assert
-		Assert.IsTrue(MockFileSystem.Directory.Exists(tempDir));
-		Assert.IsTrue(tempDir.StartsWith(@"C:\temp"));
+		Assert.IsTrue(MockFileSystem.Directory.Exists(tempDir), "Temp directory should exist after creation");
+		StringAssert.StartsWith(tempDir, @"C:\temp", "Temp directory should be in temp directory");
 	}
 
 	[TestMethod]
@@ -86,8 +86,8 @@ public class SecureTempFileHelperTests : MockFileSystemTestBase
 
 		// Assert
 		Assert.AreNotEqual(tempDir1, tempDir2);
-		Assert.IsTrue(MockFileSystem.Directory.Exists(tempDir1));
-		Assert.IsTrue(MockFileSystem.Directory.Exists(tempDir2));
+		Assert.IsTrue(MockFileSystem.Directory.Exists(tempDir1), "First temp directory should exist");
+		Assert.IsTrue(MockFileSystem.Directory.Exists(tempDir2), "Second temp directory should exist");
 	}
 
 	[TestMethod]
@@ -95,13 +95,13 @@ public class SecureTempFileHelperTests : MockFileSystemTestBase
 	{
 		// Arrange
 		string tempFile = SecureTempFileHelper.CreateTempFile();
-		Assert.IsTrue(MockFileSystem.File.Exists(tempFile));
+		Assert.IsTrue(MockFileSystem.File.Exists(tempFile), "Temp file should exist before deletion");
 
 		// Act
 		SecureTempFileHelper.SafeDeleteTempFiles(MockFileSystem, tempFile);
 
 		// Assert
-		Assert.IsFalse(MockFileSystem.File.Exists(tempFile));
+		Assert.IsFalse(MockFileSystem.File.Exists(tempFile), "Temp file should not exist after deletion");
 	}
 
 	[TestMethod]
@@ -120,15 +120,15 @@ public class SecureTempFileHelperTests : MockFileSystemTestBase
 		// Arrange
 		string tempFile1 = SecureTempFileHelper.CreateTempFile();
 		string tempFile2 = SecureTempFileHelper.CreateTempFile();
-		Assert.IsTrue(MockFileSystem.File.Exists(tempFile1));
-		Assert.IsTrue(MockFileSystem.File.Exists(tempFile2));
+		Assert.IsTrue(MockFileSystem.File.Exists(tempFile1), "First temp file should exist before deletion");
+		Assert.IsTrue(MockFileSystem.File.Exists(tempFile2), "Second temp file should exist before deletion");
 
 		// Act
 		SecureTempFileHelper.SafeDeleteTempFiles(MockFileSystem, tempFile1, tempFile2);
 
 		// Assert
-		Assert.IsFalse(MockFileSystem.File.Exists(tempFile1));
-		Assert.IsFalse(MockFileSystem.File.Exists(tempFile2));
+		Assert.IsFalse(MockFileSystem.File.Exists(tempFile1), "First temp file should not exist after deletion");
+		Assert.IsFalse(MockFileSystem.File.Exists(tempFile2), "Second temp file should not exist after deletion");
 	}
 
 	[TestMethod]
@@ -142,7 +142,7 @@ public class SecureTempFileHelperTests : MockFileSystemTestBase
 		SecureTempFileHelper.SafeDeleteTempFiles(MockFileSystem, tempFile, nonExistentFile, null, string.Empty);
 
 		// Assert
-		Assert.IsFalse(MockFileSystem.File.Exists(tempFile));
+		Assert.IsFalse(MockFileSystem.File.Exists(tempFile), "Existing temp file should be deleted");
 	}
 
 	[TestMethod]
@@ -150,13 +150,13 @@ public class SecureTempFileHelperTests : MockFileSystemTestBase
 	{
 		// Arrange
 		string tempDir = SecureTempFileHelper.CreateTempDirectory();
-		Assert.IsTrue(MockFileSystem.Directory.Exists(tempDir));
+		Assert.IsTrue(MockFileSystem.Directory.Exists(tempDir), "Temp directory should exist before deletion");
 
 		// Act
 		SecureTempFileHelper.SafeDeleteTempDirectory(tempDir, MockFileSystem);
 
 		// Assert
-		Assert.IsFalse(MockFileSystem.Directory.Exists(tempDir));
+		Assert.IsFalse(MockFileSystem.Directory.Exists(tempDir), "Temp directory should not exist after deletion");
 	}
 
 	[TestMethod]
@@ -172,16 +172,16 @@ public class SecureTempFileHelperTests : MockFileSystemTestBase
 		string fileInSubDir = MockFileSystem.Path.Combine(subDir, "subtest.txt");
 		MockFileSystem.File.WriteAllText(fileInSubDir, "subtest content");
 
-		Assert.IsTrue(MockFileSystem.Directory.Exists(tempDir));
-		Assert.IsTrue(MockFileSystem.File.Exists(fileInside));
-		Assert.IsTrue(MockFileSystem.Directory.Exists(subDir));
-		Assert.IsTrue(MockFileSystem.File.Exists(fileInSubDir));
+		Assert.IsTrue(MockFileSystem.Directory.Exists(tempDir), "Temp directory should exist before deletion");
+		Assert.IsTrue(MockFileSystem.File.Exists(fileInside), "File inside temp directory should exist before deletion");
+		Assert.IsTrue(MockFileSystem.Directory.Exists(subDir), "Subdirectory should exist before deletion");
+		Assert.IsTrue(MockFileSystem.File.Exists(fileInSubDir), "File in subdirectory should exist before deletion");
 
 		// Act
 		SecureTempFileHelper.SafeDeleteTempDirectory(tempDir, MockFileSystem);
 
 		// Assert
-		Assert.IsFalse(MockFileSystem.Directory.Exists(tempDir));
+		Assert.IsFalse(MockFileSystem.Directory.Exists(tempDir), "Temp directory should not exist after deletion");
 	}
 
 	[TestMethod]
@@ -196,8 +196,8 @@ public class SecureTempFileHelperTests : MockFileSystemTestBase
 		SecureTempFileHelper.SafeDeleteTempDirectory(tempDir2, MockFileSystem);
 
 		// Assert
-		Assert.IsFalse(MockFileSystem.Directory.Exists(tempDir1));
-		Assert.IsFalse(MockFileSystem.Directory.Exists(tempDir2));
+		Assert.IsFalse(MockFileSystem.Directory.Exists(tempDir1), "First temp directory should not exist after deletion");
+		Assert.IsFalse(MockFileSystem.Directory.Exists(tempDir2), "Second temp directory should not exist after deletion");
 	}
 
 	[TestMethod]
@@ -227,7 +227,7 @@ public class SecureTempFileHelperTests : MockFileSystemTestBase
 		string tempFile = SecureTempFileHelper.CreateTempFile(extension, MockFileSystem);
 
 		// Assert
-		Assert.IsTrue(tempFile.EndsWith(extension), $"File should end with {extension}");
-		Assert.IsTrue(MockFileSystem.File.Exists(tempFile));
+		StringAssert.EndsWith(tempFile, extension, $"File should end with {extension}");
+		Assert.IsTrue(MockFileSystem.File.Exists(tempFile), "Temp file should exist after creation");
 	}
 }

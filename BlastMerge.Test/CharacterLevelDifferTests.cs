@@ -37,17 +37,17 @@ public class CharacterLevelDifferTests
 		(string highlightedOld, string highlightedNew) = CharacterLevelDiffer.CreateCharacterLevelDiff(text, text);
 
 		// Assert
-		Assert.IsTrue(highlightedOld.Contains("[dim white]"));
-		Assert.IsTrue(highlightedNew.Contains("[dim white]"));
+		Assert.IsTrue(highlightedOld.Contains("[dim white]"), "Highlighted old text should contain dim white markup for unchanged text");
+		Assert.IsTrue(highlightedNew.Contains("[dim white]"), "Highlighted new text should contain dim white markup for unchanged text");
 		// Each character is individually wrapped in markup tags, so check for individual characters
-		Assert.IsTrue(highlightedOld.Contains('h'));
-		Assert.IsTrue(highlightedOld.Contains('e'));
-		Assert.IsTrue(highlightedOld.Contains('l'));
-		Assert.IsTrue(highlightedOld.Contains('o'));
-		Assert.IsTrue(highlightedNew.Contains('h'));
-		Assert.IsTrue(highlightedNew.Contains('e'));
-		Assert.IsTrue(highlightedNew.Contains('l'));
-		Assert.IsTrue(highlightedNew.Contains('o'));
+		Assert.IsTrue(highlightedOld.Contains('h'), "Highlighted old text should contain character 'h'");
+		Assert.IsTrue(highlightedOld.Contains('e'), "Highlighted old text should contain character 'e'");
+		Assert.IsTrue(highlightedOld.Contains('l'), "Highlighted old text should contain character 'l'");
+		Assert.IsTrue(highlightedOld.Contains('o'), "Highlighted old text should contain character 'o'");
+		Assert.IsTrue(highlightedNew.Contains('h'), "Highlighted new text should contain character 'h'");
+		Assert.IsTrue(highlightedNew.Contains('e'), "Highlighted new text should contain character 'e'");
+		Assert.IsTrue(highlightedNew.Contains('l'), "Highlighted new text should contain character 'l'");
+		Assert.IsTrue(highlightedNew.Contains('o'), "Highlighted new text should contain character 'o'");
 	}
 
 	[TestMethod]
@@ -61,8 +61,8 @@ public class CharacterLevelDifferTests
 		(string highlightedOld, string highlightedNew) = CharacterLevelDiffer.CreateCharacterLevelDiff(oldText, newText);
 
 		// Assert
-		Assert.IsTrue(highlightedOld.Contains("[red]"));
-		Assert.IsTrue(highlightedNew.Contains("[green]"));
+		Assert.IsTrue(highlightedOld.Contains("[red]"), "Highlighted old text should contain red markup for deleted characters");
+		Assert.IsTrue(highlightedNew.Contains("[green]"), "Highlighted new text should contain green markup for added characters");
 	}
 
 	[TestMethod]
@@ -77,12 +77,12 @@ public class CharacterLevelDifferTests
 
 		// Assert
 		// Should have unchanged "hello " at the beginning
-		Assert.IsTrue(highlightedOld.Contains("[dim white]h[/]"));
-		Assert.IsTrue(highlightedNew.Contains("[dim white]h[/]"));
+		Assert.IsTrue(highlightedOld.Contains("[dim white]h[/]"), "Highlighted old text should contain unchanged 'h' with dim white markup");
+		Assert.IsTrue(highlightedNew.Contains("[dim white]h[/]"), "Highlighted new text should contain unchanged 'h' with dim white markup");
 
 		// Should have changes for "world" vs "earth"
-		Assert.IsTrue(highlightedOld.Contains("[red]"));
-		Assert.IsTrue(highlightedNew.Contains("[green]"));
+		Assert.IsTrue(highlightedOld.Contains("[red]"), "Highlighted old text should contain red markup for changed portion");
+		Assert.IsTrue(highlightedNew.Contains("[green]"), "Highlighted new text should contain green markup for changed portion");
 	}
 
 	[TestMethod]
@@ -108,7 +108,7 @@ public class CharacterLevelDifferTests
 
 		// Assert
 		Assert.AreEqual("", highlightedOld);
-		Assert.IsTrue(highlightedNew.Contains("[green]"));
+		Assert.IsTrue(highlightedNew.Contains("[green]"), "Highlighted new text should contain green markup for all added characters");
 	}
 
 	[TestMethod]
@@ -138,13 +138,13 @@ public class CharacterLevelDifferTests
 		string result = CharacterLevelDiffer.CreateInlineCharacterDiff(oldLine, newLine);
 
 		// Assert
-		Assert.IsTrue(result.Contains("[red]- "));
-		Assert.IsTrue(result.Contains("[green]+ "));
+		Assert.IsTrue(result.Contains("[red]- "), "Inline diff result should contain red deletion prefix");
+		Assert.IsTrue(result.Contains("[green]+ "), "Inline diff result should contain green addition prefix");
 		// Each character is individually wrapped in markup tags, so check for individual characters
-		Assert.IsTrue(result.Contains('h'));
-		Assert.IsTrue(result.Contains('e'));
-		Assert.IsTrue(result.Contains('l'));
-		Assert.IsTrue(result.Contains('o'));
+		Assert.IsTrue(result.Contains('h'), "Inline diff result should contain character 'h'");
+		Assert.IsTrue(result.Contains('e'), "Inline diff result should contain character 'e'");
+		Assert.IsTrue(result.Contains('l'), "Inline diff result should contain character 'l'");
+		Assert.IsTrue(result.Contains('o'), "Inline diff result should contain character 'o'");
 	}
 
 	[TestMethod]
@@ -170,7 +170,7 @@ public class CharacterLevelDifferTests
 		bool result = CharacterLevelDiffer.AreLinesSimilar("", "");
 
 		// Assert
-		Assert.IsFalse(result);
+		Assert.IsFalse(result, "Empty lines should not be considered similar");
 	}
 
 	[TestMethod]
@@ -181,8 +181,8 @@ public class CharacterLevelDifferTests
 		bool result2 = CharacterLevelDiffer.AreLinesSimilar("hello", "");
 
 		// Assert
-		Assert.IsFalse(result1);
-		Assert.IsFalse(result2);
+		Assert.IsFalse(result1, "Empty line compared to non-empty line should not be similar");
+		Assert.IsFalse(result2, "Non-empty line compared to empty line should not be similar");
 	}
 
 	[TestMethod]
@@ -195,7 +195,7 @@ public class CharacterLevelDifferTests
 		bool result = CharacterLevelDiffer.AreLinesSimilar(line, line);
 
 		// Assert
-		Assert.IsTrue(result);
+		Assert.IsTrue(result, "Identical lines should be considered similar");
 	}
 
 	[TestMethod]
@@ -209,7 +209,7 @@ public class CharacterLevelDifferTests
 		bool result = CharacterLevelDiffer.AreLinesSimilar(line1, line2);
 
 		// Assert
-		Assert.IsTrue(result); // Should be similar due to common "hello " prefix
+		Assert.IsTrue(result, "Lines with common prefix 'hello ' should be considered similar");
 	}
 
 	[TestMethod]
@@ -223,7 +223,7 @@ public class CharacterLevelDifferTests
 		bool result = CharacterLevelDiffer.AreLinesSimilar(line1, line2);
 
 		// Assert
-		Assert.IsFalse(result); // Should not be similar
+		Assert.IsFalse(result, "Lines with no common content should not be considered similar");
 	}
 
 	[TestMethod]
@@ -237,7 +237,7 @@ public class CharacterLevelDifferTests
 		bool result = CharacterLevelDiffer.AreLinesSimilar(line1, line2);
 
 		// Assert
-		Assert.IsFalse(result); // Length difference is too large
+		Assert.IsFalse(result, "Lines with very different lengths should not be considered similar");
 	}
 
 	[TestMethod]
@@ -251,7 +251,7 @@ public class CharacterLevelDifferTests
 		bool result = CharacterLevelDiffer.AreLinesSimilar(line1, line2);
 
 		// Assert
-		Assert.IsTrue(result); // Should be similar due to common prefix
+		Assert.IsTrue(result, "Lines with common prefix 'function calculate' should be considered similar");
 	}
 
 	[TestMethod]
@@ -270,21 +270,21 @@ public class CharacterLevelDifferTests
 
 		// The CreateSideBySideCharacterDiff method applies character-level markup and whitespace visualization
 		// Each character is individually wrapped in markup tags, so we need to check for individual characters
-		Assert.IsTrue(leftSide.Contains('h'));
-		Assert.IsTrue(leftSide.Contains('e'));
-		Assert.IsTrue(leftSide.Contains('l'));
-		Assert.IsTrue(leftSide.Contains('o'));
-		Assert.IsTrue(rightSide.Contains('h'));
-		Assert.IsTrue(rightSide.Contains('e'));
-		Assert.IsTrue(rightSide.Contains('l'));
-		Assert.IsTrue(rightSide.Contains('o'));
+		Assert.IsTrue(leftSide.Contains('h'), "Left side should contain character 'h'");
+		Assert.IsTrue(leftSide.Contains('e'), "Left side should contain character 'e'");
+		Assert.IsTrue(leftSide.Contains('l'), "Left side should contain character 'l'");
+		Assert.IsTrue(leftSide.Contains('o'), "Left side should contain character 'o'");
+		Assert.IsTrue(rightSide.Contains('h'), "Right side should contain character 'h'");
+		Assert.IsTrue(rightSide.Contains('e'), "Right side should contain character 'e'");
+		Assert.IsTrue(rightSide.Contains('l'), "Right side should contain character 'l'");
+		Assert.IsTrue(rightSide.Contains('o'), "Right side should contain character 'o'");
 
 		// Verify whitespace visualization is applied (spaces become middle dots)
-		Assert.IsTrue(leftSide.Contains('·') || rightSide.Contains('·'));
+		Assert.IsTrue(leftSide.Contains('·') || rightSide.Contains('·'), "Whitespace should be visualized as middle dots in at least one side");
 
 		// Verify markup tags are present
-		Assert.IsTrue(leftSide.Contains("[dim white]") || leftSide.Contains("[red]"));
-		Assert.IsTrue(rightSide.Contains("[dim white]") || rightSide.Contains("[green]"));
+		Assert.IsTrue(leftSide.Contains("[dim white]") || leftSide.Contains("[red]"), "Left side should contain dim white or red markup");
+		Assert.IsTrue(rightSide.Contains("[dim white]") || rightSide.Contains("[green]"), "Right side should contain dim white or green markup");
 	}
 
 	[TestMethod]
@@ -299,8 +299,8 @@ public class CharacterLevelDifferTests
 
 		// Assert
 		// Should contain escaped brackets
-		Assert.IsTrue(highlightedOld.Contains("[["));
-		Assert.IsTrue(highlightedNew.Contains("[["));
+		Assert.IsTrue(highlightedOld.Contains("[["), "Highlighted old text should contain escaped opening brackets");
+		Assert.IsTrue(highlightedNew.Contains("[["), "Highlighted new text should contain escaped opening brackets");
 	}
 
 	[TestMethod]
@@ -314,7 +314,7 @@ public class CharacterLevelDifferTests
 		(string highlightedOld, string highlightedNew) = CharacterLevelDiffer.CreateCharacterLevelDiff(oldText, newText);
 
 		// Assert
-		Assert.IsTrue(highlightedOld.Contains("[dim white]"));
-		Assert.IsTrue(highlightedNew.Contains("[green]")); // Should highlight the added space
+		Assert.IsTrue(highlightedOld.Contains("[dim white]"), "Highlighted old text should contain dim white markup for unchanged characters");
+		Assert.IsTrue(highlightedNew.Contains("[green]"), "Highlighted new text should contain green markup for the added space");
 	}
 }
