@@ -57,9 +57,7 @@ public static class Program
 	/// Configures the dependency injection services.
 	/// </summary>
 	/// <param name="services">The service collection to configure.</param>
-	private static void ConfigureServices(ServiceCollection services)
-	{
+	private static void ConfigureServices(ServiceCollection services) =>
 		// Register application service
 		services.AddSingleton<IApplicationService, ConsoleApplicationService>();
-	}
 }
