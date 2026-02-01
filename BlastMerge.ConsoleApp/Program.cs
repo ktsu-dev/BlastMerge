@@ -9,6 +9,7 @@ using System.Text;
 using ktsu.BlastMerge.ConsoleApp.CLI;
 using ktsu.BlastMerge.ConsoleApp.Services;
 using ktsu.BlastMerge.Contracts;
+using Microsoft.Extensions.DependencyInjection;
 
 /// <summary>
 /// Main entry point for the BlastMerge console application.
@@ -28,8 +29,13 @@ public static class Program
 
 		try
 		{
-			// Create services with proper dependency injection pattern
-			IApplicationService applicationService = new ConsoleApplicationService();
+			// Set up dependency injection container
+			ServiceCollection services = new();
+			ConfigureServices(services);
+			using ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+			// Get application service from DI container
+			IApplicationService applicationService = serviceProvider.GetRequiredService<IApplicationService>();
 			CommandLineHandler commandLineHandler = new(applicationService);
 
 			// Process command line arguments
@@ -46,4 +52,12 @@ public static class Program
 			return 1;
 		}
 	}
+
+	/// <summary>
+	/// Configures the dependency injection services.
+	/// </summary>
+	/// <param name="services">The service collection to configure.</param>
+	private static void ConfigureServices(ServiceCollection services) =>
+		// Register application service
+		services.AddSingleton<IApplicationService, ConsoleApplicationService>();
 }
