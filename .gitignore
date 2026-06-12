@@ -643,4 +643,14 @@ Temporary Items
 # SpecStory explanation file
 /.what-is-this.md
 # SpecStory derived-cursor-rules.mdc backup files
+/ai_rules_backups/*
 .specstory/ai_rules_backups/*
+
+# Claude.ai local settings
+.claude/settings.local.json
+
+# ImGui.ini files
+imgui.ini
+
+# CI-built native cimgui for iOS (scripts/build-cimgui-ios.sh)
+ImGui.App/Platform/iOS/native/
