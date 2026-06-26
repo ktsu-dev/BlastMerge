@@ -2,6 +2,7 @@
 
 Changes since v1.0.0:
 
+- Remove serena/cursor files ([@matt-edmondson](https://github.com/matt-edmondson))
 - Remove legacy build scripts ([@matt-edmondson](https://github.com/matt-edmondson))
 - Enhance test assertions and naming for clarity and robustness ([@matt-edmondson](https://github.com/matt-edmondson))
 - Update project configuration and workflows ([@matt-edmondson](https://github.com/matt-edmondson))
