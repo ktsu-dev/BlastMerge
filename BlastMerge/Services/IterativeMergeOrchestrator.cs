@@ -32,10 +32,10 @@ public static class IterativeMergeOrchestrator
 		Func<bool> continuationCallback,
 		IFileSystem? fileSystem = null)
 	{
-		ArgumentNullException.ThrowIfNull(fileGroups);
-		ArgumentNullException.ThrowIfNull(mergeCallback);
-		ArgumentNullException.ThrowIfNull(statusCallback);
-		ArgumentNullException.ThrowIfNull(continuationCallback);
+		Ensure.NotNull(fileGroups);
+		Ensure.NotNull(mergeCallback);
+		Ensure.NotNull(statusCallback);
+		Ensure.NotNull(continuationCallback);
 
 		// Use provided fileSystem or get the default one
 		fileSystem ??= FileSystemProvider.Current;
@@ -181,8 +181,8 @@ public static class IterativeMergeOrchestrator
 	/// <returns>Collection of unique file groups, or null if insufficient files found</returns>
 	public static IReadOnlyCollection<FileGroup>? PrepareFileGroupsForMerging(string directory, string fileName, IFileSystem? fileSystem = null)
 	{
-		ArgumentNullException.ThrowIfNull(directory);
-		ArgumentNullException.ThrowIfNull(fileName);
+		Ensure.NotNull(directory);
+		Ensure.NotNull(fileName);
 
 		// Use provided fileSystem or get the default one
 		fileSystem ??= FileSystemProvider.Current;
@@ -228,9 +228,9 @@ public static class IterativeMergeOrchestrator
 		Func<DiffPlex.Model.DiffBlock, BlockContext, int, BlockChoice> blockChoiceCallback,
 		IFileSystem? fileSystem = null)
 	{
-		ArgumentNullException.ThrowIfNull(file1);
-		ArgumentNullException.ThrowIfNull(file2);
-		ArgumentNullException.ThrowIfNull(blockChoiceCallback);
+		Ensure.NotNull(file1);
+		Ensure.NotNull(file2);
+		Ensure.NotNull(blockChoiceCallback);
 
 		// Use provided fileSystem or get the default one
 		fileSystem ??= FileSystemProvider.Current;

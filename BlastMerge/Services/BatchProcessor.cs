@@ -70,11 +70,11 @@ public static partial class BatchProcessor
 		Func<string, bool>? patternCallback = null,
 		IFileSystem? fileSystem = null)
 	{
-		ArgumentNullException.ThrowIfNull(batch);
-		ArgumentNullException.ThrowIfNull(directory);
-		ArgumentNullException.ThrowIfNull(mergeCallback);
-		ArgumentNullException.ThrowIfNull(statusCallback);
-		ArgumentNullException.ThrowIfNull(continuationCallback);
+		Ensure.NotNull(batch);
+		Ensure.NotNull(directory);
+		Ensure.NotNull(mergeCallback);
+		Ensure.NotNull(statusCallback);
+		Ensure.NotNull(continuationCallback);
 
 		fileSystem ??= new FileSystem();
 
@@ -172,11 +172,11 @@ public static partial class BatchProcessor
 		int maxDegreeOfParallelism = 0,
 		IFileSystem? fileSystem = null)
 	{
-		ArgumentNullException.ThrowIfNull(batch);
-		ArgumentNullException.ThrowIfNull(directory);
-		ArgumentNullException.ThrowIfNull(mergeCallback);
-		ArgumentNullException.ThrowIfNull(statusCallback);
-		ArgumentNullException.ThrowIfNull(continuationCallback);
+		Ensure.NotNull(batch);
+		Ensure.NotNull(directory);
+		Ensure.NotNull(mergeCallback);
+		Ensure.NotNull(statusCallback);
+		Ensure.NotNull(continuationCallback);
 
 		fileSystem ??= new FileSystem();
 
@@ -782,7 +782,7 @@ public static partial class BatchProcessor
 		ProcessingCallbacks callbacks,
 		IFileSystem? fileSystem = null)
 	{
-		ArgumentNullException.ThrowIfNull(callbacks);
+		Ensure.NotNull(callbacks);
 
 		return ProcessSinglePatternCore(
 			new PatternProcessingParameters(pattern, searchPaths, directory, pathExclusionPatterns, fileSystem),
@@ -850,8 +850,8 @@ public static partial class BatchProcessor
 	/// <returns>A new batch configuration</returns>
 	public static BatchConfiguration CreateCustomBatch(string name, IEnumerable<string> patterns, string description = "")
 	{
-		ArgumentNullException.ThrowIfNull(name);
-		ArgumentNullException.ThrowIfNull(patterns);
+		Ensure.NotNull(name);
+		Ensure.NotNull(patterns);
 
 		return new BatchConfiguration
 		{

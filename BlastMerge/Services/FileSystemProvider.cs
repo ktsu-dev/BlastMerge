@@ -44,7 +44,7 @@ public static class FileSystemProvider
 	/// <param name="fileSystem">The filesystem implementation</param>
 	public static void SetFileSystem(IFileSystem fileSystem)
 	{
-		ArgumentNullException.ThrowIfNull(fileSystem);
+		Ensure.NotNull(fileSystem);
 		_asyncLocalInstance.Value = fileSystem;
 	}
 

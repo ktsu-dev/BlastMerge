@@ -27,7 +27,7 @@ public record FileGroup(string Hash = "")
 	/// <param name="filePaths">The file paths to include in this group</param>
 	public FileGroup(IEnumerable<string> filePaths) : this("")
 	{
-		ArgumentNullException.ThrowIfNull(filePaths);
+		Ensure.NotNull(filePaths);
 		foreach (string filePath in filePaths)
 		{
 			filePathsCollection.Add(filePath);

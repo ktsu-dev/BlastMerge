@@ -24,9 +24,9 @@ public static class BlockMerger
 	public static MergeResult PerformManualBlockSelection(string[] lines1, string[] lines2,
 		Func<DiffPlex.Model.DiffBlock, BlockContext, int, BlockChoice> blockChoiceCallback)
 	{
-		ArgumentNullException.ThrowIfNull(lines1);
-		ArgumentNullException.ThrowIfNull(lines2);
-		ArgumentNullException.ThrowIfNull(blockChoiceCallback);
+		Ensure.NotNull(lines1);
+		Ensure.NotNull(lines2);
+		Ensure.NotNull(blockChoiceCallback);
 
 		string content1 = string.Join(Environment.NewLine, lines1);
 		string content2 = string.Join(Environment.NewLine, lines2);

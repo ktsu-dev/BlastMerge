@@ -85,7 +85,7 @@ public static class SecureTempFileHelper
 	/// <exception cref="IOException">Thrown when unable to create a unique temporary file after max retries.</exception>
 	public static string CreateTempFile(string extension, IFileSystem? fileSystem = null)
 	{
-		ArgumentNullException.ThrowIfNull(extension);
+		Ensure.NotNull(extension);
 		fileSystem ??= FileSystemProvider.Current;
 
 		string tempPath = GetSecureTempPath(fileSystem);

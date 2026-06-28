@@ -27,7 +27,7 @@ public static class AppDataBatchManager
 	/// <returns>True if saved successfully, false otherwise.</returns>
 	public static bool SaveBatch(BatchConfiguration batch)
 	{
-		ArgumentNullException.ThrowIfNull(batch);
+		Ensure.NotNull(batch);
 
 		if (string.IsNullOrWhiteSpace(batch.Name))
 		{
@@ -76,7 +76,7 @@ public static class AppDataBatchManager
 	/// <returns>The batch configuration, or null if not found.</returns>
 	public static BatchConfiguration? LoadBatch(string name)
 	{
-		ArgumentNullException.ThrowIfNull(name);
+		Ensure.NotNull(name);
 
 		if (string.IsNullOrWhiteSpace(name))
 		{
@@ -100,7 +100,7 @@ public static class AppDataBatchManager
 	/// <returns>True if deleted successfully, false otherwise.</returns>
 	public static bool DeleteBatch(string name)
 	{
-		ArgumentNullException.ThrowIfNull(name);
+		Ensure.NotNull(name);
 
 		if (string.IsNullOrWhiteSpace(name))
 		{
@@ -171,7 +171,7 @@ public static class AppDataBatchManager
 	/// <param name="batchName">The name of the batch configuration that was used.</param>
 	public static void RecordBatchUsage(string batchName)
 	{
-		ArgumentNullException.ThrowIfNull(batchName);
+		Ensure.NotNull(batchName);
 
 		if (string.IsNullOrWhiteSpace(batchName))
 		{

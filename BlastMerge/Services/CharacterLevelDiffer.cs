@@ -25,8 +25,8 @@ public static class CharacterLevelDiffer
 	/// <returns>A tuple containing the highlighted old and new text with markup</returns>
 	public static (string highlightedOld, string highlightedNew) CreateCharacterLevelDiff(string oldText, string newText)
 	{
-		ArgumentNullException.ThrowIfNull(oldText);
-		ArgumentNullException.ThrowIfNull(newText);
+		Ensure.NotNull(oldText);
+		Ensure.NotNull(newText);
 
 		// Use DiffPlex character-level diffing
 		DiffResult charDiff = Differ.CreateCharacterDiffs(oldText, newText, ignoreWhitespace: false);
@@ -124,8 +124,8 @@ public static class CharacterLevelDiffer
 	/// <returns>A single string showing both old and new with character-level highlighting</returns>
 	public static string CreateInlineCharacterDiff(string oldLine, string newLine)
 	{
-		ArgumentNullException.ThrowIfNull(oldLine);
-		ArgumentNullException.ThrowIfNull(newLine);
+		Ensure.NotNull(oldLine);
+		Ensure.NotNull(newLine);
 
 		(string highlightedOld, string highlightedNew) = CreateCharacterLevelDiff(oldLine, newLine);
 
@@ -144,8 +144,8 @@ public static class CharacterLevelDiffer
 	/// <returns>True if lines are similar enough for character-level diffing</returns>
 	public static bool AreLinesSimilar(string line1, string line2)
 	{
-		ArgumentNullException.ThrowIfNull(line1);
-		ArgumentNullException.ThrowIfNull(line2);
+		Ensure.NotNull(line1);
+		Ensure.NotNull(line2);
 
 		// If either line is empty, they're not similar enough
 		if (string.IsNullOrEmpty(line1) || string.IsNullOrEmpty(line2))
@@ -267,8 +267,8 @@ public static class CharacterLevelDiffer
 	/// <returns>Tuple of highlighted old and new text for side-by-side display</returns>
 	public static (string leftSide, string rightSide) CreateSideBySideCharacterDiff(string oldLine, string newLine)
 	{
-		ArgumentNullException.ThrowIfNull(oldLine);
-		ArgumentNullException.ThrowIfNull(newLine);
+		Ensure.NotNull(oldLine);
+		Ensure.NotNull(newLine);
 
 		(string highlightedOld, string highlightedNew) = CreateCharacterLevelDiff(oldLine, newLine);
 

@@ -35,8 +35,8 @@ public static class DiffPlexDiffer
 	/// <returns>True if files are identical, false otherwise</returns>
 	public static bool AreFilesIdentical(string file1, string file2)
 	{
-		ArgumentNullException.ThrowIfNull(file1);
-		ArgumentNullException.ThrowIfNull(file2);
+		Ensure.NotNull(file1);
+		Ensure.NotNull(file2);
 
 		IFileSystem fileSystem = FileSystemProvider.Current;
 
@@ -62,8 +62,8 @@ public static class DiffPlexDiffer
 	/// <exception cref="FileNotFoundException">Thrown when one or both files do not exist</exception>
 	public static DiffResult CreateLineDiffs(string file1, string file2)
 	{
-		ArgumentNullException.ThrowIfNull(file1);
-		ArgumentNullException.ThrowIfNull(file2);
+		Ensure.NotNull(file1);
+		Ensure.NotNull(file2);
 
 		IFileSystem fileSystem = FileSystemProvider.Current;
 
@@ -89,8 +89,8 @@ public static class DiffPlexDiffer
 	/// <exception cref="FileNotFoundException">Thrown when one or both files do not exist</exception>
 	public static string GenerateUnifiedDiff(string file1, string file2, int contextLines = 3)
 	{
-		ArgumentNullException.ThrowIfNull(file1);
-		ArgumentNullException.ThrowIfNull(file2);
+		Ensure.NotNull(file1);
+		Ensure.NotNull(file2);
 
 		IFileSystem fileSystem = FileSystemProvider.Current;
 
@@ -328,8 +328,8 @@ public static class DiffPlexDiffer
 	/// <returns>Collection of colored diff lines</returns>
 	public static Collection<ColoredDiffLine> GenerateColoredDiff(string file1, string file2)
 	{
-		ArgumentNullException.ThrowIfNull(file1);
-		ArgumentNullException.ThrowIfNull(file2);
+		Ensure.NotNull(file1);
+		Ensure.NotNull(file2);
 
 		IFileSystem fileSystem = FileSystemProvider.Current;
 
@@ -384,8 +384,8 @@ public static class DiffPlexDiffer
 	/// <returns>Collection of line differences</returns>
 	public static IReadOnlyCollection<LineDifference> FindDifferences(string file1, string file2)
 	{
-		ArgumentNullException.ThrowIfNull(file1);
-		ArgumentNullException.ThrowIfNull(file2);
+		Ensure.NotNull(file1);
+		Ensure.NotNull(file2);
 
 		IFileSystem fileSystem = FileSystemProvider.Current;
 
@@ -483,8 +483,8 @@ public static class DiffPlexDiffer
 	/// <returns>Side-by-side diff model</returns>
 	public static SideBySideDiffModel GenerateSideBySideDiff(string file1, string file2)
 	{
-		ArgumentNullException.ThrowIfNull(file1);
-		ArgumentNullException.ThrowIfNull(file2);
+		Ensure.NotNull(file1);
+		Ensure.NotNull(file2);
 
 		IFileSystem fileSystem = FileSystemProvider.Current;
 
@@ -507,8 +507,8 @@ public static class DiffPlexDiffer
 	/// <returns>Collection of colored diff lines with only changes</returns>
 	public static Collection<ColoredDiffLine> GenerateChangeSummary(string file1, string file2)
 	{
-		ArgumentNullException.ThrowIfNull(file1);
-		ArgumentNullException.ThrowIfNull(file2);
+		Ensure.NotNull(file1);
+		Ensure.NotNull(file2);
 
 		Collection<ColoredDiffLine> coloredDiff = GenerateColoredDiff(file1, file2);
 

@@ -84,7 +84,7 @@ public static class FileHasher
 		int maxDegreeOfParallelism = 0,
 		CancellationToken cancellationToken = default)
 	{
-		ArgumentNullException.ThrowIfNull(filePaths);
+		Ensure.NotNull(filePaths);
 		fileSystem ??= FileSystemProvider.Current;
 
 		if (maxDegreeOfParallelism <= 0)
@@ -133,7 +133,7 @@ public static class FileHasher
 	/// <returns>The FNV-1a hash as a hex string</returns>
 	public static string ComputeContentHash(string content)
 	{
-		ArgumentNullException.ThrowIfNull(content);
+		Ensure.NotNull(content);
 
 		ulong hash = FNV_OFFSET_BASIS_64;
 		byte[] bytes = System.Text.Encoding.UTF8.GetBytes(content);
@@ -154,7 +154,7 @@ public static class FileHasher
 	/// <returns>The FNV-1a hash as a hex string</returns>
 	public static Task<string> ComputeContentHashAsync(string content)
 	{
-		ArgumentNullException.ThrowIfNull(content);
+		Ensure.NotNull(content);
 
 		// For string content hashing, we can run it on a background thread
 		// since it's CPU-bound rather than I/O-bound

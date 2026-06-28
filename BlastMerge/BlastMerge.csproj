@@ -1,8 +1,18 @@
-<Project Sdk="ktsu.Sdk.Lib">
+<Project>
+  <Sdk Name="Microsoft.NET.Sdk" />
+  <Sdk Name="ktsu.Sdk" />
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;net9.0</TargetFrameworks>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="DiffPlex" />
     <PackageReference Include="Spectre.Console" />
     <PackageReference Include="ktsu.AppDataStorage" />
     <PackageReference Include="TestableIO.System.IO.Abstractions" />
-  </ItemGroup>
+  
+    <PackageReference Include="Testably.Abstractions.FileSystem.Interface" />
+    <PackageReference Include="TestableIO.System.IO.Abstractions.Wrappers" />
+    <PackageReference Include="Polyfill" /></ItemGroup>
 </Project>

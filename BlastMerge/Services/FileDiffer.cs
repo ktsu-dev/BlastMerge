@@ -47,7 +47,7 @@ public static class FileDiffer
 	/// <returns>A collection of file groups where each group contains identical files</returns>
 	public static IReadOnlyCollection<FileGroup> GroupFilesByHash(IReadOnlyCollection<string> filePaths, IFileSystem? fileSystem = null)
 	{
-		ArgumentNullException.ThrowIfNull(filePaths);
+		Ensure.NotNull(filePaths);
 
 		// Use the safer grouping method that considers both filename and content
 		return GroupFilesByFilenameAndHash(filePaths, fileSystem);
@@ -62,7 +62,7 @@ public static class FileDiffer
 	/// <returns>A collection of file groups where each group contains files with the same name and identical content</returns>
 	public static IReadOnlyCollection<FileGroup> GroupFilesByFilenameAndHash(IReadOnlyCollection<string> filePaths, IFileSystem? fileSystem = null)
 	{
-		ArgumentNullException.ThrowIfNull(filePaths);
+		Ensure.NotNull(filePaths);
 
 		// First group by filename (basename without path)
 		Dictionary<string, List<string>> filenameGroups = filePaths
@@ -116,7 +116,7 @@ public static class FileDiffer
 	/// <returns>A collection of file groups where each group contains identical files (regardless of filename)</returns>
 	public static IReadOnlyCollection<FileGroup> GroupFilesByHashOnly(IReadOnlyCollection<string> filePaths, IFileSystem? fileSystem = null)
 	{
-		ArgumentNullException.ThrowIfNull(filePaths);
+		Ensure.NotNull(filePaths);
 
 		Dictionary<string, FileGroup> groups = [];
 
@@ -157,9 +157,9 @@ public static class FileDiffer
 	/// <returns>A DirectoryComparisonResult containing the comparison results</returns>
 	public static DirectoryComparisonResult FindDifferences(string dir1, string dir2, string searchPattern, bool recursive = false, IFileSystem? fileSystem = null)
 	{
-		ArgumentNullException.ThrowIfNull(dir1);
-		ArgumentNullException.ThrowIfNull(dir2);
-		ArgumentNullException.ThrowIfNull(searchPattern);
+		Ensure.NotNull(dir1);
+		Ensure.NotNull(dir2);
+		Ensure.NotNull(searchPattern);
 
 		fileSystem ??= new FileSystem();
 		SearchOption searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
@@ -237,8 +237,8 @@ public static class FileDiffer
 	/// <returns>A string containing the git-style diff</returns>
 	public static string GenerateGitStyleDiff(string file1, string file2, bool useColor)
 	{
-		ArgumentNullException.ThrowIfNull(file1);
-		ArgumentNullException.ThrowIfNull(file2);
+		Ensure.NotNull(file1);
+		Ensure.NotNull(file2);
 
 		// Use DiffPlex for git-style diff generation
 		string gitDiff = DiffPlexDiffer.GenerateUnifiedDiff(file1, file2);
@@ -296,8 +296,8 @@ public static class FileDiffer
 	/// <returns>A string containing the summarized changes</returns>
 	public static string GenerateChangeSummaryDiff(string file1, string file2, bool useColor = false)
 	{
-		ArgumentNullException.ThrowIfNull(file1);
-		ArgumentNullException.ThrowIfNull(file2);
+		Ensure.NotNull(file1);
+		Ensure.NotNull(file2);
 
 		IReadOnlyCollection<LineDifference> differences = FindDifferences(file1, file2);
 		StringBuilder sb = new();
@@ -473,8 +473,8 @@ public static class FileDiffer
 	/// <returns>List of colored diff lines showing only changes</returns>
 	public static Collection<ColoredDiffLine> GenerateColoredChangeSummary(string file1, string file2)
 	{
-		ArgumentNullException.ThrowIfNull(file1);
-		ArgumentNullException.ThrowIfNull(file2);
+		Ensure.NotNull(file1);
+		Ensure.NotNull(file2);
 
 		Collection<ColoredDiffLine> result =
 		[
@@ -539,8 +539,8 @@ public static class FileDiffer
 	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	public static void SyncFile(string sourceFile, string targetFile, IFileSystem? fileSystem = null)
 	{
-		ArgumentNullException.ThrowIfNull(sourceFile);
-		ArgumentNullException.ThrowIfNull(targetFile);
+		Ensure.NotNull(sourceFile);
+		Ensure.NotNull(targetFile);
 
 		fileSystem ??= new FileSystem();
 
@@ -562,8 +562,8 @@ public static class FileDiffer
 	/// <returns>A similarity score between 0.0 (completely different) and 1.0 (identical)</returns>
 	public static double CalculateFileSimilarity(string file1, string file2, IFileSystem? fileSystem = null)
 	{
-		ArgumentNullException.ThrowIfNull(file1);
-		ArgumentNullException.ThrowIfNull(file2);
+		Ensure.NotNull(file1);
+		Ensure.NotNull(file2);
 
 		fileSystem ??= new FileSystem();
 
@@ -581,8 +581,8 @@ public static class FileDiffer
 	/// <returns>A similarity score between 0.0 (completely different) and 1.0 (identical)</returns>
 	public static double CalculateLineSimilarity(string[] lines1, string[] lines2)
 	{
-		ArgumentNullException.ThrowIfNull(lines1);
-		ArgumentNullException.ThrowIfNull(lines2);
+		Ensure.NotNull(lines1);
+		Ensure.NotNull(lines2);
 
 		if (lines1.Length == 0 && lines2.Length == 0)
 		{
@@ -636,7 +636,7 @@ public static class FileDiffer
 	/// <returns>A FileSimilarity object with the most similar pair, or null if less than 2 groups</returns>
 	public static FileSimilarity? FindMostSimilarFiles(IReadOnlyCollection<FileGroup> fileGroups, IFileSystem? fileSystem = null)
 	{
-		ArgumentNullException.ThrowIfNull(fileGroups);
+		Ensure.NotNull(fileGroups);
 
 		if (fileGroups.Count < 2)
 		{
@@ -686,8 +686,8 @@ public static class FileDiffer
 	/// <returns>A MergeResult containing the merged content and any conflicts</returns>
 	public static MergeResult MergeFiles(string file1, string file2, IFileSystem? fileSystem = null)
 	{
-		ArgumentNullException.ThrowIfNull(file1);
-		ArgumentNullException.ThrowIfNull(file2);
+		Ensure.NotNull(file1);
+		Ensure.NotNull(file2);
 
 		fileSystem ??= new FileSystem();
 
@@ -705,8 +705,8 @@ public static class FileDiffer
 	/// <returns>A MergeResult containing the merged content and any conflicts</returns>
 	public static MergeResult MergeLines(string[] lines1, string[] lines2)
 	{
-		ArgumentNullException.ThrowIfNull(lines1);
-		ArgumentNullException.ThrowIfNull(lines2);
+		Ensure.NotNull(lines1);
+		Ensure.NotNull(lines2);
 
 		string tempFile1 = SecureTempFileHelper.CreateTempFile();
 		string tempFile2 = SecureTempFileHelper.CreateTempFile();

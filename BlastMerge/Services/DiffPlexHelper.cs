@@ -27,8 +27,8 @@ public static class DiffPlexHelper
 	/// <returns>DiffPlex DiffResult with DiffBlocks</returns>
 	public static DiffResult CreateLineDiffs(string file1, string file2, IFileSystem? fileSystem = null)
 	{
-		ArgumentNullException.ThrowIfNull(file1);
-		ArgumentNullException.ThrowIfNull(file2);
+		Ensure.NotNull(file1);
+		Ensure.NotNull(file2);
 
 		fileSystem ??= FileSystemProvider.Current;
 
@@ -51,8 +51,8 @@ public static class DiffPlexHelper
 	/// <returns>DiffPlex DiffResult with DiffBlocks</returns>
 	public static DiffResult CreateLineDiffsFromContent(string content1, string content2)
 	{
-		ArgumentNullException.ThrowIfNull(content1);
-		ArgumentNullException.ThrowIfNull(content2);
+		Ensure.NotNull(content1);
+		Ensure.NotNull(content2);
 
 		return Differ.Instance.CreateLineDiffs(content1, content2, ignoreWhitespace: false, ignoreCase: false);
 	}
@@ -67,9 +67,9 @@ public static class DiffPlexHelper
 	/// <returns>Context lines before and after the block</returns>
 	public static BlockContext GetBlockContext(string[] linesOld, string[] linesNew, DiffPlex.Model.DiffBlock block, int contextSize = 3)
 	{
-		ArgumentNullException.ThrowIfNull(linesOld);
-		ArgumentNullException.ThrowIfNull(linesNew);
-		ArgumentNullException.ThrowIfNull(block);
+		Ensure.NotNull(linesOld);
+		Ensure.NotNull(linesNew);
+		Ensure.NotNull(block);
 
 		// Context before the block
 		int startBefore1 = Math.Max(0, block.DeleteStartA - contextSize);
@@ -101,7 +101,7 @@ public static class DiffPlexHelper
 	/// <returns>Array of lines in the specified range</returns>
 	public static string[] GetLinesInRange(string[] lines, int start, int end)
 	{
-		ArgumentNullException.ThrowIfNull(lines);
+		Ensure.NotNull(lines);
 
 		if (start >= end || start >= lines.Length || end <= 0)
 		{
@@ -123,9 +123,9 @@ public static class DiffPlexHelper
 	/// <returns>New content with the left side applied</returns>
 	public static string ApplyTakeLeft(string[] linesOld, string[] linesNew, DiffPlex.Model.DiffBlock block)
 	{
-		ArgumentNullException.ThrowIfNull(linesOld);
-		ArgumentNullException.ThrowIfNull(linesNew);
-		ArgumentNullException.ThrowIfNull(block);
+		Ensure.NotNull(linesOld);
+		Ensure.NotNull(linesNew);
+		Ensure.NotNull(block);
 
 		List<string> newLines = [];
 
@@ -154,9 +154,9 @@ public static class DiffPlexHelper
 	/// <returns>New content with the right side applied</returns>
 	public static string ApplyTakeRight(string[] linesOld, string[] linesNew, DiffPlex.Model.DiffBlock block)
 	{
-		ArgumentNullException.ThrowIfNull(linesOld);
-		ArgumentNullException.ThrowIfNull(linesNew);
-		ArgumentNullException.ThrowIfNull(block);
+		Ensure.NotNull(linesOld);
+		Ensure.NotNull(linesNew);
+		Ensure.NotNull(block);
 
 		List<string> newLines = [];
 
@@ -183,7 +183,7 @@ public static class DiffPlexHelper
 	/// <returns>Diff statistics</returns>
 	public static DiffStatistics CalculateDiffStatistics(DiffResult diffResult)
 	{
-		ArgumentNullException.ThrowIfNull(diffResult);
+		Ensure.NotNull(diffResult);
 
 		int additions = diffResult.DiffBlocks.Sum(b => b.InsertCountB);
 		int deletions = diffResult.DiffBlocks.Sum(b => b.DeleteCountA);

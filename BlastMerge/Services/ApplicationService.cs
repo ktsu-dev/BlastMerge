@@ -31,8 +31,8 @@ public abstract class ApplicationService(IFileSystem? fileSystem = null) : IAppl
 	/// <exception cref="DirectoryNotFoundException">Thrown when directory does not exist.</exception>
 	protected void ValidateDirectoryAndFileName(string directory, string fileName)
 	{
-		ArgumentNullException.ThrowIfNull(directory);
-		ArgumentNullException.ThrowIfNull(fileName);
+		Ensure.NotNull(directory);
+		Ensure.NotNull(fileName);
 		ValidateDirectoryExists(directory);
 	}
 

@@ -111,10 +111,10 @@ public static class FileFinder
 		IFileSystem? fileSystem = null,
 		Action<string>? progressCallback = null)
 	{
-		ArgumentNullException.ThrowIfNull(searchPaths);
-		ArgumentNullException.ThrowIfNull(rootDirectory);
-		ArgumentNullException.ThrowIfNull(fileName);
-		ArgumentNullException.ThrowIfNull(pathExclusionPatterns);
+		Ensure.NotNull(searchPaths);
+		Ensure.NotNull(rootDirectory);
+		Ensure.NotNull(fileName);
+		Ensure.NotNull(pathExclusionPatterns);
 
 		fileSystem ??= FileSystemProvider.Current;
 		List<string> result = [];

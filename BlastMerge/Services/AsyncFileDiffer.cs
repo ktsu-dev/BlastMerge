@@ -30,7 +30,7 @@ public static class AsyncFileDiffer
 		int maxDegreeOfParallelism = 0,
 		CancellationToken cancellationToken = default)
 	{
-		ArgumentNullException.ThrowIfNull(filePaths);
+		Ensure.NotNull(filePaths);
 
 		if (maxDegreeOfParallelism <= 0)
 		{
@@ -71,7 +71,7 @@ public static class AsyncFileDiffer
 		int maxDegreeOfParallelism = 0,
 		CancellationToken cancellationToken = default)
 	{
-		ArgumentNullException.ThrowIfNull(filePaths);
+		Ensure.NotNull(filePaths);
 
 		if (maxDegreeOfParallelism <= 0)
 		{
@@ -143,7 +143,7 @@ public static class AsyncFileDiffer
 		int maxDegreeOfParallelism = 0,
 		CancellationToken cancellationToken = default)
 	{
-		ArgumentNullException.ThrowIfNull(filePaths);
+		Ensure.NotNull(filePaths);
 
 		if (maxDegreeOfParallelism <= 0)
 		{
@@ -196,8 +196,8 @@ public static class AsyncFileDiffer
 		string file2,
 		CancellationToken cancellationToken = default)
 	{
-		ArgumentNullException.ThrowIfNull(file1);
-		ArgumentNullException.ThrowIfNull(file2);
+		Ensure.NotNull(file1);
+		Ensure.NotNull(file2);
 
 		// Use FileSystemProvider.Current to get the proper file system abstraction
 		IFileSystem fileSystem = FileSystemProvider.Current;
@@ -219,7 +219,7 @@ public static class AsyncFileDiffer
 		int maxDegreeOfParallelism = 0,
 		CancellationToken cancellationToken = default)
 	{
-		ArgumentNullException.ThrowIfNull(operations);
+		Ensure.NotNull(operations);
 
 		if (maxDegreeOfParallelism <= 0)
 		{
