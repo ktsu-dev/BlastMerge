@@ -238,15 +238,13 @@ public class AppDataBatchManagerTests
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
 	public void SaveBatch_NullBatch_ThrowsArgumentNullException()
 	{
-		// Act
-		AppDataBatchManager.SaveBatch(null!);
+		// Act & Assert
+		_ = Assert.ThrowsExactly<ArgumentNullException>(() => AppDataBatchManager.SaveBatch(null!));
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentException))]
 	public void SaveBatch_EmptyBatchName_ThrowsArgumentException()
 	{
 		// Arrange
@@ -257,40 +255,36 @@ public class AppDataBatchManagerTests
 			SkipEmptyPatterns = false
 		};
 
-		// Act
-		AppDataBatchManager.SaveBatch(batch);
+		// Act & Assert
+		_ = Assert.ThrowsExactly<ArgumentException>(() => AppDataBatchManager.SaveBatch(batch));
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentException))]
 	public void GetBatch_EmptyBatchName_ThrowsArgumentException()
 	{
-		// Act
-		AppDataBatchManager.LoadBatch(string.Empty);
+		// Act & Assert
+		_ = Assert.ThrowsExactly<ArgumentException>(() => AppDataBatchManager.LoadBatch(string.Empty));
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
 	public void LoadBatch_NullBatchName_ThrowsArgumentNullException()
 	{
-		// Act
-		AppDataBatchManager.LoadBatch(null!);
+		// Act & Assert
+		_ = Assert.ThrowsExactly<ArgumentNullException>(() => AppDataBatchManager.LoadBatch(null!));
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentException))]
 	public void DeleteBatch_EmptyBatchName_ThrowsArgumentException()
 	{
-		// Act
-		AppDataBatchManager.DeleteBatch(string.Empty);
+		// Act & Assert
+		_ = Assert.ThrowsExactly<ArgumentException>(() => AppDataBatchManager.DeleteBatch(string.Empty));
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
 	public void DeleteBatch_NullBatchName_ThrowsArgumentNullException()
 	{
-		// Act
-		AppDataBatchManager.DeleteBatch(null!);
+		// Act & Assert
+		_ = Assert.ThrowsExactly<ArgumentNullException>(() => AppDataBatchManager.DeleteBatch(null!));
 	}
 
 	[TestMethod]

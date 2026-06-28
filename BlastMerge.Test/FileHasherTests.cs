@@ -69,13 +69,10 @@ public class FileHasherTests : MockFileSystemTestBase
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(FileNotFoundException))]
 	public void ComputeFileHash_NonexistentFile_ThrowsFileNotFoundException()
 	{
-		// Act
-		_fileHasherAdapter.ComputeFileHash(Path.Combine(TestDirectory, "nonexistent.txt"));
-
-		// Assert is handled by ExpectedException attribute
+		// Act & Assert
+		_ = Assert.ThrowsExactly<FileNotFoundException>(() => _fileHasherAdapter.ComputeFileHash(Path.Combine(TestDirectory, "nonexistent.txt")));
 	}
 
 	// NEW TESTS FOR IMPROVED COVERAGE - Testing static methods directly
@@ -138,7 +135,7 @@ public class FileHasherTests : MockFileSystemTestBase
 	public async Task ComputeFileHashesAsync_NullFilePaths_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () => await FileHasher.ComputeFileHashesAsync(null!, MockFileSystem).ConfigureAwait(false)).ConfigureAwait(false);
+		await Assert.ThrowsExactlyAsync<ArgumentNullException>(async () => await FileHasher.ComputeFileHashesAsync(null!, MockFileSystem).ConfigureAwait(false)).ConfigureAwait(false);
 	}
 
 	[TestMethod]
@@ -186,7 +183,7 @@ public class FileHasherTests : MockFileSystemTestBase
 	public void ComputeContentHash_NullContent_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 		{
 			FileHasher.ComputeContentHash(null!);
 		});
@@ -211,7 +208,7 @@ public class FileHasherTests : MockFileSystemTestBase
 	public async Task ComputeContentHashAsync_NullContent_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () => await FileHasher.ComputeContentHashAsync(null!).ConfigureAwait(false)).ConfigureAwait(false);
+		await Assert.ThrowsExactlyAsync<ArgumentNullException>(async () => await FileHasher.ComputeContentHashAsync(null!).ConfigureAwait(false)).ConfigureAwait(false);
 	}
 
 	[TestMethod]

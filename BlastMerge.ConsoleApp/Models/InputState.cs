@@ -8,7 +8,8 @@ namespace ktsu.BlastMerge.ConsoleApp.Models;
 /// Represents the current state of input processing
 /// </summary>
 /// <param name="initialInput">The initial input text</param>
-internal class InputState(string initialInput)
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Model type retained for console input-handling state; not currently instantiated but part of the public model surface.")]
+internal sealed class InputState(string initialInput)
 {
 	/// <summary>
 	/// Gets or sets the current input text

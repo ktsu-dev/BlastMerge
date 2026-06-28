@@ -23,8 +23,8 @@ public class CommandLineHandler(IApplicationService applicationService) : IComma
 	/// <returns>Exit code - 0 for success, 1 for error.</returns>
 	public int ProcessCommandLineArguments(string[] args)
 	{
-		ArgumentNullException.ThrowIfNull(args);
-		ArgumentNullException.ThrowIfNull(applicationService);
+		Ensure.NotNull(args);
+		Ensure.NotNull(applicationService);
 
 		try
 		{
@@ -55,7 +55,7 @@ public class CommandLineHandler(IApplicationService applicationService) : IComma
 	/// <returns>Exit code - 0 for success, 1 for error.</returns>
 	private int ExecuteCommand(CommandLineOptions options)
 	{
-		ArgumentNullException.ThrowIfNull(options);
+		Ensure.NotNull(options);
 
 		try
 		{
@@ -127,7 +127,7 @@ public class CommandLineHandler(IApplicationService applicationService) : IComma
 	/// <returns>Exit code indicating error.</returns>
 	private static int HandleParsingErrors(IEnumerable<Error> errors)
 	{
-		ArgumentNullException.ThrowIfNull(errors);
+		Ensure.NotNull(errors);
 		// Help and version errors are handled by CommandLineParser automatically
 		return 1;
 	}

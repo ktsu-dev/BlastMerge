@@ -156,8 +156,8 @@ public class ConsoleApplicationService : ApplicationService
 	/// <param name="batchName">The name of the batch configuration.</param>
 	public override void ProcessBatch(string directory, string batchName)
 	{
-		ArgumentNullException.ThrowIfNull(directory);
-		ArgumentNullException.ThrowIfNull(batchName);
+		Ensure.NotNull(directory);
+		Ensure.NotNull(batchName);
 		ValidateDirectoryExists(directory);
 
 		BatchConfiguration? batch = GetBatchConfiguration(batchName);
@@ -843,8 +843,8 @@ public class ConsoleApplicationService : ApplicationService
 	/// <param name="totalFiles">Total number of files found.</param>
 	private static void ShowFileGroupSummaryTable(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups, string directory, int totalFiles)
 	{
-		ArgumentNullException.ThrowIfNull(fileGroups);
-		ArgumentNullException.ThrowIfNull(directory);
+		Ensure.NotNull(fileGroups);
+		Ensure.NotNull(directory);
 
 		AnsiConsole.MarkupLine($"[green]Found {totalFiles} files in {fileGroups.Count} groups:[/]");
 		AnsiConsole.WriteLine();

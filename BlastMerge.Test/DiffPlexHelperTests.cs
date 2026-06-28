@@ -102,30 +102,27 @@ public class DiffPlexHelperTests : MockFileSystemTestBase
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
 	public void CreateLineDiffs_NullFile1_ThrowsArgumentNullException()
 	{
-		// Act
-		DiffPlexHelper.CreateLineDiffs(null!, _file2Path, MockFileSystem);
+		// Act & Assert
+		_ = Assert.ThrowsExactly<ArgumentNullException>(() => DiffPlexHelper.CreateLineDiffs(null!, _file2Path, MockFileSystem));
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
 	public void CreateLineDiffs_NullFile2_ThrowsArgumentNullException()
 	{
-		// Act
-		DiffPlexHelper.CreateLineDiffs(_file1Path, null!, MockFileSystem);
+		// Act & Assert
+		_ = Assert.ThrowsExactly<ArgumentNullException>(() => DiffPlexHelper.CreateLineDiffs(_file1Path, null!, MockFileSystem));
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(FileNotFoundException))]
 	public void CreateLineDiffs_NonExistentFile_ThrowsFileNotFoundException()
 	{
 		// Arrange
 		string nonExistentFile = @"C:\temp\nonexistent.txt";
 
-		// Act
-		DiffPlexHelper.CreateLineDiffs(_file1Path, nonExistentFile, MockFileSystem);
+		// Act & Assert
+		_ = Assert.ThrowsExactly<FileNotFoundException>(() => DiffPlexHelper.CreateLineDiffs(_file1Path, nonExistentFile, MockFileSystem));
 	}
 
 	[TestMethod]
@@ -160,19 +157,17 @@ public class DiffPlexHelperTests : MockFileSystemTestBase
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
 	public void CreateLineDiffsFromContent_NullContent1_ThrowsArgumentNullException()
 	{
-		// Act
-		DiffPlexHelper.CreateLineDiffsFromContent(null!, "content");
+		// Act & Assert
+		_ = Assert.ThrowsExactly<ArgumentNullException>(() => DiffPlexHelper.CreateLineDiffsFromContent(null!, "content"));
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
 	public void CreateLineDiffsFromContent_NullContent2_ThrowsArgumentNullException()
 	{
-		// Act
-		DiffPlexHelper.CreateLineDiffsFromContent("content", null!);
+		// Act & Assert
+		_ = Assert.ThrowsExactly<ArgumentNullException>(() => DiffPlexHelper.CreateLineDiffsFromContent("content", null!));
 	}
 
 	[TestMethod]
@@ -201,7 +196,6 @@ public class DiffPlexHelperTests : MockFileSystemTestBase
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
 	public void GetBlockContext_NullLines1_ThrowsArgumentNullException()
 	{
 		// Arrange
@@ -209,8 +203,8 @@ public class DiffPlexHelperTests : MockFileSystemTestBase
 		DiffResult diffResult = DiffPlexHelper.CreateLineDiffsFromContent("content1", "content2");
 		DiffPlex.Model.DiffBlock diffBlock = new(0, 1, 0, 1);
 
-		// Act
-		DiffPlexHelper.GetBlockContext(null!, lines2, diffBlock, 2);
+		// Act & Assert
+		_ = Assert.ThrowsExactly<ArgumentNullException>(() => DiffPlexHelper.GetBlockContext(null!, lines2, diffBlock, 2));
 	}
 
 	[TestMethod]
@@ -248,27 +242,25 @@ public class DiffPlexHelperTests : MockFileSystemTestBase
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
 	public void ApplyTakeLeft_NullLinesOld_ThrowsArgumentNullException()
 	{
 		// Arrange
 		string[] linesNew = ["Line 1", "Line 2"];
 		DiffPlex.Model.DiffBlock block = new(0, 1, 0, 1);
 
-		// Act
-		DiffPlexHelper.ApplyTakeLeft(null!, linesNew, block);
+		// Act & Assert
+		_ = Assert.ThrowsExactly<ArgumentNullException>(() => DiffPlexHelper.ApplyTakeLeft(null!, linesNew, block));
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
 	public void ApplyTakeRight_NullLinesNew_ThrowsArgumentNullException()
 	{
 		// Arrange
 		string[] linesOld = ["Line 1", "Line 2"];
 		DiffPlex.Model.DiffBlock block = new(0, 1, 0, 1);
 
-		// Act
-		DiffPlexHelper.ApplyTakeRight(linesOld, null!, block);
+		// Act & Assert
+		_ = Assert.ThrowsExactly<ArgumentNullException>(() => DiffPlexHelper.ApplyTakeRight(linesOld, null!, block));
 	}
 
 	[TestMethod]
@@ -290,11 +282,10 @@ public class DiffPlexHelperTests : MockFileSystemTestBase
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
 	public void CalculateDiffStatistics_NullDiffResult_ThrowsArgumentNullException()
 	{
-		// Act
-		DiffPlexHelper.CalculateDiffStatistics(null!);
+		// Act & Assert
+		_ = Assert.ThrowsExactly<ArgumentNullException>(() => DiffPlexHelper.CalculateDiffStatistics(null!));
 	}
 
 	[TestMethod]

@@ -205,11 +205,11 @@ public class IntegrationTests : MockFileSystemTestBase
 		];
 
 		// Act & Assert - ReadFilesAsync should handle missing files gracefully
-		await Assert.ThrowsExceptionAsync<FileNotFoundException>(async () =>
+		await Assert.ThrowsExactlyAsync<FileNotFoundException>(async () =>
 			await AsyncFileDiffer.ReadFilesAsync(nonExistentFiles).ConfigureAwait(false)).ConfigureAwait(false);
 
 		// Act & Assert - CalculateFileSimilarityAsync should handle missing files
-		await Assert.ThrowsExceptionAsync<FileNotFoundException>(async () =>
+		await Assert.ThrowsExactlyAsync<FileNotFoundException>(async () =>
 			await AsyncFileDiffer.CalculateFileSimilarityAsync(nonExistentFiles[0], nonExistentFiles[1]).ConfigureAwait(false)).ConfigureAwait(false);
 	}
 

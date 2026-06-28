@@ -83,7 +83,7 @@ public class FileSystemProviderTests
 	public void SetFileSystem_WithNull_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			FileSystemProvider.SetFileSystem(null!));
 	}
 

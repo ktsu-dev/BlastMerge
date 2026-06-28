@@ -20,5 +20,6 @@
     <PackageVersion Include="TestableIO.System.IO.Abstractions.Wrappers" Version="22.0.14" />
     <PackageVersion Include="Polyfill" Version="10.11.0" />
     <PackageVersion Include="Testably.Abstractions.FileSystem.Interface" Version="9.0.0" />
-  </ItemGroup>
+  
+    <PackageVersion Include="ktsu.Extensions" Version="1.5.0" /></ItemGroup>
 </Project>

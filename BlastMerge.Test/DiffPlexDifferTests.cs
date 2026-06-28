@@ -170,7 +170,6 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	/// Tests error handling for non-existent files
 	/// </summary>
 	[TestMethod]
-	[ExpectedException(typeof(FileNotFoundException))]
 	public void GenerateUnifiedDiff_NonExistentFile_ThrowsException()
 	{
 		string nonExistentFile = Path.GetTempFileName();
@@ -180,7 +179,7 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 		try
 		{
 			File.WriteAllText(tempFile1, MockFileSystem.File.ReadAllText(_file1));
-			DiffPlexDiffer.GenerateUnifiedDiff(tempFile1, nonExistentFile);
+			_ = Assert.ThrowsExactly<FileNotFoundException>(() => DiffPlexDiffer.GenerateUnifiedDiff(tempFile1, nonExistentFile));
 		}
 		finally
 		{

@@ -17,7 +17,7 @@ public static class NavigationHistory
 	/// <param name="menuName">The name of the menu being navigated to.</param>
 	public static void Push(string menuName)
 	{
-		ArgumentNullException.ThrowIfNull(menuName);
+		Ensure.NotNull(menuName);
 		_navigationHistory.Push(menuName);
 	}
 

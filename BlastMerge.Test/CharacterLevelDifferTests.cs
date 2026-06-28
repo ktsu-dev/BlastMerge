@@ -15,7 +15,7 @@ public class CharacterLevelDifferTests
 	public void CreateCharacterLevelDiff_WithNullOldText_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			CharacterLevelDiffer.CreateCharacterLevelDiff(null!, "new text"));
 	}
 
@@ -23,7 +23,7 @@ public class CharacterLevelDifferTests
 	public void CreateCharacterLevelDiff_WithNullNewText_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			CharacterLevelDiffer.CreateCharacterLevelDiff("old text", null!));
 	}
 
@@ -115,7 +115,7 @@ public class CharacterLevelDifferTests
 	public void CreateInlineCharacterDiff_WithNullOldLine_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			CharacterLevelDiffer.CreateInlineCharacterDiff(null!, "new line"));
 	}
 
@@ -123,7 +123,7 @@ public class CharacterLevelDifferTests
 	public void CreateInlineCharacterDiff_WithNullNewLine_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			CharacterLevelDiffer.CreateInlineCharacterDiff("old line", null!));
 	}
 
@@ -151,7 +151,7 @@ public class CharacterLevelDifferTests
 	public void AreLinesSimilar_WithNullLine1_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			CharacterLevelDiffer.AreLinesSimilar(null!, "line2"));
 	}
 
@@ -159,7 +159,7 @@ public class CharacterLevelDifferTests
 	public void AreLinesSimilar_WithNullLine2_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			CharacterLevelDiffer.AreLinesSimilar("line1", null!));
 	}
 

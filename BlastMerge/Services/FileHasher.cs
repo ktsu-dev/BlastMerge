@@ -78,6 +78,7 @@ public static class FileHasher
 	/// <param name="maxDegreeOfParallelism">Maximum number of concurrent operations (default: processor count)</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>Dictionary mapping file paths to their hashes</returns>
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2025:Ensure tasks using disposable instances complete before the instances are disposed", Justification = "All tasks are awaited via Task.WhenAll before the semaphore is disposed at the end of the method scope.")]
 	public static async Task<Dictionary<string, string>> ComputeFileHashesAsync(
 		IEnumerable<string> filePaths,
 		IFileSystem? fileSystem = null,

@@ -137,7 +137,7 @@ public class MockFileSystemTests
 			.Throws(new FileNotFoundException("File not found", missingFilePath));
 
 		// Act & Assert
-		Assert.ThrowsException<FileNotFoundException>(() =>
+		Assert.ThrowsExactly<FileNotFoundException>(() =>
 			mockFileDiffer.Object.FindDifferences(file1Path, missingFilePath));
 	}
 
@@ -153,7 +153,7 @@ public class MockFileSystemTests
 			.Throws(new UnauthorizedAccessException("Access denied"));
 
 		// Act & Assert
-		Assert.ThrowsException<UnauthorizedAccessException>(() =>
+		Assert.ThrowsExactly<UnauthorizedAccessException>(() =>
 			mockFileDiffer.Object.FindDifferences(file1Path, restrictedFilePath));
 	}
 }

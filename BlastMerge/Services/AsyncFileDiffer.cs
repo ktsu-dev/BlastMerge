@@ -138,6 +138,7 @@ public static class AsyncFileDiffer
 	/// <param name="maxDegreeOfParallelism">Maximum number of concurrent operations</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>Dictionary mapping file paths to their content</returns>
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2025:Ensure tasks using disposable instances complete before the instances are disposed", Justification = "All tasks are awaited via Task.WhenAll before the semaphore is disposed at the end of the method scope.")]
 	public static async Task<Dictionary<string, string>> ReadFilesAsync(
 		IEnumerable<string> filePaths,
 		int maxDegreeOfParallelism = 0,
@@ -214,6 +215,7 @@ public static class AsyncFileDiffer
 	/// <param name="maxDegreeOfParallelism">Maximum number of concurrent operations</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>Collection of (source, target) pairs that were successfully copied</returns>
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2025:Ensure tasks using disposable instances complete before the instances are disposed", Justification = "All tasks are awaited via Task.WhenAll before the semaphore is disposed at the end of the method scope.")]
 	public static async Task<IReadOnlyCollection<(string source, string target)>> CopyFilesAsync(
 		IEnumerable<(string source, string target)> operations,
 		int maxDegreeOfParallelism = 0,

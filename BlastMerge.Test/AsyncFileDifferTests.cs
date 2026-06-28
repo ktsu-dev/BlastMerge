@@ -100,7 +100,7 @@ public class AsyncFileDifferTests : MockFileSystemTestBase
 	public async Task GroupFilesByHashAsync_WithNullInput_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		await Assert.ThrowsExceptionAsync<ArgumentNullException>(() =>
+		await Assert.ThrowsExactlyAsync<ArgumentNullException>(() =>
 			AsyncFileDiffer.GroupFilesByHashAsync(null!)).ConfigureAwait(false);
 	}
 
@@ -139,7 +139,7 @@ public class AsyncFileDifferTests : MockFileSystemTestBase
 		await cts.CancelAsync().ConfigureAwait(false); // Cancel immediately
 
 		// Act & Assert
-		await Assert.ThrowsExceptionAsync<TaskCanceledException>(() =>
+		await Assert.ThrowsExactlyAsync<TaskCanceledException>(() =>
 			AsyncFileDiffer.GroupFilesByHashAsync(filePaths, cancellationToken: cts.Token)).ConfigureAwait(false);
 	}
 
@@ -214,7 +214,7 @@ public class AsyncFileDifferTests : MockFileSystemTestBase
 	public async Task GroupFilesByFilenameAndHashAsync_WithNullInput_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		await Assert.ThrowsExceptionAsync<ArgumentNullException>(() =>
+		await Assert.ThrowsExactlyAsync<ArgumentNullException>(() =>
 			AsyncFileDiffer.GroupFilesByFilenameAndHashAsync(null!)).ConfigureAwait(false);
 	}
 
@@ -290,7 +290,7 @@ public class AsyncFileDifferTests : MockFileSystemTestBase
 	public async Task ReadFilesAsync_WithNullInput_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		await Assert.ThrowsExceptionAsync<ArgumentNullException>(() =>
+		await Assert.ThrowsExactlyAsync<ArgumentNullException>(() =>
 			AsyncFileDiffer.ReadFilesAsync(null!)).ConfigureAwait(false);
 	}
 
@@ -381,7 +381,7 @@ public class AsyncFileDifferTests : MockFileSystemTestBase
 		string file2 = Path.Combine(_testDirectory, "file2.txt");
 
 		// Act & Assert
-		await Assert.ThrowsExceptionAsync<ArgumentNullException>(() =>
+		await Assert.ThrowsExactlyAsync<ArgumentNullException>(() =>
 			AsyncFileDiffer.CalculateFileSimilarityAsync(null!, file2)).ConfigureAwait(false);
 	}
 
@@ -395,7 +395,7 @@ public class AsyncFileDifferTests : MockFileSystemTestBase
 		string file1 = Path.Combine(_testDirectory, "file1.txt");
 
 		// Act & Assert
-		await Assert.ThrowsExceptionAsync<ArgumentNullException>(() =>
+		await Assert.ThrowsExactlyAsync<ArgumentNullException>(() =>
 			AsyncFileDiffer.CalculateFileSimilarityAsync(file1, null!)).ConfigureAwait(false);
 	}
 
@@ -486,7 +486,7 @@ public class AsyncFileDifferTests : MockFileSystemTestBase
 	public async Task CopyFilesAsync_WithNullOperations_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		await Assert.ThrowsExceptionAsync<ArgumentNullException>(() =>
+		await Assert.ThrowsExactlyAsync<ArgumentNullException>(() =>
 			AsyncFileDiffer.CopyFilesAsync(null!)).ConfigureAwait(false);
 	}
 

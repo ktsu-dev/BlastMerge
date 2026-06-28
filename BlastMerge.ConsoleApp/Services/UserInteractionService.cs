@@ -33,7 +33,7 @@ public static class UserInteractionService
 	/// <param name="message">The message to display.</param>
 	public static void PressAnyKeyToContinue(string message = "Press any key to continue...")
 	{
-		ArgumentNullException.ThrowIfNull(message);
+		Ensure.NotNull(message);
 		AnsiConsole.WriteLine(message);
 		Console.ReadKey();
 	}
@@ -45,7 +45,7 @@ public static class UserInteractionService
 	/// <returns>True if user confirms, false otherwise.</returns>
 	public static bool Confirm(string prompt)
 	{
-		ArgumentNullException.ThrowIfNull(prompt);
+		Ensure.NotNull(prompt);
 		return AnsiConsole.Confirm(prompt);
 	}
 
@@ -57,8 +57,8 @@ public static class UserInteractionService
 	/// <returns>The selected choice.</returns>
 	public static string ShowSelectionPrompt(string title, string[] choices)
 	{
-		ArgumentNullException.ThrowIfNull(title);
-		ArgumentNullException.ThrowIfNull(choices);
+		Ensure.NotNull(title);
+		Ensure.NotNull(choices);
 
 		// Use lock to ensure only one prompt can be shown at a time (prevents conflicts in parallel processing)
 		lock (PromptLock)

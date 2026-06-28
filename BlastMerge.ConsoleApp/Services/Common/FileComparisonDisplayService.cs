@@ -52,8 +52,8 @@ public static class FileComparisonDisplayService
 	/// <param name="file2">Second file path.</param>
 	public static void CompareTwoFiles(string file1, string file2)
 	{
-		ArgumentNullException.ThrowIfNull(file1);
-		ArgumentNullException.ThrowIfNull(file2);
+		Ensure.NotNull(file1);
+		Ensure.NotNull(file2);
 
 		ExecuteFileOperation(() =>
 		{
@@ -142,8 +142,8 @@ public static class FileComparisonDisplayService
 	/// <param name="file2">Second file path.</param>
 	public static void ShowChangeSummary(string file1, string file2)
 	{
-		ArgumentNullException.ThrowIfNull(file1);
-		ArgumentNullException.ThrowIfNull(file2);
+		Ensure.NotNull(file1);
+		Ensure.NotNull(file2);
 
 		ExecuteFileOperation(() =>
 		{
@@ -176,8 +176,8 @@ public static class FileComparisonDisplayService
 	/// <param name="file2">Second file path.</param>
 	public static void ShowGitStyleDiff(string file1, string file2)
 	{
-		ArgumentNullException.ThrowIfNull(file1);
-		ArgumentNullException.ThrowIfNull(file2);
+		Ensure.NotNull(file1);
+		Ensure.NotNull(file2);
 
 		ExecuteFileOperation(() =>
 		{
@@ -202,8 +202,8 @@ public static class FileComparisonDisplayService
 	/// <param name="file2">Path to the second file.</param>
 	public static void ShowSideBySideDiff(string file1, string file2)
 	{
-		ArgumentNullException.ThrowIfNull(file1);
-		ArgumentNullException.ThrowIfNull(file2);
+		Ensure.NotNull(file1);
+		Ensure.NotNull(file2);
 
 		ExecuteFileOperation(() =>
 		{
@@ -547,10 +547,10 @@ public static class FileComparisonDisplayService
 		DiffPlex.Model.DiffBlock diffBlock, BlockContext context,
 		string leftLabel, string rightLabel)
 	{
-		ArgumentNullException.ThrowIfNull(lines1);
-		ArgumentNullException.ThrowIfNull(lines2);
-		ArgumentNullException.ThrowIfNull(diffBlock);
-		ArgumentNullException.ThrowIfNull(context);
+		Ensure.NotNull(lines1);
+		Ensure.NotNull(lines2);
+		Ensure.NotNull(diffBlock);
+		Ensure.NotNull(context);
 
 		Table table = new Table()
 			.AddColumn(new TableColumn("[bold]Line[/]").Width(6))
@@ -726,7 +726,7 @@ public static class FileComparisonDisplayService
 	/// <returns>A tuple containing (deletions, insertions) counts</returns>
 	public static (int deletions, int insertions) GetDiffBlockStatistics(DiffPlex.Model.DiffBlock diffBlock)
 	{
-		ArgumentNullException.ThrowIfNull(diffBlock);
+		Ensure.NotNull(diffBlock);
 		return (diffBlock.DeleteCountA, diffBlock.InsertCountB);
 	}
 }

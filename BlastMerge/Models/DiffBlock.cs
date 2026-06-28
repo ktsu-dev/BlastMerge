@@ -3,6 +3,7 @@
 // Licensed under the MIT license.
 
 namespace ktsu.BlastMerge.Models;
+
 using System.Collections.ObjectModel;
 
 /// <summary>

@@ -203,10 +203,10 @@ public class FileDisplayServiceTests : MockFileSystemTestBase
 	public void MakeDistinguishedPaths_EmptyPaths_HandleGracefully()
 	{
 		// Arrange & Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			FileDisplayService.MakeDistinguishedPaths(null!, "test"));
 
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			FileDisplayService.MakeDistinguishedPaths("test", null!));
 	}
 
@@ -327,7 +327,7 @@ public class FileDisplayServiceTests : MockFileSystemTestBase
 	public void ShowDetailedFileList_WithNullInput_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			FileDisplayService.ShowDetailedFileList(null!));
 	}
 
@@ -342,7 +342,7 @@ public class FileDisplayServiceTests : MockFileSystemTestBase
 	public void ShowDifferences_WithNullInput_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			FileDisplayService.ShowDifferences(null!));
 	}
 

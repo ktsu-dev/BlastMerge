@@ -99,7 +99,7 @@ public class ApplicationServiceTests : MockFileSystemTestBase
 	public void ValidateDirectoryAndFileName_WithNullDirectory_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			_applicationService.TestValidateDirectoryAndFileName(null!, "*.txt"));
 	}
 
@@ -110,7 +110,7 @@ public class ApplicationServiceTests : MockFileSystemTestBase
 	public void ValidateDirectoryAndFileName_WithNullFileName_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			_applicationService.TestValidateDirectoryAndFileName(_testDirectory, null!));
 	}
 
@@ -121,7 +121,7 @@ public class ApplicationServiceTests : MockFileSystemTestBase
 	public void ValidateDirectoryAndFileName_WithNonExistentDirectory_ThrowsDirectoryNotFoundException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<DirectoryNotFoundException>(() =>
+		Assert.ThrowsExactly<DirectoryNotFoundException>(() =>
 			_applicationService.TestValidateDirectoryAndFileName("non_existent_dir", "*.txt"));
 	}
 
@@ -146,7 +146,7 @@ public class ApplicationServiceTests : MockFileSystemTestBase
 	public void ValidateDirectoryExists_WithNonExistentDirectory_ThrowsDirectoryNotFoundException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<DirectoryNotFoundException>(() =>
+		Assert.ThrowsExactly<DirectoryNotFoundException>(() =>
 			_applicationService.TestValidateDirectoryExists("non_existent_dir"));
 	}
 
@@ -186,7 +186,7 @@ public class ApplicationServiceTests : MockFileSystemTestBase
 	public void CompareFiles_WithNullDirectory_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			_applicationService.CompareFiles(null!, "*.txt"));
 	}
 
@@ -197,7 +197,7 @@ public class ApplicationServiceTests : MockFileSystemTestBase
 	public void CompareFiles_WithNullFileName_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			_applicationService.CompareFiles(_testDirectory, null!));
 	}
 
@@ -208,7 +208,7 @@ public class ApplicationServiceTests : MockFileSystemTestBase
 	public void CompareFiles_WithNonExistentDirectory_ThrowsDirectoryNotFoundException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<DirectoryNotFoundException>(() =>
+		Assert.ThrowsExactly<DirectoryNotFoundException>(() =>
 			_applicationService.CompareFiles("non_existent_dir", "*.txt"));
 	}
 
@@ -250,7 +250,7 @@ public class ApplicationServiceTests : MockFileSystemTestBase
 		Assert.AreEqual(3, multiFileGroup.Count, "Should have 3 file1.txt files with same content");
 
 		// Verify all files in the group have the same filename
-		List<string> fileNames = [.. multiFileGroup.Select(Path.GetFileName)];
+		List<string> fileNames = [.. multiFileGroup.Select(f => Path.GetFileName(f)!)];
 		Assert.IsTrue(fileNames.All(name => name == "file1.txt"), "All files in the group should have the same name");
 	}
 
@@ -296,7 +296,7 @@ public class ApplicationServiceTests : MockFileSystemTestBase
 	public void ProcessFiles_WithInvalidParameters_ThrowsException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			_applicationService.ProcessFiles(null!, "*.txt"));
 	}
 
@@ -317,7 +317,7 @@ public class ApplicationServiceTests : MockFileSystemTestBase
 	public void ProcessBatch_WithInvalidDirectory_ThrowsException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<DirectoryNotFoundException>(() =>
+		Assert.ThrowsExactly<DirectoryNotFoundException>(() =>
 			_applicationService.ProcessBatch("non_existent_dir", "TestBatch"));
 	}
 
@@ -338,7 +338,7 @@ public class ApplicationServiceTests : MockFileSystemTestBase
 	public void RunIterativeMerge_WithInvalidParameters_ThrowsException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			_applicationService.RunIterativeMerge(_testDirectory, null!));
 	}
 

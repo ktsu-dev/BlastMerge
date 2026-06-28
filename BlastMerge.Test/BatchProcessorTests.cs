@@ -83,19 +83,19 @@ public class BatchProcessorTests : MockFileSystemTestBase
 		string directory = "/test";
 
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			BatchProcessor.ProcessBatch(null!, directory, (a, b, c) => null, _ => { }, () => true));
 
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			BatchProcessor.ProcessBatch(batch, null!, (a, b, c) => null, _ => { }, () => true));
 
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			BatchProcessor.ProcessBatch(batch, directory, null!, _ => { }, () => true));
 
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			BatchProcessor.ProcessBatch(batch, directory, (a, b, c) => null, null!, () => true));
 
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			BatchProcessor.ProcessBatch(batch, directory, (a, b, c) => null, _ => { }, null!));
 	}
 
@@ -349,19 +349,19 @@ public class BatchProcessorTests : MockFileSystemTestBase
 		string directory = "/test";
 
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			BatchProcessor.ProcessBatchWithDiscretePhases(null!, directory, (a, b, c) => null, _ => { }, () => true));
 
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			BatchProcessor.ProcessBatchWithDiscretePhases(batch, null!, (a, b, c) => null, _ => { }, () => true));
 
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			BatchProcessor.ProcessBatchWithDiscretePhases(batch, directory, null!, _ => { }, () => true));
 
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			BatchProcessor.ProcessBatchWithDiscretePhases(batch, directory, (a, b, c) => null, null!, () => true));
 
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			BatchProcessor.ProcessBatchWithDiscretePhases(batch, directory, (a, b, c) => null, _ => { }, null!));
 	}
 
@@ -409,7 +409,7 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	public void CreateCustomBatch_WithNullName_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			BatchProcessor.CreateCustomBatch(null!, ["*.txt"]));
 	}
 
@@ -417,7 +417,7 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	public void CreateCustomBatch_WithNullPatterns_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			BatchProcessor.CreateCustomBatch("Test", null!));
 	}
 

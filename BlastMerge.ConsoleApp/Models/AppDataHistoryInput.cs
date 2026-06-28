@@ -4,7 +4,6 @@
 
 namespace ktsu.BlastMerge.ConsoleApp.Models;
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using ktsu.BlastMerge.Models;
@@ -35,8 +34,8 @@ public static class AppDataHistoryInput
 	/// <returns>The user's input or default value if empty.</returns>
 	public static string AskWithHistory(string prompt, string defaultValue)
 	{
-		ArgumentNullException.ThrowIfNull(prompt);
-		ArgumentNullException.ThrowIfNull(defaultValue);
+		Ensure.NotNull(prompt);
+		Ensure.NotNull(defaultValue);
 
 		string promptKey = GetPromptKey(prompt);
 

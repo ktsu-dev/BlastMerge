@@ -86,7 +86,7 @@ public class IterativeMergeOrchestratorTests : MockFileSystemTestBase
 	public void PrepareFileGroupsForMerging_WithNullDirectory_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 		{
 			IterativeMergeOrchestrator.PrepareFileGroupsForMerging(null!, "*.txt");
 		});
@@ -96,7 +96,7 @@ public class IterativeMergeOrchestratorTests : MockFileSystemTestBase
 	public void PrepareFileGroupsForMerging_WithNullFileName_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 		{
 			IterativeMergeOrchestrator.PrepareFileGroupsForMerging(TestDirectory, null!);
 		});
@@ -185,7 +185,7 @@ public class IterativeMergeOrchestratorTests : MockFileSystemTestBase
 		bool ContinuationCallback() => true;
 
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 		{
 			IterativeMergeOrchestrator.StartIterativeMergeProcess(
 				null!, MergeCallback, StatusCallback, ContinuationCallback);
@@ -202,7 +202,7 @@ public class IterativeMergeOrchestratorTests : MockFileSystemTestBase
 		bool ContinuationCallback() => true;
 
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 		{
 			IterativeMergeOrchestrator.StartIterativeMergeProcess(
 				fileGroups, null!, StatusCallback, ContinuationCallback);

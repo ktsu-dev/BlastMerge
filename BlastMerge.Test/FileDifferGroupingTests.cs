@@ -98,11 +98,10 @@ public class FileDifferGroupingTests : MockFileSystemTestBase
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
 	public void GroupFilesByHash_WithNullInput_ThrowsArgumentNullException()
 	{
-		// Act
-		_fileDifferAdapter.GroupFilesByHash(null!);
+		// Act & Assert
+		_ = Assert.ThrowsExactly<ArgumentNullException>(() => _fileDifferAdapter.GroupFilesByHash(null!));
 	}
 
 	[TestMethod]
@@ -151,11 +150,10 @@ public class FileDifferGroupingTests : MockFileSystemTestBase
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
 	public void GroupFilesByHashOnly_WithNullInput_ThrowsArgumentNullException()
 	{
-		// Act
-		_fileDifferAdapter.GroupFilesByHashOnly(null!);
+		// Act & Assert
+		_ = Assert.ThrowsExactly<ArgumentNullException>(() => _fileDifferAdapter.GroupFilesByHashOnly(null!));
 	}
 
 	[TestMethod]
@@ -199,10 +197,9 @@ public class FileDifferGroupingTests : MockFileSystemTestBase
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(ArgumentNullException))]
 	public void GroupFilesByFilenameAndHash_WithNullInput_ThrowsArgumentNullException()
 	{
-		// Act
-		_fileDifferAdapter.GroupFilesByFilenameAndHash(null!);
+		// Act & Assert
+		_ = Assert.ThrowsExactly<ArgumentNullException>(() => _fileDifferAdapter.GroupFilesByFilenameAndHash(null!));
 	}
 }

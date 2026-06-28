@@ -28,7 +28,7 @@ public abstract class BaseMenuHandler(ApplicationService applicationService) : I
 	/// <summary>
 	/// Gets the application service.
 	/// </summary>
-	protected ApplicationService ApplicationService { get; } = applicationService ?? throw new ArgumentNullException(nameof(applicationService));
+	protected ApplicationService ApplicationService { get; } = Ensure.NotNull(applicationService);
 
 	/// <summary>
 	/// Gets the name of this menu for navigation purposes.

@@ -21,7 +21,7 @@ public static class FileDisplayService
 	/// <param name="fileGroups">The file groups to display.</param>
 	public static void ShowDetailedFileList(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
 	{
-		ArgumentNullException.ThrowIfNull(fileGroups);
+		Ensure.NotNull(fileGroups);
 		AnsiConsole.Clear();
 		UIHelper.ShowInfo("[bold cyan]Detailed File List[/]");
 		AnsiConsole.WriteLine();
@@ -62,7 +62,7 @@ public static class FileDisplayService
 	/// <param name="fileGroups">The file groups to show differences for.</param>
 	public static void ShowDifferences(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
 	{
-		ArgumentNullException.ThrowIfNull(fileGroups);
+		Ensure.NotNull(fileGroups);
 		// Convert to FileGroup objects for easier handling
 		List<FileGroup> groups = [.. fileGroups.Select(g => new FileGroup(g.Value))];
 
@@ -156,8 +156,8 @@ public static class FileDisplayService
 	/// <returns>A tuple containing distinguished paths for both files.</returns>
 	public static (string path1, string path2) MakeDistinguishedPaths(string filePath1, string filePath2)
 	{
-		ArgumentNullException.ThrowIfNull(filePath1);
-		ArgumentNullException.ThrowIfNull(filePath2);
+		Ensure.NotNull(filePath1);
+		Ensure.NotNull(filePath2);
 
 		try
 		{

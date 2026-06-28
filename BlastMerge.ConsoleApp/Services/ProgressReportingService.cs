@@ -20,7 +20,7 @@ public static class ProgressReportingService
 	/// <param name="status">Current merge session status.</param>
 	public static void ReportMergeStatus(MergeSessionStatus status)
 	{
-		ArgumentNullException.ThrowIfNull(status);
+		Ensure.NotNull(status);
 		AnsiConsole.MarkupLine($"[yellow]Merge {status.CurrentIteration}: {status.MostSimilarPair?.FilePath1} <-> {status.MostSimilarPair?.FilePath2}[/]");
 		AnsiConsole.MarkupLine($"[dim]Similarity: {status.MostSimilarPair?.SimilarityScore:F1} | Remaining files: {status.RemainingFilesCount}[/]");
 	}
@@ -31,7 +31,7 @@ public static class ProgressReportingService
 	/// <param name="result">The completion result.</param>
 	public static void ReportCompletionResult(MergeCompletionResult result)
 	{
-		ArgumentNullException.ThrowIfNull(result);
+		Ensure.NotNull(result);
 		if (result.IsSuccessful)
 		{
 			AnsiConsole.MarkupLine($"[green]Merge completed successfully. Final file: {result.OriginalFileName}[/]");
@@ -48,7 +48,7 @@ public static class ProgressReportingService
 	/// <param name="result">The merge completion result containing operation details.</param>
 	public static void ShowDetailedMergeSummary(MergeCompletionResult result)
 	{
-		ArgumentNullException.ThrowIfNull(result);
+		Ensure.NotNull(result);
 
 		AnsiConsole.WriteLine();
 		AnsiConsole.MarkupLine("[bold blue]═══════════════════════════════════════════════════════════════════════════════════════[/]");

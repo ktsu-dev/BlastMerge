@@ -6,7 +6,6 @@
 
 namespace ktsu.BlastMerge.ConsoleApp.Services;
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -35,8 +34,8 @@ public static class AsyncApplicationService
 		int maxDegreeOfParallelism = 0,
 		CancellationToken cancellationToken = default)
 	{
-		ArgumentNullException.ThrowIfNull(directory);
-		ArgumentNullException.ThrowIfNull(fileName);
+		Ensure.NotNull(directory);
+		Ensure.NotNull(fileName);
 
 		IReadOnlyCollection<string> filePaths = [];
 		IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups = new Dictionary<string, IReadOnlyCollection<string>>();
@@ -87,9 +86,9 @@ public static class AsyncApplicationService
 		int maxDegreeOfParallelism = 0,
 		CancellationToken cancellationToken = default)
 	{
-		ArgumentNullException.ThrowIfNull(dir1);
-		ArgumentNullException.ThrowIfNull(dir2);
-		ArgumentNullException.ThrowIfNull(pattern);
+		Ensure.NotNull(dir1);
+		Ensure.NotNull(dir2);
+		Ensure.NotNull(pattern);
 
 		DirectoryComparisonResult? result = null;
 
@@ -219,8 +218,8 @@ public static class AsyncApplicationService
 		string file2,
 		CancellationToken cancellationToken = default)
 	{
-		ArgumentNullException.ThrowIfNull(file1);
-		ArgumentNullException.ThrowIfNull(file2);
+		Ensure.NotNull(file1);
+		Ensure.NotNull(file2);
 
 		return await AsyncFileDiffer.CalculateFileSimilarityAsync(file1, file2, cancellationToken);
 	}
@@ -237,7 +236,7 @@ public static class AsyncApplicationService
 		int maxDegreeOfParallelism = 0,
 		CancellationToken cancellationToken = default)
 	{
-		ArgumentNullException.ThrowIfNull(filePaths);
+		Ensure.NotNull(filePaths);
 
 		List<string> fileList = [.. filePaths];
 		Dictionary<string, string> results = [];
@@ -265,7 +264,7 @@ public static class AsyncApplicationService
 		int maxDegreeOfParallelism = 0,
 		CancellationToken cancellationToken = default)
 	{
-		ArgumentNullException.ThrowIfNull(copyOperations);
+		Ensure.NotNull(copyOperations);
 
 		List<(string source, string target)> operationsList = [.. copyOperations];
 		IReadOnlyCollection<(string source, string target)> results = [];
@@ -295,8 +294,8 @@ public static class AsyncApplicationService
 		int maxDegreeOfParallelism = 0,
 		CancellationToken cancellationToken = default)
 	{
-		ArgumentNullException.ThrowIfNull(directory);
-		ArgumentNullException.ThrowIfNull(batchName);
+		Ensure.NotNull(directory);
+		Ensure.NotNull(batchName);
 
 		BatchConfiguration? batch = AppDataBatchManager.LoadBatch(batchName);
 		if (batch == null)

@@ -105,11 +105,11 @@ public class ResolutionItemTests
 	[TestMethod]
 	public void ResolutionType_AllEnumValues_AreValid()
 	{
-		// Act & Assert - Ensure all enum values are accessible
-		Assert.AreEqual(ResolutionType.Merge, ResolutionType.Merge);
-		Assert.AreEqual(ResolutionType.Identical, ResolutionType.Identical);
-		Assert.AreEqual(ResolutionType.SingleFile, ResolutionType.SingleFile);
-		Assert.AreEqual(ResolutionType.Empty, ResolutionType.Empty);
+		// Act & Assert - Ensure all enum values are defined and accessible
+		Assert.IsTrue(Enum.IsDefined(ResolutionType.Merge));
+		Assert.IsTrue(Enum.IsDefined(ResolutionType.Identical));
+		Assert.IsTrue(Enum.IsDefined(ResolutionType.SingleFile));
+		Assert.IsTrue(Enum.IsDefined(ResolutionType.Empty));
 	}
 
 	[TestMethod]

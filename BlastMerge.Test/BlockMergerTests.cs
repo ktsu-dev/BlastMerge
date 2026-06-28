@@ -21,7 +21,7 @@ public class BlockMergerTests
 		string[] lines2 = ["line1", "line2"];
 
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			BlockMerger.PerformManualBlockSelection(null!, lines2, (block, context, num) => BlockChoice.UseVersion1));
 	}
 
@@ -32,7 +32,7 @@ public class BlockMergerTests
 		string[] lines1 = ["line1", "line2"];
 
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			BlockMerger.PerformManualBlockSelection(lines1, null!, (block, context, num) => BlockChoice.UseVersion1));
 	}
 
@@ -44,7 +44,7 @@ public class BlockMergerTests
 		string[] lines2 = ["line1", "line2"];
 
 		// Act & Assert
-		Assert.ThrowsException<ArgumentNullException>(() =>
+		Assert.ThrowsExactly<ArgumentNullException>(() =>
 			BlockMerger.PerformManualBlockSelection(lines1, lines2, null!));
 	}
 

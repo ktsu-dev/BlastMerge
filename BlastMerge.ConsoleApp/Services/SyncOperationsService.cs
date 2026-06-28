@@ -22,7 +22,7 @@ public static class SyncOperationsService
 	/// <param name="fileGroups">The file groups to offer sync options for.</param>
 	public static void OfferSyncOptions(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
 	{
-		ArgumentNullException.ThrowIfNull(fileGroups);
+		Ensure.NotNull(fileGroups);
 
 		// Convert to FileGroup objects for easier handling
 		List<string> allFiles = [.. fileGroups.SelectMany(g => g.Value)];

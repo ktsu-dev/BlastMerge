@@ -21,7 +21,7 @@ public static class InteractiveMergeService
 	/// <param name="fileGroups">The file groups to merge.</param>
 	public static void PerformIterativeMerge(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups)
 	{
-		ArgumentNullException.ThrowIfNull(fileGroups);
+		Ensure.NotNull(fileGroups);
 
 		// Convert to file groups by hash to find groups with multiple identical copies
 		List<string> allFiles = [.. fileGroups.SelectMany(g => g.Value)];

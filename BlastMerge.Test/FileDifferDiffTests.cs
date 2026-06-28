@@ -3,6 +3,7 @@
 // Licensed under the MIT license.
 
 namespace ktsu.BlastMerge.Test;
+
 using System.IO;
 using System.Linq;
 using ktsu.BlastMerge.Models;
@@ -114,11 +115,10 @@ public class FileDifferDiffTests : MockFileSystemTestBase
 	}
 
 	[TestMethod]
-	[ExpectedException(typeof(FileNotFoundException))]
 	public void FindDifferences_NonExistentFile_ThrowsFileNotFoundException()
 	{
-		// Act
-		_fileDifferAdapter.FindDifferences(_testFile1, Path.Combine(TestDirectory, "nonexistent.txt"));
+		// Act & Assert
+		_ = Assert.ThrowsExactly<FileNotFoundException>(() => _fileDifferAdapter.FindDifferences(_testFile1, Path.Combine(TestDirectory, "nonexistent.txt")));
 	}
 
 	[TestMethod]
