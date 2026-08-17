@@ -14,5 +14,5 @@
   
     <PackageReference Include="Testably.Abstractions.FileSystem.Interface" />
     <PackageReference Include="TestableIO.System.IO.Abstractions.Wrappers" />
-    <PackageReference Include="Polyfill" /></ItemGroup>
+    <PackageReference Include="Polyfill" PrivateAssets="all" /></ItemGroup>
 </Project>
