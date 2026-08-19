@@ -8,7 +8,7 @@
 [![NuGet Downloads](https://img.shields.io/nuget/dt/ktsu.BlastMerge?label=Downloads&logo=nuget)](https://nuget.org/packages/ktsu.BlastMerge)
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/ktsu-dev/BlastMerge?label=Commits&logo=github)](https://github.com/ktsu-dev/BlastMerge/commits/main)
 [![GitHub contributors](https://img.shields.io/github/contributors/ktsu-dev/BlastMerge?label=Contributors&logo=github)](https://github.com/ktsu-dev/BlastMerge/graphs/contributors)
-[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ktsu-dev/BlastMerge/dotnet.yml?label=Build&logo=github)](https://github.com/ktsu-dev/BlastMerge/actions)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ktsu-dev/BlastMerge/dotnet.yml?branch=main&label=Build&logo=github)](https://github.com/ktsu-dev/BlastMerge/actions)
 
 ## Overview
 
