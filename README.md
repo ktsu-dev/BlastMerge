@@ -2,6 +2,14 @@
 
 > Cross-repository file synchronization through intelligent iterative merging
 
+[![License](https://img.shields.io/github/license/ktsu-dev/BlastMerge.svg?label=License&logo=nuget)](LICENSE.md)
+[![NuGet Version](https://img.shields.io/nuget/v/ktsu.BlastMerge?label=Stable&logo=nuget)](https://nuget.org/packages/ktsu.BlastMerge)
+[![NuGet Version](https://img.shields.io/nuget/vpre/ktsu.BlastMerge?label=Latest&logo=nuget)](https://nuget.org/packages/ktsu.BlastMerge)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/ktsu.BlastMerge?label=Downloads&logo=nuget)](https://nuget.org/packages/ktsu.BlastMerge)
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/ktsu-dev/BlastMerge?label=Commits&logo=github)](https://github.com/ktsu-dev/BlastMerge/commits/main)
+[![GitHub contributors](https://img.shields.io/github/contributors/ktsu-dev/BlastMerge?label=Contributors&logo=github)](https://github.com/ktsu-dev/BlastMerge/graphs/contributors)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ktsu-dev/BlastMerge/dotnet.yml?label=Build&logo=github)](https://github.com/ktsu-dev/BlastMerge/actions)
+
 ## Overview
 
 BlastMerge is a revolutionary file synchronization tool that uses **intelligent iterative merging** to unify multiple versions of files across repositories, directories, and codebases. Unlike traditional diff tools, BlastMerge progressively merges file versions by finding the most similar pairs and resolving conflicts interactively, ultimately synchronizing entire file ecosystems into a single, unified version.
