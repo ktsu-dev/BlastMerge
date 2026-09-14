@@ -344,9 +344,9 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	{
 		// Arrange: three copies of config.json, one of them locked by "another process"
 		string testDir = CreateTestDirectory();
-		AddFile(Path.Combine(testDir, "one", "config.json"), "shared content");
-		AddFile(Path.Combine(testDir, "two", "config.json"), "shared content");
-		string lockedFile = AddUnreadableFile(Path.Combine(testDir, "three", "config.json"), "content nobody can read");
+		AddFile(Path.Join(testDir, "one", "config.json"), "shared content");
+		AddFile(Path.Join(testDir, "two", "config.json"), "shared content");
+		string lockedFile = AddUnreadableFile(Path.Join(testDir, "three", "config.json"), "content nobody can read");
 
 		BatchConfiguration batch = new()
 		{
@@ -383,7 +383,7 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	{
 		// Arrange: the single file matching the pattern cannot be read
 		string testDir = CreateTestDirectory();
-		string lockedFile = AddUnreadableFile(Path.Combine(testDir, "only", "settings.json"), "content nobody can read");
+		string lockedFile = AddUnreadableFile(Path.Join(testDir, "only", "settings.json"), "content nobody can read");
 
 		BatchConfiguration batch = new()
 		{
@@ -418,8 +418,8 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	{
 		// Arrange
 		string testDir = CreateTestDirectory();
-		AddFile(Path.Combine(testDir, "one", "config.json"), "shared content");
-		AddFile(Path.Combine(testDir, "two", "config.json"), "shared content");
+		AddFile(Path.Join(testDir, "one", "config.json"), "shared content");
+		AddFile(Path.Join(testDir, "two", "config.json"), "shared content");
 
 		BatchConfiguration batch = new()
 		{
