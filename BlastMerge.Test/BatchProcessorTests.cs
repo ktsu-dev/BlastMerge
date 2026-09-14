@@ -5,6 +5,7 @@ namespace ktsu.BlastMerge.Test;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
@@ -339,6 +340,110 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	}
 
 	[TestMethod]
+	public void ProcessBatchWithDiscretePhases_WithUnreadableFileAmongDuplicates_ReportsFailureAndNamesSkippedFile()
+	{
+		// Arrange: three copies of config.json, one of them locked by "another process"
+		string testDir = CreateTestDirectory();
+		AddFile(Path.Combine(testDir, "one", "config.json"), "shared content");
+		AddFile(Path.Combine(testDir, "two", "config.json"), "shared content");
+		string lockedFile = AddUnreadableFile(Path.Combine(testDir, "three", "config.json"), "content nobody can read");
+
+		BatchConfiguration batch = new()
+		{
+			Name = "Test Batch",
+			FilePatterns = ["config.json"]
+		};
+
+		// Act
+		BatchResult result = BatchProcessor.ProcessBatchWithDiscretePhases(
+			batch,
+			testDir,
+			(path1, path2, output) => new MergeResult(["merged content"], []),
+			_ => { },
+			() => true,
+			null,
+			0,
+			MockFileSystem);
+
+		// Assert
+		Assert.IsFalse(result.Success, $"Batch must not report success when a file was skipped. Summary: {result.Summary}");
+
+		PatternResult patternResult = result.PatternResults.Single(r => r.FileName == "config.json");
+		Assert.IsFalse(patternResult.Success, "The pattern whose file could not be read must be reported as failed");
+		Assert.IsTrue(
+			patternResult.Message.Contains(lockedFile, StringComparison.Ordinal),
+			$"The message should name the skipped file. Actual message: {patternResult.Message}");
+		Assert.AreEqual(1, patternResult.SkippedFiles.Count, "The skipped file should be recorded on the pattern result");
+		Assert.AreEqual(lockedFile, patternResult.SkippedFiles[0].FilePath);
+		Assert.IsFalse(string.IsNullOrWhiteSpace(patternResult.SkippedFiles[0].ErrorMessage), "The underlying I/O error should be recorded");
+	}
+
+	[TestMethod]
+	public void ProcessBatchWithDiscretePhases_WithOnlyFileUnreadable_ReportsFailureRatherThanNoFilesFound()
+	{
+		// Arrange: the single file matching the pattern cannot be read
+		string testDir = CreateTestDirectory();
+		string lockedFile = AddUnreadableFile(Path.Combine(testDir, "only", "settings.json"), "content nobody can read");
+
+		BatchConfiguration batch = new()
+		{
+			Name = "Test Batch",
+			FilePatterns = ["settings.json"]
+		};
+
+		// Act
+		BatchResult result = BatchProcessor.ProcessBatchWithDiscretePhases(
+			batch,
+			testDir,
+			(path1, path2, output) => new MergeResult(["merged content"], []),
+			_ => { },
+			() => true,
+			null,
+			0,
+			MockFileSystem);
+
+		// Assert
+		Assert.IsFalse(result.Success, $"Batch must not report success when its only file was skipped. Summary: {result.Summary}");
+
+		PatternResult patternResult = result.PatternResults.Single(r => r.FileName == "settings.json");
+		Assert.IsFalse(patternResult.Success, "An unreadable file must not be folded into a successful 'no files found' result");
+		Assert.IsTrue(
+			patternResult.Message.Contains(lockedFile, StringComparison.Ordinal),
+			$"The message should name the skipped file. Actual message: {patternResult.Message}");
+		Assert.AreEqual(1, patternResult.SkippedFiles.Count, "The skipped file should be recorded on the pattern result");
+	}
+
+	[TestMethod]
+	public void ProcessBatchWithDiscretePhases_WithAllFilesReadable_RecordsNoSkippedFiles()
+	{
+		// Arrange
+		string testDir = CreateTestDirectory();
+		AddFile(Path.Combine(testDir, "one", "config.json"), "shared content");
+		AddFile(Path.Combine(testDir, "two", "config.json"), "shared content");
+
+		BatchConfiguration batch = new()
+		{
+			Name = "Test Batch",
+			FilePatterns = ["config.json"]
+		};
+
+		// Act
+		BatchResult result = BatchProcessor.ProcessBatchWithDiscretePhases(
+			batch,
+			testDir,
+			(path1, path2, output) => new MergeResult(["merged content"], []),
+			_ => { },
+			() => true,
+			null,
+			0,
+			MockFileSystem);
+
+		// Assert
+		Assert.IsTrue(result.Success, $"Batch should succeed when every file is readable. Summary: {result.Summary}");
+		Assert.IsTrue(result.PatternResults.All(r => r.SkippedFiles.Count == 0), "No files should be reported as skipped");
+	}
+
+	[TestMethod]
 	public void ProcessBatchWithDiscretePhases_WithNullParameters_ThrowsArgumentNullException()
 	{
 		// Arrange
@@ -399,6 +504,30 @@ public class BatchProcessorTests : MockFileSystemTestBase
 		string testDir = Path.Combine(TestDirectory, "batch_test");
 		MockFileSystem.Directory.CreateDirectory(testDir);
 		return testDir;
+	}
+
+	/// <summary>
+	/// Adds a readable file, creating its directory if needed.
+	/// </summary>
+	/// <returns>The path as the mock file system stores it.</returns>
+	private string AddFile(string fullPath, string content) =>
+		AddFile(fullPath, new MockFileData(content));
+
+	/// <summary>
+	/// Adds a file that cannot be opened for reading, standing in for a file locked by another
+	/// process or one the current user has no access to.
+	/// </summary>
+	/// <returns>The path as the mock file system stores it.</returns>
+	private string AddUnreadableFile(string fullPath, string content) =>
+		AddFile(fullPath, new MockFileData(content) { AllowedFileShare = FileShare.None });
+
+	private string AddFile(string fullPath, MockFileData fileData)
+	{
+		MockFileSystem.Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+		MockFileSystem.AddFile(fullPath, fileData);
+
+		// The mock file system normalizes paths on storage, so report back what it actually holds
+		return MockFileSystem.Path.GetFullPath(fullPath);
 	}
 
 	#region Additional Comprehensive Tests
