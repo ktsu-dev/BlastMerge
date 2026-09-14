@@ -53,14 +53,14 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	[TestMethod]
 	public void AreFilesIdentical_IdenticalFiles_ReturnsTrue()
 	{
-		// Create temporary real files for testing since DiffPlexDiffer uses real file system
+		// Use mock file system directly since DiffPlexDiffer uses FileSystemProvider.Current
 		string tempFile1 = SecureTempFileHelper.CreateTempFile();
 		string tempFile2 = SecureTempFileHelper.CreateTempFile();
 
 		try
 		{
-			File.WriteAllText(tempFile1, MockFileSystem.File.ReadAllText(_file1));
-			File.WriteAllText(tempFile2, MockFileSystem.File.ReadAllText(_identicalFile));
+			MockFileSystem.File.WriteAllText(tempFile1, MockFileSystem.File.ReadAllText(_file1));
+			MockFileSystem.File.WriteAllText(tempFile2, MockFileSystem.File.ReadAllText(_identicalFile));
 
 			bool result = DiffPlexDiffer.AreFilesIdentical(tempFile1, tempFile2);
 			Assert.IsTrue(result, "Identical files should be detected as identical");

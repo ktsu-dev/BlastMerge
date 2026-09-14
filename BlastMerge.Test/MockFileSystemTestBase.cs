@@ -36,7 +36,7 @@ public abstract class MockFileSystemTestBase
 	public virtual void SetUp()
 	{
 		// Create unique test directory per test to avoid collisions when running in parallel
-		TestDirectory = $@"C:\mock-test-dir-{TestId}";
+		TestDirectory = TestPaths.Rooted($"mock-test-dir-{TestId}");
 
 		// Create a fresh mock filesystem instance for this test
 		MockFileSystem = new MockFileSystem(new Dictionary<string, MockFileData>());

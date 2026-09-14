@@ -12,15 +12,15 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 [TestClass]
 public class SecureTempFileHelperTests : MockFileSystemTestBase
 {
-	protected override void InitializeFileSystem()
-	{
-		// Set up a mock temp directory
-		string tempPath = @"C:\temp";
-		MockFileSystem.Directory.CreateDirectory(tempPath);
+	/// <summary>
+	/// The temp directory SecureTempFileHelper uses when the current file system is a mock,
+	/// rooted for the platform the tests are running on.
+	/// </summary>
+	private static readonly string MockTempPath = TestPaths.Rooted("temp");
 
+	protected override void InitializeFileSystem() =>
 		// Mock Path.GetTempPath() behavior by ensuring temp directory exists
-		MockFileSystem.Directory.CreateDirectory(tempPath);
-	}
+		MockFileSystem.Directory.CreateDirectory(MockTempPath);
 
 	[TestMethod]
 	public void CreateTempFile_WithDefaultExtension_CreatesFileWithTxtExtension()
@@ -30,7 +30,7 @@ public class SecureTempFileHelperTests : MockFileSystemTestBase
 
 		// Assert
 		Assert.IsTrue(MockFileSystem.File.Exists(tempFile), "Temp file should exist after creation");
-		StringAssert.StartsWith(tempFile, @"C:\temp", "Temp file should be in temp directory");
+		StringAssert.StartsWith(tempFile, MockTempPath, "Temp file should be in temp directory");
 	}
 
 	[TestMethod]
@@ -45,7 +45,7 @@ public class SecureTempFileHelperTests : MockFileSystemTestBase
 		// Assert
 		Assert.IsTrue(MockFileSystem.File.Exists(tempFile), "Temp file should exist after creation");
 		StringAssert.EndsWith(tempFile, extension, "Temp file should have the specified extension");
-		StringAssert.StartsWith(tempFile, @"C:\temp", "Temp file should be in temp directory");
+		StringAssert.StartsWith(tempFile, MockTempPath, "Temp file should be in temp directory");
 	}
 
 	[TestMethod]
@@ -72,7 +72,7 @@ public class SecureTempFileHelperTests : MockFileSystemTestBase
 
 		// Assert
 		Assert.IsTrue(MockFileSystem.Directory.Exists(tempDir), "Temp directory should exist after creation");
-		StringAssert.StartsWith(tempDir, @"C:\temp", "Temp directory should be in temp directory");
+		StringAssert.StartsWith(tempDir, MockTempPath, "Temp directory should be in temp directory");
 	}
 
 	[TestMethod]

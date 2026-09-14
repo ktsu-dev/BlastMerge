@@ -24,11 +24,13 @@ public static class SecureTempFileHelper
 	{
 		fileSystem ??= FileSystemProvider.Current;
 
-		// For mock file systems, use a default temp path since Path.GetTempPath() returns real system path
+		// For mock file systems, use a default temp path since Path.GetTempPath() returns real system path.
+		// The path has to be rooted on the current platform: on Unix "C:\temp" is a relative
+		// single-component name, so the mock filesystem would resolve it against the process directory.
 		string tempPath;
 		if (fileSystem.GetType().Name.Contains("Mock"))
 		{
-			tempPath = @"C:\temp";
+			tempPath = OperatingSystem.IsWindows() ? @"C:\temp" : "/temp";
 			// Ensure the mock temp directory exists
 			if (!fileSystem.Directory.Exists(tempPath))
 			{
