@@ -3,6 +3,7 @@
 namespace ktsu.BlastMerge.Test;
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -31,10 +32,12 @@ internal static class TestPaths
 	{
 		ArgumentNullException.ThrowIfNull(components);
 
-		// Path.Combine discards every argument before a rooted one, so a component that is
-		// itself rooted would silently drop the platform root this method exists to apply.
-		// Reduce each component to a relative segment first.
-		return Path.Combine([Root, .. components.Select(MakeRelative)]);
+		// Deliberately not Path.Combine: it discards every argument before a rooted one, so a
+		// component that was itself rooted would silently drop the platform root this method
+		// exists to apply. Joining reduced segments onto Root cannot drop anything.
+		IEnumerable<string> segments = components.Select(MakeRelative).Where(segment => segment.Length > 0);
+
+		return Root + string.Join(Path.DirectorySeparatorChar, segments);
 	}
 
 	/// <summary>
