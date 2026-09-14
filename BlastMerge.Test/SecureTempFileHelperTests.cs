@@ -13,13 +13,13 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 public class SecureTempFileHelperTests : MockFileSystemTestBase
 {
 	/// <summary>
-	/// The temp directory SecureTempFileHelper uses when the current file system is a mock,
-	/// rooted for the platform the tests are running on.
+	/// Gets the temp directory SecureTempFileHelper uses, as reported by the mock file system.
 	/// </summary>
-	private static readonly string MockTempPath = TestPaths.Rooted("temp");
+	private string MockTempPath => MockFileSystem.Path.GetTempPath();
 
 	protected override void InitializeFileSystem() =>
-		// Mock Path.GetTempPath() behavior by ensuring temp directory exists
+		// SecureTempFileHelper creates this itself, but do it up front so the assertions below
+		// describe a directory that already existed rather than one they caused to appear.
 		MockFileSystem.Directory.CreateDirectory(MockTempPath);
 
 	[TestMethod]
