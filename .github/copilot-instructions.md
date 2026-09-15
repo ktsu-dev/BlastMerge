@@ -37,6 +37,7 @@ BlastMerge/
 │   ├── Services/           # Business logic and services
 │   └── Text/               # Text processing and visualization
 ├── BlastMerge.ConsoleApp/  # Console application entry point
+├── BlastMerge.Tool/        # .NET tool head, packs and installs as `blastmerge`
 ├── BlastMerge.Test/        # Test project (MSTest)
 ├── scripts/                # Build and deployment scripts (PowerShell)
 │   ├── PSBuild.psm1       # Main build module

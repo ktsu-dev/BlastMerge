@@ -9,7 +9,10 @@ using CommandLine.Text;
 /// <summary>
 /// Command line options for BlastMerge console application
 /// </summary>
-[Verb("blastmerge", HelpText = "Cross-Repository File Synchronization Tool")]
+/// <remarks>
+/// BlastMerge takes no verbs, so these options bind straight to the command line. Declaring a
+/// verb here would only prepend a phantom one to every usage example the parser prints.
+/// </remarks>
 public class CommandLineOptions
 {
 	/// <summary>
@@ -55,7 +58,7 @@ public class CommandLineOptions
 	/// <summary>
 	/// Examples usage text
 	/// </summary>
-	[Usage(ApplicationAlias = "BlastMerge.exe")]
+	[Usage(ApplicationAlias = "blastmerge")]
 	public static IEnumerable<Example> Examples
 	{
 		get
