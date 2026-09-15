@@ -8,7 +8,6 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
-using System.Text.RegularExpressions;
 
 /// <summary>
 /// Finds files matching a specific name in a directory hierarchy
@@ -240,136 +239,10 @@ public static class FileFinder
 	/// <param name="path">The path to check</param>
 	/// <param name="exclusionPatterns">The exclusion patterns to match against</param>
 	/// <returns>True if the path should be excluded, false otherwise</returns>
-	private static bool ShouldExcludePath(string path, IReadOnlyCollection<string> exclusionPatterns)
-	{
-		if (exclusionPatterns.Count == 0)
-		{
-			return false;
-		}
-
-		string normalizedPath = Path.GetFullPath(path).Replace(Path.DirectorySeparatorChar, '/');
-
-		return exclusionPatterns
-			.Where(p => !string.IsNullOrWhiteSpace(p))
-			.Any(pattern =>
-			{
-				// Support simple glob patterns
-				string normalizedPattern = pattern.Replace('\\', '/');
-
-				// Convert simple glob patterns to regex-like matching
-				if (normalizedPattern.Contains('*') || normalizedPattern.Contains('?'))
-				{
-					return MatchesGlobPattern(normalizedPath, normalizedPattern);
-				}
-				else
-				{
-					// Exact match or contains check
-					return normalizedPath.Contains(normalizedPattern, StringComparison.OrdinalIgnoreCase);
-				}
-			});
-	}
-
-	/// <summary>
-	/// Checks if a path matches a simple glob pattern
-	/// </summary>
-	/// <param name="path">The path to check</param>
-	/// <param name="pattern">The glob pattern</param>
-	/// <returns>True if the path matches the pattern, false otherwise</returns>
-	private static bool MatchesGlobPattern(string path, string pattern)
-	{
-		// Special handling for common patterns - order matters!
-		if (IsDirectoryContainsPattern(pattern))
-		{
-			return MatchesDirectoryContainsPattern(path, pattern);
-		}
-
-		if (IsWildcardContainsPattern(pattern))
-		{
-			return MatchesWildcardContainsPattern(path, pattern);
-		}
-
-		if (IsPrefixPattern(pattern))
-		{
-			return MatchesPrefixPattern(path, pattern);
-		}
-
-		// Fallback to general regex pattern matching
-		return MatchesRegexPattern(path, pattern);
-	}
-
-	/// <summary>
-	/// Checks if pattern is a directory contains pattern like "*/bin/*"
-	/// </summary>
-	private static bool IsDirectoryContainsPattern(string pattern) =>
-		pattern.StartsWith("*/") && pattern.EndsWith("/*");
-
-	/// <summary>
-	/// Matches directory contains patterns like "*/bin/*"
-	/// </summary>
-	private static bool MatchesDirectoryContainsPattern(string path, string pattern)
-	{
-		string dirName = pattern[2..^2]; // Remove "*/" and "/*"
-		return path.Contains($"/{dirName}/", StringComparison.OrdinalIgnoreCase);
-	}
-
-	/// <summary>
-	/// Checks if pattern is a wildcard contains pattern like "*node_modules*"
-	/// </summary>
-	private static bool IsWildcardContainsPattern(string pattern) =>
-		pattern.StartsWith('*') && pattern.EndsWith('*') && !pattern.Contains('/');
-
-	/// <summary>
-	/// Matches wildcard contains patterns like "*node_modules*"
-	/// </summary>
-	private static bool MatchesWildcardContainsPattern(string path, string pattern)
-	{
-		string substring = pattern[1..^1]; // Remove leading and trailing "*"
-		string[] pathComponents = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-		return pathComponents.Any(component => component.Contains(substring, StringComparison.OrdinalIgnoreCase));
-	}
-
-	/// <summary>
-	/// Checks if pattern is a prefix pattern like "temp*"
-	/// </summary>
-	private static bool IsPrefixPattern(string pattern) =>
-		pattern.EndsWith('*') && !pattern.Contains('/');
-
-	/// <summary>
-	/// Matches prefix patterns like "temp*"
-	/// </summary>
-	private static bool MatchesPrefixPattern(string path, string pattern)
-	{
-		string prefix = pattern[..^1]; // Remove trailing "*"
-		string[] pathComponents = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-		return pathComponents.Any(component => component.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
-	}
-
-	/// <summary>
-	/// Matches using regex pattern as fallback
-	/// </summary>
-	private static bool MatchesRegexPattern(string path, string pattern)
-	{
-		string regexPattern = "^" + pattern
-			.Replace("*", ".*")
-			.Replace("?", ".")
-			.Replace("/", "\\/") + "$";
-
-		try
-		{
-			// Use a 1-second timeout and non-backtracking algorithm to prevent ReDoS attacks
-			return Regex.IsMatch(path, regexPattern, RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, TimeSpan.FromSeconds(1));
-		}
-		catch (ArgumentException)
-		{
-			// If regex fails, fall back to simple contains check
-			return path.Contains(pattern.Replace("*", "").Replace("?", ""), StringComparison.OrdinalIgnoreCase);
-		}
-		catch (RegexMatchTimeoutException)
-		{
-			// If regex times out, fall back to simple contains check to avoid DoS
-			return path.Contains(pattern.Replace("*", "").Replace("?", ""), StringComparison.OrdinalIgnoreCase);
-		}
-	}
+	private static bool ShouldExcludePath(string path, IReadOnlyCollection<string> exclusionPatterns) =>
+		PathExclusionMatcher.IsExcluded(
+			Path.GetFullPath(path).Replace(Path.DirectorySeparatorChar, '/'),
+			exclusionPatterns);
 
 	/// <summary>
 	/// Determines if a directory is a git submodule
