@@ -943,13 +943,9 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	public void ProcessSinglePattern_WithThreeDifferingVersions_FoldsEveryVersionIntoTheFinalContent()
 	{
 		// Arrange - three versions of the same file, each carrying a line the other two lack
-		string testDir = CreateTestDirectory();
-		string pathA = Path.Combine(Path.Combine(testDir, "repo-a"), "app.config");
-		string pathB = Path.Combine(Path.Combine(testDir, "repo-b"), "app.config");
-		string pathC = Path.Combine(Path.Combine(testDir, "repo-c"), "app.config");
-		MockFileSystem.AddFile(pathA, new($"shared{Environment.NewLine}only-in-a"));
-		MockFileSystem.AddFile(pathB, new($"shared{Environment.NewLine}only-in-b"));
-		MockFileSystem.AddFile(pathC, new($"shared{Environment.NewLine}only-in-c"));
+		string pathA = CreateFile(Path.Combine("repo-a", "app.config"), $"shared{Environment.NewLine}only-in-a");
+		string pathB = CreateFile(Path.Combine("repo-b", "app.config"), $"shared{Environment.NewLine}only-in-b");
+		string pathC = CreateFile(Path.Combine("repo-c", "app.config"), $"shared{Environment.NewLine}only-in-c");
 
 		List<string[]> firstSideOfEachMerge = [];
 
@@ -957,7 +953,7 @@ public class BatchProcessorTests : MockFileSystemTestBase
 		PatternResult result = BatchProcessor.ProcessSinglePatternWithPaths(
 			"app.config",
 			[],
-			testDir,
+			TestDirectory,
 			[],
 			(path1, path2, output) =>
 			{
@@ -995,17 +991,14 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	public void ProcessSinglePattern_WithTwoDifferingVersions_WritesMergedContentToBothFiles()
 	{
 		// Arrange
-		string testDir = CreateTestDirectory();
-		string pathA = Path.Combine(Path.Combine(testDir, "repo-a"), "app.config");
-		string pathB = Path.Combine(Path.Combine(testDir, "repo-b"), "app.config");
-		MockFileSystem.AddFile(pathA, new("only-in-a"));
-		MockFileSystem.AddFile(pathB, new("only-in-b"));
+		string pathA = CreateFile(Path.Combine("repo-a", "app.config"), "only-in-a");
+		string pathB = CreateFile(Path.Combine("repo-b", "app.config"), "only-in-b");
 
 		// Act
 		PatternResult result = BatchProcessor.ProcessSinglePatternWithPaths(
 			"app.config",
 			[],
-			testDir,
+			TestDirectory,
 			[],
 			(path1, path2, output) => new MergeResult(["only-in-a", "only-in-b"], []),
 			_ => { },
