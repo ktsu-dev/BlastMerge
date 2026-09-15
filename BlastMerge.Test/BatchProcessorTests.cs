@@ -521,6 +521,14 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	private string AddUnreadableFile(string fullPath, string content) =>
 		AddFile(fullPath, new MockFileData(content) { AllowedFileShare = FileShare.None });
 
+	/// <summary>
+	/// Adds a file that can be read but not written, standing in for a file the current user has
+	/// read-only access to.
+	/// </summary>
+	/// <returns>The path as the mock file system stores it.</returns>
+	private string AddUnwritableFile(string fullPath, string content) =>
+		AddFile(fullPath, new MockFileData(content) { Attributes = FileAttributes.ReadOnly });
+
 	private string AddFile(string fullPath, MockFileData fileData)
 	{
 		MockFileSystem.Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
@@ -936,6 +944,176 @@ public class BatchProcessorTests : MockFileSystemTestBase
 
 		// Assert
 		Assert.IsFalse(result.Success, "Processing should fail when continuation callback returns false"); // Should fail due to incomplete processing
+		Assert.AreEqual(3, result.FilesFound);
+	}
+
+	[TestMethod]
+	public void ProcessSinglePattern_WithThreeDifferingVersions_FoldsEveryVersionIntoTheFinalContent()
+	{
+		// Arrange - three versions of the same file, each carrying a line the other two lack
+		string testDir = CreateTestDirectory();
+		string pathA = AddFile(Path.Join(testDir, "repo-a", "app.config"), $"shared{Environment.NewLine}only-in-a");
+		string pathB = AddFile(Path.Join(testDir, "repo-b", "app.config"), $"shared{Environment.NewLine}only-in-b");
+		string pathC = AddFile(Path.Join(testDir, "repo-c", "app.config"), $"shared{Environment.NewLine}only-in-c");
+
+		List<string[]> firstSideOfEachMerge = [];
+
+		// Act - a union merge, so no line that reaches a merge can be lost by the merge itself
+		PatternResult result = BatchProcessor.ProcessSinglePatternWithPaths(
+			"app.config",
+			[],
+			testDir,
+			[],
+			(path1, path2, output) =>
+			{
+				string[] lines1 = MockFileSystem.File.ReadAllLines(path1);
+				string[] lines2 = MockFileSystem.File.ReadAllLines(path2);
+				firstSideOfEachMerge.Add(lines1);
+				return new MergeResult([.. lines1.Union(lines2, StringComparer.Ordinal)], []);
+			},
+			_ => { },
+			() => true,
+			MockFileSystem);
+
+		// Assert
+		Assert.IsTrue(result.Success, "Processing three differing versions should succeed");
+		Assert.AreEqual(3, result.FilesFound);
+		Assert.AreEqual(2, firstSideOfEachMerge.Count, "Three versions should take two merges");
+
+		// The second merge must start from the first merge's result, not from the original file
+		CollectionAssert.Contains(
+			firstSideOfEachMerge[1],
+			"only-in-a",
+			"The second merge should fold in the first merge's result, not re-read the original second file");
+
+		// Every version's unique line survives into the final content of every file
+		foreach (string path in new[] { pathA, pathB, pathC })
+		{
+			string finalContent = MockFileSystem.File.ReadAllText(path);
+			StringAssert.Contains(finalContent, "only-in-a", $"{path} should retain the first version's content");
+			StringAssert.Contains(finalContent, "only-in-b", $"{path} should retain the second version's content");
+			StringAssert.Contains(finalContent, "only-in-c", $"{path} should retain the third version's content");
+		}
+	}
+
+	[TestMethod]
+	public void ProcessSinglePattern_WithTwoDifferingVersions_WritesMergedContentToBothFiles()
+	{
+		// Arrange
+		string testDir = CreateTestDirectory();
+		string pathA = AddFile(Path.Join(testDir, "repo-a", "app.config"), "only-in-a");
+		string pathB = AddFile(Path.Join(testDir, "repo-b", "app.config"), "only-in-b");
+
+		// Act
+		PatternResult result = BatchProcessor.ProcessSinglePatternWithPaths(
+			"app.config",
+			[],
+			testDir,
+			[],
+			(path1, path2, output) => new MergeResult(["only-in-a", "only-in-b"], []),
+			_ => { },
+			() => true,
+			MockFileSystem);
+
+		// Assert - the merge is consolidated onto both sources, not discarded
+		Assert.IsTrue(result.Success, "Processing two differing versions should succeed");
+		string expected = string.Join(Environment.NewLine, "only-in-a", "only-in-b");
+		Assert.AreEqual(expected, MockFileSystem.File.ReadAllText(pathA));
+		Assert.AreEqual(expected, MockFileSystem.File.ReadAllText(pathB));
+	}
+
+	[TestMethod]
+	public void ProcessSinglePattern_WhenALaterMergeIsCancelled_ReportsCancellation()
+	{
+		// Arrange - three versions, with the merge callback cancelling on the second merge
+		string testDir = CreateTestDirectory();
+		AddFile(Path.Join(testDir, "repo-a", "app.config"), "only-in-a");
+		AddFile(Path.Join(testDir, "repo-b", "app.config"), "only-in-b");
+		AddFile(Path.Join(testDir, "repo-c", "app.config"), "only-in-c");
+
+		int mergeCount = 0;
+
+		// Act
+		PatternResult result = BatchProcessor.ProcessSinglePatternWithPaths(
+			"app.config",
+			[],
+			testDir,
+			[],
+			(path1, path2, output) =>
+			{
+				mergeCount++;
+				return mergeCount == 1 ? new MergeResult(["only-in-a", "only-in-b"], []) : null;
+			},
+			_ => { },
+			() => true,
+			MockFileSystem);
+
+		// Assert
+		Assert.IsFalse(result.Success, "A cancelled merge should not report success");
+		Assert.AreEqual("Merge operation was cancelled", result.Message);
+		Assert.AreEqual(3, result.FilesFound);
+		Assert.AreEqual(2, mergeCount, "Cancellation should happen on the second merge");
+	}
+
+	[TestMethod]
+	public void ProcessSinglePattern_WhenTheFirstMergeCannotBeWritten_ReportsFailure()
+	{
+		// Arrange - the second version is readable but not writable
+		string testDir = CreateTestDirectory();
+		AddFile(Path.Join(testDir, "repo-a", "app.config"), "only-in-a");
+		AddUnwritableFile(Path.Join(testDir, "repo-b", "app.config"), "only-in-b");
+
+		// Act
+		PatternResult result = BatchProcessor.ProcessSinglePatternWithPaths(
+			"app.config",
+			[],
+			testDir,
+			[],
+			(path1, path2, output) => new MergeResult(["only-in-a", "only-in-b"], []),
+			_ => { },
+			() => true,
+			MockFileSystem);
+
+		// Assert - the write failure is reported rather than thrown or silently ignored
+		Assert.IsFalse(result.Success, "A merge that cannot be written should not report success");
+		StringAssert.Contains(
+			result.Message,
+			"Failed to write merged content",
+			"The message should say the merged content could not be written");
+		Assert.AreEqual(2, result.FilesFound);
+	}
+
+	[TestMethod]
+	public void ProcessSinglePattern_WhenALaterMergeCannotBeWritten_ReportsFailure()
+	{
+		// Arrange - the first two versions consolidate, the third cannot be written
+		string testDir = CreateTestDirectory();
+		AddFile(Path.Join(testDir, "repo-a", "app.config"), "only-in-a");
+		AddFile(Path.Join(testDir, "repo-b", "app.config"), "only-in-b");
+		AddUnwritableFile(Path.Join(testDir, "repo-c", "app.config"), "only-in-c");
+
+		// Act
+		PatternResult result = BatchProcessor.ProcessSinglePatternWithPaths(
+			"app.config",
+			[],
+			testDir,
+			[],
+			(path1, path2, output) =>
+			{
+				string[] lines1 = MockFileSystem.File.ReadAllLines(path1);
+				string[] lines2 = MockFileSystem.File.ReadAllLines(path2);
+				return new MergeResult([.. lines1.Union(lines2, StringComparer.Ordinal)], []);
+			},
+			_ => { },
+			() => true,
+			MockFileSystem);
+
+		// Assert - the failure surfaces from the second merge, not the first
+		Assert.IsFalse(result.Success, "A merge that cannot be written should not report success");
+		StringAssert.Contains(
+			result.Message,
+			"Failed to write merged content",
+			"The message should say the merged content could not be written");
 		Assert.AreEqual(3, result.FilesFound);
 	}
 

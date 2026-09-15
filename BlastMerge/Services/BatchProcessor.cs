@@ -729,17 +729,18 @@ public static partial class BatchProcessor
 		}
 
 		// Files are different, need to merge
-		string? outputPath = null;
 		MergeResult? mergeResult = null;
 
 		// Sort files to ensure consistent order
 		List<string> sortedFiles = [.. files.OrderBy(f => f)];
 
+		IFileSystem fileSystem = parameters.FileSystem ?? FileSystemProvider.Current;
+
 		// Calculate similarity between the first two files
 		double similarity = FileDiffer.CalculateFileSimilarity(sortedFiles[0], sortedFiles[1], parameters.FileSystem);
 
 		// Merge first two files
-		mergeResult = callbacks.MergeCallback(sortedFiles[0], sortedFiles[1], outputPath);
+		mergeResult = callbacks.MergeCallback(sortedFiles[0], sortedFiles[1], null);
 
 		if (mergeResult == null)
 		{
@@ -750,6 +751,15 @@ public static partial class BatchProcessor
 				Message = "Merge operation was cancelled",
 				FilesFound = files.Count
 			};
+		}
+
+		// Consolidate the merged content onto the files it came from, so the next iteration merges
+		// against the accumulated result rather than the original content of the previous file
+		PatternResult? writeFailure = ApplyMergedContent(mergeResult, sortedFiles.Take(2), fileSystem, parameters, files.Count);
+
+		if (writeFailure != null)
+		{
+			return writeFailure;
 		}
 
 		// Update status - use appropriate constructor parameters for MergeSessionStatus
@@ -774,10 +784,10 @@ public static partial class BatchProcessor
 				};
 			}
 
-			// Calculate similarity between this file and previous file
+			// Calculate similarity between this file and the accumulated merge held by the previous file
 			double currentSimilarity = FileDiffer.CalculateFileSimilarity(sortedFiles[i - 1], sortedFiles[i], parameters.FileSystem);
 
-			mergeResult = callbacks.MergeCallback(sortedFiles[i - 1], sortedFiles[i], outputPath);
+			mergeResult = callbacks.MergeCallback(sortedFiles[i - 1], sortedFiles[i], null);
 
 			if (mergeResult == null)
 			{
@@ -788,6 +798,14 @@ public static partial class BatchProcessor
 					Message = "Merge operation was cancelled",
 					FilesFound = files.Count
 				};
+			}
+
+			// Fold this merge into every file consolidated so far, so the next iteration builds on it
+			writeFailure = ApplyMergedContent(mergeResult, sortedFiles.Take(i + 1), fileSystem, parameters, files.Count);
+
+			if (writeFailure != null)
+			{
+				return writeFailure;
 			}
 
 			// Update status with appropriate constructor parameters
@@ -806,6 +824,50 @@ public static partial class BatchProcessor
 			Message = MergeCompletedSuccessfullyMessage,
 			FilesFound = files.Count
 		};
+	}
+
+	/// <summary>
+	/// Writes an accumulated merge result over every file that has been folded into it.
+	/// </summary>
+	/// <remarks>
+	/// This is what lets a sequence of merges chain: the next merge reads its first side back from
+	/// disk, so it sees everything merged so far rather than that file's original content. It mirrors
+	/// how <see cref="IterativeMergeOrchestrator.StartIterativeMergeProcess"/> consolidates a group.
+	/// </remarks>
+	/// <param name="mergeResult">The merge result to write.</param>
+	/// <param name="mergedFiles">The files that have been folded into <paramref name="mergeResult"/>.</param>
+	/// <param name="fileSystem">The file system to write through.</param>
+	/// <param name="parameters">The parameters of the pattern being processed, used to describe a failure.</param>
+	/// <param name="filesFound">The number of files found for the pattern, used to describe a failure.</param>
+	/// <returns>A failed <see cref="PatternResult"/> if the content could not be written, otherwise <see langword="null"/>.</returns>
+	private static PatternResult? ApplyMergedContent(
+		MergeResult mergeResult,
+		IEnumerable<string> mergedFiles,
+		IFileSystem fileSystem,
+		PatternProcessingParameters parameters,
+		int filesFound)
+	{
+		string mergedContent = string.Join(Environment.NewLine, mergeResult.MergedLines);
+
+		try
+		{
+			foreach (string filePath in mergedFiles)
+			{
+				fileSystem.File.WriteAllText(filePath, mergedContent);
+			}
+		}
+		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+		{
+			return new PatternResult
+			{
+				Pattern = parameters.Pattern,
+				Success = false,
+				Message = $"Failed to write merged content: {ex.Message}",
+				FilesFound = filesFound
+			};
+		}
+
+		return null;
 	}
 
 	/// <summary>
