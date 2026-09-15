@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions;
-using System.Linq;
+using ktsu.BlastMerge.Services;
 
 /// <summary>
 /// Adapter for FileFinder that works with a mock filesystem
@@ -200,113 +200,15 @@ public class FileFinderAdapter(IFileSystem fileSystem)
 	/// <param name="path">The path to check</param>
 	/// <param name="exclusionPatterns">The exclusion patterns to match against</param>
 	/// <returns>True if the path should be excluded, false otherwise</returns>
-	private bool ShouldExcludePath(string path, IReadOnlyCollection<string> exclusionPatterns)
-	{
-		if (exclusionPatterns.Count == 0)
-		{
-			return false;
-		}
-
-		string normalizedPath = _fileSystem.Path.GetFullPath(path).Replace(_fileSystem.Path.DirectorySeparatorChar, '/');
-
-		foreach (string pattern in exclusionPatterns)
-		{
-			if (string.IsNullOrWhiteSpace(pattern))
-			{
-				continue;
-			}
-
-			// Support simple glob patterns
-			string normalizedPattern = pattern.Replace('\\', '/');
-
-			// Convert simple glob patterns to regex-like matching
-			if (normalizedPattern.Contains('*') || normalizedPattern.Contains('?'))
-			{
-				if (MatchesGlobPattern(normalizedPath, normalizedPattern))
-				{
-					return true;
-				}
-			}
-			else
-			{
-				// Exact match or contains check
-				if (normalizedPath.Contains(normalizedPattern, StringComparison.OrdinalIgnoreCase))
-				{
-					return true;
-				}
-			}
-		}
-
-		return false;
-	}
-
-	/// <summary>
-	/// Checks if a path matches a simple glob pattern
-	/// </summary>
-	/// <param name="path">The path to check</param>
-	/// <param name="pattern">The glob pattern</param>
-	/// <returns>True if the path matches the pattern, false otherwise</returns>
-	private static bool MatchesGlobPattern(string path, string pattern)
-	{
-		if (pattern.StartsWith("*/") && pattern.EndsWith("/*"))
-		{
-			return MatchesDirectoryPattern(path, pattern);
-		}
-
-		if (pattern.StartsWith('*') && pattern.EndsWith('*') && !pattern.Contains('/'))
-		{
-			return MatchesSubstringPattern(path, pattern);
-		}
-
-		if (pattern.EndsWith('*') && !pattern.Contains('/'))
-		{
-			return MatchesPrefixPattern(path, pattern);
-		}
-
-		return MatchesRegexPattern(path, pattern);
-	}
-
-	private static bool MatchesDirectoryPattern(string path, string pattern)
-	{
-		// Pattern like "*/bin/*" - check if path contains the directory
-		string dirName = pattern[2..^2]; // Remove "*/" and "/*"
-		return path.Contains($"/{dirName}/", StringComparison.OrdinalIgnoreCase);
-	}
-
-	private static bool MatchesSubstringPattern(string path, string pattern)
-	{
-		// Pattern like "*node_modules*" - check if any path component contains the substring
-		string substring = pattern[1..^1]; // Remove leading and trailing "*"
-		string[] pathComponents = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-		return pathComponents.Any(component => component.Contains(substring, StringComparison.OrdinalIgnoreCase));
-	}
-
-	private static bool MatchesPrefixPattern(string path, string pattern)
-	{
-		// Pattern like "temp*" - check if any path component starts with the prefix
-		string prefix = pattern[..^1]; // Remove trailing "*"
-		string[] pathComponents = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-		return pathComponents.Any(component => component.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
-	}
-
-	private static bool MatchesRegexPattern(string path, string pattern)
-	{
-		// Fallback to general regex pattern matching
-		string regexPattern = "^" + pattern
-			.Replace("*", ".*")
-			.Replace("?", ".")
-			.Replace("/", "\\/") + "$";
-
-		try
-		{
-			return System.Text.RegularExpressions.Regex.IsMatch(path, regexPattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-		}
-		catch (ArgumentException)
-		{
-			// If regex fails, fall back to simple contains check
-			return path.Contains(pattern.Replace("*", "").Replace("?", ""), StringComparison.OrdinalIgnoreCase);
-		}
-	}
+	/// <remarks>
+	/// The matching itself is the production <see cref="PathExclusionMatcher"/>; only the path
+	/// normalization differs, because this adapter has to normalize through the mock file system
+	/// rather than <see cref="System.IO.Path"/>.
+	/// </remarks>
+	private bool ShouldExcludePath(string path, IReadOnlyCollection<string> exclusionPatterns) =>
+		PathExclusionMatcher.IsExcluded(
+			_fileSystem.Path.GetFullPath(path).Replace(_fileSystem.Path.DirectorySeparatorChar, '/'),
+			exclusionPatterns);
 
 	/// <summary>
 	/// Determines if a directory is a git submodule

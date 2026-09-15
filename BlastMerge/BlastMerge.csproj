@@ -10,6 +10,7 @@
     <PackageReference Include="DiffPlex" />
     <PackageReference Include="Spectre.Console" />
     <PackageReference Include="ktsu.AppDataStorage" />
+    <PackageReference Include="ktsu.TextFilter" />
     <PackageReference Include="TestableIO.System.IO.Abstractions" />
   
     <PackageReference Include="Testably.Abstractions.FileSystem.Interface" />
