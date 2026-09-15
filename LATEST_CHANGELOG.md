@@ -1,6 +1,4 @@
-## v1.5.0 (minor)
+## v1.5.0
 
-Changes since v1.4.0:
-
-- fix: match path exclusion globs with ktsu.TextFilter [minor] ([@Claude](https://github.com/Claude))
+No significant changes detected since v1.5.0.
 
