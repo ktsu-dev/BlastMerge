@@ -82,7 +82,7 @@ public class CommandLineHandlerTests
 		Assert.IsTrue(output.Contains("BlastMerge - Cross-Repository File Synchronization Tool", StringComparison.Ordinal), output);
 		Assert.IsTrue(output.Contains("Usage:", StringComparison.Ordinal), output);
 		Assert.IsTrue(output.Contains("Examples:", StringComparison.Ordinal), output);
-		Assert.AreEqual(0, _applicationService.Calls.Count);
+		Assert.IsEmpty(_applicationService.Calls);
 	}
 
 	/// <summary>
@@ -105,7 +105,7 @@ public class CommandLineHandlerTests
 
 		Assert.AreEqual(0, exitCode);
 		Assert.IsTrue(output.StartsWith("BlastMerge v", StringComparison.Ordinal), output);
-		Assert.AreEqual(0, _applicationService.Calls.Count);
+		Assert.IsEmpty(_applicationService.Calls);
 	}
 
 	[TestMethod]
@@ -114,7 +114,7 @@ public class CommandLineHandlerTests
 		(int exitCode, _) = Run("-l");
 
 		Assert.AreEqual(0, exitCode);
-		CollectionAssert.AreEqual(new[] { "ListBatches" }, _applicationService.Calls);
+		Assert.AreSequenceEqual(["ListBatches"], _applicationService.Calls);
 	}
 
 	[TestMethod]
@@ -123,7 +123,7 @@ public class CommandLineHandlerTests
 		(int exitCode, _) = Run("some-directory", "README.md");
 
 		Assert.AreEqual(0, exitCode);
-		CollectionAssert.AreEqual(new[] { "ProcessFiles(some-directory,README.md)" }, _applicationService.Calls);
+		Assert.AreSequenceEqual(["ProcessFiles(some-directory,README.md)"], _applicationService.Calls);
 	}
 
 	[TestMethod]
@@ -132,7 +132,7 @@ public class CommandLineHandlerTests
 		(int exitCode, _) = Run("some-directory", "-b", "Config Files");
 
 		Assert.AreEqual(0, exitCode);
-		CollectionAssert.AreEqual(new[] { "ProcessBatch(some-directory,Config Files)" }, _applicationService.Calls);
+		Assert.AreSequenceEqual(["ProcessBatch(some-directory,Config Files)"], _applicationService.Calls);
 	}
 
 	[TestMethod]
@@ -141,7 +141,7 @@ public class CommandLineHandlerTests
 		(int exitCode, _) = Run();
 
 		Assert.AreEqual(0, exitCode);
-		CollectionAssert.AreEqual(new[] { "StartInteractiveMode" }, _applicationService.Calls);
+		Assert.AreSequenceEqual(["StartInteractiveMode"], _applicationService.Calls);
 	}
 
 	[TestMethod]
@@ -150,6 +150,6 @@ public class CommandLineHandlerTests
 		(int exitCode, _) = Run("--not-an-option");
 
 		Assert.AreEqual(1, exitCode);
-		Assert.AreEqual(0, _applicationService.Calls.Count);
+		Assert.IsEmpty(_applicationService.Calls);
 	}
 }
