@@ -507,17 +507,6 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	}
 
 	/// <summary>
-	/// Builds the path of a file inside a subdirectory of the test directory, combining one known
-	/// relative segment at a time so no later segment can root the path and drop the earlier ones.
-	/// </summary>
-	/// <param name="testDir">The test directory the file lives under.</param>
-	/// <param name="repoDirectory">The subdirectory standing in for a repository.</param>
-	/// <param name="fileName">The name of the file.</param>
-	/// <returns>The full path to the file.</returns>
-	private static string RepoFilePath(string testDir, string repoDirectory, string fileName) =>
-		Path.Combine(Path.Combine(testDir, repoDirectory), fileName);
-
-	/// <summary>
 	/// Adds a readable file, creating its directory if needed.
 	/// </summary>
 	/// <returns>The path as the mock file system stores it.</returns>
@@ -955,9 +944,9 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	{
 		// Arrange - three versions of the same file, each carrying a line the other two lack
 		string testDir = CreateTestDirectory();
-		string pathA = RepoFilePath(testDir, "repo-a", "app.config");
-		string pathB = RepoFilePath(testDir, "repo-b", "app.config");
-		string pathC = RepoFilePath(testDir, "repo-c", "app.config");
+		string pathA = Path.Combine(Path.Combine(testDir, "repo-a"), "app.config");
+		string pathB = Path.Combine(Path.Combine(testDir, "repo-b"), "app.config");
+		string pathC = Path.Combine(Path.Combine(testDir, "repo-c"), "app.config");
 		MockFileSystem.AddFile(pathA, new($"shared{Environment.NewLine}only-in-a"));
 		MockFileSystem.AddFile(pathB, new($"shared{Environment.NewLine}only-in-b"));
 		MockFileSystem.AddFile(pathC, new($"shared{Environment.NewLine}only-in-c"));
@@ -1007,8 +996,8 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	{
 		// Arrange
 		string testDir = CreateTestDirectory();
-		string pathA = RepoFilePath(testDir, "repo-a", "app.config");
-		string pathB = RepoFilePath(testDir, "repo-b", "app.config");
+		string pathA = Path.Combine(Path.Combine(testDir, "repo-a"), "app.config");
+		string pathB = Path.Combine(Path.Combine(testDir, "repo-b"), "app.config");
 		MockFileSystem.AddFile(pathA, new("only-in-a"));
 		MockFileSystem.AddFile(pathB, new("only-in-b"));
 
