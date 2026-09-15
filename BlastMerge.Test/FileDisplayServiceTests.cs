@@ -3,6 +3,7 @@
 namespace ktsu.BlastMerge.Test;
 
 using System;
+using System.IO;
 using ktsu.BlastMerge.ConsoleApp.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -57,15 +58,19 @@ public class FileDisplayServiceTests : MockFileSystemTestBase
 	public void MakeDistinguishedPaths_NoCommonComponents_ReturnsFullRelativePaths()
 	{
 		// Arrange
-		string path1 = @"C:\project1\file.txt";
-		string path2 = @"D:\project2\file.txt";
+		// Windows roots two paths under different drives; Unix has a single root, so the
+		// first differing component is the top-level directory.
+		string path1 = OperatingSystem.IsWindows() ? @"C:\project1\file.txt" : "/project1/file.txt";
+		string path2 = OperatingSystem.IsWindows() ? @"D:\project2\file.txt" : "/project2/file.txt";
+		string expected1 = OperatingSystem.IsWindows() ? "c/project1/file.txt" : "project1/file.txt";
+		string expected2 = OperatingSystem.IsWindows() ? "d/project2/file.txt" : "project2/file.txt";
 
 		// Act
 		(string result1, string result2) = FileDisplayService.MakeDistinguishedPaths(path1, path2);
 
 		// Assert
-		Assert.AreEqual("c/project1/file.txt", result1);
-		Assert.AreEqual("d/project2/file.txt", result2);
+		Assert.AreEqual(expected1, result1);
+		Assert.AreEqual(expected2, result2);
 	}
 
 	/// <summary>
@@ -239,13 +244,15 @@ public class FileDisplayServiceTests : MockFileSystemTestBase
 	public void GetRelativeDirectoryName_WithDeepPath_ReturnsLastTwoDirectoriesAndFilename()
 	{
 		// Arrange
-		string filePath = @"C:\very\deep\directory\structure\parent\child\file.txt";
+		// GetRelativeDirectoryName splits on the platform separator, so the input has to use it too.
+		string filePath = TestPaths.Rooted("very", "deep", "directory", "structure", "parent", "child", "file.txt");
+		string expected = Path.Combine("parent", "child", "file.txt");
 
 		// Act
 		string result = FileDisplayService.GetRelativeDirectoryName(filePath);
 
 		// Assert
-		Assert.AreEqual("parent\\child\\file.txt", result);
+		Assert.AreEqual(expected, result);
 	}
 
 	/// <summary>

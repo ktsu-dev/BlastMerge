@@ -23,6 +23,7 @@ public class AppDataBatchManagerTests
 {
 	private string _originalAppDataPath = string.Empty;
 	private string _testAppDataPath = string.Empty;
+	private string _originalCurrentDirectory = string.Empty;
 
 	[TestInitialize]
 	public void Setup()
@@ -38,6 +39,15 @@ public class AppDataBatchManagerTests
 
 		// Set test app data path
 		Environment.SetEnvironmentVariable("LOCALAPPDATA", _testAppDataPath);
+
+		// ktsu.AppDataStorage derives its storage directory from AppDomain.CurrentDomain.FriendlyName
+		// ("ktsu.BlastMerge.Test") and converts it to a RelativeDirectoryPath, which rejects a name
+		// that already exists as a *file* relative to the current directory. On Unix the test
+		// apphost sitting in the output directory is named exactly that, with no extension, so the
+		// conversion throws. Run these tests from the temporary app data directory instead, where
+		// no such file exists.
+		_originalCurrentDirectory = Environment.CurrentDirectory;
+		Environment.CurrentDirectory = _testAppDataPath;
 	}
 
 	[TestCleanup]
@@ -54,6 +64,12 @@ public class AppDataBatchManagerTests
 		else
 		{
 			Environment.SetEnvironmentVariable("LOCALAPPDATA", null);
+		}
+
+		// Restore the working directory before deleting the directory it points at
+		if (!string.IsNullOrEmpty(_originalCurrentDirectory))
+		{
+			Environment.CurrentDirectory = _originalCurrentDirectory;
 		}
 
 		// Clean up test directory
