@@ -939,5 +939,85 @@ public class BatchProcessorTests : MockFileSystemTestBase
 		Assert.AreEqual(3, result.FilesFound);
 	}
 
+	[TestMethod]
+	public void ProcessSinglePattern_WithThreeDifferingVersions_FoldsEveryVersionIntoTheFinalContent()
+	{
+		// Arrange - three versions of the same file, each carrying a line the other two lack
+		string testDir = CreateTestDirectory();
+		string pathA = Path.Combine(testDir, "repo-a", "app.config");
+		string pathB = Path.Combine(testDir, "repo-b", "app.config");
+		string pathC = Path.Combine(testDir, "repo-c", "app.config");
+		MockFileSystem.AddFile(pathA, new($"shared{Environment.NewLine}only-in-a"));
+		MockFileSystem.AddFile(pathB, new($"shared{Environment.NewLine}only-in-b"));
+		MockFileSystem.AddFile(pathC, new($"shared{Environment.NewLine}only-in-c"));
+
+		List<string[]> firstSideOfEachMerge = [];
+
+		// Act - a union merge, so no line that reaches a merge can be lost by the merge itself
+		PatternResult result = BatchProcessor.ProcessSinglePatternWithPaths(
+			"app.config",
+			[],
+			testDir,
+			[],
+			(path1, path2, output) =>
+			{
+				string[] lines1 = MockFileSystem.File.ReadAllLines(path1);
+				string[] lines2 = MockFileSystem.File.ReadAllLines(path2);
+				firstSideOfEachMerge.Add(lines1);
+				return new MergeResult([.. lines1.Union(lines2, StringComparer.Ordinal)], []);
+			},
+			_ => { },
+			() => true,
+			MockFileSystem);
+
+		// Assert
+		Assert.IsTrue(result.Success, "Processing three differing versions should succeed");
+		Assert.AreEqual(3, result.FilesFound);
+		Assert.AreEqual(2, firstSideOfEachMerge.Count, "Three versions should take two merges");
+
+		// The second merge must start from the first merge's result, not from the original file
+		CollectionAssert.Contains(
+			firstSideOfEachMerge[1],
+			"only-in-a",
+			"The second merge should fold in the first merge's result, not re-read the original second file");
+
+		// Every version's unique line survives into the final content of every file
+		foreach (string path in new[] { pathA, pathB, pathC })
+		{
+			string finalContent = MockFileSystem.File.ReadAllText(path);
+			StringAssert.Contains(finalContent, "only-in-a", $"{path} should retain the first version's content");
+			StringAssert.Contains(finalContent, "only-in-b", $"{path} should retain the second version's content");
+			StringAssert.Contains(finalContent, "only-in-c", $"{path} should retain the third version's content");
+		}
+	}
+
+	[TestMethod]
+	public void ProcessSinglePattern_WithTwoDifferingVersions_WritesMergedContentToBothFiles()
+	{
+		// Arrange
+		string testDir = CreateTestDirectory();
+		string pathA = Path.Combine(testDir, "repo-a", "app.config");
+		string pathB = Path.Combine(testDir, "repo-b", "app.config");
+		MockFileSystem.AddFile(pathA, new("only-in-a"));
+		MockFileSystem.AddFile(pathB, new("only-in-b"));
+
+		// Act
+		PatternResult result = BatchProcessor.ProcessSinglePatternWithPaths(
+			"app.config",
+			[],
+			testDir,
+			[],
+			(path1, path2, output) => new MergeResult(["only-in-a", "only-in-b"], []),
+			_ => { },
+			() => true,
+			MockFileSystem);
+
+		// Assert - the merge is consolidated onto both sources, not discarded
+		Assert.IsTrue(result.Success, "Processing two differing versions should succeed");
+		string expected = string.Join(Environment.NewLine, "only-in-a", "only-in-b");
+		Assert.AreEqual(expected, MockFileSystem.File.ReadAllText(pathA));
+		Assert.AreEqual(expected, MockFileSystem.File.ReadAllText(pathB));
+	}
+
 	#endregion
 }
