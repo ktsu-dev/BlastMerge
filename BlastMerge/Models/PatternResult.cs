@@ -2,6 +2,8 @@
 
 namespace ktsu.BlastMerge.Models;
 
+using System.Collections.ObjectModel;
+
 /// <summary>
 /// Represents the result of processing a single pattern in a batch
 /// </summary>
@@ -41,4 +43,11 @@ public class PatternResult
 	/// Gets or sets the merge result if a merge was performed
 	/// </summary>
 	public MergeCompletionResult? MergeResult { get; set; }
+
+	/// <summary>
+	/// Gets the files that were discovered for this pattern but could not be read, and were
+	/// therefore excluded from grouping and merging. A non-empty collection always accompanies
+	/// <see cref="Success"/> being <see langword="false"/>.
+	/// </summary>
+	public Collection<FileHashFailure> SkippedFiles { get; init; } = [];
 }

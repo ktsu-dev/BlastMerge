@@ -39,6 +39,15 @@ public record ProcessingCallbacks(
 	Action<string>? ProgressCallback = null);
 
 /// <summary>
+/// The outcome of the hashing phase: the hashes that were computed, and the files that could not be read.
+/// </summary>
+/// <param name="FileHashes">Map of file path to computed hash, for every file that was read successfully.</param>
+/// <param name="Failures">The files that could not be read, and were therefore left out of <paramref name="FileHashes"/>.</param>
+internal sealed record HashingPhaseResult(
+	IReadOnlyDictionary<string, string> FileHashes,
+	IReadOnlyCollection<FileHashFailure> Failures);
+
+/// <summary>
 /// Processes batch operations for multiple file patterns
 /// </summary>
 public static partial class BatchProcessor
@@ -209,14 +218,20 @@ public static partial class BatchProcessor
 
 			// Phase 2: Hashing - Compute hashes for all files in parallel
 			progressCallback?.Invoke("🔗 PHASE 2: Computing file hashes...");
-			Dictionary<string, string> fileHashes = ExecuteHashingPhase(patternFiles, maxDegreeOfParallelism, progressCallback, fileSystem);
+			HashingPhaseResult hashingResult = ExecuteHashingPhase(patternFiles, maxDegreeOfParallelism, progressCallback, fileSystem);
 
-			progressCallback?.Invoke($"✅ Hashing complete: Computed hashes for {fileHashes.Count} files");
+			progressCallback?.Invoke($"✅ Hashing complete: Computed hashes for {hashingResult.FileHashes.Count} files");
+
+			if (hashingResult.Failures.Count > 0)
+			{
+				progressCallback?.Invoke($"⚠️ {hashingResult.Failures.Count} file(s) could not be read and were skipped");
+			}
+
 			progressCallback?.Invoke("");
 
 			// Phase 3: Grouping - Group files by filename and hash
 			progressCallback?.Invoke(ProgressMessages.Phase3GroupingFiles);
-			List<ResolutionItem> resolutionQueue = ExecuteGroupingPhase(patternFiles, fileHashes, batch.FilePatterns, progressCallback);
+			List<ResolutionItem> resolutionQueue = ExecuteGroupingPhase(patternFiles, hashingResult, batch.FilePatterns, progressCallback);
 
 			progressCallback?.Invoke($"✅ Grouping complete: Created {resolutionQueue.Count} resolution items");
 			progressCallback?.Invoke("");
@@ -279,7 +294,7 @@ public static partial class BatchProcessor
 	/// <summary>
 	/// Phase 2: Hashing - Computes hashes for all files in parallel.
 	/// </summary>
-	private static Dictionary<string, string> ExecuteHashingPhase(
+	private static HashingPhaseResult ExecuteHashingPhase(
 		Dictionary<string, IReadOnlyCollection<string>> patternFiles,
 		int maxDegreeOfParallelism,
 		Action<string>? progressCallback,
@@ -300,10 +315,17 @@ public static partial class BatchProcessor
 	/// </summary>
 	private static List<ResolutionItem> ExecuteGroupingPhase(
 		Dictionary<string, IReadOnlyCollection<string>> patternFiles,
-		Dictionary<string, string> fileHashes,
+		HashingPhaseResult hashingResult,
 		IReadOnlyCollection<string> patterns,
 		Action<string>? progressCallback)
 	{
+		IReadOnlyDictionary<string, string> fileHashes = hashingResult.FileHashes;
+
+		// The same path can be discovered by more than one pattern, so index the failures by path
+		Dictionary<string, FileHashFailure> failuresByPath = hashingResult.Failures
+			.GroupBy(failure => failure.FilePath)
+			.ToDictionary(group => group.Key, group => group.First());
+
 		// Flatten all files and group by filename
 		IEnumerable<string> allFiles = patternFiles.Values.SelectMany(files => files);
 		IEnumerable<IGrouping<string, string>> fileNameGroups = allFiles.GroupBy(filePath => Path.GetFileName(filePath));
@@ -325,6 +347,13 @@ public static partial class BatchProcessor
 				new FileGroup([.. hashGroup]) { Hash = hashGroup.Key }
 			)];
 
+			// Carry the files that could not be read alongside the groups, so the resolving phase
+			// can report them instead of treating the smaller group as the whole story
+			List<FileHashFailure> skippedFiles = [.. fileNameGroup
+				.Distinct()
+				.Where(failuresByPath.ContainsKey)
+				.Select(filePath => failuresByPath[filePath])];
+
 			// Determine resolution type and create resolution item
 			string matchingPattern = FindMatchingPattern(fileName, patterns);
 			ResolutionType resolutionType = DetermineResolutionType(fileGroups);
@@ -334,12 +363,18 @@ public static partial class BatchProcessor
 				Pattern = matchingPattern,
 				FileName = fileName,
 				FileGroups = fileGroups.AsReadOnly(),
-				ResolutionType = resolutionType
+				ResolutionType = resolutionType,
+				SkippedFiles = skippedFiles.AsReadOnly()
 			};
 
 			resolutionQueue.Add(resolutionItem);
 
 			progressCallback?.Invoke($"    → {resolutionType}: {resolutionItem.TotalFiles} files, {resolutionItem.UniqueVersions} versions");
+
+			if (skippedFiles.Count > 0)
+			{
+				progressCallback?.Invoke($"    ⚠️ {skippedFiles.Count} file(s) skipped: {string.Join(", ", skippedFiles.Select(f => f.FilePath))}");
+			}
 		}
 
 		return resolutionQueue;
@@ -443,7 +478,39 @@ public static partial class BatchProcessor
 				break;
 		}
 
+		// Files that could not be read were excluded from the groups above, so the resolution
+		// that just ran covers only part of what was found. Report that, rather than letting a
+		// shrunken group pass as "no files found" or "only one file found".
+		if (resolutionItem.SkippedFiles.Count > 0)
+		{
+			foreach (FileHashFailure failure in resolutionItem.SkippedFiles)
+			{
+				result.SkippedFiles.Add(failure);
+			}
+
+			result.Success = false;
+			result.Message = FormatSkippedFilesMessage(result.Message, resolutionItem.SkippedFiles);
+		}
+
 		return result;
+	}
+
+	/// <summary>
+	/// Builds a message naming every file that could not be read, preserving whatever the
+	/// resolution itself had to say.
+	/// </summary>
+	/// <param name="resolutionMessage">The message produced by resolving the files that were readable.</param>
+	/// <param name="skippedFiles">The files that could not be read.</param>
+	/// <returns>The combined message.</returns>
+	private static string FormatSkippedFilesMessage(string resolutionMessage, IReadOnlyList<FileHashFailure> skippedFiles)
+	{
+		string fileWord = skippedFiles.Count == 1 ? "file" : "files";
+		string details = string.Join("; ", skippedFiles.Select(failure => $"{failure.FilePath} ({failure.ErrorMessage})"));
+		string skippedMessage = $"Skipped {skippedFiles.Count} {fileWord} that could not be read: {details}";
+
+		return string.IsNullOrEmpty(resolutionMessage)
+			? skippedMessage
+			: $"{resolutionMessage}. {skippedMessage}";
 	}
 
 	/// <summary>
@@ -484,14 +551,15 @@ public static partial class BatchProcessor
 	/// <param name="maxDegreeOfParallelism">Maximum degree of parallelism (0 for auto)</param>
 	/// <param name="progressCallback">Optional callback for progress updates</param>
 	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
-	/// <returns>Dictionary mapping file paths to their hash values</returns>
-	private static Dictionary<string, string> HashFilesInParallel(
+	/// <returns>The computed hashes, along with the files that could not be read.</returns>
+	private static HashingPhaseResult HashFilesInParallel(
 		List<(string filePath, string fileName)> workItems,
 		int maxDegreeOfParallelism = 0,
 		Action<string>? progressCallback = null,
 		IFileSystem? fileSystem = null)
 	{
 		Dictionary<string, string> results = [];
+		List<FileHashFailure> failures = [];
 		int completedItems = 0;
 		int totalItems = workItems.Count;
 
@@ -526,16 +594,19 @@ public static partial class BatchProcessor
 			}
 			catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
 			{
-				// Log error but continue processing other files
+				// Record the failure and continue processing other files. The file is deliberately
+				// left out of the results so it is not grouped or merged, but it must not disappear
+				// silently: callers surface it as a failed pattern.
 				lock (lockObject)
 				{
+					failures.Add(new FileHashFailure(workItem.filePath, ex.Message));
 					progressCallback?.Invoke($"❌ Error hashing {workItem.filePath}: {ex.Message}");
 				}
 			}
 		});
 
 		progressCallback?.Invoke($"✅ Completed hashing {results.Count}/{totalItems} files");
-		return results;
+		return new HashingPhaseResult(results, failures.AsReadOnly());
 	}
 
 	/// <summary>

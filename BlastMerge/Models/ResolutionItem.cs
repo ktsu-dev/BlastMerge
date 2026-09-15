@@ -30,6 +30,12 @@ public record ResolutionItem
 	public required ResolutionType ResolutionType { get; init; }
 
 	/// <summary>
+	/// Gets the files carrying this filename that could not be hashed, and are therefore absent
+	/// from <see cref="FileGroups"/>. Empty when every discovered file was read successfully.
+	/// </summary>
+	public IReadOnlyList<FileHashFailure> SkippedFiles { get; init; } = [];
+
+	/// <summary>
 	/// Gets or sets the total number of files involved.
 	/// </summary>
 	public int TotalFiles => FileGroups.Sum(g => g.FilePaths.Count);
