@@ -943,9 +943,10 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	public void ProcessSinglePattern_WithThreeDifferingVersions_FoldsEveryVersionIntoTheFinalContent()
 	{
 		// Arrange - three versions of the same file, each carrying a line the other two lack
-		string pathA = CreateFile(Path.Combine("repo-a", "app.config"), $"shared{Environment.NewLine}only-in-a");
-		string pathB = CreateFile(Path.Combine("repo-b", "app.config"), $"shared{Environment.NewLine}only-in-b");
-		string pathC = CreateFile(Path.Combine("repo-c", "app.config"), $"shared{Environment.NewLine}only-in-c");
+		string testDir = CreateTestDirectory();
+		string pathA = AddFile(Path.Join(testDir, "repo-a", "app.config"), $"shared{Environment.NewLine}only-in-a");
+		string pathB = AddFile(Path.Join(testDir, "repo-b", "app.config"), $"shared{Environment.NewLine}only-in-b");
+		string pathC = AddFile(Path.Join(testDir, "repo-c", "app.config"), $"shared{Environment.NewLine}only-in-c");
 
 		List<string[]> firstSideOfEachMerge = [];
 
@@ -953,7 +954,7 @@ public class BatchProcessorTests : MockFileSystemTestBase
 		PatternResult result = BatchProcessor.ProcessSinglePatternWithPaths(
 			"app.config",
 			[],
-			TestDirectory,
+			testDir,
 			[],
 			(path1, path2, output) =>
 			{
@@ -991,14 +992,15 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	public void ProcessSinglePattern_WithTwoDifferingVersions_WritesMergedContentToBothFiles()
 	{
 		// Arrange
-		string pathA = CreateFile(Path.Combine("repo-a", "app.config"), "only-in-a");
-		string pathB = CreateFile(Path.Combine("repo-b", "app.config"), "only-in-b");
+		string testDir = CreateTestDirectory();
+		string pathA = AddFile(Path.Join(testDir, "repo-a", "app.config"), "only-in-a");
+		string pathB = AddFile(Path.Join(testDir, "repo-b", "app.config"), "only-in-b");
 
 		// Act
 		PatternResult result = BatchProcessor.ProcessSinglePatternWithPaths(
 			"app.config",
 			[],
-			TestDirectory,
+			testDir,
 			[],
 			(path1, path2, output) => new MergeResult(["only-in-a", "only-in-b"], []),
 			_ => { },
