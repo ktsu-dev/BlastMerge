@@ -153,16 +153,16 @@ public class CommandLineHandler(IApplicationService applicationService) : IComma
 		Console.WriteLine("Automatically discovers, groups, and merges files using similarity-based progression.");
 		Console.WriteLine();
 		Console.WriteLine("Usage:");
-		Console.WriteLine("  BlastMerge.exe                              Start interactive mode (recommended)");
-		Console.WriteLine("  BlastMerge.exe <directory> <filename>       Process files directly");
-		Console.WriteLine("  BlastMerge.exe <directory> -b <batch>       Run batch configuration");
-		Console.WriteLine("  BlastMerge.exe -l                           List batch configurations");
-		Console.WriteLine("  BlastMerge.exe -v                           Show version");
-		Console.WriteLine("  BlastMerge.exe -h                           Show this help");
+		Console.WriteLine("  blastmerge                              Start interactive mode (recommended)");
+		Console.WriteLine("  blastmerge <directory> <filename>       Process files directly");
+		Console.WriteLine("  blastmerge <directory> -b <batch>       Run batch configuration");
+		Console.WriteLine("  blastmerge -l                           List batch configurations");
+		Console.WriteLine("  blastmerge -v                           Show version");
+		Console.WriteLine("  blastmerge -h                           Show this help");
 		Console.WriteLine();
 		Console.WriteLine("Examples:");
-		Console.WriteLine("  BlastMerge.exe                              Launch interactive menu");
-		Console.WriteLine("  BlastMerge.exe C:\\Projects README.md        Find and merge all README.md files");
-		Console.WriteLine("  BlastMerge.exe C:\\Repos -b \"Config Files\"   Run saved batch configuration");
+		Console.WriteLine("  blastmerge                              Launch interactive menu");
+		Console.WriteLine("  blastmerge C:\\Projects README.md        Find and merge all README.md files");
+		Console.WriteLine("  blastmerge C:\\Repos -b \"Config Files\"   Run saved batch configuration");
 	}
 }

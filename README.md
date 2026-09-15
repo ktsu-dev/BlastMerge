@@ -95,7 +95,20 @@ BlastMerge solves this by:
 
 ## Installation
 
-Add the NuGet package:
+### As a .NET tool
+
+BlastMerge ships as a .NET tool, which installs the `blastmerge` command:
+
+```bash
+dotnet tool install -g ktsu.BlastMerge.Tool
+```
+
+The package is framework-dependent, so it needs the .NET 10 runtime. Update it with
+`dotnet tool update -g ktsu.BlastMerge.Tool`.
+
+### As a library
+
+To drive the merging engine from your own code, reference the library instead:
 
 ```bash
 dotnet add package ktsu.BlastMerge
@@ -107,7 +120,7 @@ dotnet add package ktsu.BlastMerge
 
 ```bash
 # Launch interactive mode for iterative merging
-BlastMerge.ConsoleApp
+blastmerge
 
 # Select "🔀 Iterative Merge"
 # 1. Specify the directory containing your repositories/projects
@@ -121,19 +134,19 @@ BlastMerge.ConsoleApp
 
 ```bash
 # Quick comparison for files with the same name across directories
-BlastMerge.ConsoleApp <directory> <filename>
+blastmerge <directory> <filename>
 
 # Run a saved batch configuration
-BlastMerge.ConsoleApp <directory> -b <batch-name>
+blastmerge <directory> -b <batch-name>
 
 # List available batch configurations
-BlastMerge.ConsoleApp -l
+blastmerge -l
 
 # Show version information
-BlastMerge.ConsoleApp -v
+blastmerge -v
 
 # Display help
-BlastMerge.ConsoleApp -h
+blastmerge -h
 ```
 
 ### Interactive Mode Options
@@ -160,7 +173,7 @@ Create reusable batch configurations for complex synchronization tasks:
 5. Save as "Repository Sync Batch"
 
 # Run the batch across all configured paths
-BlastMerge.ConsoleApp . -b "Repository Sync Batch"
+blastmerge . -b "Repository Sync Batch"
 ```
 
 **Pre-built Templates:**

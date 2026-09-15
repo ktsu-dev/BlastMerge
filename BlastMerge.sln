@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlastMerge.ConsoleApp", "Bl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlastMerge.Test", "BlastMerge.Test\BlastMerge.Test.csproj", "{EEE5BC8E-9611-76C4-E77C-015D377A9EDA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlastMerge.Tool", "BlastMerge.Tool\BlastMerge.Tool.csproj", "{82A3D7F3-DE04-4D3A-911A-AAC2A9F1AB80}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,6 +28,10 @@ Global
 		{EEE5BC8E-9611-76C4-E77C-015D377A9EDA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EEE5BC8E-9611-76C4-E77C-015D377A9EDA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EEE5BC8E-9611-76C4-E77C-015D377A9EDA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{82A3D7F3-DE04-4D3A-911A-AAC2A9F1AB80}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{82A3D7F3-DE04-4D3A-911A-AAC2A9F1AB80}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{82A3D7F3-DE04-4D3A-911A-AAC2A9F1AB80}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{82A3D7F3-DE04-4D3A-911A-AAC2A9F1AB80}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
