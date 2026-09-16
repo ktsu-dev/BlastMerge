@@ -1,7 +1,6 @@
-## v1.5.1 (patch)
+## v1.5.2 (patch)
 
-Changes since v1.5.0:
+Changes since v1.5.1:
 
-- test: use the MSTest assertions the analyzers ask for ([@matt-edmondson](https://github.com/matt-edmondson))
-- fix: count the conflicts a manual block merge resolved [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- Gate Dependabot auto-merge on CI actually being green ([@Claude](https://github.com/Claude))
 
