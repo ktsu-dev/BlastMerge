@@ -1,6 +1,6 @@
-## v1.5.2 (patch)
+## v1.5.3 (patch)
 
-Changes since v1.5.1:
+Changes since v1.5.2:
 
-- Gate Dependabot auto-merge on CI actually being green ([@Claude](https://github.com/Claude))
+- Add dotnet to TAGS.md ([@matt-edmondson](https://github.com/matt-edmondson))
 
