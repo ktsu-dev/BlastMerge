@@ -285,7 +285,7 @@ public class BlockMergerTests
 			(block, context, num) => BlockChoice.UseVersion2);
 
 		// Assert
-		Assert.AreEqual(1, result.Conflicts.Count);
+		Assert.HasCount(1, result.Conflicts);
 
 		MergeConflict conflict = result.Conflicts.First();
 		Assert.AreEqual("modified_in_v1", conflict.Content1);
@@ -314,13 +314,13 @@ public class BlockMergerTests
 			});
 
 		// Assert
-		Assert.AreEqual(2, blockNumbers.Count);
-		Assert.AreEqual(blockNumbers.Count, result.Conflicts.Count);
+		Assert.HasCount(2, blockNumbers);
+		Assert.HasCount(blockNumbers.Count, result.Conflicts);
 		Assert.IsTrue(result.Conflicts.All(c => c.IsResolved));
 
-		CollectionAssert.AreEqual(
-			new[] { "v1_change1", "v2_change2" },
-			result.Conflicts.Select(c => c.ResolvedContent).ToList());
+		Assert.AreSequenceEqual(
+			["v1_change1", "v2_change2"],
+			result.Conflicts.Select(c => c.ResolvedContent));
 	}
 
 	[TestMethod]
@@ -337,7 +337,7 @@ public class BlockMergerTests
 		// Assert
 		// The user still reconciled the block, so it counts; discarding both sides just leaves
 		// nothing behind as the resolution.
-		Assert.AreEqual(1, result.Conflicts.Count);
+		Assert.HasCount(1, result.Conflicts);
 		Assert.IsNull(result.Conflicts.First().ResolvedContent);
 		Assert.IsTrue(result.Conflicts.First().IsResolved);
 	}
@@ -354,7 +354,7 @@ public class BlockMergerTests
 			(block, context, num) => BlockChoice.UseBoth);
 
 		// Assert
-		Assert.AreEqual(1, result.Conflicts.Count);
+		Assert.HasCount(1, result.Conflicts);
 		Assert.AreEqual(
 			string.Join(Environment.NewLine, "modified_in_v1", "modified_in_v2"),
 			result.Conflicts.First().ResolvedContent);
@@ -372,7 +372,7 @@ public class BlockMergerTests
 			(block, context, num) => BlockChoice.UseVersion1);
 
 		// Assert
-		Assert.AreEqual(0, result.Conflicts.Count);
+		Assert.IsEmpty(result.Conflicts);
 	}
 
 	[TestMethod]
@@ -389,7 +389,7 @@ public class BlockMergerTests
 		// Assert
 		// The callback runs for the block, but nothing competes with the added line, so it is not
 		// a conflict the user reconciled.
-		Assert.AreEqual(0, result.Conflicts.Count);
+		Assert.IsEmpty(result.Conflicts);
 	}
 
 	[TestMethod]
@@ -404,7 +404,7 @@ public class BlockMergerTests
 			(block, context, num) => BlockChoice.UseVersion1);
 
 		// Assert
-		Assert.AreEqual(0, result.Conflicts.Count);
+		Assert.IsEmpty(result.Conflicts);
 	}
 
 	[TestMethod]
