@@ -274,6 +274,140 @@ public class BlockMergerTests
 	}
 
 	[TestMethod]
+	public void PerformManualBlockSelection_WithTwoSidedConflict_RecordsTheResolvedConflict()
+	{
+		// Arrange
+		string[] lines1 = ["line1", "modified_in_v1", "line3"];
+		string[] lines2 = ["line1", "modified_in_v2", "line3"];
+
+		// Act
+		MergeResult result = BlockMerger.PerformManualBlockSelection(lines1, lines2,
+			(block, context, num) => BlockChoice.UseVersion2);
+
+		// Assert
+		Assert.HasCount(1, result.Conflicts);
+
+		MergeConflict conflict = result.Conflicts.First();
+		Assert.AreEqual("modified_in_v1", conflict.Content1);
+		Assert.AreEqual("modified_in_v2", conflict.Content2);
+		Assert.AreEqual("modified_in_v2", conflict.ResolvedContent);
+		Assert.IsTrue(conflict.IsResolved);
+		// Line 1 is the unchanged "line1", so the resolved block starts at line 2
+		Assert.AreEqual(2, conflict.LineNumber);
+	}
+
+	[TestMethod]
+	public void PerformManualBlockSelection_WithMultipleTwoSidedConflicts_CountMatchesBlocksRequiringAChoice()
+	{
+		// Arrange
+		string[] lines1 = ["line1", "v1_change1", "line3", "v1_change2", "line5"];
+		string[] lines2 = ["line1", "v2_change1", "line3", "v2_change2", "line5"];
+
+		List<int> blockNumbers = [];
+
+		// Act
+		MergeResult result = BlockMerger.PerformManualBlockSelection(lines1, lines2,
+			(block, context, num) =>
+			{
+				blockNumbers.Add(num);
+				return num == 1 ? BlockChoice.UseVersion1 : BlockChoice.UseVersion2;
+			});
+
+		// Assert
+		Assert.HasCount(2, blockNumbers);
+		Assert.HasCount(blockNumbers.Count, result.Conflicts);
+		Assert.IsTrue(result.Conflicts.All(c => c.IsResolved));
+
+		Assert.AreSequenceEqual(
+			["v1_change1", "v2_change2"],
+			result.Conflicts.Select(c => c.ResolvedContent));
+	}
+
+	[TestMethod]
+	public void PerformManualBlockSelection_WithSkippedConflict_RecordsItWithNoResolvedContent()
+	{
+		// Arrange
+		string[] lines1 = ["line1", "modified_in_v1", "line3"];
+		string[] lines2 = ["line1", "modified_in_v2", "line3"];
+
+		// Act
+		MergeResult result = BlockMerger.PerformManualBlockSelection(lines1, lines2,
+			(block, context, num) => BlockChoice.Skip);
+
+		// Assert
+		// The user still reconciled the block, so it counts; discarding both sides just leaves
+		// nothing behind as the resolution.
+		Assert.HasCount(1, result.Conflicts);
+		Assert.IsNull(result.Conflicts.First().ResolvedContent);
+		Assert.IsTrue(result.Conflicts.First().IsResolved);
+	}
+
+	[TestMethod]
+	public void PerformManualBlockSelection_WithUseBothChoice_RecordsBothSidesAsTheResolution()
+	{
+		// Arrange
+		string[] lines1 = ["line1", "modified_in_v1", "line3"];
+		string[] lines2 = ["line1", "modified_in_v2", "line3"];
+
+		// Act
+		MergeResult result = BlockMerger.PerformManualBlockSelection(lines1, lines2,
+			(block, context, num) => BlockChoice.UseBoth);
+
+		// Assert
+		Assert.HasCount(1, result.Conflicts);
+		Assert.AreEqual(
+			string.Join(Environment.NewLine, "modified_in_v1", "modified_in_v2"),
+			result.Conflicts.First().ResolvedContent);
+	}
+
+	[TestMethod]
+	public void PerformManualBlockSelection_WithIdenticalFiles_RecordsNoConflicts()
+	{
+		// Arrange
+		string[] lines1 = ["line1", "line2", "line3"];
+		string[] lines2 = ["line1", "line2", "line3"];
+
+		// Act
+		MergeResult result = BlockMerger.PerformManualBlockSelection(lines1, lines2,
+			(block, context, num) => BlockChoice.UseVersion1);
+
+		// Assert
+		Assert.IsEmpty(result.Conflicts);
+	}
+
+	[TestMethod]
+	public void PerformManualBlockSelection_WithPureInsertion_RecordsNoConflict()
+	{
+		// Arrange
+		string[] lines1 = ["line1", "line2"];
+		string[] lines2 = ["line1", "added_line", "line2"];
+
+		// Act
+		MergeResult result = BlockMerger.PerformManualBlockSelection(lines1, lines2,
+			(block, context, num) => BlockChoice.UseVersion2);
+
+		// Assert
+		// The callback runs for the block, but nothing competes with the added line, so it is not
+		// a conflict the user reconciled.
+		Assert.IsEmpty(result.Conflicts);
+	}
+
+	[TestMethod]
+	public void PerformManualBlockSelection_WithPureDeletion_RecordsNoConflict()
+	{
+		// Arrange
+		string[] lines1 = ["line1", "deleted_line", "line2"];
+		string[] lines2 = ["line1", "line2"];
+
+		// Act
+		MergeResult result = BlockMerger.PerformManualBlockSelection(lines1, lines2,
+			(block, context, num) => BlockChoice.UseVersion1);
+
+		// Assert
+		Assert.IsEmpty(result.Conflicts);
+	}
+
+	[TestMethod]
 	public void PerformManualBlockSelection_ReturnsReadOnlyCollections()
 	{
 		// Arrange

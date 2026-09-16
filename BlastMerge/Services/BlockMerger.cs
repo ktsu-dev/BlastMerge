@@ -51,7 +51,11 @@ public static class BlockMerger
 			BlockChoice choice = blockChoiceCallback(diffBlock, context, blockNumber);
 
 			// Apply the user's choice using DiffPlexHelper
+			int mergedLineCountBeforeChoice = mergedLines.Count;
 			ApplyDiffBlockChoice(lines1, lines2, diffBlock, choice, mergedLines);
+
+			// Record what the user just resolved so the merge summary can report it
+			RecordResolvedConflict(lines1, lines2, diffBlock, mergedLines, mergedLineCountBeforeChoice, conflicts);
 
 			// Update current position
 			currentPos1 = diffBlock.DeleteStartA + diffBlock.DeleteCountA;
@@ -63,6 +67,45 @@ public static class BlockMerger
 		AddRemainingUnchangedContent(lines1, currentPos1, mergedLines);
 
 		return new MergeResult(mergedLines.AsReadOnly(), conflicts.AsReadOnly());
+	}
+
+	/// <summary>
+	/// Records the block the user just resolved as a <see cref="MergeConflict"/>, when it was a
+	/// genuine two-sided conflict.
+	/// </summary>
+	/// <param name="lines1">Lines from version 1</param>
+	/// <param name="lines2">Lines from version 2</param>
+	/// <param name="diffBlock">The diff block the user was asked about</param>
+	/// <param name="mergedLines">The merged output, with the user's choice already applied</param>
+	/// <param name="mergedLineCountBeforeChoice">Length of <paramref name="mergedLines"/> before the choice was applied</param>
+	/// <param name="conflicts">The conflicts collected so far</param>
+	private static void RecordResolvedConflict(string[] lines1, string[] lines2,
+		DiffPlex.Model.DiffBlock diffBlock, List<string> mergedLines,
+		int mergedLineCountBeforeChoice, List<MergeConflict> conflicts)
+	{
+		string[] deleted = DiffPlexHelper.GetLinesInRange(lines1, diffBlock.DeleteStartA, diffBlock.DeleteStartA + diffBlock.DeleteCountA);
+		string[] inserted = DiffPlexHelper.GetLinesInRange(lines2, diffBlock.InsertStartB, diffBlock.InsertStartB + diffBlock.InsertCountB);
+
+		// Only a block carrying content on both sides is a conflict. A pure insertion or a pure
+		// deletion still prompts for a choice, but there are no competing versions to reconcile,
+		// so counting it would overstate what the "Conflicts" summary column reports. This is the
+		// same test FileDiffer.AddConflictForBlock applies on the automatic merge path.
+		if (deleted.Length == 0 || inserted.Length == 0)
+		{
+			return;
+		}
+
+		// A block can span several lines, so each side is recorded as a single newline-joined
+		// value, matching the shape FileDiffer.AddConflictBlock produces. The resolved content is
+		// whatever the choice actually emitted, which is nothing at all for BlockChoice.Skip.
+		List<string> resolved = mergedLines.GetRange(mergedLineCountBeforeChoice, mergedLines.Count - mergedLineCountBeforeChoice);
+
+		conflicts.Add(new MergeConflict(
+			LineNumber: mergedLineCountBeforeChoice + 1,
+			Content1: string.Join(Environment.NewLine, deleted),
+			Content2: string.Join(Environment.NewLine, inserted),
+			ResolvedContent: resolved.Count > 0 ? string.Join(Environment.NewLine, resolved) : null,
+			IsResolved: true));
 	}
 
 	/// <summary>
