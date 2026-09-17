@@ -43,12 +43,42 @@ public static class DiffPlexDiffer
 			return false;
 		}
 
-		string content1 = fileSystem.File.ReadAllText(file1);
-		string content2 = fileSystem.File.ReadAllText(file2);
+		(string content1, string content2) = ReadComparableContent(file1, file2);
 
 		DiffResult diff = Differ.CreateDiffs(content1, content2, true, false, new LineChunker());
 		return !diff.DiffBlocks.Any();
 	}
+
+	/// <summary>
+	/// Reads both sides of a comparison in a form that can be diffed as text.
+	/// </summary>
+	/// <param name="file1">Path to the first file</param>
+	/// <param name="file2">Path to the second file</param>
+	/// <returns>The content of each side, or a stand-in for each when either side is binary</returns>
+	/// <remarks>
+	/// Binary content is never decoded. Each side is represented by its content hash instead, so two
+	/// binary files compare equal exactly when their bytes are equal, and a diff between them reports
+	/// that they differ without inventing lines that the file never contained. Decoding them as UTF-8
+	/// would be worse than useless here: it splits the byte stream wherever a 0x0A happens to fall and
+	/// replaces every invalid sequence with U+FFFD, so the "lines" shown would not be in the file.
+	/// </remarks>
+	private static (string Content1, string Content2) ReadComparableContent(string file1, string file2)
+	{
+		IFileSystem fileSystem = FileSystemProvider.Current;
+
+		return BinaryContentDetector.IsBinaryFile(file1, fileSystem) || BinaryContentDetector.IsBinaryFile(file2, fileSystem)
+			? (DescribeBinaryContent(file1, fileSystem), DescribeBinaryContent(file2, fileSystem))
+			: (fileSystem.File.ReadAllText(file1), fileSystem.File.ReadAllText(file2));
+	}
+
+	/// <summary>
+	/// Describes binary content by its hash, standing in for content that must not be decoded.
+	/// </summary>
+	/// <param name="filePath">Path to the file to describe</param>
+	/// <param name="fileSystem">File system abstraction</param>
+	/// <returns>A single-line description of the file's content</returns>
+	private static string DescribeBinaryContent(string filePath, IFileSystem fileSystem) =>
+		$"Binary content ({FileHasher.ComputeFileHash(filePath, fileSystem)})";
 
 	/// <summary>
 	/// Creates a line-by-line diff between two files
@@ -70,8 +100,7 @@ public static class DiffPlexDiffer
 			throw new FileNotFoundException("One or both files do not exist");
 		}
 
-		string content1 = fileSystem.File.ReadAllText(file1);
-		string content2 = fileSystem.File.ReadAllText(file2);
+		(string content1, string content2) = ReadComparableContent(file1, file2);
 
 		return DiffPlexHelper.CreateLineDiffsFromContent(content1, content2);
 	}
@@ -97,8 +126,7 @@ public static class DiffPlexDiffer
 			throw new FileNotFoundException("One or both files do not exist");
 		}
 
-		string content1 = fileSystem.File.ReadAllText(file1);
-		string content2 = fileSystem.File.ReadAllText(file2);
+		(string content1, string content2) = ReadComparableContent(file1, file2);
 
 		return GenerateUnifiedDiffFromContent(content1, content2, file1, file2, contextLines);
 	}
@@ -336,8 +364,7 @@ public static class DiffPlexDiffer
 			throw new FileNotFoundException(FilesNotFoundMessage);
 		}
 
-		string content1 = fileSystem.File.ReadAllText(file1);
-		string content2 = fileSystem.File.ReadAllText(file2);
+		(string content1, string content2) = ReadComparableContent(file1, file2);
 
 		DiffPaneModel diff = InlineDiffBuilder.BuildDiffModel(content1, content2);
 		Collection<ColoredDiffLine> result =
@@ -392,8 +419,7 @@ public static class DiffPlexDiffer
 			throw new FileNotFoundException(FilesNotFoundMessage);
 		}
 
-		string content1 = fileSystem.File.ReadAllText(file1);
-		string content2 = fileSystem.File.ReadAllText(file2);
+		(string content1, string content2) = ReadComparableContent(file1, file2);
 
 		// Use inline diff for simpler processing
 		DiffPaneModel inlineDiff = InlineDiffBuilder.BuildDiffModel(content1, content2);
@@ -491,8 +517,7 @@ public static class DiffPlexDiffer
 			throw new FileNotFoundException(FilesNotFoundMessage);
 		}
 
-		string content1 = fileSystem.File.ReadAllText(file1);
-		string content2 = fileSystem.File.ReadAllText(file2);
+		(string content1, string content2) = ReadComparableContent(file1, file2);
 
 		return SideBySideDiffBuilder.BuildDiffModel(content1, content2);
 	}

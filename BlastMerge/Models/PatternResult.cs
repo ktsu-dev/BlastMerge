@@ -50,4 +50,12 @@ public class PatternResult
 	/// <see cref="Success"/> being <see langword="false"/>.
 	/// </summary>
 	public Collection<FileHashFailure> SkippedFiles { get; init; } = [];
+
+	/// <summary>
+	/// Gets the files that were discovered for this pattern but hold binary content, and were
+	/// therefore excluded from grouping and merging. Merging them as text would read their bytes as
+	/// UTF-8 and write the result back, losing every byte that is not valid UTF-8, so they are left
+	/// exactly as they were found and are not counted in <see cref="FilesFound"/>.
+	/// </summary>
+	public Collection<string> SkippedBinaryFiles { get; init; } = [];
 }

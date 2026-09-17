@@ -52,9 +52,10 @@ public static class IterativeMergeOrchestrator
 
 			if (similarity == null)
 			{
-				// No similar files found - this happens when files have different names and our safety check prevents merging
+				// No mergeable pair found - this happens when the remaining files have different names,
+				// or when their content is binary, and our safety checks prevent merging either way.
 				// This is the intended safe behavior, not an error
-				return new MergeCompletionResult(true, null, 0, "All files preserved safely - no merging needed.\nAll files have different names, so they remain separate as intended.")
+				return new MergeCompletionResult(true, null, 0, "All files preserved safely - no merging needed.\nNo two remaining versions may be merged as text: they have different names, or their content is binary, so they remain separate as intended.")
 				{
 					TotalMergeOperations = 0,
 					InitialFileGroups = initialFileGroups,
@@ -220,6 +221,7 @@ public static class IterativeMergeOrchestrator
 	/// <param name="blockChoiceCallback">Callback function to get user's choice for each block</param>
 	/// <param name="fileSystem">File system abstraction (optional)</param>
 	/// <returns>The manually merged result, or null if cancelled</returns>
+	/// <exception cref="BinaryContentException">Thrown when either side holds binary content.</exception>
 	public static MergeResult? PerformMergeWithConflictResolution(
 		string file1,
 		string file2,
@@ -233,6 +235,14 @@ public static class IterativeMergeOrchestrator
 
 		// Use provided fileSystem or get the default one
 		fileSystem ??= FileSystemProvider.Current;
+
+		// Refuse binary content before it is read as text. The first side may be an accumulated merge
+		// held in memory, which is text by construction, so only the files are checked.
+		if ((existingMergedContent == null && BinaryContentDetector.IsBinaryFile(file1, fileSystem))
+			|| BinaryContentDetector.IsBinaryFile(file2, fileSystem))
+		{
+			throw BinaryContentException.ForFiles(file1, file2);
+		}
 
 		// Read raw text on both sides so the line-ending style survives into the merge result.
 		// Splitting on Environment.NewLine alone also left a stray carriage return on every line of

@@ -98,6 +98,30 @@ public abstract class MockFileSystemTestBase
 	}
 
 	/// <summary>
+	/// Creates a file in the mock filesystem from raw bytes, without going through a text encoding
+	/// </summary>
+	/// <param name="relativePath">Path relative to the test directory</param>
+	/// <param name="content">Bytes to write to the file</param>
+	/// <returns>Full path to the created file</returns>
+	/// <remarks>
+	/// Writing a binary fixture as a string would defeat the point of it: the bytes would be encoded
+	/// on the way in, so the test could no longer tell a lossy round trip from a faithful one.
+	/// </remarks>
+	protected string CreateBinaryFile(string relativePath, byte[] content)
+	{
+		string fullPath = Path.Combine(TestDirectory, relativePath);
+		string? directory = Path.GetDirectoryName(fullPath);
+
+		if (!string.IsNullOrEmpty(directory) && !MockFileSystem.Directory.Exists(directory))
+		{
+			MockFileSystem.Directory.CreateDirectory(directory);
+		}
+
+		MockFileSystem.File.WriteAllBytes(fullPath, content);
+		return fullPath;
+	}
+
+	/// <summary>
 	/// Creates a directory in the mock filesystem
 	/// </summary>
 	/// <param name="relativePath">Path relative to the test directory</param>

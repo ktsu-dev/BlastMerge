@@ -56,6 +56,7 @@ public static partial class BatchProcessor
 	private const string AllFilesIdenticalMessage = "All files are identical";
 	private const string NoFilesFoundMessage = "No files found";
 	private const string MergeCompletedSuccessfullyMessage = "Merge completed successfully";
+	private const string AllFilesBinaryMessage = "All files are binary, so none were merged";
 
 	/// <summary>
 	/// Processes a batch configuration with search paths and exclusion patterns
@@ -665,6 +666,11 @@ public static partial class BatchProcessor
 	/// <summary>
 	/// Core method that processes a single file pattern with all options
 	/// </summary>
+	/// <remarks>
+	/// A pattern as broad as <c>*.dat</c> can match binary files, which the merge pipeline would read
+	/// as UTF-8 and write back, destroying every byte it could not decode. Those files are separated
+	/// out here and reported as skipped, so the merge only ever sees text.
+	/// </remarks>
 	private static PatternResult ProcessSinglePatternCore(
 		PatternProcessingParameters parameters,
 		ProcessingCallbacks callbacks)
@@ -677,6 +683,46 @@ public static partial class BatchProcessor
 			parameters.PathExclusionPatterns,
 			parameters.FileSystem);
 
+		IFileSystem patternFileSystem = parameters.FileSystem ?? FileSystemProvider.Current;
+		List<string> binaryFiles = [.. files.Where(file => BinaryContentDetector.IsBinaryFile(file, patternFileSystem))];
+
+		if (binaryFiles.Count == files.Count && binaryFiles.Count > 0)
+		{
+			return new PatternResult
+			{
+				Pattern = parameters.Pattern,
+				Success = true,
+				Message = AllFilesBinaryMessage,
+				FilesFound = 0,
+				SkippedBinaryFiles = [.. binaryFiles]
+			};
+		}
+
+		PatternResult result = ProcessTextFiles(
+			parameters,
+			callbacks,
+			binaryFiles.Count == 0 ? files : [.. files.Except(binaryFiles)]);
+
+		foreach (string binaryFile in binaryFiles)
+		{
+			result.SkippedBinaryFiles.Add(binaryFile);
+		}
+
+		return result;
+	}
+
+	/// <summary>
+	/// Processes the text files found for a pattern, merging their versions together.
+	/// </summary>
+	/// <param name="parameters">The parameters of the pattern being processed.</param>
+	/// <param name="callbacks">The callbacks driving the merge.</param>
+	/// <param name="files">The files to process, which are known not to be binary.</param>
+	/// <returns>The result of processing the pattern.</returns>
+	private static PatternResult ProcessTextFiles(
+		PatternProcessingParameters parameters,
+		ProcessingCallbacks callbacks,
+		IReadOnlyCollection<string> files)
+	{
 		if (files.Count == 0)
 		{
 			return new PatternResult
