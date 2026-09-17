@@ -104,8 +104,9 @@ public class BinaryContentDetectorTests : MockFileSystemTestBase
 	[TestMethod]
 	public void IsBinaryFile_WithMissingFile_ReturnsFalse()
 	{
-		// Arrange
-		string filePath = System.IO.Path.Combine(TestDirectory, "not-here.txt");
+		// Arrange - create the file inside this test's tree, then take it away again
+		string filePath = CreateBinaryFile("not-here.txt", [0x74, 0x65, 0x78, 0x74]);
+		MockFileSystem.File.Delete(filePath);
 
 		// Act & Assert - the caller's own missing-file handling stays in charge
 		Assert.IsFalse(BinaryContentDetector.IsBinaryFile(filePath, MockFileSystem), "A file that does not exist should not be reported as binary");

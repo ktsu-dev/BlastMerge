@@ -107,8 +107,20 @@ public abstract class MockFileSystemTestBase
 	/// Writing a binary fixture as a string would defeat the point of it: the bytes would be encoded
 	/// on the way in, so the test could no longer tell a lossy round trip from a faithful one.
 	/// </remarks>
+	/// <exception cref="ArgumentException">
+	/// Thrown when <paramref name="relativePath"/> is blank or rooted. A rooted path would make
+	/// <see cref="Path.Combine(string, string)"/> discard the test directory and write outside this
+	/// test's isolated tree.
+	/// </exception>
 	protected string CreateBinaryFile(string relativePath, byte[] content)
 	{
+		ArgumentException.ThrowIfNullOrWhiteSpace(relativePath);
+
+		if (Path.IsPathRooted(relativePath))
+		{
+			throw new ArgumentException("The path must be relative to the test directory.", nameof(relativePath));
+		}
+
 		string fullPath = Path.Combine(TestDirectory, relativePath);
 		string? directory = Path.GetDirectoryName(fullPath);
 
