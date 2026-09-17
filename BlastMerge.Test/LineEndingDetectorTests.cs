@@ -64,36 +64,36 @@ public class LineEndingDetectorTests
 
 	[TestMethod]
 	public void SplitLines_WithCrlfContent_LeavesNoCarriageReturnOnAnyLine() =>
-		CollectionAssert.AreEqual(
-			new[] { "a", "b", "c" },
+		Assert.AreSequenceEqual(
+			["a", "b", "c"],
 			LineEndingDetector.SplitLines("a\r\nb\r\nc"),
 			"Splitting CRLF content must not leave a stray carriage return on each line");
 
 	[TestMethod]
 	public void SplitLines_WithTrailingLineEnding_DoesNotEmitATrailingEmptyLine() =>
-		CollectionAssert.AreEqual(
-			new[] { "a", "b" },
+		Assert.AreSequenceEqual(
+			["a", "b"],
 			LineEndingDetector.SplitLines("a\r\nb\r\n"),
 			"A trailing line ending terminates the last line rather than starting a new one");
 
 	[TestMethod]
 	public void SplitLines_WithEmptyContent_ReturnsNoLines() =>
-		Assert.AreEqual(0, LineEndingDetector.SplitLines("").Length);
+		Assert.IsEmpty(LineEndingDetector.SplitLines(""));
 
 	[TestMethod]
 	public void SplitLines_WithOnlyALineEnding_ReturnsOneEmptyLine() =>
-		CollectionAssert.AreEqual(new[] { "" }, LineEndingDetector.SplitLines("\n"));
+		Assert.AreSequenceEqual([""], LineEndingDetector.SplitLines("\n"));
 
 	[TestMethod]
 	public void SplitLines_WithMixedLineEndings_SplitsOnEveryStyle() =>
-		CollectionAssert.AreEqual(
-			new[] { "a", "b", "c", "d" },
+		Assert.AreSequenceEqual(
+			["a", "b", "c", "d"],
 			LineEndingDetector.SplitLines("a\r\nb\nc\rd"));
 
 	[TestMethod]
 	public void SplitLines_MatchesReadAllLinesForContentWithoutATrailingLineEnding() =>
-		CollectionAssert.AreEqual(
-			new[] { "a", "b" },
+		Assert.AreSequenceEqual(
+			["a", "b"],
 			LineEndingDetector.SplitLines("a\nb"));
 
 	[TestMethod]

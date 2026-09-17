@@ -45,7 +45,7 @@ public class MergeLineEndingTests : MockFileSystemTestBase
 
 		// Assert
 		Assert.AreEqual(Crlf, result.LineEnding, "A merge of CRLF sources should report CRLF");
-		StringAssert.Contains(result.ToContent(), Crlf, "The rendered content should carry CRLF");
+		Assert.Contains(Crlf, result.ToContent(), "The rendered content should carry CRLF");
 	}
 
 	[TestMethod]
@@ -60,8 +60,9 @@ public class MergeLineEndingTests : MockFileSystemTestBase
 
 		// Assert
 		Assert.AreEqual(Lf, result.LineEnding, "A merge of LF sources should report LF");
-		Assert.IsFalse(
-			result.ToContent().Contains('\r', StringComparison.Ordinal),
+		Assert.DoesNotContain(
+			"\r",
+			result.ToContent(),
 			"An LF merge must not gain carriage returns, including when it runs on Windows");
 	}
 
@@ -76,8 +77,9 @@ public class MergeLineEndingTests : MockFileSystemTestBase
 		MergeResult result = FileDiffer.MergeFiles(file1, file2, MockFileSystem);
 
 		// Assert - a carriage return inside a line would be re-emitted next to the joiner
-		Assert.IsFalse(
-			result.MergedLines.Any(line => line.Contains('\r', StringComparison.Ordinal)),
+		Assert.DoesNotContain(
+			line => line.Contains('\r', StringComparison.Ordinal),
+			result.MergedLines,
 			"Splitting CRLF content must not leave a stray carriage return on each line");
 	}
 
@@ -95,8 +97,9 @@ public class MergeLineEndingTests : MockFileSystemTestBase
 		// Assert
 		Assert.IsNotNull(result);
 		Assert.AreEqual(Crlf, result.LineEnding, "The block-selection merge path should preserve CRLF too");
-		Assert.IsFalse(
-			result.MergedLines.Any(line => line.Contains('\r', StringComparison.Ordinal)),
+		Assert.DoesNotContain(
+			line => line.Contains('\r', StringComparison.Ordinal),
+			result.MergedLines,
 			"Splitting CRLF content must not leave a stray carriage return on each line");
 	}
 
@@ -114,8 +117,9 @@ public class MergeLineEndingTests : MockFileSystemTestBase
 		// Assert
 		Assert.IsNotNull(result);
 		Assert.AreEqual(Crlf, result.LineEnding, "Chaining a merge should not lose the style either");
-		Assert.IsFalse(
-			result.MergedLines.Any(line => line.Contains('\r', StringComparison.Ordinal)),
+		Assert.DoesNotContain(
+			line => line.Contains('\r', StringComparison.Ordinal),
+			result.MergedLines,
 			"Existing merged content was previously split on the platform newline, stranding carriage returns on Linux");
 	}
 
@@ -211,9 +215,9 @@ public class MergeLineEndingTests : MockFileSystemTestBase
 	{
 		string content = MockFileSystem.File.ReadAllText(path);
 
-		StringAssert.Contains(
-			content,
+		Assert.Contains(
 			expected,
+			content,
 			$"{path} should be written with the line ending its sources used");
 
 		Assert.AreEqual(
@@ -223,8 +227,9 @@ public class MergeLineEndingTests : MockFileSystemTestBase
 
 		if (expected == Lf)
 		{
-			Assert.IsFalse(
-				content.Contains('\r', StringComparison.Ordinal),
+			Assert.DoesNotContain(
+				"\r",
+				content,
 				$"{path} should carry no carriage returns at all");
 		}
 	}

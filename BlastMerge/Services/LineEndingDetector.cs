@@ -129,28 +129,30 @@ public static class LineEndingDetector
 		int lf = 0;
 		int cr = 0;
 
-		for (int i = 0; i < content.Length; i++)
+		int index = 0;
+
+		while (index < content.Length)
 		{
-			char current = content[i];
+			char current = content[index];
+
+			// A CRLF advances two characters, so its line feed is not also counted as a lone one.
+			if (current == '\r' && index + 1 < content.Length && content[index + 1] == '\n')
+			{
+				crlf++;
+				index += 2;
+				continue;
+			}
 
 			if (current == '\r')
 			{
-				if (i + 1 < content.Length && content[i + 1] == '\n')
-				{
-					crlf++;
-
-					// Skip the line feed so a CRLF is not also counted as a lone LF.
-					i++;
-				}
-				else
-				{
-					cr++;
-				}
+				cr++;
 			}
 			else if (current == '\n')
 			{
 				lf++;
 			}
+
+			index++;
 		}
 
 		return (crlf, lf, cr);
