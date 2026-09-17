@@ -1,0 +1,29 @@
+// Copyright (c) 2023-2026 ktsu-dev contributors
+
+namespace ktsu.BlastMerge.Cli.Models;
+
+/// <summary>
+/// Represents the available choices for compare operations
+/// </summary>
+public enum CompareChoice
+{
+	/// <summary>
+	/// Compare files in a directory
+	/// </summary>
+	CompareFilesInDirectory,
+
+	/// <summary>
+	/// Compare two directories
+	/// </summary>
+	CompareTwoDirectories,
+
+	/// <summary>
+	/// Compare two specific files
+	/// </summary>
+	CompareTwoSpecificFiles,
+
+	/// <summary>
+	/// Return to the main menu
+	/// </summary>
+	BackToMainMenu
+}

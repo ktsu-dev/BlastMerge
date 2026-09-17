@@ -1,0 +1,47 @@
+// Copyright (c) 2023-2026 ktsu-dev contributors
+
+namespace ktsu.BlastMerge.Cli;
+
+using System;
+using System.Text;
+using ktsu.BlastMerge.Cli.CLI;
+using ktsu.BlastMerge.Cli.Services;
+using ktsu.BlastMerge.Contracts;
+
+/// <summary>
+/// Main entry point for the BlastMerge console application.
+/// Handles user input and display only, delegating business logic to services.
+/// </summary>
+public static class Program
+{
+	/// <summary>
+	/// Main entry point for the application.
+	/// </summary>
+	/// <param name="args">Command line arguments.</param>
+	/// <returns>Exit code - 0 for success, 1 for error.</returns>
+	public static int Main(string[] args)
+	{
+		Console.OutputEncoding = Encoding.UTF8;
+		Console.InputEncoding = Encoding.UTF8;
+
+		try
+		{
+			// Create services with proper dependency injection pattern
+			IApplicationService applicationService = new ConsoleApplicationService();
+			CommandLineHandler commandLineHandler = new(applicationService);
+
+			// Process command line arguments
+			return commandLineHandler.ProcessCommandLineArguments(args);
+		}
+		catch (InvalidOperationException ex)
+		{
+			Console.WriteLine($"Application error: {ex.Message}");
+			return 1;
+		}
+		catch (ArgumentException ex)
+		{
+			Console.WriteLine($"Invalid argument: {ex.Message}");
+			return 1;
+		}
+	}
+}

@@ -4,7 +4,7 @@ namespace ktsu.BlastMerge.Test;
 
 using System;
 using System.IO;
-using ktsu.BlastMerge.ConsoleApp.Services;
+using ktsu.BlastMerge.Cli.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 /// <summary>
