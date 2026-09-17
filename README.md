@@ -59,6 +59,7 @@ BlastMerge solves this by:
     -   Git-style diff (full context)
     -   Rich colored diff (visual formatting)
 -   **Side-by-Side Display**: Context-aware diff visualization with intelligent file ordering
+-   **Binary Safety**: Binary files matched by a pattern are reported as identical or different and never merged as text, so their bytes are left exactly as they were found
 
 ### 🔧 **Repository & Directory Operations**
 

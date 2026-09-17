@@ -200,6 +200,16 @@ public static class AsyncFileDiffer
 
 		// Use FileSystemProvider.Current to get the proper file system abstraction
 		IFileSystem fileSystem = FileSystemProvider.Current;
+
+		// Binary content has no lines to compare, and reading it as text loses the bytes that are not
+		// valid UTF-8. Report it as identical or not, matching the synchronous path.
+		if (BinaryContentDetector.IsBinaryFile(file1, fileSystem) || BinaryContentDetector.IsBinaryFile(file2, fileSystem))
+		{
+			string hash1 = await FileHasher.ComputeFileHashAsync(file1, fileSystem, cancellationToken).ConfigureAwait(false);
+			string hash2 = await FileHasher.ComputeFileHashAsync(file2, fileSystem, cancellationToken).ConfigureAwait(false);
+			return string.Equals(hash1, hash2, StringComparison.Ordinal) ? 1.0 : 0.0;
+		}
+
 		string[] lines1 = await fileSystem.File.ReadAllLinesAsync(file1, cancellationToken).ConfigureAwait(false);
 		string[] lines2 = await fileSystem.File.ReadAllLinesAsync(file2, cancellationToken).ConfigureAwait(false);
 

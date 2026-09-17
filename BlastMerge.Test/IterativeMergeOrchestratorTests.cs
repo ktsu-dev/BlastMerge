@@ -268,7 +268,8 @@ public class IterativeMergeOrchestratorTests : MockFileSystemTestBase
 		// Assert
 		Assert.IsTrue(result.IsSuccessful, "Should succeed with safe preservation");
 		Assert.IsFalse(mergeCallbackCalled, "Should not attempt merge when files are too different");
-		// The actual message is "All files preserved safely - no merging needed.\nAll files have different names, so they remain separate as intended."
+		// The message goes on to say why nothing was merged: the remaining versions have different
+		// names, or their content is binary.
 		Assert.IsTrue(result.OriginalFileName.Contains("All files preserved safely"), "Original filename should indicate safe preservation");
 		Assert.AreEqual(0, result.TotalMergeOperations);
 	}

@@ -558,13 +558,23 @@ public static class FileDiffer
 	/// <param name="file1">Path to the first file</param>
 	/// <param name="file2">Path to the second file</param>
 	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
-	/// <returns>A similarity score between 0.0 (completely different) and 1.0 (identical)</returns>
+	/// <returns>
+	/// A similarity score between 0.0 (completely different) and 1.0 (identical). Binary content
+	/// scores 1.0 or 0.0 and nothing in between, because it is never decoded into lines to compare.
+	/// </returns>
 	public static double CalculateFileSimilarity(string file1, string file2, IFileSystem? fileSystem = null)
 	{
 		Ensure.NotNull(file1);
 		Ensure.NotNull(file2);
 
 		fileSystem ??= new FileSystem();
+
+		// Binary content has no lines to compare; reading it as text would decode bytes this method
+		// cannot put back. Report it the way git does, identical or not, with no line-level detail.
+		if (BinaryContentDetector.IsBinaryFile(file1, fileSystem) || BinaryContentDetector.IsBinaryFile(file2, fileSystem))
+		{
+			return AreFilesByteIdentical(file1, file2, fileSystem) ? 1.0 : 0.0;
+		}
 
 		string[] lines1 = fileSystem.File.ReadAllLines(file1);
 		string[] lines2 = fileSystem.File.ReadAllLines(file2);
@@ -620,6 +630,19 @@ public static class FileDiffer
 	}
 
 	/// <summary>
+	/// Compares two files byte for byte, via their content hashes.
+	/// </summary>
+	/// <param name="file1">Path to the first file</param>
+	/// <param name="file2">Path to the second file</param>
+	/// <param name="fileSystem">File system abstraction</param>
+	/// <returns>True if both files hold exactly the same bytes</returns>
+	private static bool AreFilesByteIdentical(string file1, string file2, IFileSystem fileSystem) =>
+		string.Equals(
+			FileHasher.ComputeFileHash(file1, fileSystem),
+			FileHasher.ComputeFileHash(file2, fileSystem),
+			StringComparison.Ordinal);
+
+	/// <summary>
 	/// Calculates a hash for string content
 	/// </summary>
 	/// <param name="content">The string content to hash</param>
@@ -632,7 +655,12 @@ public static class FileDiffer
 	/// </summary>
 	/// <param name="fileGroups">Collection of file groups with different content</param>
 	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
-	/// <returns>A FileSimilarity object with the most similar pair, or null if less than 2 groups</returns>
+	/// <returns>
+	/// A FileSimilarity object with the most similar pair, or null if less than 2 groups, or if no
+	/// two groups may be merged. Pairs where either side holds binary content are never offered:
+	/// merging them as text would rewrite their bytes through a UTF-8 round trip that cannot
+	/// represent them.
+	/// </returns>
 	public static FileSimilarity? FindMostSimilarFiles(IReadOnlyCollection<FileGroup> fileGroups, IFileSystem? fileSystem = null)
 	{
 		Ensure.NotNull(fileGroups);
@@ -654,7 +682,12 @@ public static class FileDiffer
 				string file2 = pair.group2.FilePaths.First();
 				string filename1 = Path.GetFileName(file1);
 				string filename2 = Path.GetFileName(file2);
-				return string.Equals(filename1, filename2, StringComparison.OrdinalIgnoreCase);
+				// Binary content is left out of the choice entirely: the merge that follows this
+				// selection reads both sides as text and writes the result back, which would
+				// replace every byte that is not valid UTF-8.
+				return string.Equals(filename1, filename2, StringComparison.OrdinalIgnoreCase)
+					&& !BinaryContentDetector.IsBinaryFile(file1, fileSystem)
+					&& !BinaryContentDetector.IsBinaryFile(file2, fileSystem);
 			})
 			.Select(pair =>
 			{
@@ -683,12 +716,20 @@ public static class FileDiffer
 	/// <param name="file2">Path to the second file</param>
 	/// <param name="fileSystem">File system abstraction (optional, defaults to real filesystem)</param>
 	/// <returns>A MergeResult containing the merged content and any conflicts</returns>
+	/// <exception cref="BinaryContentException">Thrown when either file holds binary content.</exception>
 	public static MergeResult MergeFiles(string file1, string file2, IFileSystem? fileSystem = null)
 	{
 		Ensure.NotNull(file1);
 		Ensure.NotNull(file2);
 
 		fileSystem ??= new FileSystem();
+
+		// Refuse before reading anything: a text merge of binary content writes a UTF-8 transcription
+		// of the file back over the original, and the bytes it could not represent are gone by then.
+		if (BinaryContentDetector.IsBinaryFile(file1, fileSystem) || BinaryContentDetector.IsBinaryFile(file2, fileSystem))
+		{
+			throw BinaryContentException.ForFiles(file1, file2);
+		}
 
 		// Read the raw text rather than ReadAllLines so the sources' line-ending style survives to
 		// the merge result; ReadAllLines discards it and leaves every write site guessing.

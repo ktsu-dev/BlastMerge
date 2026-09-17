@@ -264,6 +264,13 @@ public static class InteractiveMergeService
 		{
 			for (int j = i + 1; j < files.Count; j++)
 			{
+				// Binary content is never a merge candidate: the merge that follows would read both
+				// sides as text and write the result back over their bytes.
+				if (BinaryContentDetector.IsBinaryFile(files[i]) || BinaryContentDetector.IsBinaryFile(files[j]))
+				{
+					continue;
+				}
+
 				try
 				{
 					double similarity = FileDiffer.CalculateFileSimilarity(files[i], files[j], null);

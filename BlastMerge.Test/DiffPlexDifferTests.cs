@@ -207,23 +207,27 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	}
 
 	/// <summary>
-	/// Tests handling of binary-like files
+	/// Tests handling of binary files
 	/// </summary>
+	/// <remarks>
+	/// Binary content is reported as differing without being decoded. Splitting it into "lines" would
+	/// cut the byte stream wherever a 0x0A happened to fall and show replacement characters in place
+	/// of every byte that is not valid UTF-8, so the diff would describe content the files never held.
+	/// </remarks>
 	[TestMethod]
-	public void GenerateUnifiedDiff_BinaryFiles_HandlesCorrectly()
+	public void GenerateUnifiedDiff_BinaryFiles_ReportsThemAsBinaryRatherThanAsLines()
 	{
 		// Use mock file system directly since DiffPlexDiffer uses FileSystemProvider.Current
-		// Create files with binary-like content using mock file system
 		byte[] binaryData1 = [0x00, 0x01, 0x02, 0x03, 0xFF, 0xFE];
 		byte[] binaryData2 = [0x00, 0x01, 0x04, 0x05, 0xFF, 0xFE];
 
-		string binaryFile1 = CreateFile("binary1.dat", System.Text.Encoding.UTF8.GetString(binaryData1));
-		string binaryFile2 = CreateFile("binary2.dat", System.Text.Encoding.UTF8.GetString(binaryData2));
+		string binaryFile1 = CreateBinaryFile("binary1.dat", binaryData1);
+		string binaryFile2 = CreateBinaryFile("binary2.dat", binaryData2);
 
 		string diff = DiffPlexDiffer.GenerateUnifiedDiff(binaryFile1, binaryFile2);
 		Assert.IsNotNull(diff);
 
-		// DiffPlex should handle binary files as text and show differences
-		Assert.IsTrue(diff.Length > 0, "Binary file diff should produce output showing differences");
+		Assert.IsGreaterThan(0, diff.Length, "Binary file diff should produce output showing that the files differ");
+		Assert.Contains("Binary content", diff, "Binary files should be reported as binary rather than diffed line by line");
 	}
 }

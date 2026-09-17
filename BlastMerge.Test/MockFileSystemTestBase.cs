@@ -98,6 +98,42 @@ public abstract class MockFileSystemTestBase
 	}
 
 	/// <summary>
+	/// Creates a file in the mock filesystem from raw bytes, without going through a text encoding
+	/// </summary>
+	/// <param name="relativePath">Path relative to the test directory</param>
+	/// <param name="content">Bytes to write to the file</param>
+	/// <returns>Full path to the created file</returns>
+	/// <remarks>
+	/// Writing a binary fixture as a string would defeat the point of it: the bytes would be encoded
+	/// on the way in, so the test could no longer tell a lossy round trip from a faithful one.
+	/// </remarks>
+	/// <exception cref="ArgumentException">
+	/// Thrown when <paramref name="relativePath"/> is blank or rooted. A rooted path would make
+	/// <see cref="Path.Combine(string, string)"/> discard the test directory and write outside this
+	/// test's isolated tree.
+	/// </exception>
+	protected string CreateBinaryFile(string relativePath, byte[] content)
+	{
+		ArgumentException.ThrowIfNullOrWhiteSpace(relativePath);
+
+		if (Path.IsPathRooted(relativePath))
+		{
+			throw new ArgumentException("The path must be relative to the test directory.", nameof(relativePath));
+		}
+
+		string fullPath = Path.Combine(TestDirectory, relativePath);
+		string? directory = Path.GetDirectoryName(fullPath);
+
+		if (!string.IsNullOrEmpty(directory) && !MockFileSystem.Directory.Exists(directory))
+		{
+			MockFileSystem.Directory.CreateDirectory(directory);
+		}
+
+		MockFileSystem.File.WriteAllBytes(fullPath, content);
+		return fullPath;
+	}
+
+	/// <summary>
 	/// Creates a directory in the mock filesystem
 	/// </summary>
 	/// <param name="relativePath">Path relative to the test directory</param>
