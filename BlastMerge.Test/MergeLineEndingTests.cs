@@ -4,7 +4,6 @@ namespace ktsu.BlastMerge.Test;
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
@@ -180,7 +179,7 @@ public class MergeLineEndingTests : MockFileSystemTestBase
 	public void ProcessSinglePattern_WithCrlfSources_WritesCrlfToEveryFile()
 	{
 		// Arrange
-		string testDir = Path.Combine(TestDirectory, "batch");
+		string testDir = MockFileSystem.Path.Combine(TestDirectory, "batch");
 		MockFileSystem.Directory.CreateDirectory(testDir);
 		string pathA = CreateFile("batch/repo-a/app.config", $"shared{Crlf}only-in-a");
 		string pathB = CreateFile("batch/repo-b/app.config", $"shared{Crlf}only-in-b");
