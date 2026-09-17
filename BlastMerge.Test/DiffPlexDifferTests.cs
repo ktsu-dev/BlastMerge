@@ -227,7 +227,7 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 		string diff = DiffPlexDiffer.GenerateUnifiedDiff(binaryFile1, binaryFile2);
 		Assert.IsNotNull(diff);
 
-		Assert.IsTrue(diff.Length > 0, "Binary file diff should produce output showing that the files differ");
-		Assert.IsTrue(diff.Contains("Binary content"), "Binary files should be reported as binary rather than diffed line by line");
+		Assert.IsGreaterThan(0, diff.Length, "Binary file diff should produce output showing that the files differ");
+		Assert.Contains("Binary content", diff, "Binary files should be reported as binary rather than diffed line by line");
 	}
 }

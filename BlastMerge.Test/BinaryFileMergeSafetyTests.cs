@@ -3,6 +3,7 @@
 namespace ktsu.BlastMerge.Test;
 
 using System.Collections.Generic;
+using System.Linq;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -85,7 +86,7 @@ public class BinaryFileMergeSafetyTests : MockFileSystemTestBase
 		string diff = DiffPlexDiffer.GenerateUnifiedDiff(file1, file2);
 
 		// Assert - the diff reports that the content differs without inventing lines from the bytes
-		Assert.IsTrue(diff.Contains("Binary content"), "Binary files should be reported as binary rather than diffed line by line");
+		Assert.Contains("Binary content", diff, "Binary files should be reported as binary rather than diffed line by line");
 		Assert.IsFalse(diff.Contains('�'), "A diff of binary files should never show decoded bytes");
 	}
 
@@ -169,8 +170,8 @@ public class BinaryFileMergeSafetyTests : MockFileSystemTestBase
 		// Assert
 		Assert.IsFalse(mergeCallbackCalled, "Binary versions should never be handed to the merge callback");
 		Assert.IsTrue(result.IsSuccessful, "Preserving binary files is a successful outcome, not a failure");
-		CollectionAssert.AreEqual(BinaryVersion1, MockFileSystem.File.ReadAllBytes(file1), "The first file's bytes should be untouched");
-		CollectionAssert.AreEqual(BinaryVersion2, MockFileSystem.File.ReadAllBytes(file2), "The second file's bytes should be untouched");
+		Assert.AreSequenceEqual(BinaryVersion1, MockFileSystem.File.ReadAllBytes(file1), "The first file's bytes should be untouched");
+		Assert.AreSequenceEqual(BinaryVersion2, MockFileSystem.File.ReadAllBytes(file2), "The second file's bytes should be untouched");
 	}
 
 	[TestMethod]
@@ -198,8 +199,8 @@ public class BinaryFileMergeSafetyTests : MockFileSystemTestBase
 
 		// Assert
 		Assert.IsTrue(result.IsSuccessful, "Preserving binary files is a successful outcome, not a failure");
-		CollectionAssert.AreEqual(NulByteVersion1, MockFileSystem.File.ReadAllBytes(file1), "The first file's bytes should be untouched");
-		CollectionAssert.AreEqual(NulByteVersion2, MockFileSystem.File.ReadAllBytes(file2), "The second file's bytes should be untouched");
+		Assert.AreSequenceEqual(NulByteVersion1, MockFileSystem.File.ReadAllBytes(file1), "The first file's bytes should be untouched");
+		Assert.AreSequenceEqual(NulByteVersion2, MockFileSystem.File.ReadAllBytes(file2), "The second file's bytes should be untouched");
 	}
 
 	[TestMethod]
@@ -230,9 +231,9 @@ public class BinaryFileMergeSafetyTests : MockFileSystemTestBase
 		// Assert
 		Assert.IsFalse(mergeCallbackCalled, "Binary files should never be handed to the merge callback");
 		Assert.IsTrue(result.Success, "Skipping binary files is a successful outcome, not a failure");
-		CollectionAssert.AreEquivalent(new[] { file1, file2 }, result.SkippedBinaryFiles, "Both binary files should be reported as skipped");
-		CollectionAssert.AreEqual(BinaryVersion1, MockFileSystem.File.ReadAllBytes(file1), "The first file's bytes should be untouched");
-		CollectionAssert.AreEqual(BinaryVersion2, MockFileSystem.File.ReadAllBytes(file2), "The second file's bytes should be untouched");
+		Assert.AreSequenceEqual(new[] { file1, file2 }.Order(), result.SkippedBinaryFiles.Order(), "Both binary files should be reported as skipped");
+		Assert.AreSequenceEqual(BinaryVersion1, MockFileSystem.File.ReadAllBytes(file1), "The first file's bytes should be untouched");
+		Assert.AreSequenceEqual(BinaryVersion2, MockFileSystem.File.ReadAllBytes(file2), "The second file's bytes should be untouched");
 	}
 
 	[TestMethod]
@@ -262,9 +263,9 @@ public class BinaryFileMergeSafetyTests : MockFileSystemTestBase
 
 		// Assert
 		Assert.IsTrue(result.Success, "The text files should still merge");
-		Assert.AreEqual(1, mergedPairs.Count, "Only the two text files should have been merged");
+		Assert.HasCount(1, mergedPairs, "Only the two text files should have been merged");
 		Assert.AreEqual($"{text1}|{text2}", mergedPairs[0], "The merge should have paired the two text files");
-		CollectionAssert.AreEqual(new[] { binary }, result.SkippedBinaryFiles, "The binary file should be reported as skipped");
-		CollectionAssert.AreEqual(BinaryVersion1, MockFileSystem.File.ReadAllBytes(binary), "The binary file's bytes should be untouched");
+		Assert.AreSequenceEqual([binary], result.SkippedBinaryFiles, "The binary file should be reported as skipped");
+		Assert.AreSequenceEqual(BinaryVersion1, MockFileSystem.File.ReadAllBytes(binary), "The binary file's bytes should be untouched");
 	}
 }
