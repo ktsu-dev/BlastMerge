@@ -690,10 +690,15 @@ public static class FileDiffer
 
 		fileSystem ??= new FileSystem();
 
-		string[] lines1 = fileSystem.File.ReadAllLines(file1);
-		string[] lines2 = fileSystem.File.ReadAllLines(file2);
+		// Read the raw text rather than ReadAllLines so the sources' line-ending style survives to
+		// the merge result; ReadAllLines discards it and leaves every write site guessing.
+		string content1 = fileSystem.File.ReadAllText(file1);
+		string content2 = fileSystem.File.ReadAllText(file2);
 
-		return MergeLines(lines1, lines2);
+		string[] lines1 = LineEndingDetector.SplitLines(content1);
+		string[] lines2 = LineEndingDetector.SplitLines(content2);
+
+		return MergeLines(lines1, lines2, LineEndingDetector.Detect(content1, content2));
 	}
 
 	/// <summary>
@@ -701,8 +706,13 @@ public static class FileDiffer
 	/// </summary>
 	/// <param name="lines1">Lines from the first file</param>
 	/// <param name="lines2">Lines from the second file</param>
+	/// <param name="lineEnding">
+	/// The line ending the merged content should be written with. Defaults to
+	/// <see cref="Environment.NewLine"/>, because lines alone no longer carry the style their file
+	/// used; callers that still have the raw content should pass the detected style instead.
+	/// </param>
 	/// <returns>A MergeResult containing the merged content and any conflicts</returns>
-	public static MergeResult MergeLines(string[] lines1, string[] lines2)
+	public static MergeResult MergeLines(string[] lines1, string[] lines2, string? lineEnding = null)
 	{
 		Ensure.NotNull(lines1);
 		Ensure.NotNull(lines2);
@@ -729,7 +739,7 @@ public static class FileDiffer
 
 		AddRemainingUnchangedLines(lines1, mergedLines, position1);
 
-		return new MergeResult(mergedLines.AsReadOnly(), conflicts.AsReadOnly());
+		return new MergeResult(mergedLines.AsReadOnly(), conflicts.AsReadOnly(), lineEnding ?? Environment.NewLine);
 	}
 
 	/// <summary>

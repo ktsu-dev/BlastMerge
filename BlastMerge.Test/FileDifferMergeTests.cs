@@ -9,7 +9,7 @@ using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 /// <summary>
-/// Tests for <see cref="FileDiffer.MergeLines(string[], string[])"/>.
+/// Tests for <see cref="FileDiffer.MergeLines(string[], string[], string?)"/>.
 /// </summary>
 /// <remarks>
 /// The merge must never drop or duplicate a line, whatever shape the diff takes. Pure

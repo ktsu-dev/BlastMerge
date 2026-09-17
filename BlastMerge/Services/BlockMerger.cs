@@ -18,9 +18,15 @@ public static class BlockMerger
 	/// <param name="lines1">Lines from version 1</param>
 	/// <param name="lines2">Lines from version 2</param>
 	/// <param name="blockChoiceCallback">Callback function to get user's choice for each block</param>
+	/// <param name="lineEnding">
+	/// The line ending the merged content should be written with. Defaults to
+	/// <see cref="Environment.NewLine"/>; callers that still have the raw content should pass the
+	/// style detected from it so the merged file keeps the style its sources had.
+	/// </param>
 	/// <returns>The manually merged result</returns>
 	public static MergeResult PerformManualBlockSelection(string[] lines1, string[] lines2,
-		Func<DiffPlex.Model.DiffBlock, BlockContext, int, BlockChoice> blockChoiceCallback)
+		Func<DiffPlex.Model.DiffBlock, BlockContext, int, BlockChoice> blockChoiceCallback,
+		string? lineEnding = null)
 	{
 		Ensure.NotNull(lines1);
 		Ensure.NotNull(lines2);
@@ -66,7 +72,7 @@ public static class BlockMerger
 		// Add any remaining unchanged content after the last block
 		AddRemainingUnchangedContent(lines1, currentPos1, mergedLines);
 
-		return new MergeResult(mergedLines.AsReadOnly(), conflicts.AsReadOnly());
+		return new MergeResult(mergedLines.AsReadOnly(), conflicts.AsReadOnly(), lineEnding ?? Environment.NewLine);
 	}
 
 	/// <summary>

@@ -847,7 +847,9 @@ public static partial class BatchProcessor
 		PatternProcessingParameters parameters,
 		int filesFound)
 	{
-		string mergedContent = string.Join(Environment.NewLine, mergeResult.MergedLines);
+		// Use the style the merge detected from its sources; resolving it here instead is what let
+		// the same merge produce CRLF from one command and LF from another.
+		string mergedContent = mergeResult.ToContent();
 
 		try
 		{
