@@ -81,8 +81,9 @@ public static class IterativeMergeOrchestrator
 				};
 			}
 
-			// Update all files with the merged result
-			string mergedContent = string.Join(Environment.NewLine, mergeResult.MergedLines);
+			// Update all files with the merged result, in the line-ending style the merge detected
+			// from its sources rather than whichever style this host happens to use.
+			string mergedContent = mergeResult.ToContent();
 
 			try
 			{
@@ -122,7 +123,7 @@ public static class IterativeMergeOrchestrator
 			}
 			catch (IOException ex)
 			{
-				return new MergeCompletionResult(false, mergedContent, mergedContent.Split(Environment.NewLine).Length, $"error: {ex.Message}")
+				return new MergeCompletionResult(false, mergedContent, LineEndingDetector.SplitLines(mergedContent).Length, $"error: {ex.Message}")
 				{
 					TotalMergeOperations = mergeCount - 1,
 					InitialFileGroups = initialFileGroups,
@@ -132,7 +133,7 @@ public static class IterativeMergeOrchestrator
 			}
 			catch (UnauthorizedAccessException ex)
 			{
-				return new MergeCompletionResult(false, mergedContent, mergedContent.Split(Environment.NewLine).Length, $"access denied: {ex.Message}")
+				return new MergeCompletionResult(false, mergedContent, LineEndingDetector.SplitLines(mergedContent).Length, $"access denied: {ex.Message}")
 				{
 					TotalMergeOperations = mergeCount - 1,
 					InitialFileGroups = initialFileGroups,
@@ -146,7 +147,7 @@ public static class IterativeMergeOrchestrator
 			// Check if user wants to continue (if there are more groups to merge)
 			if (remainingGroups.Count > 1 && !continuationCallback())
 			{
-				return new MergeCompletionResult(false, mergedContent, mergedContent.Split(Environment.NewLine).Length, "incomplete")
+				return new MergeCompletionResult(false, mergedContent, LineEndingDetector.SplitLines(mergedContent).Length, "incomplete")
 				{
 					TotalMergeOperations = mergeCount - 1,
 					InitialFileGroups = initialFileGroups,
@@ -159,7 +160,7 @@ public static class IterativeMergeOrchestrator
 		// Merge completed successfully
 		FileGroup finalGroup = remainingGroups[0];
 		string finalContent = fileSystem.File.ReadAllText(finalGroup.FilePaths.First());
-		string[] finalLines = finalContent.Split(Environment.NewLine);
+		string[] finalLines = LineEndingDetector.SplitLines(finalContent);
 
 		return new MergeCompletionResult(true, finalContent, finalLines.Length, Path.GetFileName(finalGroup.FilePaths.First()))
 		{
@@ -233,22 +234,19 @@ public static class IterativeMergeOrchestrator
 		// Use provided fileSystem or get the default one
 		fileSystem ??= FileSystemProvider.Current;
 
-		string[] lines1;
-		string[] lines2;
+		// Read raw text on both sides so the line-ending style survives into the merge result.
+		// Splitting on Environment.NewLine alone also left a stray carriage return on every line of
+		// CRLF content read on a non-Windows host, which then travelled into the merged output.
+		string content1 = existingMergedContent ?? fileSystem.File.ReadAllText(file1);
+		string content2 = fileSystem.File.ReadAllText(file2);
 
-		if (existingMergedContent != null)
-		{
-			// Merge with existing content
-			lines1 = existingMergedContent.Split(Environment.NewLine);
-			lines2 = fileSystem.File.ReadAllLines(file2);
-		}
-		else
-		{
-			// Merge two files
-			lines1 = fileSystem.File.ReadAllLines(file1);
-			lines2 = fileSystem.File.ReadAllLines(file2);
-		}
+		string[] lines1 = LineEndingDetector.SplitLines(content1);
+		string[] lines2 = LineEndingDetector.SplitLines(content2);
 
-		return BlockMerger.PerformManualBlockSelection(lines1, lines2, blockChoiceCallback);
+		return BlockMerger.PerformManualBlockSelection(
+			lines1,
+			lines2,
+			blockChoiceCallback,
+			LineEndingDetector.Detect(content1, content2));
 	}
 }

@@ -187,7 +187,7 @@ public static class InteractiveMergeService
 	{
 		try
 		{
-			string mergedContent = string.Join('\n', mergeResult.MergedLines);
+			string mergedContent = mergeResult.ToContent();
 			File.WriteAllText(similarity.FilePath1, mergedContent);
 
 			UpdateMatchingFiles(remainingFiles, similarity, mergedContent);
