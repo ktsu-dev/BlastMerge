@@ -36,7 +36,7 @@ BlastMerge/
 │   ├── Models/             # Domain models and data structures
 │   ├── Services/           # Business logic and services
 │   └── Text/               # Text processing and visualization
-├── BlastMerge.ConsoleApp/  # Console application entry point
+├── BlastMerge.Cli/         # Console application entry point
 ├── BlastMerge.Tool/        # .NET tool head, packs and installs as `blastmerge`
 ├── BlastMerge.Test/        # Test project (MSTest)
 ├── scripts/                # Build and deployment scripts (PowerShell)
@@ -66,7 +66,7 @@ dotnet test BlastMerge.sln
 
 **Run the console application:**
 ```bash
-dotnet run --project BlastMerge.ConsoleApp/BlastMerge.ConsoleApp.csproj
+dotnet run --project BlastMerge.Cli/BlastMerge.Cli.csproj
 ```
 
 ### CI/CD Pipeline

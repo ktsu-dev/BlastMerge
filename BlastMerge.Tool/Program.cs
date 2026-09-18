@@ -2,13 +2,13 @@
 
 namespace ktsu.BlastMerge.Tool;
 
-using ConsoleApp = ktsu.BlastMerge.ConsoleApp;
+using Cli = ktsu.BlastMerge.Cli;
 
 /// <summary>
 /// Entry point for the <c>blastmerge</c> .NET tool.
 /// </summary>
 /// <remarks>
-/// The tool ships the same application as <c>BlastMerge.ConsoleApp</c>; only the packaging
+/// The tool ships the same application as <c>BlastMerge.Cli</c>; only the packaging
 /// differs, so this head does nothing but hand the arguments to that entry point.
 /// </remarks>
 internal static class Program
@@ -18,5 +18,5 @@ internal static class Program
 	/// </summary>
 	/// <param name="args">Command line arguments.</param>
 	/// <returns>Exit code - 0 for success, 1 for error.</returns>
-	internal static int Main(string[] args) => ConsoleApp.Program.Main(args);
+	internal static int Main(string[] args) => Cli.Program.Main(args);
 }

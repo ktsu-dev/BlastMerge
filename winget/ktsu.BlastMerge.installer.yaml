@@ -11,7 +11,7 @@ InstallModes:
 UpgradeBehavior: install
 Commands:
   - blastmerge
-  - BlastMerge.ConsoleApp
+  - BlastMerge.Cli
 FileExtensions:
   - txt
   - md
@@ -38,21 +38,21 @@ Installers:
     InstallerSha256: # TODO: Update with actual SHA256 hash from release
     NestedInstallerType: portable
     NestedInstallerFiles:
-      - RelativeFilePath: ktsu.BlastMerge.ConsoleApp.exe
+      - RelativeFilePath: ktsu.BlastMerge.Cli.exe
         PortableCommandAlias: blastmerge
   - Architecture: x86
     InstallerUrl: https://github.com/ktsu-dev/BlastMerge/releases/download/v1.0.20/BlastMerge-1.0.20-win-x86-portable.zip
     InstallerSha256: # TODO: Update with actual SHA256 hash from release
     NestedInstallerType: portable
     NestedInstallerFiles:
-      - RelativeFilePath: ktsu.BlastMerge.ConsoleApp.exe
+      - RelativeFilePath: ktsu.BlastMerge.Cli.exe
         PortableCommandAlias: blastmerge
   - Architecture: arm64
     InstallerUrl: https://github.com/ktsu-dev/BlastMerge/releases/download/v1.0.20/BlastMerge-1.0.20-win-arm64-portable.zip
     InstallerSha256: # TODO: Update with actual SHA256 hash from release
     NestedInstallerType: portable
     NestedInstallerFiles:
-      - RelativeFilePath: ktsu.BlastMerge.ConsoleApp.exe
+      - RelativeFilePath: ktsu.BlastMerge.Cli.exe
         PortableCommandAlias: blastmerge
 ManifestType: installer
 ManifestVersion: 1.10.0

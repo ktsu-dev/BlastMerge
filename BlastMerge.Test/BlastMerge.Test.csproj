@@ -21,7 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BlastMerge\BlastMerge.csproj" />
-    <ProjectReference Include="..\BlastMerge.ConsoleApp\BlastMerge.ConsoleApp.csproj" />
+    <ProjectReference Include="..\BlastMerge.Cli\BlastMerge.Cli.csproj" />
   </ItemGroup>
 
 </Project>

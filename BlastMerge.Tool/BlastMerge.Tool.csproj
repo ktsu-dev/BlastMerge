@@ -8,20 +8,20 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../BlastMerge.ConsoleApp/BlastMerge.ConsoleApp.csproj" />
+    <ProjectReference Include="../BlastMerge.Cli/BlastMerge.Cli.csproj" />
   </ItemGroup>
 
-  <!-- BlastMerge.ConsoleApp is an executable in its own right, so referencing it drags its apphost
+  <!-- BlastMerge.Cli is an executable in its own right, so referencing it drags its apphost
        into the tools/ payload alongside the assembly we actually want. Nothing can reach it - the
        command runs ktsu.BlastMerge.Tool.dll through the shared dotnet host - and it is native to
        whichever OS packed the release, which a RID-agnostic tool package has no business carrying.
        ktsu.Sdk.Tool already drops this project's own apphost; this drops the one that arrives with
        the reference. -->
-  <Target Name="_RemoveConsoleAppHostFromToolPayload" AfterTargets="ComputeResolvedFilesToPublishList">
+  <Target Name="_RemoveCliAppHostFromToolPayload" AfterTargets="ComputeResolvedFilesToPublishList">
     <ItemGroup>
-      <_ConsoleAppHostToDrop Include="@(ResolvedFileToPublish)"
-                             Condition="'%(ResolvedFileToPublish.RelativePath)' == 'ktsu.BlastMerge.ConsoleApp' Or '%(ResolvedFileToPublish.RelativePath)' == 'ktsu.BlastMerge.ConsoleApp.exe'" />
-      <ResolvedFileToPublish Remove="@(_ConsoleAppHostToDrop)" />
+      <_CliAppHostToDrop Include="@(ResolvedFileToPublish)"
+                         Condition="'%(ResolvedFileToPublish.RelativePath)' == 'ktsu.BlastMerge.Cli' Or '%(ResolvedFileToPublish.RelativePath)' == 'ktsu.BlastMerge.Cli.exe'" />
+      <ResolvedFileToPublish Remove="@(_CliAppHostToDrop)" />
     </ItemGroup>
   </Target>
 </Project>
