@@ -5,7 +5,7 @@ namespace ktsu.BlastMerge.Test;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using ktsu.BlastMerge.ConsoleApp.CLI;
+using ktsu.BlastMerge.Cli.CLI;
 using ktsu.BlastMerge.Contracts;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
