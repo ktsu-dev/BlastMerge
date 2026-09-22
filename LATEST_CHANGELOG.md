@@ -1,6 +1,4 @@
-## v1.8.0 (minor)
+## v1.8.0
 
-Changes since v1.7.0:
-
-- Rename BlastMerge.ConsoleApp to BlastMerge.Cli ([@Claude](https://github.com/Claude))
+No significant changes detected since v1.8.0.
 
