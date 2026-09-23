@@ -26,7 +26,7 @@ public class FileDifferSimilarityTests
 		double similarity = FileDiffer.CalculateLineSimilarity(lines1, lines2);
 
 		// Two lines match; the union holds four. Whatever the exact ratio, these are not identical.
-		Assert.IsTrue(similarity < 1.0, $"Files of different length should not score 1.0, got {similarity}");
+		Assert.IsLessThan(1.0, similarity, "Files of different length should not score 1.0");
 		Assert.AreEqual(0.5, similarity, 0.001, "Two matching lines out of a four-line union");
 	}
 
@@ -56,8 +56,7 @@ public class FileDifferSimilarityTests
 		double similarityToTwo = FileDiffer.CalculateLineSimilarity(["A", "A"], shortFile);
 		double similarityToTen = FileDiffer.CalculateLineSimilarity([.. Enumerable.Repeat("A", 10)], shortFile);
 
-		Assert.IsTrue(similarityToTen < similarityToTwo,
-			$"Ten repeats should score below two repeats, got {similarityToTen} and {similarityToTwo}");
+		Assert.IsLessThan(similarityToTwo, similarityToTen, "Ten repeats should score below two repeats");
 	}
 
 	/// <summary>
