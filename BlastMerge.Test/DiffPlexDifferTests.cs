@@ -136,7 +136,7 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 			" g",
 		];
 
-		CollectionAssert.AreEqual(expected, SplitLines(diff));
+		Assert.AreSequenceEqual(expected, SplitLines(diff));
 	}
 
 	/// <summary>
@@ -153,8 +153,8 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 
 		string[] body = [.. SplitLines(diff).Where(line => line.StartsWith(' '))];
 
-		CollectionAssert.AllItemsAreUnique(body, "A context line must not be emitted twice in one hunk");
-		CollectionAssert.AreEqual(new[] { " a", " b", " c", " e", " f", " g" }, body);
+		Assert.AreAllDistinct(body, "A context line must not be emitted twice in one hunk");
+		Assert.AreSequenceEqual([" a", " b", " c", " e", " f", " g"], body);
 	}
 
 	/// <summary>
@@ -171,7 +171,7 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 
 		string[] headers = [.. SplitLines(diff).Where(line => line.StartsWith("@@", StringComparison.Ordinal))];
 
-		CollectionAssert.AreEqual(new[] { "@@ -1,6 +1,6 @@", "@@ -15,6 +15,6 @@" }, headers);
+		Assert.AreSequenceEqual(["@@ -1,6 +1,6 @@", "@@ -15,6 +15,6 @@"], headers);
 	}
 
 	/// <summary>
@@ -187,7 +187,7 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 
 		string[] headers = [.. SplitLines(diff).Where(line => line.StartsWith("@@", StringComparison.Ordinal))];
 
-		Assert.AreEqual(1, headers.Length, "Changes within twice the context should share one hunk");
+		Assert.HasCount(1, headers, "Changes within twice the context should share one hunk");
 		Assert.AreEqual("@@ -1,8 +1,8 @@", headers[0]);
 	}
 
@@ -214,7 +214,7 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 			"+e",
 		];
 
-		CollectionAssert.AreEqual(expected, SplitLines(diff));
+		Assert.AreSequenceEqual(expected, SplitLines(diff));
 	}
 
 	/// <summary>
@@ -238,7 +238,7 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 			"+e",
 		];
 
-		CollectionAssert.AreEqual(expected, SplitLines(diff));
+		Assert.AreSequenceEqual(expected, SplitLines(diff));
 	}
 
 	/// <summary>
