@@ -111,6 +111,145 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	}
 
 	/// <summary>
+	/// Tests that a single deletion produces the hunk header and body that GNU diff -u produces,
+	/// rather than duplicating the leading context as trailing context
+	/// </summary>
+	[TestMethod]
+	public void GenerateUnifiedDiff_SingleDeletion_MatchesUnifiedDiffFormat()
+	{
+		string source = CreateFile("seq1.txt", "a\nb\nc\nd\ne\nf\ng");
+		string target = CreateFile("seq2.txt", "a\nb\nc\ne\nf\ng");
+
+		string diff = DiffPlexDiffer.GenerateUnifiedDiff(source, target);
+
+		string[] expected =
+		[
+			$"--- {source}",
+			$"+++ {target}",
+			"@@ -1,7 +1,6 @@",
+			" a",
+			" b",
+			" c",
+			"-d",
+			" e",
+			" f",
+			" g",
+		];
+
+		CollectionAssert.AreEqual(expected, SplitLines(diff));
+	}
+
+	/// <summary>
+	/// Tests that the trailing context is the lines that follow the change, so no line of the source
+	/// file appears in the hunk body more than once
+	/// </summary>
+	[TestMethod]
+	public void GenerateUnifiedDiff_SingleDeletion_DoesNotDuplicateContextLines()
+	{
+		string source = CreateFile("dup1.txt", "a\nb\nc\nd\ne\nf\ng");
+		string target = CreateFile("dup2.txt", "a\nb\nc\ne\nf\ng");
+
+		string diff = DiffPlexDiffer.GenerateUnifiedDiff(source, target);
+
+		string[] body = [.. SplitLines(diff).Where(line => line.StartsWith(' '))];
+
+		CollectionAssert.AllItemsAreUnique(body, "A context line must not be emitted twice in one hunk");
+		CollectionAssert.AreEqual(new[] { " a", " b", " c", " e", " f", " g" }, body);
+	}
+
+	/// <summary>
+	/// Tests that two changes further apart than twice the context are emitted as separate hunks,
+	/// each with its own correct line numbers
+	/// </summary>
+	[TestMethod]
+	public void GenerateUnifiedDiff_TwoDistantChanges_ProducesTwoCorrectlyNumberedHunks()
+	{
+		string source = CreateFile("far1.txt", "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20");
+		string target = CreateFile("far2.txt", "1\n2\nX\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\nY\n19\n20");
+
+		string diff = DiffPlexDiffer.GenerateUnifiedDiff(source, target);
+
+		string[] headers = [.. SplitLines(diff).Where(line => line.StartsWith("@@", StringComparison.Ordinal))];
+
+		CollectionAssert.AreEqual(new[] { "@@ -1,6 +1,6 @@", "@@ -15,6 +15,6 @@" }, headers);
+	}
+
+	/// <summary>
+	/// Tests that changes close enough for their context regions to meet are merged into one hunk
+	/// </summary>
+	[TestMethod]
+	public void GenerateUnifiedDiff_NearbyChanges_ProducesOneMergedHunk()
+	{
+		string source = CreateFile("near1.txt", "1\n2\n3\n4\n5\n6\n7\n8");
+		string target = CreateFile("near2.txt", "1\n2\nX\n4\n5\nY\n7\n8");
+
+		string diff = DiffPlexDiffer.GenerateUnifiedDiff(source, target);
+
+		string[] headers = [.. SplitLines(diff).Where(line => line.StartsWith("@@", StringComparison.Ordinal))];
+
+		Assert.AreEqual(1, headers.Length, "Changes within twice the context should share one hunk");
+		Assert.AreEqual("@@ -1,8 +1,8 @@", headers[0]);
+	}
+
+	/// <summary>
+	/// Tests that appended lines are anchored after the last shared line
+	/// </summary>
+	[TestMethod]
+	public void GenerateUnifiedDiff_AppendedLines_AnchorsHunkAfterSharedContext()
+	{
+		string source = CreateFile("app1.txt", "a\nb\nc");
+		string target = CreateFile("app2.txt", "a\nb\nc\nd\ne");
+
+		string diff = DiffPlexDiffer.GenerateUnifiedDiff(source, target);
+
+		string[] expected =
+		[
+			$"--- {source}",
+			$"+++ {target}",
+			"@@ -1,3 +1,5 @@",
+			" a",
+			" b",
+			" c",
+			"+d",
+			"+e",
+		];
+
+		CollectionAssert.AreEqual(expected, SplitLines(diff));
+	}
+
+	/// <summary>
+	/// Tests that a hunk with no lines on one side reports a zero length there, anchored after the
+	/// last line that does exist
+	/// </summary>
+	[TestMethod]
+	public void GenerateUnifiedDiff_ZeroContext_ReportsZeroLengthRangeForOneSidedHunk()
+	{
+		string source = CreateFile("zero1.txt", "a\nb\nc");
+		string target = CreateFile("zero2.txt", "a\nb\nc\nd\ne");
+
+		string diff = DiffPlexDiffer.GenerateUnifiedDiff(source, target, 0);
+
+		string[] expected =
+		[
+			$"--- {source}",
+			$"+++ {target}",
+			"@@ -3,0 +4,2 @@",
+			"+d",
+			"+e",
+		];
+
+		CollectionAssert.AreEqual(expected, SplitLines(diff));
+	}
+
+	/// <summary>
+	/// Splits a generated diff into its lines
+	/// </summary>
+	/// <param name="diff">The generated unified diff</param>
+	/// <returns>The diff's lines</returns>
+	private static string[] SplitLines(string diff) =>
+		diff.Split(Environment.NewLine, StringSplitOptions.None);
+
+	/// <summary>
 	/// Tests colored diff generation
 	/// </summary>
 	[TestMethod]
