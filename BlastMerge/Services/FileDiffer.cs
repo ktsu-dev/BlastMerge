@@ -624,15 +624,10 @@ public static class FileDiffer
 		Dictionary<string, int> lines1Counts = CountOccurrences(lines1);
 		Dictionary<string, int> lines2Counts = CountOccurrences(lines2);
 
-		// A repeated line matches only as many times as the scarcer side can supply.
-		int commonLines = 0;
-		foreach (KeyValuePair<string, int> entry in lines1Counts)
-		{
-			if (lines2Counts.TryGetValue(entry.Key, out int countIn2))
-			{
-				commonLines += Math.Min(entry.Value, countIn2);
-			}
-		}
+		// A repeated line matches only as many times as the scarcer side can supply, and a line the other
+		// side does not have at all contributes nothing.
+		int commonLines = lines1Counts.Sum(entry =>
+			lines2Counts.TryGetValue(entry.Key, out int countIn2) ? Math.Min(entry.Value, countIn2) : 0);
 
 		// The multiset union: every line from both sides, with the matched ones counted once.
 		// Both lengths are non-zero here, so this is at least 1 and the division is safe.
