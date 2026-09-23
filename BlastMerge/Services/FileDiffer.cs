@@ -588,6 +588,14 @@ public static class FileDiffer
 	/// <param name="lines1">Lines from the first file</param>
 	/// <param name="lines2">Lines from the second file</param>
 	/// <returns>A similarity score between 0.0 (completely different) and 1.0 (identical)</returns>
+	/// <remarks>
+	/// Lines are compared as a multiset, not a set: a line present three times on one side and once
+	/// on the other counts as one match and two mismatches. Comparing the distinct values alone
+	/// scored such a pair 1.0 — identical — because both sides held the same set, which let a
+	/// genuinely divergent file win <see cref="FindMostSimilarFiles"/>
+	/// and be merged first. Where neither side repeats a line the multiset is the set, so those
+	/// scores are unchanged. Line order is still not considered.
+	/// </remarks>
 	public static double CalculateLineSimilarity(string[] lines1, string[] lines2)
 	{
 		Ensure.NotNull(lines1);
@@ -613,20 +621,42 @@ public static class FileDiffer
 			return 1.0; // Identical content
 		}
 
-		// Simple similarity calculation based on common lines
-		HashSet<string> lines1Set = [.. lines1];
-		HashSet<string> lines2Set = [.. lines2];
+		Dictionary<string, int> lines1Counts = CountOccurrences(lines1);
+		Dictionary<string, int> lines2Counts = CountOccurrences(lines2);
 
-		int commonLines = lines1Set.Intersect(lines2Set).Count();
-		int totalUniqueLines = lines1Set.Union(lines2Set).Count();
-
-		if (totalUniqueLines == 0)
+		// A repeated line matches only as many times as the scarcer side can supply.
+		int commonLines = 0;
+		foreach (KeyValuePair<string, int> entry in lines1Counts)
 		{
-			return 1.0;
+			if (lines2Counts.TryGetValue(entry.Key, out int countIn2))
+			{
+				commonLines += Math.Min(entry.Value, countIn2);
+			}
 		}
 
-		// Calculate similarity as ratio of common lines to total unique lines
-		return (double)commonLines / totalUniqueLines;
+		// The multiset union: every line from both sides, with the matched ones counted once.
+		// Both lengths are non-zero here, so this is at least 1 and the division is safe.
+		int totalLines = lines1.Length + lines2.Length - commonLines;
+
+		// Calculate similarity as ratio of common lines to total lines
+		return (double)commonLines / totalLines;
+	}
+
+	/// <summary>
+	/// Counts how many times each distinct line appears.
+	/// </summary>
+	/// <param name="lines">The lines to count</param>
+	/// <returns>A map from each distinct line to the number of times it occurs in <paramref name="lines"/></returns>
+	private static Dictionary<string, int> CountOccurrences(string[] lines)
+	{
+		Dictionary<string, int> counts = new(lines.Length, StringComparer.Ordinal);
+		foreach (string line in lines)
+		{
+			counts.TryGetValue(line, out int count);
+			counts[line] = count + 1;
+		}
+
+		return counts;
 	}
 
 	/// <summary>
