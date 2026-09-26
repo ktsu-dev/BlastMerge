@@ -185,7 +185,7 @@ public class FileFinderTests : MockFileSystemTestBase
 	public void FindFiles_WithOverlappingSearchPaths_ReturnsEachFileOnce()
 	{
 		// Arrange: Subdir1 is also covered by the search of its parent
-		IReadOnlyCollection<string> searchPaths = [TestDirectory, Path.Combine(TestDirectory, "Subdir1")];
+		IReadOnlyCollection<string> searchPaths = [TestDirectory, Path.Join(TestDirectory, "Subdir1")];
 		IReadOnlyCollection<string> exclusionPatterns = [];
 		IReadOnlyCollection<string> rootOnly = FileFinder.FindFiles([TestDirectory], TestDirectory, "test.txt", exclusionPatterns, MockFileSystem);
 
