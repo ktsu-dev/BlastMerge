@@ -327,8 +327,8 @@ public static partial class BatchProcessor
 			.GroupBy(failure => failure.FilePath)
 			.ToDictionary(group => group.Key, group => group.First());
 
-		// Flatten all files and group by filename
-		IEnumerable<string> allFiles = patternFiles.Values.SelectMany(files => files);
+		// Flatten all files and group by filename. A file matched by more than one pattern must be counted once
+		IEnumerable<string> allFiles = patternFiles.Values.SelectMany(files => files).Distinct();
 		IEnumerable<IGrouping<string, string>> fileNameGroups = allFiles.GroupBy(filePath => Path.GetFileName(filePath));
 
 		List<ResolutionItem> resolutionQueue = [];
