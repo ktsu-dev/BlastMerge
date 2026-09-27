@@ -1,12 +1,12 @@
-## v1.9.0 (minor)
+## v1.10.0 (minor)
 
-Changes since v1.8.0:
+Changes since v1.9.0:
 
-- Use Path.Join for the nested search path in the overlap test ([@Claude](https://github.com/Claude))
-- Count a file matched by more than one pattern or search path once ([@Claude](https://github.com/Claude))
-- test: assert the similarity bounds with IsLessThan [patch] ([@Claude](https://github.com/Claude))
-- refactor: sum the matched line counts instead of accumulating in a loop [patch] ([@Claude](https://github.com/Claude))
-- fix: score line similarity as a multiset, not a set [patch] ([@Claude](https://github.com/Claude))
-- test: use the newer MSTest assertions in the diff tests [patch] ([@Claude](https://github.com/Claude))
-- fix: emit correct unified diff hunks and headers [patch] ([@Claude](https://github.com/Claude))
+- Replace the nested ternary choosing the pattern result message ([@Claude](https://github.com/Claude))
+- Build the binary-safety fixture paths with Path.Join ([@Claude](https://github.com/Claude))
+- Use Path.Join for the per-repo test fixture paths ([@Claude](https://github.com/Claude))
+- Use Assert.EndsWith in the trailing line ending test ([@Claude](https://github.com/Claude))
+- Merge only files that share a name in ProcessBatch and ProcessSinglePattern ([@Claude](https://github.com/Claude))
+- Pair deletions with insertions only within the same diff block ([@Claude](https://github.com/Claude))
+- Keep the final line ending when writing a merged file ([@Claude](https://github.com/Claude))
 
