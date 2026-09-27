@@ -435,82 +435,40 @@ public static class DiffPlexDiffer
 
 		(string content1, string content2) = ReadComparableContent(file1, file2);
 
-		// Use inline diff for simpler processing
-		DiffPaneModel inlineDiff = InlineDiffBuilder.BuildDiffModel(content1, content2);
-		List<LineDifference> rawDifferences = [];
+		// Walk the diff blocks rather than the flattened inline diff. Each block is one contiguous
+		// run of changes, so a deletion is only ever paired with an insertion from the same run.
+		// Pairing across the whole file instead matched any deletion with any insertion that happened
+		// to share its line number, reporting unrelated lines as a modification. Blocks arrive in
+		// file order, so the result does too. Whitespace is ignored to match the inline diff this
+		// replaced.
+		DiffResult diff = Differ.Instance.CreateLineDiffs(content1, content2, ignoreWhitespace: true, ignoreCase: false);
+		List<LineDifference> differences = [];
 
-		int line1Number = 1;
-		int line2Number = 1;
-
-		foreach (DiffPiece? line in inlineDiff.Lines)
+		foreach (DiffPlex.Model.DiffBlock block in diff.DiffBlocks)
 		{
-			switch (line.Type)
+			int pairedCount = Math.Min(block.DeleteCountA, block.InsertCountB);
+
+			for (int i = 0; i < pairedCount; i++)
 			{
-				case ChangeType.Deleted:
-					rawDifferences.Add(new LineDifference(line1Number, null, line.Text, null, LineDifferenceType.Deleted));
-					line1Number++;
-					break;
+				int indexA = block.DeleteStartA + i;
+				int indexB = block.InsertStartB + i;
+				differences.Add(new LineDifference(indexA + 1, indexB + 1, diff.PiecesOld[indexA], diff.PiecesNew[indexB], LineDifferenceType.Modified));
+			}
 
-				case ChangeType.Inserted:
-					rawDifferences.Add(new LineDifference(null, line2Number, null, line.Text, LineDifferenceType.Added));
-					line2Number++;
-					break;
+			for (int i = pairedCount; i < block.DeleteCountA; i++)
+			{
+				int indexA = block.DeleteStartA + i;
+				differences.Add(new LineDifference(indexA + 1, null, diff.PiecesOld[indexA], null, LineDifferenceType.Deleted));
+			}
 
-				case ChangeType.Modified:
-					rawDifferences.Add(new LineDifference(line1Number, line2Number, line.Text, line.Text, LineDifferenceType.Modified));
-					line1Number++;
-					line2Number++;
-					break;
-
-				case ChangeType.Imaginary:
-					// Imaginary lines are used for padding, skip them
-					break;
-
-				default:
-					// Skip unchanged lines but track line numbers
-					line1Number++;
-					line2Number++;
-					break;
+			for (int i = pairedCount; i < block.InsertCountB; i++)
+			{
+				int indexB = block.InsertStartB + i;
+				differences.Add(new LineDifference(null, indexB + 1, null, diff.PiecesNew[indexB], LineDifferenceType.Added));
 			}
 		}
 
-		// Post-process to detect modifications (deletions and additions at the same line positions)
-		List<LineDifference> finalDifferences = [];
-		List<LineDifference> deletions = [.. rawDifferences.Where(d => d.Type == LineDifferenceType.Deleted)];
-		List<LineDifference> additions = [.. rawDifferences.Where(d => d.Type == LineDifferenceType.Added)];
-		List<LineDifference> others = [.. rawDifferences.Where(d => d.Type == LineDifferenceType.Modified)];
-
-		// Try to pair deletions with additions at the same line numbers
-		HashSet<int> usedAdditions = [];
-
-		foreach (LineDifference? deletion in deletions)
-		{
-			// Look for an addition at the same line number
-			var matchingAddition = additions
-				.Select((addition, index) => new { addition, index })
-				.FirstOrDefault(a => !usedAdditions.Contains(a.index) &&
-								   a.addition.LineNumber2 == deletion.LineNumber1);
-
-			if (matchingAddition != null)
-			{
-				// Convert to modification
-				finalDifferences.Add(new LineDifference(deletion.LineNumber1, matchingAddition.addition.LineNumber2, deletion.Content1, matchingAddition.addition.Content2, LineDifferenceType.Modified));
-				usedAdditions.Add(matchingAddition.index);
-			}
-			else
-			{
-				// Keep as deletion
-				finalDifferences.Add(deletion);
-			}
-		}
-
-		// Add remaining additions that weren't paired
-		finalDifferences.AddRange(additions.Where((_, index) => !usedAdditions.Contains(index)));
-
-		// Add other types (modifications that were already detected)
-		finalDifferences.AddRange(others);
-
-		return new ReadOnlyCollection<LineDifference>(finalDifferences);
+		return new ReadOnlyCollection<LineDifference>(differences);
 	}
 
 	/// <summary>

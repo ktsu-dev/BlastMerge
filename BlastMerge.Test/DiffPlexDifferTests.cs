@@ -242,6 +242,62 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	}
 
 	/// <summary>
+	/// Tests that an insertion and an unrelated deletion elsewhere in the file are not paired as a
+	/// modification just because their line numbers coincide, and that changes come back in file order
+	/// </summary>
+	[TestMethod]
+	public void FindDifferences_InsertionAndUnrelatedDeletion_ReportsEachInFileOrder()
+	{
+		string file1 = CreateFile("p/1.txt", "A\nX\n");
+		string file2 = CreateFile("p/2.txt", "I1\nI2\nA\n");
+
+		LineDifference[] differences = [.. DiffPlexDiffer.FindDifferences(file1, file2)];
+
+		LineDifference[] expected =
+		[
+			new(null, 1, null, "I1", LineDifferenceType.Added),
+			new(null, 2, null, "I2", LineDifferenceType.Added),
+			new(2, null, "X", null, LineDifferenceType.Deleted),
+		];
+		Assert.AreSequenceEqual(expected, differences);
+	}
+
+	/// <summary>
+	/// Tests that a genuine in-place edit is still reported as a single modification
+	/// </summary>
+	[TestMethod]
+	public void FindDifferences_InPlaceEdit_ReportsOneModification()
+	{
+		string file1 = CreateFile("edit/1.txt", "a\nb\nc");
+		string file2 = CreateFile("edit/2.txt", "a\nB\nc");
+
+		LineDifference[] differences = [.. DiffPlexDiffer.FindDifferences(file1, file2)];
+
+		LineDifference[] expected = [new(2, 2, "b", "B", LineDifferenceType.Modified)];
+		Assert.AreSequenceEqual(expected, differences);
+	}
+
+	/// <summary>
+	/// Tests that a block replacing more lines than it inserts pairs what it can and reports the rest
+	/// as deletions
+	/// </summary>
+	[TestMethod]
+	public void FindDifferences_UnevenReplacement_PairsWithinTheBlockAndReportsTheRemainder()
+	{
+		string file1 = CreateFile("uneven/1.txt", "a\nb\nc\nd");
+		string file2 = CreateFile("uneven/2.txt", "a\nB\nd");
+
+		LineDifference[] differences = [.. DiffPlexDiffer.FindDifferences(file1, file2)];
+
+		LineDifference[] expected =
+		[
+			new(2, 2, "b", "B", LineDifferenceType.Modified),
+			new(3, null, "c", null, LineDifferenceType.Deleted),
+		];
+		Assert.AreSequenceEqual(expected, differences);
+	}
+
+	/// <summary>
 	/// Splits a generated diff into its lines
 	/// </summary>
 	/// <param name="diff">The generated unified diff</param>
