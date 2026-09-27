@@ -788,9 +788,20 @@ public static partial class BatchProcessor
 			anyMerged = true;
 		}
 
-		string message = anyMerged
-			? MergeCompletedSuccessfullyMessage
-			: fileNameGroups.All(group => group.Count == 1) ? OnlyOneFileFoundMessage : AllFilesIdenticalMessage;
+		string message;
+
+		if (anyMerged)
+		{
+			message = MergeCompletedSuccessfullyMessage;
+		}
+		else if (fileNameGroups.All(group => group.Count == 1))
+		{
+			message = OnlyOneFileFoundMessage;
+		}
+		else
+		{
+			message = AllFilesIdenticalMessage;
+		}
 
 		return new PatternResult
 		{
