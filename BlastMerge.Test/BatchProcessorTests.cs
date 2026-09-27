@@ -103,8 +103,8 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	{
 		// Arrange
 		string testDir = CreateTestDirectory();
-		MockFileSystem.AddFile(Path.Combine(testDir, "repo1", "file.txt"), new("content1"));
-		MockFileSystem.AddFile(Path.Combine(testDir, "repo2", "file.txt"), new("content2"));
+		MockFileSystem.AddFile(Path.Join(testDir, "repo1", "file.txt"), new("content1"));
+		MockFileSystem.AddFile(Path.Join(testDir, "repo2", "file.txt"), new("content2"));
 
 		BatchConfiguration batch = new()
 		{
@@ -210,8 +210,8 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	{
 		// Arrange
 		string testDir = CreateTestDirectory();
-		MockFileSystem.AddFile(Path.Combine(testDir, "repo1", "file.txt"), new("content1"));
-		MockFileSystem.AddFile(Path.Combine(testDir, "repo2", "file.txt"), new("content2"));
+		MockFileSystem.AddFile(Path.Join(testDir, "repo1", "file.txt"), new("content1"));
+		MockFileSystem.AddFile(Path.Join(testDir, "repo2", "file.txt"), new("content2"));
 
 		List<(string, string, string?)> mergeResults = [];
 		List<MergeSessionStatus> statusUpdates = [];
@@ -732,9 +732,9 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	{
 		// Arrange
 		string testDir = CreateTestDirectory();
-		MockFileSystem.AddFile(Path.Combine(testDir, "repo1", "file.txt"), new("identical content"));
-		MockFileSystem.AddFile(Path.Combine(testDir, "repo2", "file.txt"), new("identical content"));
-		MockFileSystem.AddFile(Path.Combine(testDir, "repo3", "file.txt"), new("identical content"));
+		MockFileSystem.AddFile(Path.Join(testDir, "repo1", "file.txt"), new("identical content"));
+		MockFileSystem.AddFile(Path.Join(testDir, "repo2", "file.txt"), new("identical content"));
+		MockFileSystem.AddFile(Path.Join(testDir, "repo3", "file.txt"), new("identical content"));
 
 		// Act
 		PatternResult result = BatchProcessor.ProcessSinglePattern(
@@ -940,8 +940,8 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	{
 		// Arrange
 		string testDir = CreateTestDirectory();
-		MockFileSystem.AddFile(Path.Combine(testDir, "repo1", "file.txt"), new("content1"));
-		MockFileSystem.AddFile(Path.Combine(testDir, "repo2", "file.txt"), new("content2"));
+		MockFileSystem.AddFile(Path.Join(testDir, "repo1", "file.txt"), new("content1"));
+		MockFileSystem.AddFile(Path.Join(testDir, "repo2", "file.txt"), new("content2"));
 
 		// Act
 		PatternResult result = BatchProcessor.ProcessSinglePattern(
@@ -962,9 +962,9 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	{
 		// Arrange
 		string testDir = CreateTestDirectory();
-		MockFileSystem.AddFile(Path.Combine(testDir, "repo1", "file.txt"), new("content1"));
-		MockFileSystem.AddFile(Path.Combine(testDir, "repo2", "file.txt"), new("content2"));
-		MockFileSystem.AddFile(Path.Combine(testDir, "repo3", "file.txt"), new("content3"));
+		MockFileSystem.AddFile(Path.Join(testDir, "repo1", "file.txt"), new("content1"));
+		MockFileSystem.AddFile(Path.Join(testDir, "repo2", "file.txt"), new("content2"));
+		MockFileSystem.AddFile(Path.Join(testDir, "repo3", "file.txt"), new("content3"));
 
 		bool firstCall = true;
 
