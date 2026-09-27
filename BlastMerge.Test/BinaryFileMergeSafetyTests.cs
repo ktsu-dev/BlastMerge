@@ -240,8 +240,8 @@ public class BinaryFileMergeSafetyTests : MockFileSystemTestBase
 	public void ProcessSinglePattern_WithTextAndBinaryFiles_MergesTextAndSkipsBinary()
 	{
 		// Arrange - one pattern, both kinds of file: the text versions still merge as before
-		string text1 = CreateFile("repo1/notes.dat", "line one\nline two\n");
-		string text2 = CreateFile("repo2/notes.dat", "line one\nline three\n");
+		string text1 = CreateFile(Path.Join("repo1", "notes.dat"), "line one\nline two\n");
+		string text2 = CreateFile(Path.Join("repo2", "notes.dat"), "line one\nline three\n");
 		string binary = CreateBinaryFile("asset.dat", BinaryVersion1);
 
 		List<string> mergedPairs = [];
