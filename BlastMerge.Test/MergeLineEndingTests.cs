@@ -280,7 +280,7 @@ public class MergeLineEndingTests : MockFileSystemTestBase
 
 		// Assert
 		Assert.IsTrue(result.EndsWithLineEnding, "The result should remember that its sources ended with a line ending");
-		StringAssert.EndsWith(result.ToContent(), lineEnding, "The rendered content should end with the line ending");
+		Assert.EndsWith(lineEnding, result.ToContent(), "The rendered content should end with the line ending");
 	}
 
 	[TestMethod]
