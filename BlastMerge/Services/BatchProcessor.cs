@@ -761,28 +761,60 @@ public static partial class BatchProcessor
 			};
 		}
 
-		if (files.Count == 1)
+		// A glob such as *.config matches app.config and web.config alike, and those are different
+		// files, not versions of one file. Only files sharing a name are merged, which is the same
+		// rule FileDiffer.GroupFilesByFilenameAndHash applies on the discrete-phase path.
+		List<List<string>> fileNameGroups = [.. files
+			.GroupBy(Path.GetFileName)
+			.OrderBy(group => group.Key, StringComparer.Ordinal)
+			.Select(group => group.ToList())];
+
+		bool anyMerged = false;
+
+		foreach (List<string> group in fileNameGroups)
 		{
-			return new PatternResult
+			if (group.Count == 1 || AreAllFilesIdentical(group, parameters.FileSystem))
 			{
-				Pattern = parameters.Pattern,
-				Success = true,
-				Message = OnlyOneFileFoundMessage,
-				FilesFound = 1
-			};
+				continue;
+			}
+
+			PatternResult? failure = MergeFileNameGroup(parameters, callbacks, group, files.Count);
+
+			if (failure != null)
+			{
+				return failure;
+			}
+
+			anyMerged = true;
 		}
 
-		if (AreAllFilesIdentical(files, parameters.FileSystem))
-		{
-			return new PatternResult
-			{
-				Pattern = parameters.Pattern,
-				Success = true,
-				Message = AllFilesIdenticalMessage,
-				FilesFound = files.Count
-			};
-		}
+		string message = anyMerged
+			? MergeCompletedSuccessfullyMessage
+			: fileNameGroups.All(group => group.Count == 1) ? OnlyOneFileFoundMessage : AllFilesIdenticalMessage;
 
+		return new PatternResult
+		{
+			Pattern = parameters.Pattern,
+			Success = true,
+			Message = message,
+			FilesFound = files.Count
+		};
+	}
+
+	/// <summary>
+	/// Merges the differing versions of one file name into a single version.
+	/// </summary>
+	/// <param name="parameters">The parameters of the pattern being processed.</param>
+	/// <param name="callbacks">The callbacks driving the merge.</param>
+	/// <param name="files">The files sharing one name, which are known to differ.</param>
+	/// <param name="filesFound">The number of files found for the whole pattern, used to describe a failure.</param>
+	/// <returns>A failed <see cref="PatternResult"/> if the merge was cancelled or could not be written, otherwise <see langword="null"/>.</returns>
+	private static PatternResult? MergeFileNameGroup(
+		PatternProcessingParameters parameters,
+		ProcessingCallbacks callbacks,
+		List<string> files,
+		int filesFound)
+	{
 		// Files are different, need to merge
 		MergeResult? mergeResult = null;
 
@@ -804,13 +836,13 @@ public static partial class BatchProcessor
 				Pattern = parameters.Pattern,
 				Success = false,
 				Message = "Merge operation was cancelled",
-				FilesFound = files.Count
+				FilesFound = filesFound
 			};
 		}
 
 		// Consolidate the merged content onto the files it came from, so the next iteration merges
 		// against the accumulated result rather than the original content of the previous file
-		PatternResult? writeFailure = ApplyMergedContent(mergeResult, sortedFiles.Take(2), fileSystem, parameters, files.Count);
+		PatternResult? writeFailure = ApplyMergedContent(mergeResult, sortedFiles.Take(2), fileSystem, parameters, filesFound);
 
 		if (writeFailure != null)
 		{
@@ -835,7 +867,7 @@ public static partial class BatchProcessor
 					Pattern = parameters.Pattern,
 					Success = false,
 					Message = "Merge operation was cancelled by user",
-					FilesFound = files.Count
+					FilesFound = filesFound
 				};
 			}
 
@@ -851,12 +883,12 @@ public static partial class BatchProcessor
 					Pattern = parameters.Pattern,
 					Success = false,
 					Message = "Merge operation was cancelled",
-					FilesFound = files.Count
+					FilesFound = filesFound
 				};
 			}
 
 			// Fold this merge into every file consolidated so far, so the next iteration builds on it
-			writeFailure = ApplyMergedContent(mergeResult, sortedFiles.Take(i + 1), fileSystem, parameters, files.Count);
+			writeFailure = ApplyMergedContent(mergeResult, sortedFiles.Take(i + 1), fileSystem, parameters, filesFound);
 
 			if (writeFailure != null)
 			{
@@ -872,13 +904,7 @@ public static partial class BatchProcessor
 			));
 		}
 
-		return new PatternResult
-		{
-			Pattern = parameters.Pattern,
-			Success = true,
-			Message = MergeCompletedSuccessfullyMessage,
-			FilesFound = files.Count
-		};
+		return null;
 	}
 
 	/// <summary>

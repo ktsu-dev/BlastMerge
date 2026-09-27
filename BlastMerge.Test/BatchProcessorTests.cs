@@ -103,8 +103,8 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	{
 		// Arrange
 		string testDir = CreateTestDirectory();
-		MockFileSystem.AddFile(Path.Combine(testDir, "file1.txt"), new("content1"));
-		MockFileSystem.AddFile(Path.Combine(testDir, "file2.txt"), new("content2"));
+		MockFileSystem.AddFile(Path.Combine(testDir, "repo1", "file.txt"), new("content1"));
+		MockFileSystem.AddFile(Path.Combine(testDir, "repo2", "file.txt"), new("content2"));
 
 		BatchConfiguration batch = new()
 		{
@@ -210,8 +210,8 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	{
 		// Arrange
 		string testDir = CreateTestDirectory();
-		MockFileSystem.AddFile(Path.Combine(testDir, "file1.txt"), new("content1"));
-		MockFileSystem.AddFile(Path.Combine(testDir, "file2.txt"), new("content2"));
+		MockFileSystem.AddFile(Path.Combine(testDir, "repo1", "file.txt"), new("content1"));
+		MockFileSystem.AddFile(Path.Combine(testDir, "repo2", "file.txt"), new("content2"));
 
 		List<(string, string, string?)> mergeResults = [];
 		List<MergeSessionStatus> statusUpdates = [];
@@ -732,9 +732,9 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	{
 		// Arrange
 		string testDir = CreateTestDirectory();
-		MockFileSystem.AddFile(Path.Combine(testDir, "file1.txt"), new("identical content"));
-		MockFileSystem.AddFile(Path.Combine(testDir, "file2.txt"), new("identical content"));
-		MockFileSystem.AddFile(Path.Combine(testDir, "file3.txt"), new("identical content"));
+		MockFileSystem.AddFile(Path.Combine(testDir, "repo1", "file.txt"), new("identical content"));
+		MockFileSystem.AddFile(Path.Combine(testDir, "repo2", "file.txt"), new("identical content"));
+		MockFileSystem.AddFile(Path.Combine(testDir, "repo3", "file.txt"), new("identical content"));
 
 		// Act
 		PatternResult result = BatchProcessor.ProcessSinglePattern(
@@ -940,8 +940,8 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	{
 		// Arrange
 		string testDir = CreateTestDirectory();
-		MockFileSystem.AddFile(Path.Combine(testDir, "file1.txt"), new("content1"));
-		MockFileSystem.AddFile(Path.Combine(testDir, "file2.txt"), new("content2"));
+		MockFileSystem.AddFile(Path.Combine(testDir, "repo1", "file.txt"), new("content1"));
+		MockFileSystem.AddFile(Path.Combine(testDir, "repo2", "file.txt"), new("content2"));
 
 		// Act
 		PatternResult result = BatchProcessor.ProcessSinglePattern(
@@ -962,9 +962,9 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	{
 		// Arrange
 		string testDir = CreateTestDirectory();
-		MockFileSystem.AddFile(Path.Combine(testDir, "file1.txt"), new("content1"));
-		MockFileSystem.AddFile(Path.Combine(testDir, "file2.txt"), new("content2"));
-		MockFileSystem.AddFile(Path.Combine(testDir, "file3.txt"), new("content3"));
+		MockFileSystem.AddFile(Path.Combine(testDir, "repo1", "file.txt"), new("content1"));
+		MockFileSystem.AddFile(Path.Combine(testDir, "repo2", "file.txt"), new("content2"));
+		MockFileSystem.AddFile(Path.Combine(testDir, "repo3", "file.txt"), new("content3"));
 
 		bool firstCall = true;
 
@@ -988,6 +988,69 @@ public class BatchProcessorTests : MockFileSystemTestBase
 		// Assert
 		Assert.IsFalse(result.Success, "Processing should fail when continuation callback returns false"); // Should fail due to incomplete processing
 		Assert.AreEqual(3, result.FilesFound);
+	}
+
+	[TestMethod]
+	public void ProcessSinglePattern_WithDifferentlyNamedMatches_NeverMergesThem()
+	{
+		// Arrange - a glob matching two different files, which are not versions of each other
+		string testDir = CreateTestDirectory();
+		string appConfig = AddFile(Path.Join(testDir, "cfg", "app.config"), "<app/>\n");
+		string webConfig = AddFile(Path.Join(testDir, "cfg", "web.config"), "<web/>\n");
+
+		List<(string, string)> mergedPairs = [];
+
+		// Act
+		PatternResult result = BatchProcessor.ProcessSinglePattern(
+			"*.config",
+			testDir,
+			(path1, path2, existing) =>
+			{
+				mergedPairs.Add((path1, path2));
+				return FileDiffer.MergeFiles(path1, path2, MockFileSystem);
+			},
+			_ => { },
+			() => true,
+			fileSystem: MockFileSystem);
+
+		// Assert
+		Assert.IsTrue(result.Success, "Nothing needed merging, so processing should succeed");
+		Assert.IsEmpty(mergedPairs, "Differently named files must never be paired for a merge");
+		Assert.AreEqual(2, result.FilesFound);
+		Assert.AreEqual("<app/>\n", MockFileSystem.File.ReadAllText(appConfig), "app.config should be untouched");
+		Assert.AreEqual("<web/>\n", MockFileSystem.File.ReadAllText(webConfig), "web.config should be untouched");
+	}
+
+	[TestMethod]
+	public void ProcessSinglePattern_WithSeveralNamesInSeveralDirectories_MergesOnlyFilesSharingAName()
+	{
+		// Arrange - two versions of app.config and two of web.config
+		string testDir = CreateTestDirectory();
+		string appA = AddFile(Path.Join(testDir, "repo-a", "app.config"), "app-a");
+		string appB = AddFile(Path.Join(testDir, "repo-b", "app.config"), "app-b");
+		string webA = AddFile(Path.Join(testDir, "repo-a", "web.config"), "web-a");
+		string webB = AddFile(Path.Join(testDir, "repo-b", "web.config"), "web-b");
+
+		List<(string, string)> mergedPairs = [];
+
+		// Act
+		PatternResult result = BatchProcessor.ProcessSinglePattern(
+			"*.config",
+			testDir,
+			(path1, path2, existing) =>
+			{
+				mergedPairs.Add((path1, path2));
+				return new MergeResult(["merged"], []);
+			},
+			_ => { },
+			() => true,
+			fileSystem: MockFileSystem);
+
+		// Assert
+		Assert.IsTrue(result.Success, "Both names should merge");
+		Assert.AreEqual("Merge completed successfully", result.Message);
+		Assert.AreEqual(4, result.FilesFound);
+		Assert.AreSequenceEqual([(appA, appB), (webA, webB)], mergedPairs, "Each name should merge only with its own versions");
 	}
 
 	[TestMethod]
