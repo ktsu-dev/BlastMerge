@@ -764,7 +764,10 @@ public static class FileDiffer
 		string[] lines1 = LineEndingDetector.SplitLines(content1);
 		string[] lines2 = LineEndingDetector.SplitLines(content2);
 
-		return MergeLines(lines1, lines2, LineEndingDetector.Detect(content1, content2));
+		return MergeLines(lines1, lines2, LineEndingDetector.Detect(content1, content2)) with
+		{
+			EndsWithLineEnding = LineEndingDetector.EndsWithLineEnding(content1, content2),
+		};
 	}
 
 	/// <summary>

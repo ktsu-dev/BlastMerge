@@ -257,6 +257,9 @@ public static class IterativeMergeOrchestrator
 			lines1,
 			lines2,
 			blockChoiceCallback,
-			LineEndingDetector.Detect(content1, content2));
+			LineEndingDetector.Detect(content1, content2)) with
+		{
+			EndsWithLineEnding = LineEndingDetector.EndsWithLineEnding(content1, content2),
+		};
 	}
 }

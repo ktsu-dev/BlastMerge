@@ -206,6 +206,99 @@ public class MergeLineEndingTests : MockFileSystemTestBase
 		AssertFileUsesOnly(pathB, Crlf);
 	}
 
+	[TestMethod]
+	[DataRow("\n", DisplayName = "LF")]
+	[DataRow("\r\n", DisplayName = "CRLF")]
+	public void StartIterativeMergeProcess_WithTrailingLineEndings_KeepsTheTrailingLineEnding(string lineEnding)
+	{
+		// Arrange - both sources end with a line ending, as most text files do
+		string file1 = CreateFile("dir1/f.txt", $"one{lineEnding}two{lineEnding}three{lineEnding}");
+		string file2 = CreateFile("dir2/f.txt", $"one{lineEnding}TWO{lineEnding}three{lineEnding}");
+
+		List<FileGroup> fileGroups =
+		[
+			new([file1]) { Hash = "hash1" },
+			new([file2]) { Hash = "hash2" },
+		];
+
+		// Act
+		MergeCompletionResult result = IterativeMergeOrchestrator.StartIterativeMergeProcess(
+			fileGroups,
+			(f1, f2, existing) => IterativeMergeOrchestrator.PerformMergeWithConflictResolution(
+				f1, f2, existing, TakeVersion2, MockFileSystem),
+			_ => { },
+			() => true,
+			MockFileSystem);
+
+		// Assert
+		string expected = $"one{lineEnding}TWO{lineEnding}three{lineEnding}";
+		Assert.IsTrue(result.IsSuccessful, "The merge should complete");
+		Assert.AreEqual(expected, MockFileSystem.File.ReadAllText(file1), "The merged file should keep its final line ending");
+		Assert.AreEqual(expected, MockFileSystem.File.ReadAllText(file2), "The merged file should keep its final line ending");
+	}
+
+	[TestMethod]
+	public void StartIterativeMergeProcess_WithoutTrailingLineEndings_DoesNotAddOne()
+	{
+		// Arrange
+		string file1 = CreateFile("dir1/f.txt", $"one{Lf}two{Lf}three");
+		string file2 = CreateFile("dir2/f.txt", $"one{Lf}TWO{Lf}three");
+
+		List<FileGroup> fileGroups =
+		[
+			new([file1]) { Hash = "hash1" },
+			new([file2]) { Hash = "hash2" },
+		];
+
+		// Act
+		MergeCompletionResult result = IterativeMergeOrchestrator.StartIterativeMergeProcess(
+			fileGroups,
+			(f1, f2, existing) => IterativeMergeOrchestrator.PerformMergeWithConflictResolution(
+				f1, f2, existing, TakeVersion2, MockFileSystem),
+			_ => { },
+			() => true,
+			MockFileSystem);
+
+		// Assert
+		string expected = $"one{Lf}TWO{Lf}three";
+		Assert.IsTrue(result.IsSuccessful, "The merge should complete");
+		Assert.AreEqual(expected, MockFileSystem.File.ReadAllText(file1), "A merge must not invent a final line ending");
+		Assert.AreEqual(expected, MockFileSystem.File.ReadAllText(file2), "A merge must not invent a final line ending");
+	}
+
+	[TestMethod]
+	[DataRow("\n", DisplayName = "LF")]
+	[DataRow("\r\n", DisplayName = "CRLF")]
+	public void MergeFiles_WithTrailingLineEndings_RendersTheTrailingLineEnding(string lineEnding)
+	{
+		// Arrange
+		string file1 = CreateFile("dir1/f.txt", $"shared{lineEnding}only-in-a{lineEnding}");
+		string file2 = CreateFile("dir2/f.txt", $"shared{lineEnding}only-in-b{lineEnding}");
+
+		// Act
+		MergeResult result = FileDiffer.MergeFiles(file1, file2, MockFileSystem);
+
+		// Assert
+		Assert.IsTrue(result.EndsWithLineEnding, "The result should remember that its sources ended with a line ending");
+		StringAssert.EndsWith(result.ToContent(), lineEnding, "The rendered content should end with the line ending");
+	}
+
+	[TestMethod]
+	public void ToContent_WithNoLines_DoesNotEmitALoneLineEnding()
+	{
+		// Arrange
+		MergeResult result = new([], [], Lf) { EndsWithLineEnding = true };
+
+		// Act & Assert
+		Assert.AreEqual(string.Empty, result.ToContent(), "An empty merge should render as empty content");
+	}
+
+	/// <summary>
+	/// Resolves every block by taking the second version.
+	/// </summary>
+	private static BlockChoice TakeVersion2(DiffPlex.Model.DiffBlock block, BlockContext context, int blockNumber) =>
+		BlockChoice.UseVersion2;
+
 	/// <summary>
 	/// Asserts the file's content is written entirely in the expected line-ending style.
 	/// </summary>
