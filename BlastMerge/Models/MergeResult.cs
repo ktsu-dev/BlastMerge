@@ -37,9 +37,23 @@ public record MergeResult(IReadOnlyList<string> MergedLines, IReadOnlyCollection
 	public bool IsFullyResolved => Conflicts.All(c => c.IsResolved);
 
 	/// <summary>
+	/// Gets whether the merged content should end with <see cref="LineEnding"/>.
+	/// </summary>
+	/// <remarks>
+	/// Splitting content into lines drops the line ending that terminates the last line, so the
+	/// lines alone cannot say whether the sources ended with one. Without this, every merged file
+	/// lost its final newline and stopped hashing the same as untouched copies that still had it.
+	/// </remarks>
+	public bool EndsWithLineEnding { get; init; }
+
+	/// <summary>
 	/// Renders the merged lines as file content using the detected line ending.
 	/// </summary>
 	/// <returns>The merged content ready to be written to disk.</returns>
-	public string ToContent() => LineEndingDetector.Join(MergedLines, LineEnding);
+	public string ToContent()
+	{
+		string content = LineEndingDetector.Join(MergedLines, LineEnding);
+		return EndsWithLineEnding && MergedLines.Count > 0 ? content + LineEnding : content;
+	}
 }
 

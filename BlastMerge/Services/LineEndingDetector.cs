@@ -105,6 +105,23 @@ public static class LineEndingDetector
 	}
 
 	/// <summary>
+	/// Determines whether either side of a merge ends with a line ending.
+	/// </summary>
+	/// <param name="content1">The raw content of the first side.</param>
+	/// <param name="content2">The raw content of the second side.</param>
+	/// <returns>
+	/// True if either input ends with a line ending of any style. <see cref="SplitLines"/> drops
+	/// that final line ending, so this is how a merge remembers to write it back.
+	/// </returns>
+	public static bool EndsWithLineEnding(string content1, string content2)
+	{
+		Ensure.NotNull(content1);
+		Ensure.NotNull(content2);
+
+		return EndsWithLineEnding(content1) || EndsWithLineEnding(content2);
+	}
+
+	/// <summary>
 	/// Joins lines using an explicit line-ending style.
 	/// </summary>
 	/// <param name="lines">The lines to join.</param>
@@ -117,6 +134,14 @@ public static class LineEndingDetector
 
 		return string.Join(lineEnding, lines);
 	}
+
+	/// <summary>
+	/// Determines whether the content ends with a line ending of any style.
+	/// </summary>
+	/// <param name="content">The content to inspect.</param>
+	/// <returns>True if the last character is a carriage return or a line feed.</returns>
+	private static bool EndsWithLineEnding(string content) =>
+		content.Length > 0 && content[^1] is '\n' or '\r';
 
 	/// <summary>
 	/// Counts each line-ending style in the content, attributing each character only once.
