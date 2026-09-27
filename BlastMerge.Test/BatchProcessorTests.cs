@@ -444,6 +444,49 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	}
 
 	[TestMethod]
+	public void ProcessBatchWithDiscretePhases_WithOverlappingPatterns_CountsAndMergesEachFileOnce()
+	{
+		// Arrange: a.txt and both b.cfg files are matched by a broad and a specific pattern
+		string testDir = CreateTestDirectory();
+		AddFile(Path.Join(testDir, "one", "a.txt"), "only copy");
+		AddFile(Path.Join(testDir, "one", "b.cfg"), "first version");
+		AddFile(Path.Join(testDir, "two", "b.cfg"), "second version");
+
+		BatchConfiguration batch = new()
+		{
+			Name = "Test Batch",
+			FilePatterns = ["*.txt", "a.txt", "*.cfg", "b.cfg"]
+		};
+
+		List<(string, string)> merges = [];
+
+		// Act
+		BatchResult result = BatchProcessor.ProcessBatchWithDiscretePhases(
+			batch,
+			testDir,
+			(path1, path2, output) =>
+			{
+				merges.Add((path1, path2));
+				return new MergeResult(["merged content"], []);
+			},
+			_ => { },
+			() => true,
+			null,
+			0,
+			MockFileSystem);
+
+		// Assert
+		PatternResult lone = result.PatternResults.Single(r => r.FileName == "a.txt");
+		Assert.AreEqual(1, lone.FilesFound, $"a.txt exists once. Message: {lone.Message}");
+		Assert.AreEqual(1, lone.UniqueVersions, $"a.txt has one version. Message: {lone.Message}");
+
+		PatternResult merged = result.PatternResults.Single(r => r.FileName == "b.cfg");
+		Assert.AreEqual(2, merged.FilesFound, $"b.cfg exists twice. Message: {merged.Message}");
+		Assert.HasCount(1, merges, "The two b.cfg versions should be merged once");
+		Assert.AreNotEqual(merges[0].Item1, merges[0].Item2, "A file must not be merged with itself");
+	}
+
+	[TestMethod]
 	public void ProcessBatchWithDiscretePhases_WithNullParameters_ThrowsArgumentNullException()
 	{
 		// Arrange

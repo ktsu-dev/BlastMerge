@@ -4,6 +4,7 @@ namespace ktsu.BlastMerge.Test;
 
 using System.IO;
 using System.Linq;
+using ktsu.BlastMerge.Services;
 using ktsu.BlastMerge.Test.Adapters;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -178,6 +179,22 @@ public class FileFinderTests : MockFileSystemTestBase
 		Assert.IsTrue(files.Any(f => f.Contains("SearchPath1")), "Should include files from SearchPath1");
 		Assert.IsTrue(files.Any(f => f.Contains("SearchPath2")), "Should include files from SearchPath2");
 		Assert.IsFalse(files.Any(f => f.Contains("Subdir1") || f.Contains("Subdir2")), "Should not include files from other directories");
+	}
+
+	[TestMethod]
+	public void FindFiles_WithOverlappingSearchPaths_ReturnsEachFileOnce()
+	{
+		// Arrange: Subdir1 is also covered by the search of its parent
+		IReadOnlyCollection<string> searchPaths = [TestDirectory, Path.Join(TestDirectory, "Subdir1")];
+		IReadOnlyCollection<string> exclusionPatterns = [];
+		IReadOnlyCollection<string> rootOnly = FileFinder.FindFiles([TestDirectory], TestDirectory, "test.txt", exclusionPatterns, MockFileSystem);
+
+		// Act
+		IReadOnlyCollection<string> files = FileFinder.FindFiles(searchPaths, TestDirectory, "test.txt", exclusionPatterns, MockFileSystem);
+
+		// Assert
+		Assert.AreEqual(files.Distinct().Count(), files.Count, "No file should be returned more than once");
+		Assert.AreEqual(rootOnly.Count, files.Count, "The nested search path should add no files the parent search already found");
 	}
 
 	[TestMethod]

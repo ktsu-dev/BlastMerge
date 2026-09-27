@@ -121,7 +121,9 @@ public static class FileFinder
 
 		result.AddRange(directoriesToSearch
 			.Where(fileSystem.Directory.Exists)
-			.SelectMany(searchPath => FindFilesWithExclusions(searchPath, fileName, pathExclusionPatterns, fileSystem, progressCallback)));
+			.SelectMany(searchPath => FindFilesWithExclusions(searchPath, fileName, pathExclusionPatterns, fileSystem, progressCallback))
+			// Overlapping search paths find the same file more than once
+			.Distinct());
 
 		return result.AsReadOnly();
 	}
