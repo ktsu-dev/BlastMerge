@@ -125,8 +125,10 @@ Changes since v1.1.0:
 - docs: correct README, DESCRIPTION and TAGS metadata ([@matt-edmondson](https://github.com/matt-edmondson))
 - Stop Update SDKs failing when there is nothing to update ([@matt-edmondson](https://github.com/matt-edmondson))
 - Fix build for ktsu.Sdk 2.26.1 analyzers: Polyfill PrivateAssets (KTSU0007), InternalsVisibleTo for test project (KTSU0002) [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
 - Sync .editorconfig ([@KtsuTools](https://github.com/KtsuTools))
 - Sync global.json ([@KtsuTools](https://github.com/KtsuTools))
+- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
 - chore: update ktsu.Sdk to 2.21.1 [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
 - Sync icon.png ([@KtsuTools](https://github.com/KtsuTools))
 
@@ -149,8 +151,10 @@ Changes since v1.1.2:
 Changes since v1.1.1:
 
 - Fix build for ktsu.Sdk 2.26.1 analyzers: Polyfill PrivateAssets (KTSU0007), InternalsVisibleTo for test project (KTSU0002) [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
 - Sync .editorconfig ([@KtsuTools](https://github.com/KtsuTools))
 - Sync global.json ([@KtsuTools](https://github.com/KtsuTools))
+- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
 
 ## v1.1.1 (patch)
 
@@ -166,8 +170,10 @@ Changes since v1.0.0:
 - chore: switch null guards and tests to Ensure/ThrowsExactly ([@matt-edmondson](https://github.com/matt-edmondson))
 - refactor: modernize SDK targets and null validation ([@matt-edmondson](https://github.com/matt-edmondson))
 - Remove serena/cursor files ([@matt-edmondson](https://github.com/matt-edmondson))
+- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
 - Remove legacy build scripts ([@matt-edmondson](https://github.com/matt-edmondson))
 - Enhance test assertions and naming for clarity and robustness ([@matt-edmondson](https://github.com/matt-edmondson))
+- Remove .github\workflows\project.yml ([@matt-edmondson](https://github.com/matt-edmondson))
 - Update project configuration and workflows ([@matt-edmondson](https://github.com/matt-edmondson))
 - Refactor file handling and improve test coverage for file operations ([@matt-edmondson](https://github.com/matt-edmondson))
 - Implement GenerateUnifiedDiffFromContent method and enhance DiffPlexDiffer functionality ([@matt-edmondson](https://github.com/matt-edmondson))
@@ -201,6 +207,7 @@ Changes since v1.0.0:
 - Update SonarQube configuration and coverage report generation in CI workflow ([@matt-edmondson](https://github.com/matt-edmondson))
 - Fix escaping in `Invoke-DotNetTest` for coverage report command ([@matt-edmondson](https://github.com/matt-edmondson))
 - Update coverage reporting and SonarQube integration in CI workflow ([@matt-edmondson](https://github.com/matt-edmondson))
+- Enhance SonarQube integration in GitHub Actions and update test coverage configuration ([@matt-edmondson](https://github.com/matt-edmondson))
 - Refactor `Invoke-DotNetTest` to streamline test execution and update SonarQube configuration ([@matt-edmondson](https://github.com/matt-edmondson))
 - Fix SonarQube configuration in `dotnet.yml` by adding missing quotation marks for the host URL ([@matt-edmondson](https://github.com/matt-edmondson))
 - Enhance coverage collection in `Invoke-DotNetTest` and update SonarQube configuration ([@matt-edmondson](https://github.com/matt-edmondson))
@@ -296,6 +303,7 @@ Changes since v1.0.0:
 - Enhance error handling in changelog generation ([@matt-edmondson](https://github.com/matt-edmondson))
 - Enhance error handling in PSBuild.psm1 for changelog generation ([@matt-edmondson](https://github.com/matt-edmondson))
 - Enhance error handling in PSBuild.psm1 and update derived cursor rules ([@matt-edmondson](https://github.com/matt-edmondson))
+- Enhance build script to respect release flags for package publishing and GitHub releases ([@matt-edmondson](https://github.com/matt-edmondson))
 - Enhance derived cursor rules and update test structures ([@matt-edmondson](https://github.com/matt-edmondson))
 - Fix build errors and improve code quality ([@matt-edmondson](https://github.com/matt-edmondson))
 - Split classes into their own files and convert to records ([@matt-edmondson](https://github.com/matt-edmondson))
@@ -304,6 +312,7 @@ Changes since v1.0.0:
 - Add YAML schema references to Winget manifests ([@matt-edmondson](https://github.com/matt-edmondson))
 - Update Winget manifests to version 1.10.0 and add .NET Desktop Runtime dependency ([@matt-edmondson](https://github.com/matt-edmondson))
 - Fix winget installer executable name in manifests and update PowerShell script for future compatibility ([@matt-edmondson](https://github.com/matt-edmondson))
+- Add GitHub token to Winget manifests update step ([@matt-edmondson](https://github.com/matt-edmondson))
 - Add release upload command for Winget manifests ([@matt-edmondson](https://github.com/matt-edmondson))
 - Adjust publishing settings in Invoke-DotNetPublish function by disabling trimming for output files. This change aims to improve compatibility for self-contained applications. ([@matt-edmondson](https://github.com/matt-edmondson))
 - Optimize publishing settings in Invoke-DotNetPublish function by enabling trimming for smaller output files. This change enhances the build process for self-contained applications. ([@matt-edmondson](https://github.com/matt-edmondson))
@@ -390,6 +399,7 @@ Changes since v1.0.20:
 - Update SonarQube configuration and coverage report generation in CI workflow ([@matt-edmondson](https://github.com/matt-edmondson))
 - Fix escaping in `Invoke-DotNetTest` for coverage report command ([@matt-edmondson](https://github.com/matt-edmondson))
 - Update coverage reporting and SonarQube integration in CI workflow ([@matt-edmondson](https://github.com/matt-edmondson))
+- Enhance SonarQube integration in GitHub Actions and update test coverage configuration ([@matt-edmondson](https://github.com/matt-edmondson))
 - Refactor `Invoke-DotNetTest` to streamline test execution and update SonarQube configuration ([@matt-edmondson](https://github.com/matt-edmondson))
 - Fix SonarQube configuration in `dotnet.yml` by adding missing quotation marks for the host URL ([@matt-edmondson](https://github.com/matt-edmondson))
 - Enhance coverage collection in `Invoke-DotNetTest` and update SonarQube configuration ([@matt-edmondson](https://github.com/matt-edmondson))
@@ -596,7 +606,9 @@ Changes since v1.0.2:
 
 ## v1.0.3-pre.1 (prerelease)
 
-No significant changes detected since v1.0.3.
+Changes since v1.0.2:
+
+- Bump DiffPlex from 1.7.2 to 1.8.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
 ## v1.0.2 (patch)
 
