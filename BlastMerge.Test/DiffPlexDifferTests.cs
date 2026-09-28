@@ -242,6 +242,100 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	}
 
 	/// <summary>
+	/// Tests that when both files end with a line ending, lines appended at the end produce the hunk
+	/// GNU diff -u produces, with no empty context line after the last real line
+	/// </summary>
+	[TestMethod]
+	public void GenerateUnifiedDiff_BothSidesNewlineTerminated_AppendAtEndHasNoPhantomLine()
+	{
+		string source = CreateFile("eof1.txt", "a\ne\n");
+		string target = CreateFile("eof2.txt", "a\ne\nc\nd\n");
+
+		string diff = DiffPlexDiffer.GenerateUnifiedDiff(source, target);
+
+		string[] expected =
+		[
+			$"--- {source}",
+			$"+++ {target}",
+			"@@ -1,2 +1,4 @@",
+			" a",
+			" e",
+			"+c",
+			"+d",
+		];
+
+		Assert.AreSequenceEqual(expected, SplitLines(diff));
+	}
+
+	/// <summary>
+	/// Tests that when both files end with a line ending, a change to the last line is counted from
+	/// the real lines only, so the hunk applies with patch -F0
+	/// </summary>
+	[TestMethod]
+	public void GenerateUnifiedDiff_BothSidesNewlineTerminated_ChangeToLastLineCountsRealLinesOnly()
+	{
+		string source = CreateFile("last1.txt", "1\n2\n3\n4\n5\n6\n");
+		string target = CreateFile("last2.txt", "1\n2\n3\n4\n5\nsix\n");
+
+		string diff = DiffPlexDiffer.GenerateUnifiedDiff(source, target);
+
+		string[] expected =
+		[
+			$"--- {source}",
+			$"+++ {target}",
+			"@@ -3,4 +3,4 @@",
+			" 3",
+			" 4",
+			" 5",
+			"-6",
+			"+six",
+		];
+
+		Assert.AreSequenceEqual(expected, SplitLines(diff));
+	}
+
+	/// <summary>
+	/// Tests that an empty file, which has no unterminated line either, gains lines without an empty
+	/// line trailing them
+	/// </summary>
+	[TestMethod]
+	public void GenerateUnifiedDiff_EmptyToNewlineTerminated_HasNoPhantomLine()
+	{
+		string source = CreateFile("fromempty1.txt", string.Empty);
+		string target = CreateFile("fromempty2.txt", "e\n");
+
+		string diff = DiffPlexDiffer.GenerateUnifiedDiff(source, target);
+
+		string[] expected =
+		[
+			$"--- {source}",
+			$"+++ {target}",
+			"@@ -0,0 +1,1 @@",
+			"+e",
+		];
+
+		Assert.AreSequenceEqual(expected, SplitLines(diff));
+	}
+
+	/// <summary>
+	/// Tests that CRLF-terminated files are treated the same way, since the final CRLF also
+	/// terminates the last line rather than starting an empty one
+	/// </summary>
+	[TestMethod]
+	public void GenerateUnifiedDiff_BothSidesCrlfTerminated_AppendAtEndHasNoPhantomLine()
+	{
+		string source = CreateFile("crlf1.txt", "a\r\ne\r\n");
+		string target = CreateFile("crlf2.txt", "a\r\ne\r\nc\r\n");
+
+		string diff = DiffPlexDiffer.GenerateUnifiedDiff(source, target);
+
+		string[] headers = [.. SplitLines(diff).Where(line => line.StartsWith("@@", StringComparison.Ordinal))];
+
+		Assert.AreSequenceEqual(["@@ -1,2 +1,3 @@"], headers);
+		Assert.AreEqual("+c", SplitLines(diff)[^1]);
+	}
+
+	/// <summary>
 	/// Tests that an insertion and an unrelated deletion elsewhere in the file are not paired as a
 	/// modification just because their line numbers coincide, and that changes come back in file order
 	/// </summary>

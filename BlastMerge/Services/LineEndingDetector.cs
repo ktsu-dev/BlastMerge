@@ -140,7 +140,7 @@ public static class LineEndingDetector
 	/// </summary>
 	/// <param name="content">The content to inspect.</param>
 	/// <returns>True if the last character is a carriage return or a line feed.</returns>
-	private static bool EndsWithLineEnding(string content) =>
+	internal static bool EndsWithLineEnding(string content) =>
 		content.Length > 0 && content[^1] is '\n' or '\r';
 
 	/// <summary>
