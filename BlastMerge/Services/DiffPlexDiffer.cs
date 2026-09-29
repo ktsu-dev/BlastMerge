@@ -461,7 +461,7 @@ public static class DiffPlexDiffer
 
 		(string content1, string content2) = ReadComparableContent(file1, file2);
 
-		DiffPaneModel diff = InlineDiffBuilder.BuildDiffModel(content1, content2);
+		DiffPaneModel diff = InlineDiffBuilder.BuildDiffModel(content1, content2, ignoreWhitespace: false);
 		Collection<ColoredDiffLine> result =
 		[
 			new($"--- {file1}", DiffColor.FileHeader),
@@ -520,9 +520,9 @@ public static class DiffPlexDiffer
 		// run of changes, so a deletion is only ever paired with an insertion from the same run.
 		// Pairing across the whole file instead matched any deletion with any insertion that happened
 		// to share its line number, reporting unrelated lines as a modification. Blocks arrive in
-		// file order, so the result does too. Whitespace is ignored to match the inline diff this
-		// replaced.
-		DiffResult diff = Differ.Instance.CreateLineDiffs(content1, content2, ignoreWhitespace: true, ignoreCase: false);
+		// file order, so the result does too. Whitespace is significant, as it is everywhere else
+		// a file is compared.
+		DiffResult diff = Differ.Instance.CreateLineDiffs(content1, content2, ignoreWhitespace: false, ignoreCase: false);
 		List<LineDifference> differences = [];
 
 		foreach (DiffPlex.Model.DiffBlock block in diff.DiffBlocks)
@@ -572,7 +572,7 @@ public static class DiffPlexDiffer
 
 		(string content1, string content2) = ReadComparableContent(file1, file2);
 
-		return SideBySideDiffBuilder.BuildDiffModel(content1, content2);
+		return SideBySideDiffBuilder.BuildDiffModel(content1, content2, ignoreWhitespace: false);
 	}
 
 	/// <summary>

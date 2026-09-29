@@ -498,6 +498,40 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	}
 
 	/// <summary>
+	/// Tests that a difference only in leading or trailing whitespace is a real difference in every
+	/// comparison and diff, as it is to the hasher and the merge
+	/// </summary>
+	/// <param name="name">Directory name for the test files</param>
+	/// <param name="line1">The changed line in the first file</param>
+	/// <param name="line2">The changed line in the second file</param>
+	[TestMethod]
+	[DataRow("leading", "    return 1;", "return 1;")]
+	[DataRow("trailing", "return 1;", "return 1;  ")]
+	public void WhitespaceOnlyDifference_IsReportedByEveryComparison(string name, string line1, string line2)
+	{
+		string file1 = CreateFile($"ws-{name}/1/a.py", $"if (x)\n{line1}\nend\n");
+		string file2 = CreateFile($"ws-{name}/2/a.py", $"if (x)\n{line2}\nend\n");
+
+		Assert.IsFalse(DiffPlexDiffer.AreFilesIdentical(file1, file2), "Files differing in whitespace are not identical");
+
+		LineDifference[] differences = [.. DiffPlexDiffer.FindDifferences(file1, file2)];
+		LineDifference[] expected = [new(2, 2, line1, line2, LineDifferenceType.Modified)];
+		Assert.AreSequenceEqual(expected, differences);
+
+		string[] unified = SplitLines(DiffPlexDiffer.GenerateUnifiedDiff(file1, file2));
+		CollectionAssert.Contains(unified, $"-{line1}");
+		CollectionAssert.Contains(unified, $"+{line2}");
+
+		System.Collections.ObjectModel.Collection<ColoredDiffLine> colored = DiffPlexDiffer.GenerateColoredDiff(file1, file2);
+		Assert.IsTrue(colored.Any(line => line.Color == DiffColor.Deletion && line.Content.Contains(line1, StringComparison.Ordinal)), "Colored diff should show the old line as deleted");
+		Assert.IsTrue(colored.Any(line => line.Color == DiffColor.Addition && line.Content.Contains(line2, StringComparison.Ordinal)), "Colored diff should show the new line as added");
+
+		DiffPlex.DiffBuilder.Model.SideBySideDiffModel sideBySide = DiffPlexDiffer.GenerateSideBySideDiff(file1, file2);
+		Assert.IsTrue(sideBySide.OldText.Lines.Any(line => line.Type != DiffPlex.DiffBuilder.Model.ChangeType.Unchanged), "Side-by-side diff should mark the old line as changed");
+		Assert.IsTrue(sideBySide.NewText.Lines.Any(line => line.Type != DiffPlex.DiffBuilder.Model.ChangeType.Unchanged), "Side-by-side diff should mark the new line as changed");
+	}
+
+	/// <summary>
 	/// Splits a generated diff into its lines
 	/// </summary>
 	/// <param name="diff">The generated unified diff</param>
