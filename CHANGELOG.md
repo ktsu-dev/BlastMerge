@@ -1,6 +1,8 @@
-## v1.10.0
+## v1.10.1 (patch)
 
-No significant changes detected since v1.10.0.
+Changes since v1.10.0:
+
+- fix: drop the phantom empty line at EOF from unified diffs [patch] ([@Claude](https://github.com/Claude))
 
 ## v1.10.0 (minor)
 
