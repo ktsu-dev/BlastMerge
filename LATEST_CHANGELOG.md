@@ -1,6 +1,6 @@
-## v1.10.1 (patch)
+## v1.10.2 (patch)
 
-Changes since v1.10.0:
+Changes since v1.10.1:
 
-- fix: drop the phantom empty line at EOF from unified diffs [patch] ([@Claude](https://github.com/Claude))
+- fix: treat leading and trailing whitespace as a difference when comparing and diffing [patch] ([@Claude](https://github.com/Claude))
 
