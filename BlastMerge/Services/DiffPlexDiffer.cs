@@ -147,7 +147,14 @@ public static class DiffPlexDiffer
 			return string.Empty;
 		}
 
-		DiffPaneModel diff = InlineDiffBuilder.BuildDiffModel(content1, content2);
+		// A final line ending terminates the last line rather than starting an empty one, but the
+		// default chunker splits "a\ne\n" into "a", "e" and "". Left in, that empty entry became a
+		// trailing context line that was counted in the hunk ranges, so patch rejected any hunk
+		// reaching the end of the file. When only one side leaves its last line unterminated the
+		// sides genuinely differ there, and that case keeps the default chunker.
+		DiffPaneModel diff = HasNoUnterminatedLine(content1) && HasNoUnterminatedLine(content2)
+			? InlineDiffBuilder.BuildDiffModel(content1, content2, ignoreWhitespace: true, ignoreCase: false, TerminatedLineChunker.Instance)
+			: InlineDiffBuilder.BuildDiffModel(content1, content2);
 
 		List<string> result =
 		[
@@ -159,6 +166,14 @@ public static class DiffPlexDiffer
 
 		return string.Join(Environment.NewLine, result);
 	}
+
+	/// <summary>
+	/// Determines whether every line of the content is terminated by a line ending
+	/// </summary>
+	/// <param name="content">The content to inspect</param>
+	/// <returns>True if the content is empty or ends with a line ending</returns>
+	private static bool HasNoUnterminatedLine(string content) =>
+		content.Length == 0 || LineEndingDetector.EndsWithLineEnding(content);
 
 	/// <summary>
 	/// Processes diff lines and builds unified diff hunks
@@ -343,6 +358,21 @@ public static class DiffPlexDiffer
 		}
 
 		return count;
+	}
+
+	/// <summary>
+	/// Splits content into its lines without the empty entry that the default chunker reports after a
+	/// final line ending
+	/// </summary>
+	private sealed class TerminatedLineChunker : IChunker
+	{
+		/// <summary>
+		/// Gets the shared instance
+		/// </summary>
+		public static TerminatedLineChunker Instance { get; } = new();
+
+		/// <inheritdoc/>
+		public IReadOnlyList<string> Chunk(string text) => LineEndingDetector.SplitLines(text);
 	}
 
 	/// <summary>
