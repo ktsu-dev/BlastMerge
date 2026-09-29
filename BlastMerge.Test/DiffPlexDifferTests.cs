@@ -486,11 +486,11 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	{
 		CreateFile("agree/1/x.txt", content1);
 		CreateFile("agree/2/x.txt", content2);
-		string dir1 = Path.Combine(TestDirectory, "agree", "1");
-		string dir2 = Path.Combine(TestDirectory, "agree", "2");
+		string dir1 = Path.Join(TestDirectory, "agree", "1");
+		string dir2 = Path.Join(TestDirectory, "agree", "2");
 
 		DirectoryComparisonResult comparison = FileDiffer.FindDifferences(dir1, dir2, "*.txt", fileSystem: MockFileSystem);
-		int groupCount = FileDiffer.GroupFilesByHash([Path.Combine(dir1, "x.txt"), Path.Combine(dir2, "x.txt")], MockFileSystem).Count;
+		int groupCount = FileDiffer.GroupFilesByHash([Path.Join(dir1, "x.txt"), Path.Join(dir2, "x.txt")], MockFileSystem).Count;
 
 		Assert.IsEmpty(comparison.SameFiles);
 		Assert.HasCount(1, comparison.ModifiedFiles);
