@@ -134,6 +134,7 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 			" e",
 			" f",
 			" g",
+			"\\ No newline at end of file",
 		];
 
 		Assert.AreSequenceEqual(expected, SplitLines(diff));
@@ -197,8 +198,8 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	[TestMethod]
 	public void GenerateUnifiedDiff_AppendedLines_AnchorsHunkAfterSharedContext()
 	{
-		string source = CreateFile("app1.txt", "a\nb\nc");
-		string target = CreateFile("app2.txt", "a\nb\nc\nd\ne");
+		string source = CreateFile("app1.txt", "a\nb\nc\n");
+		string target = CreateFile("app2.txt", "a\nb\nc\nd\ne\n");
 
 		string diff = DiffPlexDiffer.GenerateUnifiedDiff(source, target);
 
@@ -224,8 +225,8 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 	[TestMethod]
 	public void GenerateUnifiedDiff_ZeroContext_ReportsZeroLengthRangeForOneSidedHunk()
 	{
-		string source = CreateFile("zero1.txt", "a\nb\nc");
-		string target = CreateFile("zero2.txt", "a\nb\nc\nd\ne");
+		string source = CreateFile("zero1.txt", "a\nb\nc\n");
+		string target = CreateFile("zero2.txt", "a\nb\nc\nd\ne\n");
 
 		string diff = DiffPlexDiffer.GenerateUnifiedDiff(source, target, 0);
 
@@ -389,6 +390,111 @@ public class DiffPlexDifferTests : MockFileSystemTestBase
 			new(3, null, "c", null, LineDifferenceType.Deleted),
 		];
 		Assert.AreSequenceEqual(expected, differences);
+	}
+
+	/// <summary>
+	/// Tests that appending to a file whose last line is unterminated changes that line, and that each
+	/// side's unterminated last line is marked, as GNU diff -u does
+	/// </summary>
+	[TestMethod]
+	public void GenerateUnifiedDiff_AppendAfterUnterminatedLastLine_MarksMissingNewline()
+	{
+		string source = CreateFile("unterminated1.txt", "a\nb\nc");
+		string target = CreateFile("unterminated2.txt", "a\nb\nc\nd\ne");
+
+		string diff = DiffPlexDiffer.GenerateUnifiedDiff(source, target);
+
+		string[] expected =
+		[
+			$"--- {source}",
+			$"+++ {target}",
+			"@@ -1,3 +1,5 @@",
+			" a",
+			" b",
+			"-c",
+			"\\ No newline at end of file",
+			"+c",
+			"+d",
+			"+e",
+			"\\ No newline at end of file",
+		];
+
+		Assert.AreSequenceEqual(expected, SplitLines(diff));
+	}
+
+	/// <summary>
+	/// Tests that losing the final newline is reported on the last line rather than as a deleted empty
+	/// line that the file never had
+	/// </summary>
+	[TestMethod]
+	public void GenerateUnifiedDiff_FinalNewlineRemoved_MarksMissingNewline()
+	{
+		string source = CreateFile("eol1.txt", "a\nb\n");
+		string target = CreateFile("eol2.txt", "a\nb");
+
+		string diff = DiffPlexDiffer.GenerateUnifiedDiff(source, target);
+
+		string[] expected =
+		[
+			$"--- {source}",
+			$"+++ {target}",
+			"@@ -1,2 +1,2 @@",
+			" a",
+			"-b",
+			"+b",
+			"\\ No newline at end of file",
+		];
+
+		Assert.AreSequenceEqual(expected, SplitLines(diff));
+	}
+
+	/// <summary>
+	/// Tests that a CRLF file and its LF copy are not identical, agreeing with the hash grouping the
+	/// merge uses, and that their diff says why they differ
+	/// </summary>
+	[TestMethod]
+	public void CrlfAndLfCopies_AreDifferentAndTheDiffExplainsWhy()
+	{
+		string crlf = CreateFile("le/1/x.txt", "a\r\nb\r\n");
+		string lf = CreateFile("le/2/x.txt", "a\nb\n");
+
+		Assert.IsFalse(DiffPlexDiffer.AreFilesIdentical(crlf, lf), "Files that hash differently are not identical");
+		Assert.AreNotEqual(FileHasher.ComputeFileHash(crlf), FileHasher.ComputeFileHash(lf));
+
+		string diff = DiffPlexDiffer.GenerateUnifiedDiff(crlf, lf);
+
+		string[] expected =
+		[
+			$"--- {crlf}",
+			$"+++ {lf}",
+			"Files differ only in line endings: CRLF vs LF",
+		];
+
+		Assert.AreSequenceEqual(expected, SplitLines(diff));
+	}
+
+	/// <summary>
+	/// Tests that the directory comparison and the hash grouping agree on a CRLF-vs-LF pair and on a
+	/// pair that differs only in its final newline
+	/// </summary>
+	/// <param name="content1">Content of the first file</param>
+	/// <param name="content2">Content of the second file</param>
+	[TestMethod]
+	[DataRow("a\r\nb\r\n", "a\nb\n")]
+	[DataRow("a\nb\n", "a\nb")]
+	public void LineEndingOnlyDifference_DirectoryComparisonAgreesWithHashGrouping(string content1, string content2)
+	{
+		CreateFile("agree/1/x.txt", content1);
+		CreateFile("agree/2/x.txt", content2);
+		string dir1 = Path.Combine(TestDirectory, "agree", "1");
+		string dir2 = Path.Combine(TestDirectory, "agree", "2");
+
+		DirectoryComparisonResult comparison = FileDiffer.FindDifferences(dir1, dir2, "*.txt", fileSystem: MockFileSystem);
+		int groupCount = FileDiffer.GroupFilesByHash([Path.Combine(dir1, "x.txt"), Path.Combine(dir2, "x.txt")], MockFileSystem).Count;
+
+		Assert.IsEmpty(comparison.SameFiles);
+		Assert.HasCount(1, comparison.ModifiedFiles);
+		Assert.AreEqual(2, groupCount);
 	}
 
 	/// <summary>

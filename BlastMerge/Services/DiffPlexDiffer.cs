@@ -9,7 +9,6 @@ using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using DiffPlex;
-using DiffPlex.Chunkers;
 using DiffPlex.DiffBuilder;
 using DiffPlex.DiffBuilder.Model;
 using DiffPlex.Model;
@@ -24,6 +23,7 @@ public static class DiffPlexDiffer
 	private static readonly InlineDiffBuilder InlineDiffBuilder = new(Differ);
 	private static readonly SideBySideDiffBuilder SideBySideDiffBuilder = new(Differ);
 	private const string FilesNotFoundMessage = "One or both files do not exist";
+	private const string NoNewlineAtEndOfFile = "\\ No newline at end of file";
 
 	/// <summary>
 	/// Checks if two files are identical
@@ -43,10 +43,10 @@ public static class DiffPlexDiffer
 			return false;
 		}
 
-		(string content1, string content2) = ReadComparableContent(file1, file2);
-
-		DiffResult diff = Differ.CreateDiffs(content1, content2, true, false, new LineChunker());
-		return !diff.DiffBlocks.Any();
+		// Identical means byte-identical, which is the rule the hash grouping in the merge flow uses.
+		// A line diff would normalise line endings and a missing final newline away, so a pair the
+		// directory view called identical could still be offered as two versions to merge.
+		return FileHasher.ComputeFileHash(file1, fileSystem) == FileHasher.ComputeFileHash(file2, fileSystem);
 	}
 
 	/// <summary>
@@ -147,14 +147,12 @@ public static class DiffPlexDiffer
 			return string.Empty;
 		}
 
-		// A final line ending terminates the last line rather than starting an empty one, but the
-		// default chunker splits "a\ne\n" into "a", "e" and "". Left in, that empty entry became a
-		// trailing context line that was counted in the hunk ranges, so patch rejected any hunk
-		// reaching the end of the file. When only one side leaves its last line unterminated the
-		// sides genuinely differ there, and that case keeps the default chunker.
-		DiffPaneModel diff = HasNoUnterminatedLine(content1) && HasNoUnterminatedLine(content2)
-			? InlineDiffBuilder.BuildDiffModel(content1, content2, ignoreWhitespace: true, ignoreCase: false, TerminatedLineChunker.Instance)
-			: InlineDiffBuilder.BuildDiffModel(content1, content2);
+		// Each line is compared together with whether it is terminated, so a last line that gains or
+		// loses its final newline is a changed line, as it is to diff -u. Terminators are compared as
+		// "\n" whatever their style, so a CRLF file and its LF copy differ in no line; the note below
+		// reports that difference instead. Whitespace must be significant here, because ignoring it
+		// trims the terminator off every line before comparing.
+		DiffPaneModel diff = InlineDiffBuilder.BuildDiffModel(content1, content2, ignoreWhitespace: false, ignoreCase: false, TerminatedLineChunker.Instance);
 
 		List<string> result =
 		[
@@ -164,16 +162,42 @@ public static class DiffPlexDiffer
 
 		ProcessDiffLines(diff.Lines, result, contextLines);
 
+		if (result.Count == 2)
+		{
+			// The contents differ but no line does, so only the line-ending style differs
+			result.Add(DescribeLineEndingDifference(content1, content2));
+		}
+
 		return string.Join(Environment.NewLine, result);
 	}
 
 	/// <summary>
-	/// Determines whether every line of the content is terminated by a line ending
+	/// Describes a difference between two contents that is only in their line-ending style
 	/// </summary>
-	/// <param name="content">The content to inspect</param>
-	/// <returns>True if the content is empty or ends with a line ending</returns>
-	private static bool HasNoUnterminatedLine(string content) =>
-		content.Length == 0 || LineEndingDetector.EndsWithLineEnding(content);
+	/// <param name="content1">Content of the first file</param>
+	/// <param name="content2">Content of the second file</param>
+	/// <returns>A single line explaining the difference</returns>
+	private static string DescribeLineEndingDifference(string content1, string content2)
+	{
+		string lineEnding1 = LineEndingDetector.Detect(content1);
+		string lineEnding2 = LineEndingDetector.Detect(content2);
+
+		return lineEnding1 == lineEnding2
+			? "Files differ only in line endings"
+			: $"Files differ only in line endings: {NameLineEnding(lineEnding1)} vs {NameLineEnding(lineEnding2)}";
+	}
+
+	/// <summary>
+	/// Names a line-ending style the way editors and git do
+	/// </summary>
+	/// <param name="lineEnding">The line ending</param>
+	/// <returns>CRLF, LF or CR</returns>
+	private static string NameLineEnding(string lineEnding) => lineEnding switch
+	{
+		LineEndingDetector.CarriageReturnLineFeed => "CRLF",
+		LineEndingDetector.CarriageReturn => "CR",
+		_ => "LF",
+	};
 
 	/// <summary>
 	/// Processes diff lines and builds unified diff hunks
@@ -334,7 +358,12 @@ public static class DiffPlexDiffer
 
 		for (int i = start; i <= end; i++)
 		{
-			result.Add($"{entries[i].Marker}{entries[i].Text}");
+			result.Add($"{entries[i].Marker}{entries[i].Line}");
+
+			if (!entries[i].IsTerminated)
+			{
+				result.Add(NoNewlineAtEndOfFile);
+			}
 		}
 	}
 
@@ -361,8 +390,9 @@ public static class DiffPlexDiffer
 	}
 
 	/// <summary>
-	/// Splits content into its lines without the empty entry that the default chunker reports after a
-	/// final line ending
+	/// Splits content into its lines, each ending in "\n" when it is terminated by a line ending of
+	/// any style, and without the empty entry that the default chunker reports after a final line
+	/// ending
 	/// </summary>
 	private sealed class TerminatedLineChunker : IChunker
 	{
@@ -372,18 +402,39 @@ public static class DiffPlexDiffer
 		public static TerminatedLineChunker Instance { get; } = new();
 
 		/// <inheritdoc/>
-		public IReadOnlyList<string> Chunk(string text) => LineEndingDetector.SplitLines(text);
+		public IReadOnlyList<string> Chunk(string text)
+		{
+			string[] lines = LineEndingDetector.SplitLines(text);
+			int terminatedCount = LineEndingDetector.EndsWithLineEnding(text) ? lines.Length : lines.Length - 1;
+
+			for (int i = 0; i < terminatedCount; i++)
+			{
+				lines[i] += LineEndingDetector.LineFeed;
+			}
+
+			return lines;
+		}
 	}
 
 	/// <summary>
 	/// One line of a unified diff body, with the line number it occupies in each file
 	/// </summary>
 	/// <param name="Marker">The unified diff marker: a space, '-' or '+'</param>
-	/// <param name="Text">The line's text</param>
+	/// <param name="Text">The line's text, ending in "\n" when the line is terminated</param>
 	/// <param name="OldLine">The 1-based line number in the old file, or 0 if the line is an insertion</param>
 	/// <param name="NewLine">The 1-based line number in the new file, or 0 if the line is a deletion</param>
 	private sealed record DiffEntry(char Marker, string Text, int OldLine, int NewLine)
 	{
+		/// <summary>
+		/// Gets the line's text without its terminator
+		/// </summary>
+		public string Line => IsTerminated ? Text[..^1] : Text;
+
+		/// <summary>
+		/// Gets a value indicating whether the line is terminated by a line ending
+		/// </summary>
+		public bool IsTerminated => Text.EndsWith('\n');
+
 		/// <summary>
 		/// Gets a value indicating whether this line is a change rather than context
 		/// </summary>
