@@ -45,7 +45,7 @@ public sealed class MarkupEscapingTests : IDisposable
 		console.Profile.Width = 1000;
 		AnsiConsole.Console = console;
 
-		_tempDirectory = Path.Combine(Path.GetTempPath(), $"BlastMerge_Markup_{Guid.NewGuid()}");
+		_tempDirectory = Path.Join(Path.GetTempPath(), $"BlastMerge_Markup_{Guid.NewGuid()}");
 		Directory.CreateDirectory(_tempDirectory);
 	}
 
@@ -63,7 +63,7 @@ public sealed class MarkupEscapingTests : IDisposable
 
 	private string CreateFile(string relativePath, string content)
 	{
-		string path = Path.Combine(_tempDirectory, relativePath);
+		string path = Path.Join(_tempDirectory, relativePath);
 		Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 		File.WriteAllText(path, content);
 		return path;
@@ -73,8 +73,8 @@ public sealed class MarkupEscapingTests : IDisposable
 	public void ProcessBatchWithDiscretePhases_OverBracketedFolders_WithTheConsoleProgressCallback_DoesNotThrow()
 	{
 		// Arrange
-		CreateFile(Path.Combine("app", "[id]", "page.tsx"), "export default 1;\n");
-		CreateFile(Path.Combine("web", "[id]", "page.tsx"), "export default 2;\n");
+		CreateFile(Path.Join("app", "[id]", "page.tsx"), "export default 1;\n");
+		CreateFile(Path.Join("web", "[id]", "page.tsx"), "export default 2;\n");
 		BatchConfiguration batch = new()
 		{
 			Name = "web",
