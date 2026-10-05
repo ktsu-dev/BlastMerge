@@ -326,4 +326,19 @@ public class FileFinderTests : MockFileSystemTestBase
 	[DataRow("**/", false)]
 	public void IsValidPattern_RejectsPatternsThatStillContainASeparator(string pattern, bool expected) =>
 		Assert.AreEqual(expected, FileFinder.IsValidPattern(pattern));
+
+	[TestMethod]
+	public void FindFiles_WithExclusionsAndProgressAndGlobstarPrefix_MatchesTheSameFilesAsThePlainPattern()
+	{
+		// Arrange - this overload searches FileSystemProvider.Current, which the base class points at the mock
+		IReadOnlyCollection<string> exclusionPatterns = [];
+		IReadOnlyCollection<string> plain = FileFinder.FindFiles(TestDirectory, "test.txt", exclusionPatterns, progressCallback: null);
+
+		// Act
+		IReadOnlyCollection<string> files = FileFinder.FindFiles(TestDirectory, "**/test.txt", exclusionPatterns, progressCallback: null);
+
+		// Assert
+		Assert.AreNotEqual(0, plain.Count, "The plain pattern should find files");
+		CollectionAssert.AreEquivalent(plain.ToList(), files.ToList(), "A leading **/ should be ignored because the search is already recursive");
+	}
 }
