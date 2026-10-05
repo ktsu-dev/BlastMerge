@@ -327,6 +327,10 @@ public static partial class BatchProcessor
 			.GroupBy(failure => failure.FilePath)
 			.ToDictionary(group => group.Key, group => group.First());
 
+		// Record which pattern found each file. When several patterns find the same file, the one
+		// listed first in the batch claims it
+		Dictionary<string, string> patternByFile = MapFilesToPatterns(patternFiles, patterns);
+
 		// Flatten all files and group by filename. A file matched by more than one pattern must be counted once
 		IEnumerable<string> allFiles = patternFiles.Values.SelectMany(files => files).Distinct();
 		IEnumerable<IGrouping<string, string>> fileNameGroups = allFiles.GroupBy(filePath => Path.GetFileName(filePath));
@@ -356,7 +360,9 @@ public static partial class BatchProcessor
 				.Select(filePath => failuresByPath[filePath])];
 
 			// Determine resolution type and create resolution item
-			string matchingPattern = FindMatchingPattern(fileName, patterns);
+			string matchingPattern = fileNameGroup
+				.Select(filePath => patternByFile.GetValueOrDefault(filePath))
+				.FirstOrDefault(pattern => pattern is not null) ?? fileName;
 			ResolutionType resolutionType = DetermineResolutionType(fileGroups);
 
 			ResolutionItem resolutionItem = new()
@@ -611,56 +617,31 @@ public static partial class BatchProcessor
 	}
 
 	/// <summary>
-	/// Finds the pattern that would match the given filename
+	/// Maps each gathered file to the pattern that found it
 	/// </summary>
-	/// <param name="fileName">The filename to match</param>
-	/// <param name="patterns">The list of patterns to check</param>
-	/// <returns>The first matching pattern, or the filename if no pattern matches</returns>
-	private static string FindMatchingPattern(string fileName, IReadOnlyCollection<string> patterns)
+	/// <param name="patternFiles">The files each pattern found during gathering</param>
+	/// <param name="patterns">The batch's patterns, in the order they are listed</param>
+	/// <returns>A map from file path to the first listed pattern that found it</returns>
+	private static Dictionary<string, string> MapFilesToPatterns(
+		Dictionary<string, IReadOnlyCollection<string>> patternFiles,
+		IReadOnlyCollection<string> patterns)
 	{
+		Dictionary<string, string> patternByFile = [];
+
 		foreach (string pattern in patterns)
 		{
-			// Simple pattern matching - could be enhanced with proper glob matching
-			if (pattern.Contains('*') || pattern.Contains('?'))
+			if (!patternFiles.TryGetValue(pattern, out IReadOnlyCollection<string>? files))
 			{
-				// For now, return the pattern if it could match
-				// This is a simplified approach - full glob matching would be more accurate
-				if (IsPatternMatch(fileName, pattern))
-				{
-					return pattern;
-				}
+				continue;
 			}
-			else if (string.Equals(fileName, pattern, StringComparison.OrdinalIgnoreCase))
+
+			foreach (string filePath in files)
 			{
-				return pattern;
+				patternByFile.TryAdd(filePath, pattern);
 			}
 		}
 
-		// If no pattern matches, return the filename itself
-		return fileName;
-	}
-
-	/// <summary>
-	/// Simple pattern matching helper
-	/// </summary>
-	/// <param name="fileName">The filename to check</param>
-	/// <param name="pattern">The pattern to match against</param>
-	/// <returns>True if the filename matches the pattern</returns>
-	private static bool IsPatternMatch(string fileName, string pattern)
-	{
-		// Simple wildcard matching - this could be enhanced
-		if (pattern == "*")
-		{
-			return true;
-		}
-
-		if (pattern.StartsWith("*."))
-		{
-			string extension = pattern[2..];
-			return fileName.EndsWith(extension, StringComparison.OrdinalIgnoreCase);
-		}
-
-		return string.Equals(fileName, pattern, StringComparison.OrdinalIgnoreCase);
+		return patternByFile;
 	}
 
 	/// <summary>
