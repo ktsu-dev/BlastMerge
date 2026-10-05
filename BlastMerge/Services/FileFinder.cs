@@ -15,6 +15,49 @@ using System.Linq;
 public static class FileFinder
 {
 	/// <summary>
+	/// The leading globstar prefixes that <see cref="NormalizePattern"/> strips from a pattern.
+	/// </summary>
+	private static readonly string[] GlobstarPrefixes = ["**/", "**\\"];
+
+	/// <summary>
+	/// Normalises a file pattern before it is matched against file names.
+	/// </summary>
+	/// <remarks>
+	/// The search is already recursive, so a leading <c>**/</c> (or <c>**\</c>) adds nothing, but
+	/// <see cref="Directory.GetFiles(string, string)"/> has no globstar support and would treat it as a
+	/// literal subdirectory named <c>**</c>, silently matching no files. The prefix is stripped instead.
+	/// </remarks>
+	/// <param name="pattern">The pattern to normalise</param>
+	/// <returns>The pattern without any leading globstar prefix</returns>
+	public static string NormalizePattern(string pattern)
+	{
+		Ensure.NotNull(pattern);
+
+		string normalized = pattern;
+		while (GlobstarPrefixes.Any(prefix => normalized.StartsWith(prefix, StringComparison.Ordinal)))
+		{
+			normalized = normalized[3..];
+		}
+
+		return normalized;
+	}
+
+	/// <summary>
+	/// Determines whether a pattern can be matched against file names once it has been normalised.
+	/// </summary>
+	/// <remarks>
+	/// Patterns match file names only. A pattern that still contains a directory separator after
+	/// <see cref="NormalizePattern"/>, such as <c>src/*.cs</c>, can never match anything.
+	/// </remarks>
+	/// <param name="pattern">The pattern to check</param>
+	/// <returns>True if the normalised pattern contains no directory separator</returns>
+	public static bool IsValidPattern(string pattern)
+	{
+		string normalized = NormalizePattern(pattern);
+		return normalized.Length > 0 && normalized.IndexOfAny(['/', '\\']) < 0;
+	}
+
+	/// <summary>
 	/// Recursively finds all files with the specified filename
 	/// </summary>
 	/// <param name="rootDirectory">The root directory to search from</param>
@@ -35,6 +78,7 @@ public static class FileFinder
 	public static IReadOnlyCollection<string> FindFiles(string rootDirectory, string fileName, IFileSystem? fileSystem = null, Action<string>? progressCallback = null)
 	{
 		fileSystem ??= FileSystemProvider.Current;
+		fileName = NormalizePattern(fileName);
 		List<string> result = [];
 
 		try
@@ -114,6 +158,7 @@ public static class FileFinder
 		Ensure.NotNull(pathExclusionPatterns);
 
 		fileSystem ??= FileSystemProvider.Current;
+		fileName = NormalizePattern(fileName);
 		List<string> result = [];
 
 		// Use search paths if provided, otherwise use the root directory
@@ -141,7 +186,7 @@ public static class FileFinder
 		string fileName,
 		IReadOnlyCollection<string> pathExclusionPatterns,
 		Action<string>? progressCallback) =>
-		FindFilesWithExclusions(rootDirectory, fileName, pathExclusionPatterns, FileSystemProvider.Current, progressCallback);
+		FindFilesWithExclusions(rootDirectory, NormalizePattern(fileName), pathExclusionPatterns, FileSystemProvider.Current, progressCallback);
 
 	/// <summary>
 	/// Recursively finds all files with the specified filename, applying exclusion patterns with progress reporting

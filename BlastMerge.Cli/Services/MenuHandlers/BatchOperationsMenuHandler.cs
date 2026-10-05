@@ -289,7 +289,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	{
 		List<string> patterns = [];
 		AnsiConsole.MarkupLine("[cyan]Enter file patterns (one per line, empty line to finish):[/]");
-		AnsiConsole.MarkupLine("[dim]Examples: *.txt, .gitignore, README.md, **/*.cs[/]");
+		AnsiConsole.MarkupLine("[dim]Examples: *.txt, .gitignore, README.md, *.cs (subdirectories are always searched)[/]");
 
 		while (true)
 		{
@@ -298,10 +298,35 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			{
 				break;
 			}
-			patterns.Add(pattern.Trim());
+
+			TryAddPattern(patterns, pattern);
 		}
 
 		return patterns;
+	}
+
+	/// <summary>
+	/// Adds a pattern the user entered, normalised, or explains why it was rejected.
+	/// </summary>
+	/// <param name="patterns">The patterns gathered so far.</param>
+	/// <param name="pattern">The pattern as the user entered it.</param>
+	/// <returns>True if the pattern was added, false if it was rejected.</returns>
+	/// <remarks>
+	/// Patterns match file names only, and the search is already recursive. A leading <c>**/</c> is
+	/// stripped, but a pattern that still names a folder, such as <c>src/*.cs</c>, could never match
+	/// anything and would otherwise be reported as "No files found" with no hint why.
+	/// </remarks>
+	internal static bool TryAddPattern(List<string> patterns, string pattern)
+	{
+		pattern = pattern.Trim();
+		if (!FileFinder.IsValidPattern(pattern))
+		{
+			AnsiConsole.MarkupLine("[red]Patterns match file names only, so they cannot contain a directory separator. Use a search path or a path exclusion to narrow by folder.[/]");
+			return false;
+		}
+
+		patterns.Add(FileFinder.NormalizePattern(pattern));
+		return true;
 	}
 
 	/// <summary>
