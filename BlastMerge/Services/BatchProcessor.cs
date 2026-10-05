@@ -208,7 +208,7 @@ public static partial class BatchProcessor
 			Dictionary<string, IReadOnlyCollection<string>> patternFiles = ExecuteGatheringPhase(batch, directory, progressCallback, fileSystem);
 
 			int totalFiles = patternFiles.Values.Sum(files => files.Count);
-			progressCallback?.Invoke($"✅ Gathering complete: Found {totalFiles} files across {batch.FilePatterns.Count} patterns");
+			progressCallback?.Invoke($"✅ Gathering complete: Found {totalFiles} files across {patternFiles.Count} patterns");
 			progressCallback?.Invoke("");
 
 			if (totalFiles == 0)
@@ -275,7 +275,7 @@ public static partial class BatchProcessor
 		Action<string>? progressCallback,
 		IFileSystem fileSystem)
 	{
-		progressCallback?.Invoke($"📂 Scanning {batch.FilePatterns.Count} patterns across search paths...");
+		progressCallback?.Invoke($"📂 Scanning {GetDistinctPatterns(batch).Count} patterns across search paths...");
 
 		// Create a wrapper for the progress callback to show file paths as they're discovered
 		Action<string>? fileDiscoveryCallback = progressCallback != null
@@ -528,9 +528,10 @@ public static partial class BatchProcessor
 		Action<string>? progressCallback,
 		IFileSystem fileSystem)
 	{
-		// Use parallel processing to find files for all patterns simultaneously
+		// Use parallel processing to find files for all patterns simultaneously. A pattern listed
+		// twice is searched once: the results are keyed by pattern, so a repeat would collide.
 		ParallelQuery<(string pattern, IReadOnlyCollection<string> files)> patternResults =
-			batch.FilePatterns.AsParallel().Select(pattern =>
+			GetDistinctPatterns(batch).AsParallel().Select(pattern =>
 			{
 				IReadOnlyCollection<string> files = FileFinder.FindFiles(
 					batch.SearchPaths,
@@ -544,6 +545,18 @@ public static partial class BatchProcessor
 
 		return patternResults.ToDictionary(result => result.pattern, result => result.files);
 	}
+
+	/// <summary>
+	/// Gets the batch's file patterns with exact repeats removed, keeping the first occurrence of each.
+	/// </summary>
+	/// <remarks>
+	/// The comparison is ordinal rather than case-insensitive, because on a case-sensitive file system
+	/// <c>*.TXT</c> and <c>*.txt</c> find different files.
+	/// </remarks>
+	/// <param name="batch">The batch configuration</param>
+	/// <returns>The distinct patterns, in their original order</returns>
+	private static List<string> GetDistinctPatterns(BatchConfiguration batch) =>
+		[.. batch.FilePatterns.Distinct(StringComparer.Ordinal)];
 
 	/// <summary>
 	/// Hashes files using a work queue approach for optimal parallelization

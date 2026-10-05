@@ -379,6 +379,46 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	}
 
 	[TestMethod]
+	public void ProcessBatchWithDiscretePhases_WithDuplicatedPattern_SearchesThePatternOnce()
+	{
+		// Arrange: the same pattern listed twice, as happens when a pattern is re-added to a saved batch
+		string testDir = CreateTestDirectory();
+		AddFile(Path.Join(testDir, "one", "notes.txt"), "version one");
+		AddFile(Path.Join(testDir, "two", "notes.txt"), "version two");
+
+		BatchConfiguration batch = new()
+		{
+			Name = "Test Batch",
+			FilePatterns = ["*.txt", "*.txt"]
+		};
+
+		List<string> progressUpdates = [];
+		int mergeCount = 0;
+
+		// Act
+		BatchResult result = BatchProcessor.ProcessBatchWithDiscretePhases(
+			batch,
+			testDir,
+			(path1, path2, output) =>
+			{
+				mergeCount++;
+				return new MergeResult(["merged content"], []);
+			},
+			_ => { },
+			() => true,
+			progressUpdates.Add,
+			0,
+			MockFileSystem);
+
+		// Assert
+		Assert.IsTrue(result.Success, $"A duplicated pattern must not fail the batch. Summary: {result.Summary}");
+		Assert.AreEqual(1, mergeCount, "The two versions of notes.txt should be merged exactly once");
+		Assert.IsTrue(
+			progressUpdates.Contains("✅ Gathering complete: Found 2 files across 1 patterns"),
+			"The gathering summary should count the duplicated pattern once");
+	}
+
+	[TestMethod]
 	public void ProcessBatchWithDiscretePhases_WithOnlyFileUnreadable_ReportsFailureRatherThanNoFilesFound()
 	{
 		// Arrange: the single file matching the pattern cannot be read
