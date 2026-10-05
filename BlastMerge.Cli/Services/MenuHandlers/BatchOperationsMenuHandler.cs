@@ -193,8 +193,8 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			foreach (BatchConfiguration batch in allBatches)
 			{
 				table.AddRow(
-					$"[green]{batch.Name}[/]",
-					$"[dim]{batch.Description ?? "No description"}[/]",
+					$"[green]{Markup.Escape(batch.Name)}[/]",
+					$"[dim]{Markup.Escape(batch.Description ?? "No description")}[/]",
 					$"[yellow]{batch.FilePatterns.Count}[/]");
 			}
 
@@ -245,7 +245,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		BatchConfiguration? existingBatch = AppDataBatchManager.LoadBatch(batchName);
 		if (existingBatch != null)
 		{
-			bool overwrite = AnsiConsole.Confirm($"[yellow]A batch named '{batchName}' already exists. Overwrite it?[/]");
+			bool overwrite = AnsiConsole.Confirm($"[yellow]A batch named '{Markup.Escape(batchName)}' already exists. Overwrite it?[/]");
 			if (!overwrite)
 			{
 				ShowWarning(OperationCancelledMessage);
@@ -410,11 +410,11 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	private static void DisplayBatchSummary(BatchConfiguration batch)
 	{
 		AnsiConsole.MarkupLine($"\n[bold]Batch Summary:[/]");
-		AnsiConsole.MarkupLine($"[cyan]Name:[/] {batch.Name}");
-		AnsiConsole.MarkupLine($"[cyan]Description:[/] {batch.Description}");
-		AnsiConsole.MarkupLine($"[cyan]Patterns:[/] {batch.FilePatterns.Count}");
-		AnsiConsole.MarkupLine($"[cyan]Skip Empty:[/] {batch.SkipEmptyPatterns}");
-		AnsiConsole.MarkupLine($"[cyan]Prompt Before Each:[/] {batch.PromptBeforeEachPattern}");
+		AnsiConsole.MarkupLineInterpolated($"[cyan]Name:[/] {batch.Name}");
+		AnsiConsole.MarkupLineInterpolated($"[cyan]Description:[/] {batch.Description}");
+		AnsiConsole.MarkupLineInterpolated($"[cyan]Patterns:[/] {batch.FilePatterns.Count}");
+		AnsiConsole.MarkupLineInterpolated($"[cyan]Skip Empty:[/] {batch.SkipEmptyPatterns}");
+		AnsiConsole.MarkupLineInterpolated($"[cyan]Prompt Before Each:[/] {batch.PromptBeforeEachPattern}");
 	}
 
 	/// <summary>
@@ -464,10 +464,10 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		if (selectedBatch.SearchPaths.Count > 0)
 		{
 			// Batch has search paths configured, no need to ask for directory
-			AnsiConsole.MarkupLine($"[green]Using configured search paths ({selectedBatch.SearchPaths.Count} paths)[/]");
+			AnsiConsole.MarkupLineInterpolated($"[green]Using configured search paths ({selectedBatch.SearchPaths.Count} paths)[/]");
 			foreach (string searchPath in selectedBatch.SearchPaths)
 			{
-				AnsiConsole.MarkupLine($"  [dim]• {searchPath}[/]");
+				AnsiConsole.MarkupLineInterpolated($"  [dim]• {searchPath}[/]");
 			}
 			AnsiConsole.WriteLine();
 
@@ -488,11 +488,11 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 
 		if (selectedBatch.SearchPaths.Count > 0)
 		{
-			AnsiConsole.MarkupLine($"[cyan]Processing batch configuration '[yellow]{batchName}[/]' using configured search paths[/]");
+			AnsiConsole.MarkupLineInterpolated($"[cyan]Processing batch configuration '[yellow]{batchName}[/]' using configured search paths[/]");
 		}
 		else
 		{
-			AnsiConsole.MarkupLine($"[cyan]Processing batch configuration '[yellow]{batchName}[/]' in '[yellow]{directory}[/]'[/]");
+			AnsiConsole.MarkupLineInterpolated($"[cyan]Processing batch configuration '[yellow]{batchName}[/]' in '[yellow]{directory}[/]'[/]");
 		}
 		AnsiConsole.WriteLine();
 
@@ -545,7 +545,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 				.AddColumn("Pattern");
 
 			batch.FilePatterns.WithIndex().ForEach(item =>
-				patternTable.AddRow($"{item.index + 1}", $"[yellow]{item.item}[/]"));
+				patternTable.AddRow($"{item.index + 1}", $"[yellow]{Markup.Escape(item.item)}[/]"));
 
 			AnsiConsole.Write(patternTable);
 		}
@@ -561,7 +561,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 				.AddColumn("Path");
 
 			batch.SearchPaths.WithIndex().ForEach(item =>
-				searchPathTable.AddRow($"{item.index + 1}", $"[green]{item.item}[/]"));
+				searchPathTable.AddRow($"{item.index + 1}", $"[green]{Markup.Escape(item.item)}[/]"));
 
 			AnsiConsole.Write(searchPathTable);
 		}
@@ -581,7 +581,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 				.AddColumn("Pattern");
 
 			batch.PathExclusionPatterns.WithIndex().ForEach(item =>
-				exclusionTable.AddRow($"{item.index + 1}", $"[red]{item.item}[/]"));
+				exclusionTable.AddRow($"{item.index + 1}", $"[red]{Markup.Escape(item.item)}[/]"));
 
 			AnsiConsole.Write(exclusionTable);
 		}
@@ -647,9 +647,9 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		List<string> patterns = [.. batch.FilePatterns];
 
 		// Show current patterns
-		AnsiConsole.MarkupLine($"\n[cyan]Current patterns ({batch.FilePatterns.Count}):[/]");
+		AnsiConsole.MarkupLineInterpolated($"\n[cyan]Current patterns ({batch.FilePatterns.Count}):[/]");
 		batch.FilePatterns.WithIndex().ForEach(item =>
-			AnsiConsole.MarkupLine($"  {item.index + 1}. [yellow]{item.item}[/]"));
+			AnsiConsole.MarkupLineInterpolated($"  {item.index + 1}. [yellow]{item.item}[/]"));
 
 		bool modifyPatterns = AnsiConsole.Confirm("[cyan]Modify file patterns?[/]");
 
@@ -688,7 +688,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		List<string> searchPaths = [.. batch.SearchPaths];
 
 		// Handle search paths
-		AnsiConsole.MarkupLine($"\n[cyan]Current search paths ({batch.SearchPaths.Count}):[/]");
+		AnsiConsole.MarkupLineInterpolated($"\n[cyan]Current search paths ({batch.SearchPaths.Count}):[/]");
 		if (batch.SearchPaths.Count == 0)
 		{
 			AnsiConsole.MarkupLine("  [dim]None (uses runtime directory)[/]");
@@ -696,7 +696,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		else
 		{
 			batch.SearchPaths.WithIndex().ForEach(item =>
-				AnsiConsole.MarkupLine($"  {item.index + 1}. [green]{item.item}[/]"));
+				AnsiConsole.MarkupLineInterpolated($"  {item.index + 1}. [green]{item.item}[/]"));
 		}
 
 		bool modifySearchPaths = AnsiConsole.Confirm("[cyan]Modify search paths?[/]");
@@ -731,7 +731,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		List<string> exclusionPatterns = [.. batch.PathExclusionPatterns];
 
 		// Handle exclusion patterns
-		AnsiConsole.MarkupLine($"\n[cyan]Current exclusion patterns ({batch.PathExclusionPatterns.Count}):[/]");
+		AnsiConsole.MarkupLineInterpolated($"\n[cyan]Current exclusion patterns ({batch.PathExclusionPatterns.Count}):[/]");
 		if (batch.PathExclusionPatterns.Count == 0)
 		{
 			AnsiConsole.MarkupLine("  [dim]None[/]");
@@ -739,7 +739,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		else
 		{
 			batch.PathExclusionPatterns.WithIndex().ForEach(item =>
-				AnsiConsole.MarkupLine($"  {item.index + 1}. [red]{item.item}[/]"));
+				AnsiConsole.MarkupLineInterpolated($"  {item.index + 1}. [red]{item.item}[/]"));
 		}
 
 		bool modifyExclusions = AnsiConsole.Confirm("[cyan]Modify exclusion patterns?[/]");
@@ -841,7 +841,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		BatchConfiguration? existingBatch = AppDataBatchManager.LoadBatch(newName);
 		if (existingBatch != null)
 		{
-			bool overwrite = AnsiConsole.Confirm($"[yellow]A batch named '{newName}' already exists. Overwrite it?[/]");
+			bool overwrite = AnsiConsole.Confirm($"[yellow]A batch named '{Markup.Escape(newName)}' already exists. Overwrite it?[/]");
 			if (!overwrite)
 			{
 				ShowWarning(OperationCancelledMessage);
@@ -893,11 +893,11 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		ShowMenuTitle($"Delete Batch: {batch.Name}");
 
 		// Show batch details
-		AnsiConsole.MarkupLine($"[cyan]Name:[/] {batch.Name}");
-		AnsiConsole.MarkupLine($"[cyan]Description:[/] {batch.Description ?? "No description"}");
-		AnsiConsole.MarkupLine($"[cyan]Patterns:[/] {batch.FilePatterns.Count}");
+		AnsiConsole.MarkupLineInterpolated($"[cyan]Name:[/] {batch.Name}");
+		AnsiConsole.MarkupLineInterpolated($"[cyan]Description:[/] {batch.Description ?? "No description"}");
+		AnsiConsole.MarkupLineInterpolated($"[cyan]Patterns:[/] {batch.FilePatterns.Count}");
 
-		bool confirm = AnsiConsole.Confirm($"[red]Are you sure you want to delete '{batch.Name}'?[/]");
+		bool confirm = AnsiConsole.Confirm($"[red]Are you sure you want to delete '{Markup.Escape(batch.Name)}'?[/]");
 		if (!confirm)
 		{
 			ShowWarning(OperationCancelledMessage);
@@ -1046,10 +1046,10 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	/// <returns>True if the user confirmed the import, false otherwise.</returns>
 	private static bool ConfirmImport(List<BatchConfiguration> batches)
 	{
-		AnsiConsole.MarkupLine($"[cyan]Found {batches.Count} batch configurations to import:[/]");
+		AnsiConsole.MarkupLineInterpolated($"[cyan]Found {batches.Count} batch configurations to import:[/]");
 		foreach (BatchConfiguration batch in batches)
 		{
-			AnsiConsole.MarkupLine($"  • [green]{batch.Name}[/] - {batch.FilePatterns.Count} patterns");
+			AnsiConsole.MarkupLineInterpolated($"  • [green]{batch.Name}[/] - {batch.FilePatterns.Count} patterns");
 		}
 
 		return AnsiConsole.Confirm("\n[cyan]Proceed with import?[/]");
@@ -1068,7 +1068,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		{
 			if (!batch.IsValid())
 			{
-				AnsiConsole.MarkupLine($"[red]Skipping invalid batch: {batch.Name}[/]");
+				AnsiConsole.MarkupLineInterpolated($"[red]Skipping invalid batch: {batch.Name}[/]");
 				results.ErrorCount++;
 				continue;
 			}
@@ -1081,12 +1081,12 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 
 			if (ImportSingleBatch(batch))
 			{
-				AnsiConsole.MarkupLine($"[green]Imported: {batch.Name}[/]");
+				AnsiConsole.MarkupLineInterpolated($"[green]Imported: {batch.Name}[/]");
 				results.SuccessCount++;
 			}
 			else
 			{
-				AnsiConsole.MarkupLine($"[red]Failed to save: {batch.Name}[/]");
+				AnsiConsole.MarkupLineInterpolated($"[red]Failed to save: {batch.Name}[/]");
 				results.ErrorCount++;
 			}
 		}
@@ -1107,10 +1107,10 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			return false;
 		}
 
-		bool overwrite = AnsiConsole.Confirm($"[yellow]Batch '{batch.Name}' already exists. Overwrite?[/]");
+		bool overwrite = AnsiConsole.Confirm($"[yellow]Batch '{Markup.Escape(batch.Name)}' already exists. Overwrite?[/]");
 		if (!overwrite)
 		{
-			AnsiConsole.MarkupLine($"[yellow]Skipped existing batch: {batch.Name}[/]");
+			AnsiConsole.MarkupLineInterpolated($"[yellow]Skipped existing batch: {batch.Name}[/]");
 			return true;
 		}
 
@@ -1136,9 +1136,9 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	private static void DisplayImportSummary(ImportBatchResults results)
 	{
 		AnsiConsole.MarkupLine($"\n[bold]Import Summary:[/]");
-		AnsiConsole.MarkupLine($"[green]Imported: {results.SuccessCount}[/]");
-		AnsiConsole.MarkupLine($"[yellow]Skipped: {results.SkipCount}[/]");
-		AnsiConsole.MarkupLine($"[red]Errors: {results.ErrorCount}[/]");
+		AnsiConsole.MarkupLineInterpolated($"[green]Imported: {results.SuccessCount}[/]");
+		AnsiConsole.MarkupLineInterpolated($"[yellow]Skipped: {results.SkipCount}[/]");
+		AnsiConsole.MarkupLineInterpolated($"[red]Errors: {results.ErrorCount}[/]");
 	}
 
 	/// <summary>

@@ -19,8 +19,8 @@ public static class ProgressReportingService
 	public static void ReportMergeStatus(MergeSessionStatus status)
 	{
 		Ensure.NotNull(status);
-		AnsiConsole.MarkupLine($"[yellow]Merge {status.CurrentIteration}: {status.MostSimilarPair?.FilePath1} <-> {status.MostSimilarPair?.FilePath2}[/]");
-		AnsiConsole.MarkupLine($"[dim]Similarity: {status.MostSimilarPair?.SimilarityScore:F1} | Remaining files: {status.RemainingFilesCount}[/]");
+		AnsiConsole.MarkupLineInterpolated($"[yellow]Merge {status.CurrentIteration}: {status.MostSimilarPair?.FilePath1} <-> {status.MostSimilarPair?.FilePath2}[/]");
+		AnsiConsole.MarkupLineInterpolated($"[dim]Similarity: {status.MostSimilarPair?.SimilarityScore:F1} | Remaining files: {status.RemainingFilesCount}[/]");
 	}
 
 	/// <summary>
@@ -32,11 +32,11 @@ public static class ProgressReportingService
 		Ensure.NotNull(result);
 		if (result.IsSuccessful)
 		{
-			AnsiConsole.MarkupLine($"[green]Merge completed successfully. Final file: {result.OriginalFileName}[/]");
+			AnsiConsole.MarkupLineInterpolated($"[green]Merge completed successfully. Final file: {result.OriginalFileName}[/]");
 		}
 		else
 		{
-			AnsiConsole.MarkupLine($"[red]Merge failed or was cancelled: {result.OriginalFileName}[/]");
+			AnsiConsole.MarkupLineInterpolated($"[red]Merge failed or was cancelled: {result.OriginalFileName}[/]");
 		}
 	}
 
@@ -50,7 +50,7 @@ public static class ProgressReportingService
 
 		AnsiConsole.WriteLine();
 		AnsiConsole.MarkupLine("[bold blue]═══════════════════════════════════════════════════════════════════════════════════════[/]");
-		AnsiConsole.MarkupLine($"[bold blue]                           {OutputDisplay.MergeOperationsSummary}                                   [/]");
+		AnsiConsole.MarkupLineInterpolated($"[bold blue]                           {OutputDisplay.MergeOperationsSummary}                                   [/]");
 		AnsiConsole.MarkupLine("[bold blue]═══════════════════════════════════════════════════════════════════════════════════════[/]");
 		AnsiConsole.WriteLine();
 
@@ -95,7 +95,7 @@ public static class ProgressReportingService
 				(string label1, string label2) = FileDisplayService.MakeDistinguishedPaths(
 					operation.FilePath1, operation.FilePath2);
 
-				string mergedFiles = $"{label1} ↔ {label2}";
+				string mergedFiles = Markup.Escape($"{label1} ↔ {label2}");
 				string similarity = $"{operation.SimilarityScore:F1}%";
 				string conflicts = operation.ConflictsResolved > 0
 					? $"[red]{operation.ConflictsResolved}[/]"
@@ -126,16 +126,16 @@ public static class ProgressReportingService
 		{
 			if (result.IsSuccessful)
 			{
-				AnsiConsole.MarkupLine($"[green]✅ Successfully merged {result.InitialFileGroups} file groups into a single result through {result.TotalMergeOperations} operations.[/]");
+				AnsiConsole.MarkupLineInterpolated($"[green]✅ Successfully merged {result.InitialFileGroups} file groups into a single result through {result.TotalMergeOperations} operations.[/]");
 			}
 			else
 			{
-				AnsiConsole.MarkupLine($"[yellow]⚠️ Merge process was {result.OriginalFileName} after {result.TotalMergeOperations} operations.[/]");
+				AnsiConsole.MarkupLineInterpolated($"[yellow]⚠️ Merge process was {result.OriginalFileName} after {result.TotalMergeOperations} operations.[/]");
 			}
 		}
 		else
 		{
-			AnsiConsole.MarkupLine($"[green]✅ All {result.TotalFilesMerged} files were already identical - no merging required.[/]");
+			AnsiConsole.MarkupLineInterpolated($"[green]✅ All {result.TotalFilesMerged} files were already identical - no merging required.[/]");
 		}
 
 		AnsiConsole.WriteLine();
@@ -176,13 +176,13 @@ public static class ProgressReportingService
 
 		if (hasExistingContent)
 		{
-			AnsiConsole.MarkupLine($"[dim]  📋 <existing merged content> → {leftLabel}[/]");
+			AnsiConsole.MarkupLineInterpolated($"[dim]  📋 <existing merged content> → {leftLabel}[/]");
 		}
 		else
 		{
-			AnsiConsole.MarkupLine($"[dim]  📁 {leftLabel}[/]");
+			AnsiConsole.MarkupLineInterpolated($"[dim]  📁 {leftLabel}[/]");
 		}
-		AnsiConsole.MarkupLine($"[dim]  📁 {rightLabel}[/]");
+		AnsiConsole.MarkupLineInterpolated($"[dim]  📁 {rightLabel}[/]");
 		AnsiConsole.MarkupLine($"[green]  ➡️  Result will replace both files[/]");
 
 		AnsiConsole.WriteLine();

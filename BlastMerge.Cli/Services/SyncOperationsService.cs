@@ -35,7 +35,7 @@ public static class SyncOperationsService
 			return;
 		}
 
-		AnsiConsole.MarkupLine($"[cyan]Found {groupsWithMultipleFiles.Count} groups with multiple identical copies.[/]");
+		AnsiConsole.MarkupLineInterpolated($"[cyan]Found {groupsWithMultipleFiles.Count} groups with multiple identical copies.[/]");
 		AnsiConsole.WriteLine();
 
 		Dictionary<string, SyncChoice> syncChoices = new()
@@ -197,7 +197,7 @@ public static class SyncOperationsService
 	private static int ProcessSingleGroup(FileGroup group, int groupNumber, int totalGroups)
 	{
 		AnsiConsole.WriteLine();
-		AnsiConsole.MarkupLine($"[cyan]Group {groupNumber} of {totalGroups}[/]");
+		AnsiConsole.MarkupLineInterpolated($"[cyan]Group {groupNumber} of {totalGroups}[/]");
 		AnsiConsole.WriteLine();
 
 		Table table = CreateFileInfoTable(group.FilePaths);
@@ -208,7 +208,7 @@ public static class SyncOperationsService
 				.Title("[cyan]Choose the reference file to sync others to:[/]")
 				.AddChoices(group.FilePaths));
 
-		bool confirmGroup = AnsiConsole.Confirm($"[yellow]Sync all other files in this group to match {Path.GetFileName(referenceFile)}?[/]");
+		bool confirmGroup = AnsiConsole.Confirm($"[yellow]Sync all other files in this group to match {Markup.Escape(Path.GetFileName(referenceFile))}?[/]");
 
 		return confirmGroup ? SyncGroupToReference(group, referenceFile) : 0;
 	}
@@ -232,14 +232,14 @@ public static class SyncOperationsService
 			{
 				FileInfo fileInfo = new(file);
 				table.AddRow(
-					$"[green]{file}[/]",
+					$"[green]{Markup.Escape(file)}[/]",
 					$"[dim]{fileInfo.Length:N0} bytes[/]",
 					$"[dim]{fileInfo.LastWriteTime:yyyy-MM-dd HH:mm:ss}[/]");
 			}
 			catch (IOException)
 			{
 				table.AddRow(
-					$"[red]{file}[/]",
+					$"[red]{Markup.Escape(file)}[/]",
 					"[red]Error[/]",
 					"[red]Error[/]");
 			}

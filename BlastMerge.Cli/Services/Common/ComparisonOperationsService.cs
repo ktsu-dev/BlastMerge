@@ -20,7 +20,7 @@ public static class ComparisonOperationsService
 	private static void ShowMenuTitle(string title)
 	{
 		AnsiConsole.Clear();
-		AnsiConsole.MarkupLine($"[bold cyan]{title}[/]");
+		AnsiConsole.MarkupLineInterpolated($"[bold cyan]{title}[/]");
 		AnsiConsole.WriteLine();
 	}
 

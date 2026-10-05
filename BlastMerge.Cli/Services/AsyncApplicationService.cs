@@ -298,7 +298,7 @@ public static class AsyncApplicationService
 		BatchConfiguration? batch = AppDataBatchManager.LoadBatch(batchName);
 		if (batch == null)
 		{
-			AnsiConsole.MarkupLine($"[red]Error: Batch configuration '{batchName}' not found.[/]");
+			AnsiConsole.MarkupLineInterpolated($"[red]Error: Batch configuration '{batchName}' not found.[/]");
 			return (0, 0);
 		}
 
