@@ -158,4 +158,29 @@ public class MergeEncodingTests : MockFileSystemTestBase
 		Assert.IsFalse(result.HasUtf8Bom, "Neither source carried a byte order mark");
 		Assert.IsEmpty(result.ContentEncoding.GetPreamble(), "The result should be written without a byte order mark");
 	}
+
+	[TestMethod]
+	public void HasUtf8Bom_WithAMissingFile_ReturnsFalse() =>
+		Assert.IsFalse(Utf8BomDetector.HasUtf8Bom(MockFileSystem.Path.Combine(TestDirectory, "missing.cs"), MockFileSystem));
+
+	[TestMethod]
+	public void HasUtf8Bom_WithAFileShorterThanTheBom_ReturnsFalse()
+	{
+		// Arrange - the first two bytes of the byte order mark, and nothing else
+		string path = CreateFile("short.cs", string.Empty);
+		MockFileSystem.File.WriteAllBytes(path, [0xEF, 0xBB]);
+
+		// Act & Assert
+		Assert.IsFalse(Utf8BomDetector.HasUtf8Bom(path, MockFileSystem));
+	}
+
+	[TestMethod]
+	public void HasUtf8Bom_WithAnEmptyFile_ReturnsFalse()
+	{
+		// Arrange
+		string path = CreateFile("empty.cs", string.Empty);
+
+		// Act & Assert
+		Assert.IsFalse(Utf8BomDetector.HasUtf8Bom(path, MockFileSystem));
+	}
 }
