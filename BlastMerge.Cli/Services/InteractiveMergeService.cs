@@ -188,9 +188,9 @@ public static class InteractiveMergeService
 		try
 		{
 			string mergedContent = mergeResult.ToContent();
-			File.WriteAllText(similarity.FilePath1, mergedContent);
+			File.WriteAllText(similarity.FilePath1, mergedContent, mergeResult.ContentEncoding);
 
-			UpdateMatchingFiles(remainingFiles, similarity, mergedContent);
+			UpdateMatchingFiles(remainingFiles, similarity, mergedContent, mergeResult.ContentEncoding);
 			remainingFiles.Remove(similarity.FilePath2);
 
 			UIHelper.ShowSuccess($"Merged successfully! Versions reduced by 1. ({remainingFiles.Count} remaining)");
@@ -219,14 +219,15 @@ public static class InteractiveMergeService
 	/// <param name="remainingFiles">List of remaining files.</param>
 	/// <param name="similarity">The file similarity information.</param>
 	/// <param name="mergedContent">The merged content to write.</param>
-	private static void UpdateMatchingFiles(List<string> remainingFiles, FileSimilarity similarity, string mergedContent)
+	/// <param name="encoding">The encoding to write the merged content with.</param>
+	private static void UpdateMatchingFiles(List<string> remainingFiles, FileSimilarity similarity, string mergedContent, Encoding encoding)
 	{
 		string file2Content = File.ReadAllText(similarity.FilePath2);
 		foreach (string file in remainingFiles)
 		{
 			if (file != similarity.FilePath1 && File.ReadAllText(file) == file2Content)
 			{
-				File.WriteAllText(file, mergedContent);
+				File.WriteAllText(file, mergedContent, encoding);
 			}
 		}
 	}

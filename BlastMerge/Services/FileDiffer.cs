@@ -767,6 +767,7 @@ public static class FileDiffer
 		return MergeLines(lines1, lines2, LineEndingDetector.Detect(content1, content2)) with
 		{
 			EndsWithLineEnding = LineEndingDetector.EndsWithLineEnding(content1, content2),
+			HasUtf8Bom = Utf8BomDetector.HasUtf8Bom(file1, file2, fileSystem),
 		};
 	}
 
