@@ -1,6 +1,9 @@
-## v1.10.4
+## v1.10.5 (patch)
 
-No significant changes detected since v1.10.4.
+Changes since v1.10.4:
+
+- test: cover the batch editor's pattern validation [patch] ([@Claude](https://github.com/Claude))
+- fix: strip a leading **/ from file patterns so the example pattern matches [patch] ([@Claude](https://github.com/Claude))
 
 ## v1.10.4 (patch)
 
