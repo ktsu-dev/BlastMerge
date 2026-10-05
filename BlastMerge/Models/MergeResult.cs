@@ -5,6 +5,7 @@ namespace ktsu.BlastMerge.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using ktsu.BlastMerge.Services;
 
 /// <summary>
@@ -45,6 +46,21 @@ public record MergeResult(IReadOnlyList<string> MergedLines, IReadOnlyCollection
 	/// lost its final newline and stopped hashing the same as untouched copies that still had it.
 	/// </remarks>
 	public bool EndsWithLineEnding { get; init; }
+
+	/// <summary>
+	/// Gets whether the merged content should be written with the UTF-8 byte order mark.
+	/// </summary>
+	/// <remarks>
+	/// Reading the sources as text drops their byte order mark, so like <see cref="EndsWithLineEnding"/>
+	/// it has to be carried here. Without it every merged file lost its byte order mark and stopped
+	/// hashing the same as untouched copies that still had it.
+	/// </remarks>
+	public bool HasUtf8Bom { get; init; }
+
+	/// <summary>
+	/// Gets the encoding the merged content should be written with.
+	/// </summary>
+	public Encoding ContentEncoding => new UTF8Encoding(encoderShouldEmitUTF8Identifier: HasUtf8Bom);
 
 	/// <summary>
 	/// Renders the merged lines as file content using the detected line ending.

@@ -947,7 +947,7 @@ public static partial class BatchProcessor
 		{
 			foreach (string filePath in mergedFiles)
 			{
-				fileSystem.File.WriteAllText(filePath, mergedContent);
+				fileSystem.File.WriteAllText(filePath, mergedContent, mergeResult.ContentEncoding);
 			}
 		}
 		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)

@@ -114,7 +114,7 @@ public static class IterativeMergeOrchestrator
 				// Update all files in both groups with the merged content
 				foreach (string filePath in mergedGroup.FilePaths)
 				{
-					fileSystem.File.WriteAllText(filePath, mergedContent);
+					fileSystem.File.WriteAllText(filePath, mergedContent, mergeResult.ContentEncoding);
 				}
 
 				// Remove the original groups and add the merged group
@@ -260,6 +260,10 @@ public static class IterativeMergeOrchestrator
 			LineEndingDetector.Detect(content1, content2)) with
 		{
 			EndsWithLineEnding = LineEndingDetector.EndsWithLineEnding(content1, content2),
+			// Accumulated content held in memory has no byte order mark of its own to report
+			HasUtf8Bom = existingMergedContent == null
+				? Utf8BomDetector.HasUtf8Bom(file1, file2, fileSystem)
+				: Utf8BomDetector.HasUtf8Bom(file2, fileSystem),
 		};
 	}
 }
