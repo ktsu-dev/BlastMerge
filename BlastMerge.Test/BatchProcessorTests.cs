@@ -379,67 +379,6 @@ public class BatchProcessorTests : MockFileSystemTestBase
 	}
 
 	[TestMethod]
-	public void ProcessBatchWithDiscretePhases_AttributesEachFileToThePatternThatFoundIt()
-	{
-		// Arrange: "*.s" must not claim app.cs, and "README*" must be reported as itself
-		string testDir = CreateTestDirectory();
-		AddFile(Path.Join(testDir, "one", "app.cs"), "class One;");
-		AddFile(Path.Join(testDir, "two", "app.cs"), "class Two;");
-		AddFile(Path.Join(testDir, "one", "README.md"), "# One");
-		AddFile(Path.Join(testDir, "two", "README.md"), "# Two");
-
-		BatchConfiguration batch = new()
-		{
-			Name = "Test Batch",
-			FilePatterns = ["*.s", "*.cs", "README*"]
-		};
-
-		// Act
-		BatchResult result = BatchProcessor.ProcessBatchWithDiscretePhases(
-			batch,
-			testDir,
-			(path1, path2, output) => new MergeResult(["merged content"], []),
-			_ => { },
-			() => true,
-			null,
-			0,
-			MockFileSystem);
-
-		// Assert
-		Assert.AreEqual("*.cs", result.PatternResults.Single(r => r.FileName == "app.cs").Pattern);
-		Assert.AreEqual("README*", result.PatternResults.Single(r => r.FileName == "README.md").Pattern);
-	}
-
-	[TestMethod]
-	public void ProcessBatchWithDiscretePhases_FileFoundByTwoPatterns_IsAttributedToTheFirstListed()
-	{
-		// Arrange
-		string testDir = CreateTestDirectory();
-		AddFile(Path.Join(testDir, "one", "settings.json"), "version one");
-		AddFile(Path.Join(testDir, "two", "settings.json"), "version two");
-
-		BatchConfiguration batch = new()
-		{
-			Name = "Test Batch",
-			FilePatterns = ["settings.*", "*.json"]
-		};
-
-		// Act
-		BatchResult result = BatchProcessor.ProcessBatchWithDiscretePhases(
-			batch,
-			testDir,
-			(path1, path2, output) => new MergeResult(["merged content"], []),
-			_ => { },
-			() => true,
-			null,
-			0,
-			MockFileSystem);
-
-		// Assert
-		Assert.AreEqual("settings.*", result.PatternResults.Single(r => r.FileName == "settings.json").Pattern);
-	}
-
-	[TestMethod]
 	public void ProcessBatchWithDiscretePhases_WithOnlyFileUnreadable_ReportsFailureRatherThanNoFilesFound()
 	{
 		// Arrange: the single file matching the pattern cannot be read
@@ -608,6 +547,67 @@ public class BatchProcessorTests : MockFileSystemTestBase
 		string testDir = Path.Combine(TestDirectory, "batch_test");
 		MockFileSystem.Directory.CreateDirectory(testDir);
 		return testDir;
+	}
+
+	[TestMethod]
+	public void ProcessBatchWithDiscretePhases_AttributesEachFileToThePatternThatFoundIt()
+	{
+		// Arrange: "*.s" must not claim app.cs, and "README*" must be reported as itself
+		string testDir = CreateTestDirectory();
+		AddFile(Path.Join(testDir, "one", "app.cs"), "class One;");
+		AddFile(Path.Join(testDir, "two", "app.cs"), "class Two;");
+		AddFile(Path.Join(testDir, "one", "README.md"), "# One");
+		AddFile(Path.Join(testDir, "two", "README.md"), "# Two");
+
+		BatchConfiguration batch = new()
+		{
+			Name = "Test Batch",
+			FilePatterns = ["*.s", "*.cs", "README*"]
+		};
+
+		// Act
+		BatchResult result = BatchProcessor.ProcessBatchWithDiscretePhases(
+			batch,
+			testDir,
+			(path1, path2, output) => new MergeResult(["merged content"], []),
+			_ => { },
+			() => true,
+			null,
+			0,
+			MockFileSystem);
+
+		// Assert
+		Assert.AreEqual("*.cs", result.PatternResults.Single(r => r.FileName == "app.cs").Pattern);
+		Assert.AreEqual("README*", result.PatternResults.Single(r => r.FileName == "README.md").Pattern);
+	}
+
+	[TestMethod]
+	public void ProcessBatchWithDiscretePhases_FileFoundByTwoPatterns_IsAttributedToTheFirstListed()
+	{
+		// Arrange
+		string testDir = CreateTestDirectory();
+		AddFile(Path.Join(testDir, "one", "settings.json"), "version one");
+		AddFile(Path.Join(testDir, "two", "settings.json"), "version two");
+
+		BatchConfiguration batch = new()
+		{
+			Name = "Test Batch",
+			FilePatterns = ["settings.*", "*.json"]
+		};
+
+		// Act
+		BatchResult result = BatchProcessor.ProcessBatchWithDiscretePhases(
+			batch,
+			testDir,
+			(path1, path2, output) => new MergeResult(["merged content"], []),
+			_ => { },
+			() => true,
+			null,
+			0,
+			MockFileSystem);
+
+		// Assert
+		Assert.AreEqual("settings.*", result.PatternResults.Single(r => r.FileName == "settings.json").Pattern);
 	}
 
 	/// <summary>
