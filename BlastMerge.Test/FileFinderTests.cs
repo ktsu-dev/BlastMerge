@@ -275,4 +275,55 @@ public class FileFinderTests : MockFileSystemTestBase
 			"Should not include files from Subdir1 or temp directories");
 		Assert.IsTrue(files.Any(f => f.Contains("Subdir2")), "Should still include files from Subdir2");
 	}
+
+	[TestMethod]
+	public void FindFiles_GlobstarPrefix_MatchesTheSameFilesAsThePlainPattern()
+	{
+		// Arrange
+		IReadOnlyCollection<string> plain = FileFinder.FindFiles(TestDirectory, "test.txt", MockFileSystem, null);
+
+		// Act
+		IReadOnlyCollection<string> forwardSlash = FileFinder.FindFiles(TestDirectory, "**/test.txt", MockFileSystem, null);
+		IReadOnlyCollection<string> backslash = FileFinder.FindFiles(TestDirectory, "**\\test.txt", MockFileSystem, null);
+
+		// Assert
+		Assert.AreEqual(10, plain.Count, "The plain pattern should find every test.txt");
+		CollectionAssert.AreEquivalent(plain.ToList(), forwardSlash.ToList(), "A leading **/ should be ignored because the search is already recursive");
+		CollectionAssert.AreEquivalent(plain.ToList(), backslash.ToList(), "A leading **\\ should be ignored because the search is already recursive");
+	}
+
+	[TestMethod]
+	public void FindFiles_WithSearchPathsAndGlobstarPrefix_MatchesTheSameFilesAsThePlainPattern()
+	{
+		// Arrange
+		IReadOnlyCollection<string> exclusionPatterns = [];
+		IReadOnlyCollection<string> plain = FileFinder.FindFiles([], TestDirectory, "*.txt", exclusionPatterns, MockFileSystem, null);
+
+		// Act
+		IReadOnlyCollection<string> files = FileFinder.FindFiles([], TestDirectory, "**/*.txt", exclusionPatterns, MockFileSystem, null);
+
+		// Assert
+		Assert.AreNotEqual(0, plain.Count, "The plain pattern should find files");
+		CollectionAssert.AreEquivalent(plain.ToList(), files.ToList(), "A leading **/ should be ignored because the search is already recursive");
+	}
+
+	[TestMethod]
+	[DataRow("*.cs", "*.cs")]
+	[DataRow("**/*.cs", "*.cs")]
+	[DataRow("**\\*.cs", "*.cs")]
+	[DataRow("**/**/*.cs", "*.cs")]
+	[DataRow("src/*.cs", "src/*.cs")]
+	public void NormalizePattern_StripsLeadingGlobstarOnly(string pattern, string expected) =>
+		Assert.AreEqual(expected, FileFinder.NormalizePattern(pattern));
+
+	[TestMethod]
+	[DataRow("*.cs", true)]
+	[DataRow(".gitignore", true)]
+	[DataRow("**/*.cs", true)]
+	[DataRow("src/*.cs", false)]
+	[DataRow("src\\*.cs", false)]
+	[DataRow("**/src/*.cs", false)]
+	[DataRow("**/", false)]
+	public void IsValidPattern_RejectsPatternsThatStillContainASeparator(string pattern, bool expected) =>
+		Assert.AreEqual(expected, FileFinder.IsValidPattern(pattern));
 }

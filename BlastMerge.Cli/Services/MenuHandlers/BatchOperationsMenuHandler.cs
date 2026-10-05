@@ -289,7 +289,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	{
 		List<string> patterns = [];
 		AnsiConsole.MarkupLine("[cyan]Enter file patterns (one per line, empty line to finish):[/]");
-		AnsiConsole.MarkupLine("[dim]Examples: *.txt, .gitignore, README.md, **/*.cs[/]");
+		AnsiConsole.MarkupLine("[dim]Examples: *.txt, .gitignore, README.md, *.cs (subdirectories are always searched)[/]");
 
 		while (true)
 		{
@@ -298,7 +298,15 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			{
 				break;
 			}
-			patterns.Add(pattern.Trim());
+
+			pattern = pattern.Trim();
+			if (!FileFinder.IsValidPattern(pattern))
+			{
+				AnsiConsole.MarkupLine("[red]Patterns match file names only, so they cannot contain a directory separator. Use a search path or a path exclusion to narrow by folder.[/]");
+				continue;
+			}
+
+			patterns.Add(FileFinder.NormalizePattern(pattern));
 		}
 
 		return patterns;
