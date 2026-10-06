@@ -108,8 +108,11 @@ public class SecureTempFileHelperTests : MockFileSystemTestBase
 		// Arrange
 		string nonExistentFile = @"C:\temp\nonexistent.txt";
 
-		// Act & Assert (should not throw)
+		// Act (should not throw)
 		SecureTempFileHelper.SafeDeleteTempFiles(MockFileSystem, nonExistentFile);
+
+		// Assert
+		Assert.IsFalse(MockFileSystem.File.Exists(nonExistentFile), "Deleting a missing file should not create it");
 	}
 
 	[TestMethod]
@@ -204,15 +207,24 @@ public class SecureTempFileHelperTests : MockFileSystemTestBase
 		// Arrange
 		string nonExistentDir = @"C:\temp\nonexistent";
 
-		// Act & Assert (should not throw)
+		// Act (should not throw)
 		SecureTempFileHelper.SafeDeleteTempDirectory(nonExistentDir, MockFileSystem);
+
+		// Assert
+		Assert.IsFalse(MockFileSystem.Directory.Exists(nonExistentDir), "Deleting a missing directory should not create it");
 	}
 
 	[TestMethod]
 	public void SafeDeleteTempFiles_WithNullFileSystemAndNullFilePaths_DoesNotThrow()
 	{
-		// Act & Assert (should not throw)
+		// Arrange
+		string survivor = SecureTempFileHelper.CreateTempFile();
+
+		// Act (should not throw)
 		SecureTempFileHelper.SafeDeleteTempFiles(fileSystem: null, filePaths: null!);
+
+		// Assert
+		Assert.IsTrue(MockFileSystem.File.Exists(survivor), "A null list of paths should delete nothing");
 	}
 
 	[TestMethod]

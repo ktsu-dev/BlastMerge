@@ -2,7 +2,6 @@
 
 namespace ktsu.BlastMerge.Models;
 
-using System.Reflection;
 using ktsu.AppDataStorage;
 
 /// <summary>
@@ -35,16 +34,22 @@ public class BlastMergeAppData : AppData<BlastMergeAppData>
 	/// This method should only be used in test environments.
 	/// </summary>
 	/// <remarks>
-	/// This method uses reflection to clear the internal singleton cache
-	/// of the AppData base class to enable proper test isolation.
+	/// <para>
+	/// ktsu.AppDataStorage caches the singleton and offers no way to discard it, so the cached instance is
+	/// emptied in place instead: its batches, input history and recent batch are cleared and its settings
+	/// are restored to their defaults. A property added to this class needs resetting here too.
+	/// </para>
+	/// <para>
+	/// This used to clear a static field named <c>_instance</c>, which the base class does not have,
+	/// so it silently did nothing and one instance's state lived for the whole test run.
+	/// </para>
 	/// </remarks>
 	public static void ResetForTesting()
 	{
-		// Use reflection to access the static instance field in the base class
-		// This is necessary because AppData<T> doesn't provide a public reset method
-		Type baseType = typeof(AppData<BlastMergeAppData>);
-		FieldInfo? instanceField = baseType.GetField("_instance", BindingFlags.NonPublic | BindingFlags.Static);
-
-		instanceField?.SetValue(null, null);
+		BlastMergeAppData appData = Get();
+		appData.BatchConfigurations.Clear();
+		appData.InputHistory.Clear();
+		appData.RecentBatch = null;
+		appData.Settings = new();
 	}
 }
