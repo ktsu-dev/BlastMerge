@@ -35,16 +35,34 @@ public class BlastMergeAppData : AppData<BlastMergeAppData>
 	/// This method should only be used in test environments.
 	/// </summary>
 	/// <remarks>
-	/// This method uses reflection to clear the internal singleton cache
-	/// of the AppData base class to enable proper test isolation.
+	/// <para>
+	/// ktsu.AppDataStorage holds the singleton in a static read-only <see cref="Lazy{T}"/>, and offers no
+	/// way to reset it. The field itself cannot be replaced: the runtime refuses to write a static
+	/// read-only field once its type has been initialised. So the cached <see cref="Lazy{T}"/> is reset
+	/// in place instead, by copying the state of a freshly constructed, not yet evaluated one over it.
+	/// The next call to <see cref="AppData{T}.Get"/> then loads the data again from whichever file
+	/// system is configured at that point.
+	/// </para>
+	/// <para>
+	/// This used to clear a static field named <c>_instance</c>, which the base class does not have,
+	/// so it silently did nothing and one instance lived for the whole test run.
+	/// </para>
 	/// </remarks>
+	/// <exception cref="InvalidOperationException">
+	/// The base class no longer keeps its singleton where this method expects it.
+	/// </exception>
 	public static void ResetForTesting()
 	{
-		// Use reflection to access the static instance field in the base class
-		// This is necessary because AppData<T> doesn't provide a public reset method
-		Type baseType = typeof(AppData<BlastMergeAppData>);
-		FieldInfo? instanceField = baseType.GetField("_instance", BindingFlags.NonPublic | BindingFlags.Static);
+		PropertyInfo? stateProperty = typeof(AppData<BlastMergeAppData>).GetProperty("InternalState", BindingFlags.NonPublic | BindingFlags.Static);
+		if (stateProperty?.GetValue(null) is not Lazy<BlastMergeAppData> cached)
+		{
+			throw new InvalidOperationException("ktsu.AppDataStorage no longer keeps its singleton in a static Lazy<T> named InternalState; update ResetForTesting.");
+		}
 
-		instanceField?.SetValue(null, null);
+		Lazy<BlastMergeAppData> fresh = new(LoadOrCreate, LazyThreadSafetyMode.ExecutionAndPublication);
+		foreach (FieldInfo field in typeof(Lazy<BlastMergeAppData>).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public))
+		{
+			field.SetValue(cached, field.GetValue(fresh));
+		}
 	}
 }

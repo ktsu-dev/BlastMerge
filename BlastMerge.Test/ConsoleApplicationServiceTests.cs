@@ -32,8 +32,7 @@ public class ConsoleApplicationServiceTests : ConsoleTestBase
 	private readonly ConsoleApplicationService service = new();
 
 	/// <summary>
-	/// Empties the shared application data, which outlives a test because
-	/// <see cref="BlastMergeAppData.ResetForTesting"/> does not currently reset the singleton.
+	/// Empties the saved batches, the recent batch and the input history, so each test starts from a known state.
 	/// </summary>
 	[TestInitialize]
 	public void ResetSharedAppData() => ResetAppData();

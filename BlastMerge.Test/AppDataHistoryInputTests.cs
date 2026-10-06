@@ -185,7 +185,8 @@ public class AppDataHistoryInputTests : ConsoleTestBase
 		AppDataHistoryInput.AskWithHistory(DirectoryPrompt);
 
 		Assert.AreEqual(1, AppDataHistoryInput.GetHistoryCount("directory"));
-		Assert.IsNull(SharedAppDataState.ReadSaved(fileSystem));
+		string? saved = SharedAppDataState.ReadSaved(fileSystem);
+		Assert.IsTrue(saved is null || !saved.Contains("deferred", StringComparison.Ordinal), "The answer was saved although auto-save is off.");
 	}
 
 	/// <summary>

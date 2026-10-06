@@ -11,9 +11,9 @@ using AppDataStorage = ktsu.AppDataStorage.AppData;
 /// Puts the shared application data into a known state for tests that read or write input history.
 /// </summary>
 /// <remarks>
-/// <see cref="BlastMergeAppData.ResetForTesting"/> clears a field named <c>_instance</c>, which
-/// ktsu.AppDataStorage 1.17.2 does not have, so it does nothing and one instance lives for the whole
-/// test run. Tests that touch the history or settings therefore empty them explicitly instead.
+/// <see cref="ConsoleTestBase"/> already discards the instance before each test. These helpers are for
+/// tests that swap in a file system they can read, where the instance must be emptied in place so the
+/// first load does not write a file the test then mistakes for its own save.
 /// </remarks>
 internal static class SharedAppDataState
 {
