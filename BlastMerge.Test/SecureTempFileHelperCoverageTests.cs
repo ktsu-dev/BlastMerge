@@ -38,7 +38,7 @@ public class SecureTempFileHelperCoverageTests
 		Mock<IPath> path = new();
 		path.Setup(p => p.GetTempPath()).Returns(tempPath);
 		path.Setup(p => p.GetRandomFileName()).Returns(backing.Path.GetRandomFileName);
-		path.Setup(p => p.Combine(It.IsAny<string>(), It.IsAny<string>())).Returns((string a, string b) => backing.Path.Combine(a, b));
+		path.Setup(p => p.Combine(It.IsAny<string>(), It.IsAny<string>())).Returns((string a, string b) => backing.Path.Join(a, b));
 		path.Setup(p => p.ChangeExtension(It.IsAny<string>(), It.IsAny<string>())).Returns((string p, string e) => backing.Path.ChangeExtension(p, e)!);
 
 		file = new Mock<IFile>();
@@ -230,7 +230,7 @@ public class SecureTempFileHelperCoverageTests
 	public void SafeDeleteTempDirectory_DeletesRecursively()
 	{
 		string created = SecureTempFileHelper.CreateTempDirectory(backing);
-		backing.File.WriteAllText(backing.Path.Combine(created, "inner.txt"), "x");
+		backing.File.WriteAllText(backing.Path.Join(created, "inner.txt"), "x");
 
 		SecureTempFileHelper.SafeDeleteTempDirectory(created, backing);
 

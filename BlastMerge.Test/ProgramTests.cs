@@ -137,7 +137,7 @@ public class ProgramTests : ConsoleTestBase
 	[TestMethod]
 	public void Main_WithMissingDirectory_Fails()
 	{
-		string missing = Path.Combine(TempDirectory, "missing");
+		string missing = Path.Join(TempDirectory, "missing");
 
 		(int exitCode, string output, _) = RunMain(missing, "README.md");
 

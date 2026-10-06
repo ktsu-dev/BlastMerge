@@ -24,7 +24,7 @@ public class DiffPlexDifferCoverageTests : MockFileSystemTestBase
 	public void AreFilesIdentical_MissingFile_ReturnsFalse()
 	{
 		string existing = CreateFile("present.txt", "x");
-		string missing = Path.Combine(TestDirectory, "missing.txt");
+		string missing = Path.Join(TestDirectory, "missing.txt");
 
 		Assert.IsFalse(DiffPlexDiffer.AreFilesIdentical(existing, missing));
 		Assert.IsFalse(DiffPlexDiffer.AreFilesIdentical(missing, existing));
@@ -70,7 +70,7 @@ public class DiffPlexDifferCoverageTests : MockFileSystemTestBase
 	public void Operations_MissingFile_ThrowFileNotFound()
 	{
 		string existing = CreateFile("present.txt", "x");
-		string missing = Path.Combine(TestDirectory, "missing.txt");
+		string missing = Path.Join(TestDirectory, "missing.txt");
 
 		Assert.AreEqual(MissingFilesMessage, Assert.ThrowsExactly<FileNotFoundException>(() => DiffPlexDiffer.CreateLineDiffs(existing, missing)).Message);
 		Assert.AreEqual(MissingFilesMessage, Assert.ThrowsExactly<FileNotFoundException>(() => DiffPlexDiffer.GenerateColoredDiff(missing, existing)).Message);

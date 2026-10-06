@@ -133,7 +133,7 @@ public class InteractiveMergeServiceTests : ConsoleTestBase
 		string[] files = new string[2];
 		for (int i = 0; i < files.Length; i++)
 		{
-			files[i] = Path.Combine(TempDirectory, $"d{i}", "blob.bin");
+			files[i] = Path.Join(TempDirectory, $"d{i}", "blob.bin");
 			Directory.CreateDirectory(Path.GetDirectoryName(files[i])!);
 			File.WriteAllBytes(files[i], bytes);
 		}
@@ -287,7 +287,7 @@ public class InteractiveMergeServiceTests : ConsoleTestBase
 		string[] paths = new string[directories.Length];
 		for (int i = 0; i < directories.Length; i++)
 		{
-			paths[i] = WriteFile(Path.Combine(directories[i], fileName), content);
+			paths[i] = WriteFile(Path.Join(directories[i], fileName), content);
 		}
 
 		return paths;

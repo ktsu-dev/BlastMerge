@@ -128,7 +128,7 @@ public abstract class ConsoleTestBase
 	/// <returns>The full path of the written file.</returns>
 	protected string WriteFile(string relativePath, string content)
 	{
-		string path = Path.Combine(TempDirectory, relativePath);
+		string path = Path.Join(TempDirectory, relativePath);
 		string? directory = Path.GetDirectoryName(path);
 		if (!string.IsNullOrEmpty(directory))
 		{

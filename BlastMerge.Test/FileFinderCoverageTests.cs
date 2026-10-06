@@ -23,7 +23,7 @@ public class FileFinderCoverageTests : MockFileSystemTestBase
 	[TestMethod]
 	public void FindFiles_MissingRoot_ReturnsEmpty()
 	{
-		string missing = Path.Combine(TestDirectory, "missing");
+		string missing = Path.Join(TestDirectory, "missing");
 
 		Assert.IsEmpty(FileFinder.FindFiles(missing, "*.txt", MockFileSystem));
 	}
@@ -34,7 +34,7 @@ public class FileFinderCoverageTests : MockFileSystemTestBase
 	[TestMethod]
 	public void FindFiles_WithExclusions_MissingRoot_ReturnsEmpty()
 	{
-		string missing = Path.Combine(TestDirectory, "missing");
+		string missing = Path.Join(TestDirectory, "missing");
 		IReadOnlyCollection<string> exclusions = [];
 
 		Assert.IsEmpty(FileFinder.FindFiles(missing, "*.txt", exclusions, progressCallback: null));
@@ -47,8 +47,8 @@ public class FileFinderCoverageTests : MockFileSystemTestBase
 	public void FindFiles_WithExclusions_ExcludedRoot_ReturnsEmpty()
 	{
 		string root = CreateDirectory("excludedroot");
-		CreateFile(Path.Combine("excludedroot", "file.txt"), "x");
-		CreateFile(Path.Combine("excludedroot", "nested", "file.txt"), "y");
+		CreateFile(Path.Join("excludedroot", "file.txt"), "x");
+		CreateFile(Path.Join("excludedroot", "nested", "file.txt"), "y");
 		IReadOnlyCollection<string> exclusions = ["excludedroot"];
 		IReadOnlyCollection<string> noExclusions = [];
 		List<string> reported = [];
@@ -66,9 +66,9 @@ public class FileFinderCoverageTests : MockFileSystemTestBase
 	[TestMethod]
 	public void FindFiles_SubmoduleCheckFails_SearchesDirectoryAnyway()
 	{
-		string root = Path.Combine(TestDirectory, "root");
-		string child = Path.Combine(root, "child");
-		string found = Path.Combine(child, "file.txt");
+		string root = Path.Join(TestDirectory, "root");
+		string child = Path.Join(root, "child");
+		string found = Path.Join(child, "file.txt");
 
 		Mock<IDirectory> directory = new();
 		directory.Setup(d => d.GetFiles(root, "file.txt", SearchOption.TopDirectoryOnly)).Returns([]);

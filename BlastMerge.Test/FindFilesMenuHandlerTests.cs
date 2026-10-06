@@ -35,9 +35,9 @@ public class FindFilesMenuHandlerTests : ConsoleTestBase
 	[TestMethod]
 	public void Handle_ListsMatchingFilesThenGoesBack()
 	{
-		WriteFile(Path.Combine("one", "settings.json"), "12345");
-		WriteFile(Path.Combine("two", "deeper", "settings.json"), "1234567");
-		WriteFile(Path.Combine("two", "other.json"), "{}");
+		WriteFile(Path.Join("one", "settings.json"), "12345");
+		WriteFile(Path.Join("two", "deeper", "settings.json"), "1234567");
+		WriteFile(Path.Join("two", "other.json"), "{}");
 		Input.PushTextWithEnter(TempDirectory);
 		Input.PushTextWithEnter("settings.json");
 		PressAnyKey();

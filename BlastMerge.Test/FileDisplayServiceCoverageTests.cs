@@ -53,7 +53,7 @@ public class FileDisplayServiceCoverageTests : ConsoleTestBase
 	[TestMethod]
 	public void ShowDetailedFileList_MissingFile_ShowsExceptionName()
 	{
-		string missing = Path.Combine(TempDirectory, "gone.txt");
+		string missing = Path.Join(TempDirectory, "gone.txt");
 		Dictionary<string, IReadOnlyCollection<string>> groups = new()
 		{
 			["hash"] = [missing],
@@ -90,9 +90,9 @@ public class FileDisplayServiceCoverageTests : ConsoleTestBase
 	[TestMethod]
 	public void ShowDifferences_MultiFileGroup_ListsFilesAndOffersComparison()
 	{
-		string first = WriteFile(Path.Combine("one", "same.txt"), "content");
-		string second = WriteFile(Path.Combine("two", "same.txt"), "content");
-		string third = WriteFile(Path.Combine("three", "same.txt"), "content");
+		string first = WriteFile(Path.Join("one", "same.txt"), "content");
+		string second = WriteFile(Path.Join("two", "same.txt"), "content");
+		string third = WriteFile(Path.Join("three", "same.txt"), "content");
 		Dictionary<string, IReadOnlyCollection<string>> groups = new()
 		{
 			["hash"] = [first, second, third],
@@ -116,7 +116,7 @@ public class FileDisplayServiceCoverageTests : ConsoleTestBase
 	[TestMethod]
 	public void GetRelativeDirectoryName_SingleRelativeDirectory_ReturnsDirectoryAndFile()
 	{
-		string path = Path.Combine("folder", "file.txt");
+		string path = Path.Join("folder", "file.txt");
 
 		Assert.AreEqual(path, FileDisplayService.GetRelativeDirectoryName(path));
 	}

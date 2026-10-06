@@ -28,7 +28,7 @@ public class FileDifferCoverageTests : MockFileSystemTestBase
 	public void GroupFilesByHashOnly_GroupsIdenticalContentRegardlessOfName()
 	{
 		string first = CreateFile("first.txt", "same content");
-		string second = CreateFile(Path.Combine("sub", "second.txt"), "same content");
+		string second = CreateFile(Path.Join("sub", "second.txt"), "same content");
 		string third = CreateFile("third.txt", "other content");
 
 		IReadOnlyCollection<FileGroup> groups = FileDiffer.GroupFilesByHashOnly([first, second, third], MockFileSystem);
@@ -49,12 +49,12 @@ public class FileDifferCoverageTests : MockFileSystemTestBase
 	{
 		string dir1 = CreateDirectory("left");
 		string dir2 = CreateDirectory("right");
-		CreateFile(Path.Combine("left", "same.txt"), "identical");
-		CreateFile(Path.Combine("right", "same.txt"), "identical");
-		CreateFile(Path.Combine("left", "changed.txt"), "one");
-		CreateFile(Path.Combine("right", "changed.txt"), "two");
-		CreateFile(Path.Combine("left", "leftonly.txt"), "l");
-		CreateFile(Path.Combine("right", "rightonly.txt"), "r");
+		CreateFile(Path.Join("left", "same.txt"), "identical");
+		CreateFile(Path.Join("right", "same.txt"), "identical");
+		CreateFile(Path.Join("left", "changed.txt"), "one");
+		CreateFile(Path.Join("right", "changed.txt"), "two");
+		CreateFile(Path.Join("left", "leftonly.txt"), "l");
+		CreateFile(Path.Join("right", "rightonly.txt"), "r");
 
 		DirectoryComparisonResult result = FileDiffer.FindDifferences(dir1, dir2, "*.txt", recursive: false, MockFileSystem);
 
@@ -72,9 +72,9 @@ public class FileDifferCoverageTests : MockFileSystemTestBase
 	{
 		string dir1 = CreateDirectory("left");
 		string dir2 = CreateDirectory("right");
-		string relative = Path.Combine("nested", "deep.txt");
-		CreateFile(Path.Combine("left", relative), "same");
-		CreateFile(Path.Combine("right", relative), "same");
+		string relative = Path.Join("nested", "deep.txt");
+		CreateFile(Path.Join("left", relative), "same");
+		CreateFile(Path.Join("right", relative), "same");
 
 		DirectoryComparisonResult flat = FileDiffer.FindDifferences(dir1, dir2, "*.txt", recursive: false, MockFileSystem);
 		DirectoryComparisonResult deep = FileDiffer.FindDifferences(dir1, dir2, "*.txt", recursive: true, MockFileSystem);
@@ -90,8 +90,8 @@ public class FileDifferCoverageTests : MockFileSystemTestBase
 	public void FindDifferences_Directories_MissingDirectoryIsTreatedAsEmpty()
 	{
 		string dir1 = CreateDirectory("present");
-		CreateFile(Path.Combine("present", "a.txt"), "a");
-		string missing = Path.Combine(TestDirectory, "missing");
+		CreateFile(Path.Join("present", "a.txt"), "a");
+		string missing = Path.Join(TestDirectory, "missing");
 
 		DirectoryComparisonResult result = FileDiffer.FindDifferences(dir1, missing, "*.txt", recursive: false, MockFileSystem);
 
@@ -109,8 +109,8 @@ public class FileDifferCoverageTests : MockFileSystemTestBase
 	{
 		string dir1 = CreateDirectory("left");
 		string dir2 = CreateDirectory("right");
-		CreateFile(Path.Combine("left", "locked.txt"), "same");
-		MockFileSystem.AddFile(Path.Combine(dir2, "locked.txt"), new MockFileData("same") { AllowedFileShare = FileShare.None });
+		CreateFile(Path.Join("left", "locked.txt"), "same");
+		MockFileSystem.AddFile(Path.Join(dir2, "locked.txt"), new MockFileData("same") { AllowedFileShare = FileShare.None });
 
 		DirectoryComparisonResult result = FileDiffer.FindDifferences(dir1, dir2, "*.txt", recursive: false, MockFileSystem);
 
@@ -295,7 +295,7 @@ public class FileDifferCoverageTests : MockFileSystemTestBase
 	public void SyncFile_CreatesTargetDirectoryAndOverwrites()
 	{
 		string source = CreateFile("source.txt", "fresh");
-		string target = Path.Combine(TestDirectory, "new", "dir", "target.txt");
+		string target = Path.Join(TestDirectory, "new", "dir", "target.txt");
 
 		FileDiffer.SyncFile(source, target, MockFileSystem);
 		Assert.AreEqual("fresh", MockFileSystem.File.ReadAllText(target));

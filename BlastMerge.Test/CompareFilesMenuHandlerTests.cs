@@ -101,11 +101,11 @@ public class CompareFilesMenuHandlerTests : ConsoleTestBase
 	[TestMethod]
 	public void CompareTwoDirectories_ReportsTheComparison()
 	{
-		WriteFile(Path.Combine("left", "same.txt"), "same");
-		WriteFile(Path.Combine("right", "same.txt"), "same");
+		WriteFile(Path.Join("left", "same.txt"), "same");
+		WriteFile(Path.Join("right", "same.txt"), "same");
 		SelectIndex(CompareTwoDirectories);
-		Input.PushTextWithEnter(Path.Combine(TempDirectory, "left"));
-		Input.PushTextWithEnter(Path.Combine(TempDirectory, "right"));
+		Input.PushTextWithEnter(Path.Join(TempDirectory, "left"));
+		Input.PushTextWithEnter(Path.Join(TempDirectory, "right"));
 		Input.PushKey(ConsoleKey.Enter); // default pattern
 		Input.PushKey(ConsoleKey.Enter); // not recursive
 		PressAnyKey();

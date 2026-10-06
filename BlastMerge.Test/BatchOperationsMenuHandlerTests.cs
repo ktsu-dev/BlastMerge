@@ -264,9 +264,9 @@ public class BatchOperationsMenuHandlerTests : ConsoleTestBase
 	[TestMethod]
 	public void Run_WithSearchPaths_ProcessesTheBatch()
 	{
-		string repos = Path.Combine(TempDirectory, "repos");
-		WriteFile(Path.Combine("repos", "a", "README.md"), "same");
-		WriteFile(Path.Combine("repos", "b", "README.md"), "same");
+		string repos = Path.Join(TempDirectory, "repos");
+		WriteFile(Path.Join("repos", "a", "README.md"), "same");
+		WriteFile(Path.Join("repos", "b", "README.md"), "same");
 		BatchConfiguration batch = new()
 		{
 			Name = "Docs",
@@ -292,7 +292,7 @@ public class BatchOperationsMenuHandlerTests : ConsoleTestBase
 	[TestMethod]
 	public void Run_WithoutSearchPaths_AsksForADirectory()
 	{
-		WriteFile(Path.Combine("a", "README.md"), "same");
+		WriteFile(Path.Join("a", "README.md"), "same");
 		SaveBatch("Alpha", "*.txt");
 		SaveBatch("Docs", "README.md");
 		SelectIndex(RunBatch);
@@ -592,7 +592,7 @@ public class BatchOperationsMenuHandlerTests : ConsoleTestBase
 	{
 		SaveBatch("Alpha", "*.txt");
 		SaveBatch("Docs", "README.md");
-		string exportPath = Path.Combine(TempDirectory, "batches.json");
+		string exportPath = Path.Join(TempDirectory, "batches.json");
 
 		Manage(Export, () =>
 		{
@@ -634,7 +634,7 @@ public class BatchOperationsMenuHandlerTests : ConsoleTestBase
 	public void Export_ToAMissingFolder_ReportsTheError()
 	{
 		SaveBatch("Docs", "README.md");
-		string exportPath = Path.Combine(TempDirectory, "missing", "batches.json");
+		string exportPath = Path.Join(TempDirectory, "missing", "batches.json");
 
 		Manage(Export, () =>
 		{
@@ -670,7 +670,7 @@ public class BatchOperationsMenuHandlerTests : ConsoleTestBase
 	{
 		Manage(Import, () =>
 		{
-			Answer(Path.Combine(TempDirectory, "missing.json"));
+			Answer(Path.Join(TempDirectory, "missing.json"));
 			PressAnyKey();
 			PressAnyKey();
 		});
@@ -776,7 +776,7 @@ public class BatchOperationsMenuHandlerTests : ConsoleTestBase
 	public void ExportThenImport_RoundTripsTheBatches()
 	{
 		SaveBatch("Docs", "README.md", "*.md");
-		string exportPath = Path.Combine(TempDirectory, "roundtrip.json");
+		string exportPath = Path.Join(TempDirectory, "roundtrip.json");
 
 		Manage(Export, () =>
 		{

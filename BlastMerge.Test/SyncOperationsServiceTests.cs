@@ -272,7 +272,7 @@ public class SyncOperationsServiceTests : ConsoleTestBase
 		string[] paths = new string[directories.Length];
 		for (int i = 0; i < directories.Length; i++)
 		{
-			paths[i] = WriteFile(Path.Combine(directories[i], fileName), Original);
+			paths[i] = WriteFile(Path.Join(directories[i], fileName), Original);
 		}
 
 		return paths;
@@ -283,7 +283,7 @@ public class SyncOperationsServiceTests : ConsoleTestBase
 	/// </summary>
 	private void BlockDirectory(string directory)
 	{
-		string path = Path.Combine(TempDirectory, directory);
+		string path = Path.Join(TempDirectory, directory);
 		Directory.Delete(path, recursive: true);
 		File.WriteAllText(path, "blocker");
 	}

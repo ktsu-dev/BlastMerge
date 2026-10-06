@@ -47,8 +47,8 @@ public class AsyncApplicationServiceTests : ConsoleTestBase
 	public async Task ProcessFilesAsync_GroupsMatchingFilesByContent()
 	{
 		string root = WriteFile("config.txt", "shared");
-		string nested = WriteFile(Path.Combine("sub", "config.txt"), "shared");
-		string different = WriteFile(Path.Combine("other", "config.txt"), "different");
+		string nested = WriteFile(Path.Join("sub", "config.txt"), "shared");
+		string different = WriteFile(Path.Join("other", "config.txt"), "different");
 		WriteFile("ignored.md", "shared");
 
 		IReadOnlyDictionary<string, IReadOnlyCollection<string>> groups =
@@ -109,10 +109,10 @@ public class AsyncApplicationServiceTests : ConsoleTestBase
 
 		Assert.IsNotNull(result);
 		Assert.AreSequenceEqual(
-			new[] { "same.txt", Path.Combine("nested", "deep.txt") }.Order(StringComparer.Ordinal),
+			new[] { "same.txt", Path.Join("nested", "deep.txt") }.Order(StringComparer.Ordinal),
 			result.SameFiles.Order(StringComparer.Ordinal));
 		Assert.AreSequenceEqual(
-			new[] { "modified.txt", Path.Combine("nested", "deep-modified.txt") }.Order(StringComparer.Ordinal),
+			new[] { "modified.txt", Path.Join("nested", "deep-modified.txt") }.Order(StringComparer.Ordinal),
 			result.ModifiedFiles.Order(StringComparer.Ordinal));
 		Assert.AreSequenceEqual(["left.txt"], result.OnlyInDir1);
 		Assert.AreSequenceEqual(["right.txt"], result.OnlyInDir2);
@@ -128,9 +128,9 @@ public class AsyncApplicationServiceTests : ConsoleTestBase
 	[DataRow(true)]
 	public async Task CompareDirectoriesAsync_MissingDirectory_ReportsEverythingAsOneSided(bool recursive)
 	{
-		string existing = Path.Combine(TempDirectory, "existing");
-		WriteFile(Path.Combine("existing", "only.txt"), "content");
-		string missing = Path.Combine(TempDirectory, "missing");
+		string existing = Path.Join(TempDirectory, "existing");
+		WriteFile(Path.Join("existing", "only.txt"), "content");
+		string missing = Path.Join(TempDirectory, "missing");
 
 		DirectoryComparisonResult? forward =
 			await AsyncApplicationService.CompareDirectoriesAsync(existing, missing, "*.txt", recursive).ConfigureAwait(false);
@@ -179,7 +179,7 @@ public class AsyncApplicationServiceTests : ConsoleTestBase
 	public async Task ReadFilesAsync_ReturnsEveryFilesContent()
 	{
 		string first = WriteFile("first.txt", "first content");
-		string second = WriteFile(Path.Combine("sub", "second.txt"), "second content");
+		string second = WriteFile(Path.Join("sub", "second.txt"), "second content");
 
 		Dictionary<string, string> contents =
 			await AsyncApplicationService.ReadFilesAsync([first, second], maxDegreeOfParallelism: 1).ConfigureAwait(false);
@@ -198,9 +198,9 @@ public class AsyncApplicationServiceTests : ConsoleTestBase
 	public async Task CopyFilesAsync_CopiesFilesAndOmitsFailures()
 	{
 		string source = WriteFile("source.txt", "payload");
-		string target = Path.Combine(TempDirectory, "new", "dir", "target.txt");
-		string missingSource = Path.Combine(TempDirectory, "missing.txt");
-		string unreachedTarget = Path.Combine(TempDirectory, "unreached.txt");
+		string target = Path.Join(TempDirectory, "new", "dir", "target.txt");
+		string missingSource = Path.Join(TempDirectory, "missing.txt");
+		string unreachedTarget = Path.Join(TempDirectory, "unreached.txt");
 
 		IReadOnlyCollection<(string source, string target)> copied =
 			await AsyncApplicationService.CopyFilesAsync([(source, target), (missingSource, unreachedTarget)]).ConfigureAwait(false);
@@ -238,8 +238,8 @@ public class AsyncApplicationServiceTests : ConsoleTestBase
 	public async Task ProcessBatchAsync_CountsPatternsAndFiles(bool skipEmptyPatterns, int expectedPatterns)
 	{
 		WriteFile("a.txt", "a");
-		WriteFile(Path.Combine("sub", "a.txt"), "a");
-		WriteFile(Path.Combine("sub", "b.txt"), "b");
+		WriteFile(Path.Join("sub", "a.txt"), "a");
+		WriteFile(Path.Join("sub", "b.txt"), "b");
 		WriteFile("readme.md", "readme");
 		SaveBatch(skipEmptyPatterns, promptBeforeEachPattern: false, "*.txt", "*.md", "*.none");
 
@@ -286,17 +286,17 @@ public class AsyncApplicationServiceTests : ConsoleTestBase
 
 	private (string dir1, string dir2) CreateComparisonTree()
 	{
-		WriteFile(Path.Combine("left", "same.txt"), "same");
-		WriteFile(Path.Combine("right", "same.txt"), "same");
-		WriteFile(Path.Combine("left", "modified.txt"), "before");
-		WriteFile(Path.Combine("right", "modified.txt"), "after");
-		WriteFile(Path.Combine("left", "left.txt"), "left");
-		WriteFile(Path.Combine("right", "right.txt"), "right");
-		WriteFile(Path.Combine("left", "ignored.md"), "left");
-		WriteFile(Path.Combine("left", "nested", "deep.txt"), "deep");
-		WriteFile(Path.Combine("right", "nested", "deep.txt"), "deep");
-		WriteFile(Path.Combine("left", "nested", "deep-modified.txt"), "one");
-		WriteFile(Path.Combine("right", "nested", "deep-modified.txt"), "two");
-		return (Path.Combine(TempDirectory, "left"), Path.Combine(TempDirectory, "right"));
+		WriteFile(Path.Join("left", "same.txt"), "same");
+		WriteFile(Path.Join("right", "same.txt"), "same");
+		WriteFile(Path.Join("left", "modified.txt"), "before");
+		WriteFile(Path.Join("right", "modified.txt"), "after");
+		WriteFile(Path.Join("left", "left.txt"), "left");
+		WriteFile(Path.Join("right", "right.txt"), "right");
+		WriteFile(Path.Join("left", "ignored.md"), "left");
+		WriteFile(Path.Join("left", "nested", "deep.txt"), "deep");
+		WriteFile(Path.Join("right", "nested", "deep.txt"), "deep");
+		WriteFile(Path.Join("left", "nested", "deep-modified.txt"), "one");
+		WriteFile(Path.Join("right", "nested", "deep-modified.txt"), "two");
+		return (Path.Join(TempDirectory, "left"), Path.Join(TempDirectory, "right"));
 	}
 }

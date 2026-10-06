@@ -21,15 +21,15 @@ public class IterativeMergeOrchestratorCoverageTests : MockFileSystemTestBase
 	[TestMethod]
 	public void StartIterativeMergeProcess_WriteFailsWithIOError_ReportsError()
 	{
-		string file1 = CreateFile(Path.Combine("one", "same.txt"), "a\nb\nc\n");
-		string file2 = CreateFile(Path.Combine("two", "same.txt"), "a\nb\nd\n");
+		string file1 = CreateFile(Path.Join("one", "same.txt"), "a\nb\nc\n");
+		string file2 = CreateFile(Path.Join("two", "same.txt"), "a\nb\nd\n");
 		List<FileGroup> groups = [new FileGroup([file1]) { Hash = "h1" }, new FileGroup([file2]) { Hash = "h2" }];
 
 		MergeCompletionResult result = IterativeMergeOrchestrator.StartIterativeMergeProcess(
 			groups,
 			(_, _, _) =>
 			{
-				MockFileSystem.Directory.Delete(Path.Combine(TestDirectory, "one"), true);
+				MockFileSystem.Directory.Delete(Path.Join(TestDirectory, "one"), true);
 				return new MergeResult(["a", "b", "merged"], []);
 			},
 			_ => { },
@@ -51,8 +51,8 @@ public class IterativeMergeOrchestratorCoverageTests : MockFileSystemTestBase
 	[TestMethod]
 	public void StartIterativeMergeProcess_WriteDenied_ReportsAccessDenied()
 	{
-		string file1 = CreateFile(Path.Combine("one", "same.txt"), "a\nb\nc\n");
-		string file2 = CreateFile(Path.Combine("two", "same.txt"), "a\nb\nd\n");
+		string file1 = CreateFile(Path.Join("one", "same.txt"), "a\nb\nc\n");
+		string file2 = CreateFile(Path.Join("two", "same.txt"), "a\nb\nd\n");
 		List<FileGroup> groups = [new FileGroup([file1]) { Hash = "h1" }, new FileGroup([file2]) { Hash = "h2" }];
 
 		MergeCompletionResult result = IterativeMergeOrchestrator.StartIterativeMergeProcess(
@@ -78,9 +78,9 @@ public class IterativeMergeOrchestratorCoverageTests : MockFileSystemTestBase
 	[TestMethod]
 	public void StartIterativeMergeProcess_UserDeclinesToContinue_IsIncomplete()
 	{
-		string file1 = CreateFile(Path.Combine("one", "same.txt"), "a\nb\nc\nd\n");
-		string file2 = CreateFile(Path.Combine("two", "same.txt"), "a\nb\nc\nx\n");
-		string file3 = CreateFile(Path.Combine("three", "same.txt"), "q\nr\ns\nt\n");
+		string file1 = CreateFile(Path.Join("one", "same.txt"), "a\nb\nc\nd\n");
+		string file2 = CreateFile(Path.Join("two", "same.txt"), "a\nb\nc\nx\n");
+		string file3 = CreateFile(Path.Join("three", "same.txt"), "q\nr\ns\nt\n");
 		List<FileGroup> groups =
 		[
 			new FileGroup([file1]) { Hash = "h1" },

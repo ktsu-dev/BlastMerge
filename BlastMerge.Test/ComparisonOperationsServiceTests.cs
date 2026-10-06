@@ -23,15 +23,15 @@ public class ComparisonOperationsServiceTests : ConsoleTestBase
 	[TestInitialize]
 	public void CreateDirectories()
 	{
-		left = Path.Combine(TempDirectory, "left");
-		right = Path.Combine(TempDirectory, "right");
-		WriteFile(Path.Combine("left", "same.txt"), "identical\n");
-		WriteFile(Path.Combine("right", "same.txt"), "identical\n");
-		WriteFile(Path.Combine("left", "changed.txt"), "one\ntwo\nthree\n");
-		WriteFile(Path.Combine("right", "changed.txt"), "one\nTWO\nthree\nfour\n");
-		WriteFile(Path.Combine("left", "leftonly.txt"), "left");
-		WriteFile(Path.Combine("right", "rightonly.txt"), "right");
-		WriteFile(Path.Combine("left", "nested", "deep.txt"), "deep");
+		left = Path.Join(TempDirectory, "left");
+		right = Path.Join(TempDirectory, "right");
+		WriteFile(Path.Join("left", "same.txt"), "identical\n");
+		WriteFile(Path.Join("right", "same.txt"), "identical\n");
+		WriteFile(Path.Join("left", "changed.txt"), "one\ntwo\nthree\n");
+		WriteFile(Path.Join("right", "changed.txt"), "one\nTWO\nthree\nfour\n");
+		WriteFile(Path.Join("left", "leftonly.txt"), "left");
+		WriteFile(Path.Join("right", "rightonly.txt"), "right");
+		WriteFile(Path.Join("left", "nested", "deep.txt"), "deep");
 	}
 
 	/// <summary>
@@ -146,7 +146,7 @@ public class ComparisonOperationsServiceTests : ConsoleTestBase
 	[TestMethod]
 	public void HandleCompareTwoDirectories_MissingFirst_ReportsError()
 	{
-		Input.PushTextWithEnter(Path.Combine(TempDirectory, "missing"));
+		Input.PushTextWithEnter(Path.Join(TempDirectory, "missing"));
 
 		ComparisonOperationsService.HandleCompareTwoDirectories();
 
@@ -176,7 +176,7 @@ public class ComparisonOperationsServiceTests : ConsoleTestBase
 	public void HandleCompareTwoDirectories_MissingSecond_ReportsError()
 	{
 		Input.PushTextWithEnter(left);
-		Input.PushTextWithEnter(Path.Combine(TempDirectory, "missing"));
+		Input.PushTextWithEnter(Path.Join(TempDirectory, "missing"));
 
 		ComparisonOperationsService.HandleCompareTwoDirectories();
 
@@ -190,8 +190,8 @@ public class ComparisonOperationsServiceTests : ConsoleTestBase
 	[TestMethod]
 	public void HandleCompareTwoSpecificFiles_IdenticalFiles_ReportsIdentical()
 	{
-		Input.PushTextWithEnter(Path.Combine(left, "same.txt"));
-		Input.PushTextWithEnter(Path.Combine(right, "same.txt"));
+		Input.PushTextWithEnter(Path.Join(left, "same.txt"));
+		Input.PushTextWithEnter(Path.Join(right, "same.txt"));
 		PressAnyKey();
 
 		ComparisonOperationsService.HandleCompareTwoSpecificFiles();
@@ -206,8 +206,8 @@ public class ComparisonOperationsServiceTests : ConsoleTestBase
 	[TestMethod]
 	public void HandleCompareTwoSpecificFiles_DifferentFiles_ShowsChosenDiff()
 	{
-		Input.PushTextWithEnter(Path.Combine(left, "changed.txt"));
-		Input.PushTextWithEnter(Path.Combine(right, "changed.txt"));
+		Input.PushTextWithEnter(Path.Join(left, "changed.txt"));
+		Input.PushTextWithEnter(Path.Join(right, "changed.txt"));
 		SelectIndex(0); // change summary
 		PressAnyKey();
 
@@ -237,7 +237,7 @@ public class ComparisonOperationsServiceTests : ConsoleTestBase
 	[TestMethod]
 	public void HandleCompareTwoSpecificFiles_MissingFirst_ReportsError()
 	{
-		Input.PushTextWithEnter(Path.Combine(TempDirectory, "missing.txt"));
+		Input.PushTextWithEnter(Path.Join(TempDirectory, "missing.txt"));
 
 		ComparisonOperationsService.HandleCompareTwoSpecificFiles();
 
@@ -251,7 +251,7 @@ public class ComparisonOperationsServiceTests : ConsoleTestBase
 	[TestMethod]
 	public void HandleCompareTwoSpecificFiles_EmptySecond_Cancels()
 	{
-		Input.PushTextWithEnter(Path.Combine(left, "same.txt"));
+		Input.PushTextWithEnter(Path.Join(left, "same.txt"));
 		Input.PushKey(ConsoleKey.Enter);
 
 		ComparisonOperationsService.HandleCompareTwoSpecificFiles();
@@ -266,8 +266,8 @@ public class ComparisonOperationsServiceTests : ConsoleTestBase
 	[TestMethod]
 	public void HandleCompareTwoSpecificFiles_MissingSecond_ReportsError()
 	{
-		Input.PushTextWithEnter(Path.Combine(left, "same.txt"));
-		Input.PushTextWithEnter(Path.Combine(TempDirectory, "missing.txt"));
+		Input.PushTextWithEnter(Path.Join(left, "same.txt"));
+		Input.PushTextWithEnter(Path.Join(TempDirectory, "missing.txt"));
 
 		ComparisonOperationsService.HandleCompareTwoSpecificFiles();
 

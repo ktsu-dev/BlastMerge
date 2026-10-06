@@ -103,8 +103,8 @@ public class ConsoleApplicationServiceTests : ConsoleTestBase
 	/// <returns>The two file paths.</returns>
 	private (string First, string Second) WriteDivergentPair(string fileName)
 	{
-		string first = WriteFile(Path.Combine("one", fileName), "alpha\nfirst version\nomega\n");
-		string second = WriteFile(Path.Combine("two", fileName), "alpha\nsecond version\nomega\n");
+		string first = WriteFile(Path.Join("one", fileName), "alpha\nfirst version\nomega\n");
+		string second = WriteFile(Path.Join("two", fileName), "alpha\nsecond version\nomega\n");
 		return (first, second);
 	}
 
@@ -118,9 +118,9 @@ public class ConsoleApplicationServiceTests : ConsoleTestBase
 	/// <returns>The three file paths.</returns>
 	private string[] WriteMergeableTriple(string fileName, string common, string other) =>
 	[
-		WriteFile(Path.Combine("one", fileName), common),
-		WriteFile(Path.Combine("two", fileName), common),
-		WriteFile(Path.Combine("three", fileName), other),
+		WriteFile(Path.Join("one", fileName), common),
+		WriteFile(Path.Join("two", fileName), common),
+		WriteFile(Path.Join("three", fileName), other),
 	];
 
 	/// <summary>
@@ -176,7 +176,7 @@ public class ConsoleApplicationServiceTests : ConsoleTestBase
 	[TestMethod]
 	public void ProcessFiles_MissingDirectory_Throws()
 	{
-		string missing = Path.Combine(TempDirectory, "missing");
+		string missing = Path.Join(TempDirectory, "missing");
 
 		Assert.ThrowsExactly<DirectoryNotFoundException>(() => service.ProcessFiles(missing, "*.txt"));
 	}
@@ -200,9 +200,9 @@ public class ConsoleApplicationServiceTests : ConsoleTestBase
 	[TestMethod]
 	public void ProcessFiles_WithMatches_ShowsGroupSummary()
 	{
-		WriteFile(Path.Combine("a", "settings.txt"), "same");
-		WriteFile(Path.Combine("b", "settings.txt"), "same");
-		WriteFile(Path.Combine("c", "settings.txt"), "different");
+		WriteFile(Path.Join("a", "settings.txt"), "same");
+		WriteFile(Path.Join("b", "settings.txt"), "same");
+		WriteFile(Path.Join("c", "settings.txt"), "different");
 		SelectIndex(FileActionReturnToMainMenu);
 
 		service.ProcessFiles(TempDirectory, "settings.txt");
@@ -234,8 +234,8 @@ public class ConsoleApplicationServiceTests : ConsoleTestBase
 	[TestMethod]
 	public void ProcessFiles_ViewDetailedFileList_ListsTheFiles()
 	{
-		WriteFile(Path.Combine("a", "notes.txt"), "one");
-		WriteFile(Path.Combine("b", "notes.txt"), "one");
+		WriteFile(Path.Join("a", "notes.txt"), "one");
+		WriteFile(Path.Join("b", "notes.txt"), "one");
 		SelectIndex(FileActionViewDetailedList);
 		PressAnyKey();
 
@@ -295,7 +295,7 @@ public class ConsoleApplicationServiceTests : ConsoleTestBase
 	{
 		SaveBatch("Docs", string.Empty, null, "README.md");
 
-		Assert.ThrowsExactly<DirectoryNotFoundException>(() => service.ProcessBatch(Path.Combine(TempDirectory, "missing"), "Docs"));
+		Assert.ThrowsExactly<DirectoryNotFoundException>(() => service.ProcessBatch(Path.Join(TempDirectory, "missing"), "Docs"));
 	}
 
 	/// <summary>
@@ -306,10 +306,10 @@ public class ConsoleApplicationServiceTests : ConsoleTestBase
 	public void ProcessBatch_WithoutConflicts_SummarisesEachPattern()
 	{
 		SaveBatch("Repo Files", "Files every repository has", null, "README.md", "LICENSE", "*.cfg", ".gitignore");
-		WriteFile(Path.Combine("one", "README.md"), "same");
-		WriteFile(Path.Combine("two", "README.md"), "same");
-		WriteFile(Path.Combine("one", "LICENSE"), "only one");
-		WriteFile(Path.Combine("one", "app.cfg"), "config");
+		WriteFile(Path.Join("one", "README.md"), "same");
+		WriteFile(Path.Join("two", "README.md"), "same");
+		WriteFile(Path.Join("one", "LICENSE"), "only one");
+		WriteFile(Path.Join("one", "app.cfg"), "config");
 
 		service.ProcessBatch(TempDirectory, "repo files");
 
@@ -351,7 +351,7 @@ public class ConsoleApplicationServiceTests : ConsoleTestBase
 		service.RunIterativeMerge(TempDirectory, "single.txt");
 
 		StringAssert.Contains(Output, "Found 1 files in 1 groups:");
-		Assert.AreEqual("content", File.ReadAllText(Path.Combine(TempDirectory, "single.txt")));
+		Assert.AreEqual("content", File.ReadAllText(Path.Join(TempDirectory, "single.txt")));
 	}
 
 	/// <summary>
@@ -359,7 +359,7 @@ public class ConsoleApplicationServiceTests : ConsoleTestBase
 	/// </summary>
 	[TestMethod]
 	public void RunIterativeMerge_MissingDirectory_Throws() =>
-		Assert.ThrowsExactly<DirectoryNotFoundException>(() => service.RunIterativeMerge(Path.Combine(TempDirectory, "missing"), "*.txt"));
+		Assert.ThrowsExactly<DirectoryNotFoundException>(() => service.RunIterativeMerge(Path.Join(TempDirectory, "missing"), "*.txt"));
 
 	/// <summary>
 	/// Two differing versions with no duplicated copy are summarised but not merged: iterative merge
@@ -489,9 +489,9 @@ public class ConsoleApplicationServiceTests : ConsoleTestBase
 	[TestMethod]
 	public void StartInteractiveMode_RunRecentBatchWithSearchPaths_RunsItAgainstThem()
 	{
-		string repos = Path.Combine(TempDirectory, "repos");
-		WriteFile(Path.Combine("repos", "a", "README.md"), "same");
-		WriteFile(Path.Combine("repos", "b", "README.md"), "same");
+		string repos = Path.Join(TempDirectory, "repos");
+		WriteFile(Path.Join("repos", "a", "README.md"), "same");
+		WriteFile(Path.Join("repos", "b", "README.md"), "same");
 		SaveBatch("Docs", string.Empty, [repos], "README.md");
 		BlastMergeAppData.Get().RecentBatch = new RecentBatchInfo { BatchName = "Docs" };
 		SelectIndex(MainMenuRunRecentBatch);
@@ -511,7 +511,7 @@ public class ConsoleApplicationServiceTests : ConsoleTestBase
 	[TestMethod]
 	public void StartInteractiveMode_RunRecentBatchWithoutSearchPaths_AsksForADirectory()
 	{
-		WriteFile(Path.Combine("x", "README.md"), "same");
+		WriteFile(Path.Join("x", "README.md"), "same");
 		SaveBatch("Docs", string.Empty, null, "README.md");
 		BlastMergeAppData.Get().RecentBatch = new RecentBatchInfo { BatchName = "Docs" };
 		SelectIndex(MainMenuRunRecentBatch);
@@ -553,7 +553,7 @@ public class ConsoleApplicationServiceTests : ConsoleTestBase
 		SaveBatch("Docs", string.Empty, null, "README.md");
 		BlastMergeAppData.Get().RecentBatch = new RecentBatchInfo { BatchName = "Docs" };
 		SelectIndex(MainMenuRunRecentBatch);
-		Input.PushTextWithEnter(Path.Combine(TempDirectory, "missing"));
+		Input.PushTextWithEnter(Path.Join(TempDirectory, "missing"));
 		PressAnyKey();
 		SelectIndex(MainMenuExit);
 

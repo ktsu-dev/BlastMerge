@@ -47,8 +47,8 @@ public class FileComparisonDisplayServiceTests : ConsoleTestBase
 	{
 		string[] lines = [.. Enumerable.Range(1, lineCount).Select(i => $"line{i}")];
 		string[] edited = [.. lines.Select((line, index) => edit(index, line))];
-		string left = WriteFile(Path.Combine("left", "data.txt"), string.Join(Environment.NewLine, lines) + Environment.NewLine);
-		string right = WriteFile(Path.Combine("right", "data.txt"), string.Join(Environment.NewLine, edited) + Environment.NewLine);
+		string left = WriteFile(Path.Join("left", "data.txt"), string.Join(Environment.NewLine, lines) + Environment.NewLine);
+		string right = WriteFile(Path.Join("right", "data.txt"), string.Join(Environment.NewLine, edited) + Environment.NewLine);
 		return (left, right);
 	}
 
@@ -146,7 +146,7 @@ public class FileComparisonDisplayServiceTests : ConsoleTestBase
 	public void CompareTwoFiles_MissingFile_ReportsFileNotFound()
 	{
 		string left = WriteFile("a.txt", "alpha\n");
-		string missing = Path.Combine(TempDirectory, "missing.txt");
+		string missing = Path.Join(TempDirectory, "missing.txt");
 
 		FileComparisonDisplayService.CompareTwoFiles(left, missing);
 
@@ -192,7 +192,7 @@ public class FileComparisonDisplayServiceTests : ConsoleTestBase
 	{
 		string left = WriteFile("a.txt", "alpha\n");
 
-		FileComparisonDisplayService.ShowGitStyleDiff(left, Path.Combine(TempDirectory, "missing.txt"));
+		FileComparisonDisplayService.ShowGitStyleDiff(left, Path.Join(TempDirectory, "missing.txt"));
 
 		StringAssert.Contains(Output, "File not found:");
 		Assert.DoesNotContain("Git-style Diff", Output);
@@ -279,7 +279,7 @@ public class FileComparisonDisplayServiceTests : ConsoleTestBase
 	{
 		string left = WriteFile("a.txt", "x\n");
 
-		FileComparisonDisplayService.ShowSideBySideDiff(left, Path.Combine(TempDirectory, "missing.txt"));
+		FileComparisonDisplayService.ShowSideBySideDiff(left, Path.Join(TempDirectory, "missing.txt"));
 
 		StringAssert.Contains(Output, "File not found:");
 	}
@@ -291,7 +291,7 @@ public class FileComparisonDisplayServiceTests : ConsoleTestBase
 	public void ShowSideBySideDiff_DirectoryInsteadOfFile_ReportsError()
 	{
 		string left = WriteFile("a.txt", "x\n");
-		string directory = Path.Combine(TempDirectory, "folder");
+		string directory = Path.Join(TempDirectory, "folder");
 		Directory.CreateDirectory(directory);
 
 		FileComparisonDisplayService.ShowSideBySideDiff(left, directory);

@@ -27,8 +27,8 @@ public class BatchProcessorCoverageTests : MockFileSystemTestBase
 	[TestMethod]
 	public void ProcessBatch_UserSkipsPattern_RecordsSkip()
 	{
-		CreateFile(Path.Combine("a", "same.txt"), "one");
-		CreateFile(Path.Combine("b", "same.txt"), "two");
+		CreateFile(Path.Join("a", "same.txt"), "one");
+		CreateFile(Path.Join("b", "same.txt"), "two");
 		BatchConfiguration batch = new()
 		{
 			Name = "prompting",
@@ -73,7 +73,7 @@ public class BatchProcessorCoverageTests : MockFileSystemTestBase
 	[TestMethod]
 	public void ProcessBatchWithDiscretePhases_MissingDirectory_Fails()
 	{
-		string missing = Path.Combine(TestDirectory, "missing");
+		string missing = Path.Join(TestDirectory, "missing");
 		BatchConfiguration batch = new() { Name = "absent", FilePatterns = ["*.txt"] };
 
 		BatchResult result = BatchProcessor.ProcessBatchWithDiscretePhases(batch, missing, NoMerge, IgnoreStatus, KeepGoing, fileSystem: MockFileSystem);
@@ -113,7 +113,7 @@ public class BatchProcessorCoverageTests : MockFileSystemTestBase
 	public void ProcessBatchWithDiscretePhases_QuestionMarkPattern_AttributesFileByName()
 	{
 		string root = CreateDirectory("question");
-		CreateFile(Path.Combine("question", "ab.txt"), "x");
+		CreateFile(Path.Join("question", "ab.txt"), "x");
 		BatchConfiguration batch = new() { Name = "question", FilePatterns = ["a?.txt"] };
 
 		BatchResult result = BatchProcessor.ProcessBatchWithDiscretePhases(batch, root, NoMerge, IgnoreStatus, KeepGoing, fileSystem: MockFileSystem);
@@ -132,7 +132,7 @@ public class BatchProcessorCoverageTests : MockFileSystemTestBase
 	public void ProcessBatchWithDiscretePhases_StarPattern_AttributesFileToStar()
 	{
 		string root = CreateDirectory("star");
-		CreateFile(Path.Combine("star", "notes.md"), "x");
+		CreateFile(Path.Join("star", "notes.md"), "x");
 		BatchConfiguration batch = new() { Name = "star", FilePatterns = ["*"] };
 
 		BatchResult result = BatchProcessor.ProcessBatchWithDiscretePhases(batch, root, NoMerge, IgnoreStatus, KeepGoing, fileSystem: MockFileSystem);
@@ -159,8 +159,8 @@ public class BatchProcessorCoverageTests : MockFileSystemTestBase
 	[TestMethod]
 	public void ProcessSinglePatternWithPaths_WithCallbacks_MergesFiles()
 	{
-		string file1 = CreateFile(Path.Combine("left", "same.txt"), "a\nb\n");
-		string file2 = CreateFile(Path.Combine("right", "same.txt"), "a\nc\n");
+		string file1 = CreateFile(Path.Join("left", "same.txt"), "a\nb\n");
+		string file2 = CreateFile(Path.Join("right", "same.txt"), "a\nc\n");
 		List<string> progress = [];
 		ProcessingCallbacks callbacks = new(
 			(_, _, _) => new MergeResult(["a", "merged"], []),
