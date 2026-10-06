@@ -1,9 +1,6 @@
-## v1.10.5 (patch)
+## v1.10.6 (patch)
 
-Changes since v1.10.4:
+Changes since v1.10.5:
 
-- test: cover Utf8BomDetector on missing, empty and short files [patch] ([@Claude](https://github.com/Claude))
-- test: cover the batch editor's pattern validation [patch] ([@Claude](https://github.com/Claude))
-- fix: keep the UTF-8 byte order mark on merged files [patch] ([@Claude](https://github.com/Claude))
-- fix: strip a leading **/ from file patterns so the example pattern matches [patch] ([@Claude](https://github.com/Claude))
+- Escape paths and names before they reach Spectre.Console markup [patch] (#76) ([@matt-edmondson](https://github.com/matt-edmondson))
 
