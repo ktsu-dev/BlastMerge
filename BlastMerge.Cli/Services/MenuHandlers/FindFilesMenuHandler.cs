@@ -71,12 +71,12 @@ public class FindFilesMenuHandler(ApplicationService applicationService) : BaseM
 				{
 					FileInfo fileInfo = new(filePath);
 					table.AddRow(
-						$"[green]{filePath}[/]",
+						$"[green]{Markup.Escape(filePath)}[/]",
 						$"[dim]{fileInfo.Length:N0} bytes[/]");
 				}
 
 				AnsiConsole.Write(table);
-				AnsiConsole.MarkupLine($"\n[green]Found {filePaths.Count} files.[/]");
+				AnsiConsole.MarkupLineInterpolated($"\n[green]Found {filePaths.Count} files.[/]");
 			});
 
 		WaitForKeyPress();

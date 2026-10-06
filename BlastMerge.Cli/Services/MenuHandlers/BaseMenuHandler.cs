@@ -81,7 +81,7 @@ public abstract class BaseMenuHandler(ApplicationService applicationService) : I
 	protected static void ShowMenuTitle(string title)
 	{
 		AnsiConsole.Clear();
-		AnsiConsole.MarkupLine($"[bold cyan]{title}[/]");
+		AnsiConsole.MarkupLineInterpolated($"[bold cyan]{title}[/]");
 		AnsiConsole.WriteLine();
 	}
 

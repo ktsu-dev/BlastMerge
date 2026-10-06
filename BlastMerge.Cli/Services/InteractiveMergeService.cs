@@ -49,8 +49,8 @@ public static class InteractiveMergeService
 	/// <param name="groupsToMerge">Number of groups that have multiple files to merge.</param>
 	private static void ShowIterativeMergeTable(IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups, int totalFiles, int groupsToMerge)
 	{
-		AnsiConsole.MarkupLine($"[green]Found {totalFiles} files in {fileGroups.Count} groups:[/]");
-		UIHelper.ShowInfo($"[cyan]{groupsToMerge} groups have multiple identical copies that can be merged.[/]");
+		AnsiConsole.MarkupLineInterpolated($"[green]Found {totalFiles} files in {fileGroups.Count} groups:[/]");
+		UIHelper.ShowInfo($"{groupsToMerge} groups have multiple identical copies that can be merged.");
 		AnsiConsole.WriteLine();
 
 		// Sort fileGroups by the first filename in each group for better organization
@@ -91,7 +91,7 @@ public static class InteractiveMergeService
 				$"[cyan]{groupIndex}[/]",
 				$"[dim]{group.Value.Count}[/]",
 				status,
-				$"[dim]{filenamesDisplay}[/]",
+				$"[dim]{Markup.Escape(filenamesDisplay)}[/]",
 				$"[dim]{shortHash}[/]");
 		}
 
@@ -146,9 +146,9 @@ public static class InteractiveMergeService
 	private static void ShowMergeInfo(FileSimilarity similarity)
 	{
 		AnsiConsole.WriteLine();
-		AnsiConsole.MarkupLine($"[yellow]Merging most similar files ({similarity.SimilarityScore:P1} similar):[/]");
-		AnsiConsole.MarkupLine($"  [green]{similarity.FilePath1}[/]");
-		AnsiConsole.MarkupLine($"  [green]{similarity.FilePath2}[/]");
+		AnsiConsole.MarkupLineInterpolated($"[yellow]Merging most similar files ({similarity.SimilarityScore:P1} similar):[/]");
+		AnsiConsole.MarkupLineInterpolated($"  [green]{similarity.FilePath1}[/]");
+		AnsiConsole.MarkupLineInterpolated($"  [green]{similarity.FilePath2}[/]");
 	}
 
 	/// <summary>

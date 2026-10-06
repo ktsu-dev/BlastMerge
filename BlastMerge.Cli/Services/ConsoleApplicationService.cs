@@ -49,7 +49,7 @@ public class ConsoleApplicationService : ApplicationService
 	{
 		ValidateDirectoryAndFileName(directory, fileName);
 
-		AnsiConsole.MarkupLine($"[cyan]Processing files matching pattern '[yellow]{fileName}[/]' in '[yellow]{directory}[/]'[/]");
+		AnsiConsole.MarkupLineInterpolated($"[cyan]Processing files matching pattern '[yellow]{fileName}[/]' in '[yellow]{directory}[/]'[/]");
 		AnsiConsole.WriteLine();
 
 		List<string> filePaths = DiscoverFiles(directory, fileName);
@@ -204,16 +204,27 @@ public class ConsoleApplicationService : ApplicationService
 	/// <param name="directory">The directory being processed.</param>
 	private static void ShowBatchHeader(BatchConfiguration batch, string directory)
 	{
-		AnsiConsole.MarkupLine($"[cyan]Processing batch configuration '[yellow]{batch.Name}[/]' in '[yellow]{directory}[/]'[/]");
+		AnsiConsole.MarkupLineInterpolated($"[cyan]Processing batch configuration '[yellow]{batch.Name}[/]' in '[yellow]{directory}[/]'[/]");
 		AnsiConsole.WriteLine();
 
-		AnsiConsole.MarkupLine($"[green]Found batch configuration: {batch.Name}[/]");
+		AnsiConsole.MarkupLineInterpolated($"[green]Found batch configuration: {batch.Name}[/]");
 		if (!string.IsNullOrEmpty(batch.Description))
 		{
-			AnsiConsole.MarkupLine($"[dim]{batch.Description}[/]");
+			AnsiConsole.MarkupLineInterpolated($"[dim]{batch.Description}[/]");
 		}
 		AnsiConsole.WriteLine();
 	}
+
+	/// <summary>
+	/// Writes a batch progress message to the console.
+	/// </summary>
+	/// <param name="progressMessage">The progress message, which may contain file paths and patterns.</param>
+	/// <remarks>
+	/// Progress messages carry user-supplied paths, and a bracketed folder such as Next.js's
+	/// <c>app/[id]</c> would otherwise be parsed as a Spectre.Console style tag and throw.
+	/// </remarks>
+	internal static void ReportBatchProgress(string progressMessage) =>
+		AnsiConsole.MarkupLineInterpolated($"[yellow]{progressMessage}[/]");
 
 	/// <summary>
 	/// Processes all patterns in the batch configuration using parallel optimization.
@@ -233,7 +244,7 @@ public class ConsoleApplicationService : ApplicationService
 			ConsoleMergeCallback,
 			ConsoleStatusCallback,
 			() => AlwaysContinue,
-			(progressMessage) => AnsiConsole.MarkupLine($"[yellow]{progressMessage}[/]")); // Direct output with phase separation
+			ReportBatchProgress); // Direct output with phase separation
 
 		int totalFilesFound = result?.PatternResults.Sum(pr => pr.FilesFound) ?? 0;
 		return (result?.TotalPatternsProcessed ?? 0, totalFilesFound, result);
@@ -303,7 +314,7 @@ public class ConsoleApplicationService : ApplicationService
 	private static void ShowBatchCompletion(int totalPatternsProcessed, int totalFilesFound, BatchResult? batchResult = null)
 	{
 		AnsiConsole.MarkupLine($"[green]Batch processing completed![/]");
-		AnsiConsole.MarkupLine($"[dim]Processed {totalPatternsProcessed} patterns, found {totalFilesFound} total files.[/]");
+		AnsiConsole.MarkupLineInterpolated($"[dim]Processed {totalPatternsProcessed} patterns, found {totalFilesFound} total files.[/]");
 
 		// Show detailed summary for all patterns processed
 		if (batchResult != null)
@@ -324,7 +335,7 @@ public class ConsoleApplicationService : ApplicationService
 		}
 
 		AnsiConsole.WriteLine();
-		AnsiConsole.MarkupLine($"[bold cyan]{OutputDisplay.BatchProcessingSummary}[/]");
+		AnsiConsole.MarkupLineInterpolated($"[bold cyan]{OutputDisplay.BatchProcessingSummary}[/]");
 		AnsiConsole.WriteLine();
 
 		// Create summary table
@@ -344,7 +355,7 @@ public class ConsoleApplicationService : ApplicationService
 			string displayName = GetDisplayName(patternResult);
 
 			summaryTable.AddRow(
-				$"[yellow]{displayName}[/]",
+				$"[yellow]{Markup.Escape(displayName)}[/]",
 				patternResult.FilesFound.ToString(),
 				patternResult.UniqueVersions.ToString(),
 				status,
@@ -361,14 +372,14 @@ public class ConsoleApplicationService : ApplicationService
 		if (mergeResults.Count > 0)
 		{
 			AnsiConsole.WriteLine();
-			AnsiConsole.MarkupLine($"[bold cyan]{OutputDisplay.DetailedMergeOperations}[/]");
+			AnsiConsole.MarkupLineInterpolated($"[bold cyan]{OutputDisplay.DetailedMergeOperations}[/]");
 			AnsiConsole.WriteLine();
 
 			foreach (PatternResult patternResult in mergeResults)
 			{
 				if (patternResult.MergeResult != null)
 				{
-					AnsiConsole.MarkupLine($"[bold yellow]Pattern: {patternResult.Pattern}[/]");
+					AnsiConsole.MarkupLineInterpolated($"[bold yellow]Pattern: {patternResult.Pattern}[/]");
 					ProgressReportingService.ShowDetailedMergeSummary(patternResult.MergeResult);
 				}
 			}
@@ -384,7 +395,7 @@ public class ConsoleApplicationService : ApplicationService
 	{
 		if (!patternResult.Success)
 		{
-			return $"[red]{patternResult.Message}[/]";
+			return $"[red]{Markup.Escape(patternResult.Message)}[/]";
 		}
 
 		if (patternResult.FilesFound == 0)
@@ -558,7 +569,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// <param name="errorMessage">The error message to display.</param>
 	private static void HandleInteractiveModeError(string errorMessage)
 	{
-		AnsiConsole.MarkupLine($"[red]{errorMessage}[/]");
+		AnsiConsole.MarkupLineInterpolated($"[red]{errorMessage}[/]");
 		AnsiConsole.WriteLine(CommonMessages.PressAnyKeyToContinue);
 		Console.ReadKey();
 		// Clear navigation on error to return to main menu
@@ -700,7 +711,7 @@ public class ConsoleApplicationService : ApplicationService
 	/// <param name="batchName">The batch name that was not found.</param>
 	private static void ShowBatchNotFoundMessage(string batchName)
 	{
-		AnsiConsole.MarkupLine($"[red]Batch configuration '{batchName}' not found.[/]");
+		AnsiConsole.MarkupLineInterpolated($"[red]Batch configuration '{batchName}' not found.[/]");
 		Console.WriteLine();
 		Console.WriteLine(CommonMessages.PressAnyKeyToContinue);
 		Console.ReadKey(true);
@@ -728,10 +739,10 @@ public class ConsoleApplicationService : ApplicationService
 	/// <param name="selectedBatch">The batch configuration.</param>
 	private static void ShowConfiguredSearchPaths(BatchConfiguration selectedBatch)
 	{
-		AnsiConsole.MarkupLine($"[green]Using configured search paths ({selectedBatch.SearchPaths.Count} paths)[/]");
+		AnsiConsole.MarkupLineInterpolated($"[green]Using configured search paths ({selectedBatch.SearchPaths.Count} paths)[/]");
 		foreach (string searchPath in selectedBatch.SearchPaths)
 		{
-			AnsiConsole.MarkupLine($"  [dim]• {searchPath}[/]");
+			AnsiConsole.MarkupLineInterpolated($"  [dim]• {searchPath}[/]");
 		}
 		AnsiConsole.WriteLine();
 	}
@@ -844,7 +855,7 @@ public class ConsoleApplicationService : ApplicationService
 		Ensure.NotNull(fileGroups);
 		Ensure.NotNull(directory);
 
-		AnsiConsole.MarkupLine($"[green]Found {totalFiles} files in {fileGroups.Count} groups:[/]");
+		AnsiConsole.MarkupLineInterpolated($"[green]Found {totalFiles} files in {fileGroups.Count} groups:[/]");
 		AnsiConsole.WriteLine();
 
 		// Sort fileGroups by the first filename in each group for better organization
@@ -885,7 +896,7 @@ public class ConsoleApplicationService : ApplicationService
 				$"[cyan]{groupIndex}[/]",
 				$"[dim]{group.Value.Count}[/]",
 				status,
-				$"[dim]{filenamesDisplay}[/]",
+				$"[dim]{Markup.Escape(filenamesDisplay)}[/]",
 				$"[dim]{shortHash}[/]");
 		}
 
@@ -975,7 +986,7 @@ public class ConsoleApplicationService : ApplicationService
 	private static void DisplayBlockHeader(DiffPlex.Model.DiffBlock diffBlock, int blockNumber)
 	{
 		string blockType = DetermineBlockType(diffBlock);
-		AnsiConsole.MarkupLine($"[yellow]{OutputDisplay.BlockPrefix} {blockNumber} ({blockType})[/]");
+		AnsiConsole.MarkupLineInterpolated($"[yellow]{OutputDisplay.BlockPrefix} {blockNumber} ({blockType})[/]");
 	}
 
 	/// <summary>

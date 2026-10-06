@@ -21,7 +21,7 @@ public static class FileDisplayService
 	{
 		Ensure.NotNull(fileGroups);
 		AnsiConsole.Clear();
-		UIHelper.ShowInfo("[bold cyan]Detailed File List[/]");
+		AnsiConsole.MarkupLine("[bold cyan]Detailed File List[/]");
 		AnsiConsole.WriteLine();
 
 		Tree tree = new("[bold]File Groups[/]");
@@ -85,7 +85,7 @@ public static class FileDisplayService
 			// Show all files in the group
 			foreach (string file in filePaths)
 			{
-				AnsiConsole.MarkupLine($"[dim]📁 {file}[/]");
+				AnsiConsole.MarkupLineInterpolated($"[dim]📁 {file}[/]");
 			}
 
 			// Compare first two files in the group

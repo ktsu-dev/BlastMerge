@@ -17,25 +17,25 @@ public static class UIHelper
 	/// Shows an error message in red color.
 	/// </summary>
 	/// <param name="message">The error message to display.</param>
-	public static void ShowError(string message) => AnsiConsole.MarkupLine($"[red]{message}[/]");
+	public static void ShowError(string message) => AnsiConsole.MarkupLineInterpolated($"[red]{message}[/]");
 
 	/// <summary>
 	/// Shows a warning message in yellow color.
 	/// </summary>
 	/// <param name="message">The warning message to display.</param>
-	public static void ShowWarning(string message) => AnsiConsole.MarkupLine($"[yellow]{message}[/]");
+	public static void ShowWarning(string message) => AnsiConsole.MarkupLineInterpolated($"[yellow]{message}[/]");
 
 	/// <summary>
 	/// Shows a success message in green color.
 	/// </summary>
 	/// <param name="message">The success message to display.</param>
-	public static void ShowSuccess(string message) => AnsiConsole.MarkupLine($"[green]{message}[/]");
+	public static void ShowSuccess(string message) => AnsiConsole.MarkupLineInterpolated($"[green]{message}[/]");
 
 	/// <summary>
 	/// Shows an info message in cyan color.
 	/// </summary>
 	/// <param name="message">The info message to display.</param>
-	public static void ShowInfo(string message) => AnsiConsole.MarkupLine($"[cyan]{message}[/]");
+	public static void ShowInfo(string message) => AnsiConsole.MarkupLineInterpolated($"[cyan]{message}[/]");
 
 	/// <summary>
 	/// Shows a dimmed message and waits for key press.
@@ -43,7 +43,7 @@ public static class UIHelper
 	/// <param name="message">The message to display. Defaults to standard continue message.</param>
 	public static void WaitForKeyPress(string message = "Press any key to continue...")
 	{
-		AnsiConsole.MarkupLine($"[dim]{message}[/]");
+		AnsiConsole.MarkupLineInterpolated($"[dim]{message}[/]");
 		Console.ReadKey();
 	}
 
