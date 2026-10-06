@@ -13,19 +13,24 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 public class BlastMergeAppDataResetTests : ConsoleTestBase
 {
 	/// <summary>
-	/// After a reset the next <c>Get</c> loads a new instance rather than returning the cached one.
+	/// A reset empties the cached instance and restores its default settings.
 	/// </summary>
 	[TestMethod]
-	public void ResetForTesting_DiscardsTheCachedInstance()
+	public void ResetForTesting_EmptiesTheCachedInstance()
 	{
 		BlastMergeAppData before = BlastMergeAppData.Get();
 		before.InputHistory["prompt"] = ["unsaved"];
+		before.BatchConfigurations["batch"] = new BatchConfiguration { Name = "batch" };
+		before.RecentBatch = new RecentBatchInfo { BatchName = "batch" };
+		before.Settings.MaxHistoryEntriesPerPrompt = 3;
 
 		BlastMergeAppData.ResetForTesting();
 		BlastMergeAppData after = BlastMergeAppData.Get();
 
-		Assert.AreNotSame(before, after);
-		Assert.IsFalse(after.InputHistory.ContainsKey("prompt"));
+		Assert.IsEmpty(after.InputHistory);
+		Assert.IsEmpty(after.BatchConfigurations);
+		Assert.IsNull(after.RecentBatch);
+		Assert.AreEqual(new ApplicationSettings().MaxHistoryEntriesPerPrompt, after.Settings.MaxHistoryEntriesPerPrompt);
 	}
 
 	/// <summary>

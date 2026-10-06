@@ -171,10 +171,9 @@ public class AppDataBatchManagerCoverageTests
 	/// configured here, on the thread that runs the test.
 	/// </summary>
 	/// <remarks>
-	/// <see cref="BlastMergeAppData.ResetForTesting"/> cannot replace the shared instance with the
-	/// ktsu.AppDataStorage version referenced here, so the instance's state is cleared by hand instead,
-	/// and saved before the real file system is restored so that no queued save is left to be flushed
-	/// to the user's real application data when the process exits.
+	/// The shared instance is emptied before and after the test, and saved before the real file system
+	/// is restored so that no queued save is left to be flushed to the user's real application data
+	/// when the process exits.
 	/// </remarks>
 	/// <param name="test">The test body.</param>
 	private static void WithMockAppData(Action test)
@@ -196,11 +195,5 @@ public class AppDataBatchManagerCoverageTests
 	/// <summary>
 	/// Empties the shared application data and restores its default settings.
 	/// </summary>
-	private static void ClearState()
-	{
-		BlastMergeAppData appData = BlastMergeAppData.Get();
-		appData.BatchConfigurations.Clear();
-		appData.RecentBatch = null;
-		appData.Settings = new ApplicationSettings();
-	}
+	private static void ClearState() => BlastMergeAppData.ResetForTesting();
 }

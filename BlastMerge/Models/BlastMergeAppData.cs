@@ -2,7 +2,6 @@
 
 namespace ktsu.BlastMerge.Models;
 
-using System.Reflection;
 using ktsu.AppDataStorage;
 
 /// <summary>
@@ -36,33 +35,21 @@ public class BlastMergeAppData : AppData<BlastMergeAppData>
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// ktsu.AppDataStorage holds the singleton in a static read-only <see cref="Lazy{T}"/>, and offers no
-	/// way to reset it. The field itself cannot be replaced: the runtime refuses to write a static
-	/// read-only field once its type has been initialised. So the cached <see cref="Lazy{T}"/> is reset
-	/// in place instead, by copying the state of a freshly constructed, not yet evaluated one over it.
-	/// The next call to <see cref="AppData{T}.Get"/> then loads the data again from whichever file
-	/// system is configured at that point.
+	/// ktsu.AppDataStorage caches the singleton and offers no way to discard it, so the cached instance is
+	/// emptied in place instead: its batches, input history and recent batch are cleared and its settings
+	/// are restored to their defaults. A property added to this class needs resetting here too.
 	/// </para>
 	/// <para>
 	/// This used to clear a static field named <c>_instance</c>, which the base class does not have,
-	/// so it silently did nothing and one instance lived for the whole test run.
+	/// so it silently did nothing and one instance's state lived for the whole test run.
 	/// </para>
 	/// </remarks>
-	/// <exception cref="InvalidOperationException">
-	/// The base class no longer keeps its singleton where this method expects it.
-	/// </exception>
 	public static void ResetForTesting()
 	{
-		PropertyInfo? stateProperty = typeof(AppData<BlastMergeAppData>).GetProperty("InternalState", BindingFlags.NonPublic | BindingFlags.Static);
-		if (stateProperty?.GetValue(null) is not Lazy<BlastMergeAppData> cached)
-		{
-			throw new InvalidOperationException("ktsu.AppDataStorage no longer keeps its singleton in a static Lazy<T> named InternalState; update ResetForTesting.");
-		}
-
-		Lazy<BlastMergeAppData> fresh = new(LoadOrCreate, LazyThreadSafetyMode.ExecutionAndPublication);
-		foreach (FieldInfo field in typeof(Lazy<BlastMergeAppData>).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public))
-		{
-			field.SetValue(cached, field.GetValue(fresh));
-		}
+		BlastMergeAppData appData = Get();
+		appData.BatchConfigurations.Clear();
+		appData.InputHistory.Clear();
+		appData.RecentBatch = null;
+		appData.Settings = new();
 	}
 }

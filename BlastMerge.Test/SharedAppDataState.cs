@@ -11,9 +11,8 @@ using AppDataStorage = ktsu.AppDataStorage.AppData;
 /// Puts the shared application data into a known state for tests that read or write input history.
 /// </summary>
 /// <remarks>
-/// <see cref="ConsoleTestBase"/> already discards the instance before each test. These helpers are for
-/// tests that swap in a file system they can read, where the instance must be emptied in place so the
-/// first load does not write a file the test then mistakes for its own save.
+/// <see cref="ConsoleTestBase"/> already empties the instance before each test. These helpers are for
+/// tests that swap in a file system they can read, and empty the instance again once it is in place.
 /// </remarks>
 internal static class SharedAppDataState
 {
@@ -23,14 +22,9 @@ internal static class SharedAppDataState
 	private const string SaveFileName = "blast_merge_app_data.json";
 
 	/// <summary>
-	/// Empties the input history and restores the default settings.
+	/// Empties the shared application data and restores its default settings.
 	/// </summary>
-	public static void Reset()
-	{
-		BlastMergeAppData appData = BlastMergeAppData.Get();
-		appData.InputHistory.Clear();
-		appData.Settings = new();
-	}
+	public static void Reset() => BlastMergeAppData.ResetForTesting();
 
 	/// <summary>
 	/// Points application data storage at a new in-memory file system the caller can inspect.
