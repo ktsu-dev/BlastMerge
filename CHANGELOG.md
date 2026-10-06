@@ -1,3 +1,30 @@
+## v1.11.0 (minor)
+
+Changes since v1.10.0:
+
+- Reset the app data singleton in place without reflection ([@Claude](https://github.com/Claude))
+- Give every test an assertion and assert booleans directly ([@Claude](https://github.com/Claude))
+- Join test paths with Path.Join rather than Path.Combine ([@Claude](https://github.com/Claude))
+- Keep test saves out of the real user profile ([@Claude](https://github.com/Claude))
+- Add tests for the core library's uncovered paths ([@Claude](https://github.com/Claude))
+- Make BlastMergeAppData.ResetForTesting actually reset the singleton ([@Claude](https://github.com/Claude))
+- Add tests for the console application service and batch menu ([@Claude](https://github.com/Claude))
+- Add tests for the CLI menu handlers ([@Claude](https://github.com/Claude))
+- Add tests for the CLI sync, merge and async services ([@Claude](https://github.com/Claude))
+- Add tests for the CLI display and progress services ([@Claude](https://github.com/Claude))
+- Route console key reads through Spectre and add a console test base ([@Claude](https://github.com/Claude))
+- Escape paths and names before they reach Spectre.Console markup [patch] (#76) ([@matt-edmondson](https://github.com/matt-edmondson))
+- test: cover Utf8BomDetector on missing, empty and short files [patch] ([@Claude](https://github.com/Claude))
+- test: cover the batch editor's pattern validation [patch] ([@Claude](https://github.com/Claude))
+- fix: keep the UTF-8 byte order mark on merged files [patch] ([@Claude](https://github.com/Claude))
+- fix: strip a leading **/ from file patterns so the example pattern matches [patch] ([@Claude](https://github.com/Claude))
+- Move CI onto the shared ci-shared.yml pipeline ([@Claude](https://github.com/Claude))
+- Merge main into fix/39-line-ending-only-differences ([@Claude](https://github.com/Claude))
+- test: build the test paths with Path.Join [patch] ([@Claude](https://github.com/Claude))
+- fix: report line-ending and final-newline differences instead of calling the files identical [patch] ([@Claude](https://github.com/Claude))
+- fix: treat leading and trailing whitespace as a difference when comparing and diffing [patch] ([@Claude](https://github.com/Claude))
+- fix: drop the phantom empty line at EOF from unified diffs [patch] ([@Claude](https://github.com/Claude))
+
 ## v1.10.6 (patch)
 
 Changes since v1.10.5:
