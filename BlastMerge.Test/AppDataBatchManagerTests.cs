@@ -4,18 +4,18 @@ namespace ktsu.BlastMerge.Test;
 
 using System;
 using System.Collections.Generic;
+using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using AppDataStorage = ktsu.AppDataStorage.AppData;
 
 /// <summary>
 /// Tests for the AppDataBatchManager utility class
 ///
-/// NOTE: This test class uses real filesystem operations through ktsu.AppDataStorage
-/// and cannot use mock filesystems. Therefore, tests may experience isolation issues
-/// when run concurrently. The [DoNotParallelize] attribute prevents concurrent execution
-/// within this class, and individual tests clear BatchConfigurations to ensure isolation.
+/// Application data is redirected to an in-memory file system, so saves never reach the real
+/// user profile. [DoNotParallelize] keeps the shared singleton to one test at a time.
 /// </summary>
 [TestClass]
 [DoNotParallelize]
@@ -28,6 +28,8 @@ public class AppDataBatchManagerTests
 	[TestInitialize]
 	public void Setup()
 	{
+		AppDataStorage.ConfigureForTesting(() => new MockFileSystem());
+
 		// Reset the singleton instance to ensure test isolation
 		BlastMergeAppData.ResetForTesting();
 
@@ -53,8 +55,10 @@ public class AppDataBatchManagerTests
 	[TestCleanup]
 	public void Cleanup()
 	{
-		// Reset the singleton instance to ensure test isolation
+		// Flush any queued save while the in-memory file system is still in place, then reset
+		BlastMergeAppData.Get().Save();
 		BlastMergeAppData.ResetForTesting();
+		AppDataStorage.ResetFileSystem();
 
 		// Restore original environment variable
 		if (!string.IsNullOrEmpty(_originalAppDataPath))

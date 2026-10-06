@@ -89,6 +89,8 @@ public abstract class ConsoleTestBase
 	public void ConsoleTestCleanup()
 	{
 		NavigationHistory.Clear();
+
+		FlushQueuedSave();
 		BlastMergeAppData.ResetForTesting();
 		AppDataStorage.ResetFileSystem();
 
@@ -96,6 +98,26 @@ public abstract class ConsoleTestBase
 		Environment.CurrentDirectory = originalCurrentDirectory;
 		SecureTempFileHelper.SafeDeleteTempDirectory(TempDirectory);
 		Console.Dispose();
+	}
+
+	/// <summary>
+	/// Saves the application data to the in-memory file system before it is removed.
+	/// </summary>
+	/// <remarks>
+	/// A save the code under test queued is otherwise flushed at process exit, on a thread that never
+	/// saw the in-memory file system, and lands in the real user profile.
+	/// </remarks>
+	private static void FlushQueuedSave()
+	{
+		try
+		{
+			BlastMergeAppData.Get().Save();
+		}
+		catch (IOException)
+		{
+			// The test broke the in-memory file system on purpose to exercise a failed save, so
+			// there is nothing to flush and nowhere it could go.
+		}
 	}
 
 	/// <summary>
