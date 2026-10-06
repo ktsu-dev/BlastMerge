@@ -44,7 +44,7 @@ public static class UIHelper
 	public static void WaitForKeyPress(string message = "Press any key to continue...")
 	{
 		AnsiConsole.MarkupLineInterpolated($"[dim]{message}[/]");
-		Console.ReadKey();
+		AnsiConsole.Console.Input.ReadKey(false);
 	}
 
 	/// <summary>

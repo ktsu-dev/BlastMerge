@@ -571,7 +571,7 @@ public class ConsoleApplicationService : ApplicationService
 	{
 		AnsiConsole.MarkupLineInterpolated($"[red]{errorMessage}[/]");
 		AnsiConsole.WriteLine(CommonMessages.PressAnyKeyToContinue);
-		Console.ReadKey();
+		AnsiConsole.Console.Input.ReadKey(false);
 		// Clear navigation on error to return to main menu
 		NavigationHistory.Clear();
 	}
@@ -700,9 +700,9 @@ public class ConsoleApplicationService : ApplicationService
 	{
 		AnsiConsole.MarkupLine("[yellow]No recent batch configurations found.[/]");
 		AnsiConsole.MarkupLine("[dim]Run a batch configuration first to use this shortcut.[/]");
-		Console.WriteLine();
-		Console.WriteLine(CommonMessages.PressAnyKeyToContinue);
-		Console.ReadKey(true);
+		AnsiConsole.WriteLine();
+		AnsiConsole.WriteLine(CommonMessages.PressAnyKeyToContinue);
+		AnsiConsole.Console.Input.ReadKey(true);
 	}
 
 	/// <summary>
@@ -712,9 +712,9 @@ public class ConsoleApplicationService : ApplicationService
 	private static void ShowBatchNotFoundMessage(string batchName)
 	{
 		AnsiConsole.MarkupLineInterpolated($"[red]Batch configuration '{batchName}' not found.[/]");
-		Console.WriteLine();
-		Console.WriteLine(CommonMessages.PressAnyKeyToContinue);
-		Console.ReadKey(true);
+		AnsiConsole.WriteLine();
+		AnsiConsole.WriteLine(CommonMessages.PressAnyKeyToContinue);
+		AnsiConsole.Console.Input.ReadKey(true);
 	}
 
 	/// <summary>
@@ -779,9 +779,9 @@ public class ConsoleApplicationService : ApplicationService
 	private static void ShowCompletionMessage()
 	{
 		AnsiConsole.MarkupLine("[green]Batch operation completed.[/]");
-		Console.WriteLine();
-		Console.WriteLine(CommonMessages.PressAnyKeyToContinue);
-		Console.ReadKey(true);
+		AnsiConsole.WriteLine();
+		AnsiConsole.WriteLine(CommonMessages.PressAnyKeyToContinue);
+		AnsiConsole.Console.Input.ReadKey(true);
 	}
 
 	/// <summary>

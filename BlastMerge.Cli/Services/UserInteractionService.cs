@@ -33,7 +33,7 @@ public static class UserInteractionService
 	{
 		Ensure.NotNull(message);
 		AnsiConsole.WriteLine(message);
-		Console.ReadKey();
+		AnsiConsole.Console.Input.ReadKey(false);
 	}
 
 	/// <summary>
