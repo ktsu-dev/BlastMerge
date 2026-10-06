@@ -119,7 +119,7 @@ public class AppDataBatchManagerTests
 		Assert.AreEqual("TestBatch", retrievedBatch.Name);
 		Assert.IsTrue(retrievedBatch.FilePatterns.Contains("*.txt"), "Retrieved batch should contain file pattern '*.txt'");
 		Assert.IsTrue(retrievedBatch.FilePatterns.Contains("*.cs"), "Retrieved batch should contain file pattern '*.cs'");
-		Assert.AreEqual(true, retrievedBatch.SkipEmptyPatterns);
+		Assert.IsTrue(retrievedBatch.SkipEmptyPatterns);
 	}
 
 	[TestMethod]
@@ -218,8 +218,8 @@ public class AppDataBatchManagerTests
 
 		Assert.IsNotNull(retrievedBatch1);
 		Assert.IsNotNull(retrievedBatch2);
-		Assert.AreEqual(false, retrievedBatch1.SkipEmptyPatterns);
-		Assert.AreEqual(true, retrievedBatch2.SkipEmptyPatterns);
+		Assert.IsFalse(retrievedBatch1.SkipEmptyPatterns);
+		Assert.IsTrue(retrievedBatch2.SkipEmptyPatterns);
 	}
 
 	[TestMethod]
@@ -332,7 +332,7 @@ public class AppDataBatchManagerTests
 		Assert.IsNotNull(retrievedBatch);
 		Assert.AreEqual(2, retrievedBatch.FilePatterns.Count);
 		Assert.IsTrue(retrievedBatch.FilePatterns.Contains("*.cs"), "Updated batch should contain the new file pattern '*.cs'");
-		Assert.AreEqual(true, retrievedBatch.SkipEmptyPatterns);
+		Assert.IsTrue(retrievedBatch.SkipEmptyPatterns);
 	}
 
 	[TestMethod]
@@ -355,7 +355,7 @@ public class AppDataBatchManagerTests
 		Assert.AreEqual("ComplexBatch", retrievedBatch.Name);
 		Assert.AreEqual(4, retrievedBatch.FilePatterns.Count);
 		Assert.IsTrue(retrievedBatch.FilePatterns.Contains("**/*.config"), "Complex batch should contain the glob pattern '**/*.config'");
-		Assert.AreEqual(true, retrievedBatch.SkipEmptyPatterns);
+		Assert.IsTrue(retrievedBatch.SkipEmptyPatterns);
 	}
 
 	[TestMethod]

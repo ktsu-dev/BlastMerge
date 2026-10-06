@@ -414,17 +414,16 @@ public class AsyncFileDifferTests : MockFileSystemTestBase
 		// This test verifies the method accepts a cancellation token properly
 		try
 		{
-			await AsyncFileDiffer.CalculateFileSimilarityAsync(file1, file2, cts.Token).ConfigureAwait(false);
+			double similarity = await AsyncFileDiffer.CalculateFileSimilarityAsync(file1, file2, cts.Token).ConfigureAwait(false);
+
+			// The operation completed before cancellation was checked, which is also valid
+			Assert.IsTrue(similarity is >= 0.0 and <= 1.0, $"Similarity should be between 0 and 1, but was {similarity}");
 		}
-		catch (TaskCanceledException)
+		catch (OperationCanceledException ex)
 		{
-			// Expected - specific cancellation exception
+			// Expected; TaskCanceledException derives from OperationCanceledException
+			Assert.AreEqual(cts.Token, ex.CancellationToken);
 		}
-		catch (OperationCanceledException)
-		{
-			// Also expected - base cancellation exception
-		}
-		// If no exception, the operation completed before cancellation was checked (also valid)
 	}
 
 	#endregion
