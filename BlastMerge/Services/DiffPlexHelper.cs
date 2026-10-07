@@ -56,6 +56,37 @@ public static class DiffPlexHelper
 	}
 
 	/// <summary>
+	/// Creates a line-based diff result between two line arrays, so the diff blocks index into
+	/// exactly the arrays given. Joining the lines and letting DiffPlex split them again is not
+	/// equivalent: DiffPlex reads empty text as zero lines, so a side holding one empty line would
+	/// vanish from the diff and its line would be carried into a merge as unchanged content.
+	/// </summary>
+	/// <param name="lines1">Lines of the first version</param>
+	/// <param name="lines2">Lines of the second version</param>
+	/// <returns>DiffPlex DiffResult with DiffBlocks</returns>
+	public static DiffResult CreateLineDiffsFromLines(string[] lines1, string[] lines2)
+	{
+		Ensure.NotNull(lines1);
+		Ensure.NotNull(lines2);
+
+		return Differ.Instance.CreateDiffs(LineArrayChunker.OldText, LineArrayChunker.NewText,
+			ignoreWhiteSpace: false, ignoreCase: false, new LineArrayChunker(lines1, lines2));
+	}
+
+	/// <summary>
+	/// Hands DiffPlex prepared line arrays in place of splitting text. DiffPlex asks the chunker to
+	/// split the old and the new text it was given, so those are placeholders naming which array
+	/// to return; they are never empty, so DiffPlex never skips the chunker.
+	/// </summary>
+	private sealed class LineArrayChunker(string[] oldLines, string[] newLines) : IChunker
+	{
+		internal const string OldText = "old";
+		internal const string NewText = "new";
+
+		public IReadOnlyList<string> Chunk(string text) => text == OldText ? oldLines : newLines;
+	}
+
+	/// <summary>
 	/// Gets context lines around a diff block (ProjectDirector style)
 	/// </summary>
 	/// <param name="linesOld">Lines from the old version</param>

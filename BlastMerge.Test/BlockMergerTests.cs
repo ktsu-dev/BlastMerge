@@ -427,4 +427,22 @@ public class BlockMergerTests
 		Assert.IsInstanceOfType<IReadOnlyList<string>>(result.MergedLines);
 		Assert.IsInstanceOfType<IReadOnlyCollection<MergeConflict>>(result.Conflicts);
 	}
+
+	[TestMethod]
+	[DataRow("\n", "x\n", new[] { "x" })]
+	[DataRow("\n", "\nx\n", new[] { "", "x" })]
+	[DataRow("\n\n", "x\n", new[] { "x" })]
+	public void PerformManualBlockSelection_TakingVersion2_GivesVersion2EvenWhenVersion1IsOneBlankLine(string content1, string content2, string[] expected)
+	{
+		// Arrange
+		string[] lines1 = LineEndingDetector.SplitLines(content1);
+		string[] lines2 = LineEndingDetector.SplitLines(content2);
+
+		// Act
+		MergeResult result = BlockMerger.PerformManualBlockSelection(lines1, lines2,
+			(block, context, num) => BlockChoice.UseVersion2, "\n");
+
+		// Assert
+		CollectionAssert.AreEqual(expected, result.MergedLines.ToArray());
+	}
 }
