@@ -277,10 +277,19 @@ public static partial class BatchProcessor
 	{
 		progressCallback?.Invoke($"📂 Scanning {GetDistinctPatterns(batch).Count} patterns across search paths...");
 
-		// Create a wrapper for the progress callback to show file paths as they're discovered
+		// Create a wrapper for the progress callback to show file paths as they're discovered. Patterns
+		// are searched in parallel, so the wrapper serializes the calls, as the hashing phase does:
+		// a console sink is not safe to write from several threads at once
+		object progressLock = new();
 		Action<string>? fileDiscoveryCallback = progressCallback != null
-			? filePath => progressCallback($"  📄 Found: {filePath}")
-			: null;
+			? filePath =>
+			{
+				lock (progressLock)
+				{
+					progressCallback($"  📄 Found: {filePath}");
+				}
+			}
+		: null;
 
 		Dictionary<string, IReadOnlyCollection<string>> result = GatherAllPatternFiles(batch, directory, fileDiscoveryCallback, fileSystem);
 
