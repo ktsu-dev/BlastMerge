@@ -457,6 +457,36 @@ public class BatchOperationsMenuHandlerTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// Answering the description prompt with a dash clears the description.
+	/// </summary>
+	[TestMethod]
+	public void Edit_DashForDescription_ClearsTheDescription()
+	{
+		BatchConfiguration original = new()
+		{
+			Name = "Docs",
+			Description = "temp - delete me",
+			FilePatterns = ["README.md"],
+		};
+		Assert.IsTrue(AppDataBatchManager.SaveBatch(original));
+
+		Manage(Edit, () =>
+		{
+			SelectIndex(0);
+			Answer("-");
+			Answer("y", string.Empty);
+			Answer("n", "n");
+			Answer(string.Empty, string.Empty);
+			PressAnyKey();
+		});
+
+		BatchConfiguration? batch = AppDataBatchManager.LoadBatch("Docs");
+		Assert.IsNotNull(batch);
+		Assert.AreEqual(string.Empty, batch.Description);
+		Assert.AreSequenceEqual(["README.md"], batch.FilePatterns);
+	}
+
+	/// <summary>
 	/// Duplicating copies the patterns under the new name with a description naming the source.
 	/// </summary>
 	[TestMethod]
