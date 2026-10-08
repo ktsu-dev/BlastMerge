@@ -149,10 +149,10 @@ public class BatchProcessorCoverageTests : MockFileSystemTestBase
 	}
 
 	/// <summary>
-	/// A file found by a wildcard pattern that is neither "*" nor "*.ext" is attributed to its own name.
+	/// A file found by a wildcard pattern that is neither "*" nor "*.ext" is attributed to that pattern.
 	/// </summary>
 	[TestMethod]
-	public void ProcessBatchWithDiscretePhases_QuestionMarkPattern_AttributesFileByName()
+	public void ProcessBatchWithDiscretePhases_QuestionMarkPattern_AttributesFileToPattern()
 	{
 		string root = CreateDirectory("question");
 		CreateFile(Path.Join("question", "ab.txt"), "x");
@@ -162,7 +162,7 @@ public class BatchProcessorCoverageTests : MockFileSystemTestBase
 
 		Assert.IsTrue(result.Success);
 		Assert.HasCount(1, result.PatternResults);
-		Assert.AreEqual("ab.txt", result.PatternResults[0].Pattern);
+		Assert.AreEqual("a?.txt", result.PatternResults[0].Pattern);
 		Assert.AreEqual("ab.txt", result.PatternResults[0].FileName);
 		Assert.AreEqual("Only one file found, no action needed", result.PatternResults[0].Message);
 	}
