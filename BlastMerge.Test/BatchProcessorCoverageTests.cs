@@ -138,7 +138,8 @@ public class BatchProcessorCoverageTests : MockFileSystemTestBase
 				Interlocked.Increment(ref overlaps);
 			}
 
-			Thread.Sleep(5);
+			// Hold the call open briefly so a second, unserialized call would arrive while this one runs
+			SpinWait.SpinUntil(() => Volatile.Read(ref inside) > 1, 5);
 			Interlocked.Decrement(ref inside);
 		}
 
