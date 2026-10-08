@@ -20,7 +20,7 @@ public static class ProgressReportingService
 	{
 		Ensure.NotNull(status);
 		AnsiConsole.MarkupLineInterpolated($"[yellow]Merge {status.CurrentIteration}: {status.MostSimilarPair?.FilePath1} <-> {status.MostSimilarPair?.FilePath2}[/]");
-		AnsiConsole.MarkupLineInterpolated($"[dim]Similarity: {status.MostSimilarPair?.SimilarityScore:F1} | Remaining files: {status.RemainingFilesCount}[/]");
+		AnsiConsole.MarkupLineInterpolated($"[dim]Similarity: {status.MostSimilarPair?.SimilarityScore:P1} | Remaining files: {status.RemainingFilesCount}[/]");
 	}
 
 	/// <summary>
@@ -96,7 +96,7 @@ public static class ProgressReportingService
 					operation.FilePath1, operation.FilePath2);
 
 				string mergedFiles = Markup.Escape($"{label1} ↔ {label2}");
-				string similarity = $"{operation.SimilarityScore:F1}%";
+				string similarity = $"{operation.SimilarityScore:P1}";
 				string conflicts = operation.ConflictsResolved > 0
 					? $"[red]{operation.ConflictsResolved}[/]"
 					: "[green]0[/]";
