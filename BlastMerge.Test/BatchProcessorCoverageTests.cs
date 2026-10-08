@@ -5,6 +5,8 @@ namespace ktsu.BlastMerge.Test;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Threading;
 using ktsu.BlastMerge.Models;
 using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -104,6 +106,46 @@ public class BatchProcessorCoverageTests : MockFileSystemTestBase
 
 		Assert.IsFalse(result.Success);
 		Assert.AreEqual("Error during batch processing: progress sink is gone", result.Summary);
+	}
+
+	/// <summary>
+	/// Files found while patterns are gathered in parallel are reported one at a time, so a progress
+	/// sink that is not thread-safe, such as a console, is never written from two threads at once.
+	/// </summary>
+	[TestMethod]
+	public void ProcessBatchWithDiscretePhases_ParallelGathering_ReportsFoundFilesOneAtATime()
+	{
+		string root = CreateDirectory("parallel");
+		string[] patterns = [.. Enumerable.Range(0, 8).Select(i => $"file{i}.txt")];
+		foreach (string pattern in patterns)
+		{
+			CreateFile(Path.Join("parallel", "a", pattern), "x");
+			CreateFile(Path.Join("parallel", "b", pattern), "x");
+		}
+
+		BatchConfiguration batch = new() { Name = "parallel", FilePatterns = [.. patterns] };
+		int inside = 0;
+		int overlaps = 0;
+		void Progress(string message)
+		{
+			if (!message.Contains("Found:", StringComparison.Ordinal))
+			{
+				return;
+			}
+
+			if (Interlocked.Increment(ref inside) > 1)
+			{
+				Interlocked.Increment(ref overlaps);
+			}
+
+			Thread.Sleep(5);
+			Interlocked.Decrement(ref inside);
+		}
+
+		BatchResult result = BatchProcessor.ProcessBatchWithDiscretePhases(batch, root, NoMerge, IgnoreStatus, KeepGoing, Progress, fileSystem: MockFileSystem);
+
+		Assert.IsTrue(result.Success);
+		Assert.AreEqual(0, overlaps);
 	}
 
 	/// <summary>
