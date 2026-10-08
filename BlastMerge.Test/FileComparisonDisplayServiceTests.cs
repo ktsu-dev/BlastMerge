@@ -217,6 +217,27 @@ public class FileComparisonDisplayServiceTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// Unchanged lines, file headers and chunk headers that contain markup characters are printed
+	/// literally instead of being parsed as Spectre markup.
+	/// </summary>
+	[TestMethod]
+	public void ShowGitStyleDiff_UnchangedLinesAndPathsWithBrackets_AreRenderedLiterally()
+	{
+		string left = WriteFile("[v1]a.cs", "[TestMethod]\nint[] values = [];\nold\n");
+		string right = WriteFile("[v2]a.cs", "[TestMethod]\nint[] values = [];\nnew\n");
+
+		FileComparisonDisplayService.ShowGitStyleDiff(left, right);
+
+		StringAssert.Contains(Output, "Git-style Diff");
+		StringAssert.Contains(Output, " [TestMethod]");
+		StringAssert.Contains(Output, " int[] values = [];");
+		StringAssert.Contains(Output, "[v1]a.cs");
+		StringAssert.Contains(Output, "[v2]a.cs");
+		StringAssert.Contains(Output, "-old");
+		StringAssert.Contains(Output, "+new");
+	}
+
+	/// <summary>
 	/// A side-by-side diff of identical files reports them identical without a table.
 	/// </summary>
 	[TestMethod]
