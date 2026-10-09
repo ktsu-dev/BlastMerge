@@ -331,4 +331,15 @@ public class FileDifferMergeFilesTests : MockFileSystemTestBase
 		CollectionAssert.AreEqual(new[] { "a", "b", "c" }, result.MergedLines.ToArray());
 		Assert.AreEqual(0, result.Conflicts.Count);
 	}
+
+	[TestMethod]
+	public void MergeLines_WithOneBlankLineAgainstOneLine_DoesNotCarryTheBlankLineAfterTheBlock()
+	{
+		// Act
+		MergeResult result = FileDiffer.MergeLines([""], ["x"], "\n");
+
+		// Assert: the blank line is part of the changed block, so nothing follows the block
+		Assert.AreEqual(">>>>>>> Version 2", result.MergedLines[^1]);
+		Assert.AreEqual(1, result.Conflicts.Count);
+	}
 }

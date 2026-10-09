@@ -32,11 +32,8 @@ public static class BlockMerger
 		Ensure.NotNull(lines2);
 		Ensure.NotNull(blockChoiceCallback);
 
-		string content1 = string.Join(Environment.NewLine, lines1);
-		string content2 = string.Join(Environment.NewLine, lines2);
-
-		// Use DiffPlex directly to get proper diff blocks
-		DiffResult diffResult = DiffPlexHelper.CreateLineDiffsFromContent(content1, content2);
+		// Diff the arrays themselves, so every block indexes into lines1 and lines2 as given
+		DiffResult diffResult = DiffPlexHelper.CreateLineDiffsFromLines(lines1, lines2);
 
 		List<string> mergedLines = [];
 		List<MergeConflict> conflicts = [];

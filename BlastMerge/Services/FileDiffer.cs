@@ -792,9 +792,7 @@ public static class FileDiffer
 		// block regardless of whether it is a modification, a pure insertion, or a pure
 		// deletion. Replaying per-line differences instead loses that position information
 		// for one-sided changes, which drops and duplicates lines.
-		string content1 = string.Join(Environment.NewLine, lines1);
-		string content2 = string.Join(Environment.NewLine, lines2);
-		DiffResult diffResult = DiffPlexHelper.CreateLineDiffsFromContent(content1, content2);
+		DiffResult diffResult = DiffPlexHelper.CreateLineDiffsFromLines(lines1, lines2);
 
 		List<string> mergedLines = [];
 		List<MergeConflict> conflicts = [];
