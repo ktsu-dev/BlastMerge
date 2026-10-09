@@ -41,12 +41,12 @@ public class ProgressReportingServiceTests : ConsoleTestBase
 	[TestMethod]
 	public void ReportMergeStatus_WithPair_ShowsPairSimilarityAndRemaining()
 	{
-		MergeSessionStatus status = new(2, 4, 1, new FileSimilarity("one.txt", "two.txt", 87.5));
+		MergeSessionStatus status = new(2, 4, 1, new FileSimilarity("one.txt", "two.txt", 0.875));
 
 		ProgressReportingService.ReportMergeStatus(status);
 
 		StringAssert.Contains(Output, "Merge 2: one.txt <-> two.txt");
-		StringAssert.Contains(Output, $"Similarity: {87.5:F1} | Remaining files: 4");
+		StringAssert.Contains(Output, $"Similarity: {0.875:P1} | Remaining files: 4");
 	}
 
 	/// <summary>
@@ -124,7 +124,7 @@ public class ProgressReportingServiceTests : ConsoleTestBase
 					OperationNumber = 1,
 					FilePath1 = TestPaths.Rooted("repo", "alpha", "file.txt"),
 					FilePath2 = TestPaths.Rooted("repo", "beta", "file.txt"),
-					SimilarityScore = 75,
+					SimilarityScore = 0.75,
 					FilesAffected = 2,
 					ConflictsResolved = 3,
 					MergedLineCount = 40,
@@ -134,7 +134,7 @@ public class ProgressReportingServiceTests : ConsoleTestBase
 					OperationNumber = 2,
 					FilePath1 = TestPaths.Rooted("repo", "beta", "file.txt"),
 					FilePath2 = TestPaths.Rooted("repo", "gamma", "file.txt"),
-					SimilarityScore = 90,
+					SimilarityScore = 0.9,
 					FilesAffected = 4,
 					ConflictsResolved = 0,
 					MergedLineCount = 42,
@@ -153,10 +153,10 @@ public class ProgressReportingServiceTests : ConsoleTestBase
 		StringAssert.Contains(Output, "Individual Operations:");
 
 		string firstOperation = LineContaining("alpha/file.txt ↔ beta/file.txt");
-		StringAssert.Contains(firstOperation, $"{75.0:F1}%");
+		StringAssert.Contains(firstOperation, $"{0.75:P1}");
 		StringAssert.Contains(firstOperation, "40");
 		string secondOperation = LineContaining("beta/file.txt ↔ gamma/file.txt");
-		StringAssert.Contains(secondOperation, $"{90.0:F1}%");
+		StringAssert.Contains(secondOperation, $"{0.9:P1}");
 
 		StringAssert.Contains(Output, "Successfully merged 3 file groups into a single result through 2 operations.");
 	}
@@ -179,7 +179,7 @@ public class ProgressReportingServiceTests : ConsoleTestBase
 					OperationNumber = 1,
 					FilePath1 = TestPaths.Rooted("one", "x.txt"),
 					FilePath2 = TestPaths.Rooted("two", "x.txt"),
-					SimilarityScore = 10,
+					SimilarityScore = 0.1,
 				},
 			],
 		};
