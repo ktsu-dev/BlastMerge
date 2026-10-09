@@ -511,7 +511,7 @@ public static class FileComparisonDisplayService
 
 		string processedContent = line.Color is DiffColor.Addition or DiffColor.Deletion
 			? WhitespaceVisualizer.ProcessLineForMarkupDisplay(line.Content)
-			: line.Content;
+			: Markup.Escape(line.Content);
 
 		return $"{colorMarkup}{processedContent}{endMarkup}";
 	}
