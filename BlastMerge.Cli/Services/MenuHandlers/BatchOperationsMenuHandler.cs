@@ -638,13 +638,26 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	}
 
 	/// <summary>
+	/// The answer to the edit description prompt that clears the description. An empty answer
+	/// keeps the current one, so clearing needs an answer of its own.
+	/// </summary>
+	private const string ClearDescriptionAnswer = "-";
+
+	/// <summary>
 	/// Gathers all edit data from the user for the batch configuration.
 	/// </summary>
 	/// <param name="batch">The batch configuration being edited.</param>
 	/// <returns>The gathered edit data.</returns>
 	private static EditBatchData GatherEditBatchData(BatchConfiguration batch)
 	{
-		string description = AppDataHistoryInput.AskWithHistory($"[cyan]Enter description[/] (current: {batch.Description ?? ""})", batch.Description ?? "");
+		string description = AppDataHistoryInput.AskWithHistory(
+			$"[cyan]Enter description[/] (current: {Markup.Escape(batch.Description ?? "")}; Enter keeps it, {ClearDescriptionAnswer} clears it)",
+			batch.Description ?? "");
+		if (description.Trim() == ClearDescriptionAnswer)
+		{
+			description = string.Empty;
+		}
+
 		List<string> patterns = HandlePatternEditing(batch);
 		List<string> searchPaths = HandleSearchPathEditing(batch);
 		List<string> exclusionPatterns = HandleExclusionPatternEditing(batch);
