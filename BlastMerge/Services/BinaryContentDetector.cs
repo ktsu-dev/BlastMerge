@@ -84,6 +84,31 @@ public static class BinaryContentDetector
 	}
 
 	/// <summary>
+	/// Determines whether a file holds binary content anywhere in it, inspecting every byte.
+	/// </summary>
+	/// <param name="filePath">Path to the file to inspect.</param>
+	/// <param name="fileSystem">File system abstraction (optional, defaults to <see cref="FileSystemProvider.Current"/>).</param>
+	/// <returns>
+	/// <see langword="true"/> if the file's content is binary as described on
+	/// <see cref="IsBinary(ReadOnlySpan{byte})"/>. A file that does not exist is not binary, leaving
+	/// the caller's own missing-file handling in charge.
+	/// </returns>
+	/// <remarks>
+	/// Use this rather than <see cref="IsBinaryFile"/> in front of anything that writes a file's
+	/// decoded text back. The sample only speaks for its first <see cref="SampleSize"/> bytes, so a
+	/// legacy-encoded byte after them would pass it and then be replaced with U+FFFD on write-back,
+	/// on lines no conflict touched. A merge reads the whole file anyway, so this costs it nothing.
+	/// </remarks>
+	public static bool IsBinaryFileContent(string filePath, IFileSystem? fileSystem = null)
+	{
+		Ensure.NotNull(filePath);
+
+		fileSystem ??= FileSystemProvider.Current;
+
+		return fileSystem.File.Exists(filePath) && IsBinary(fileSystem.File.ReadAllBytes(filePath));
+	}
+
+	/// <summary>
 	/// Determines whether a sample of content is binary.
 	/// </summary>
 	/// <param name="content">The sampled bytes.</param>

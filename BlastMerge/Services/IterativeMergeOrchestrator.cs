@@ -237,9 +237,9 @@ public static class IterativeMergeOrchestrator
 		fileSystem ??= FileSystemProvider.Current;
 
 		// Refuse binary content before it is read as text. The first side may be an accumulated merge
-		// held in memory, which is text by construction, so only the files are checked.
-		if ((existingMergedContent == null && BinaryContentDetector.IsBinaryFile(file1, fileSystem))
-			|| BinaryContentDetector.IsBinaryFile(file2, fileSystem))
+		// held in memory, which is text by construction, so only the files are checked, each in full.
+		if ((existingMergedContent == null && BinaryContentDetector.IsBinaryFileContent(file1, fileSystem))
+			|| BinaryContentDetector.IsBinaryFileContent(file2, fileSystem))
 		{
 			throw BinaryContentException.ForFiles(file1, file2);
 		}
