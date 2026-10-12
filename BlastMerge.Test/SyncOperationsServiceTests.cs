@@ -46,19 +46,84 @@ public class SyncOperationsServiceTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// Copies of one file that are already identical have nothing to sync, so they are not offered.
+	/// </summary>
+	[TestMethod]
+	public void OfferSyncOptions_IdenticalCopies_WarnsWithoutPrompting()
+	{
+		string[] files = WriteCopies("app.config", "d1", "d2", "d3");
+
+		SyncOperationsService.OfferSyncOptions(Groups(files));
+
+		StringAssert.Contains(Output, "No groups with multiple files to sync.");
+		Assert.IsFalse(Input.IsKeyAvailable());
+	}
+
+	/// <summary>
+	/// Differing versions of one file are offered as a single group, and syncing to the newest
+	/// leaves every copy identical.
+	/// </summary>
+	[TestMethod]
+	public void SyncToNewest_DifferingVersions_MakesEveryCopyIdentical()
+	{
+		string first = WriteFile(Path.Join("repo1", "app.config"), "one");
+		string second = WriteFile(Path.Join("repo2", "app.config"), "two");
+		string third = WriteFile(Path.Join("repo3", "app.config"), Fresh);
+		File.SetLastWriteTimeUtc(first, Oldest);
+		File.SetLastWriteTimeUtc(second, Middle);
+		File.SetLastWriteTimeUtc(third, Newest);
+		ScriptedConsole script = Script()
+			.Select(0)
+			.Line("y")
+			.Key(ConsoleKey.Enter);
+
+		SyncOperationsService.OfferSyncOptions(Groups(first, second, third));
+
+		StringAssert.Contains(Output, "Found 1 groups with differing versions.");
+		StringAssert.Contains(Output, "Sync completed! 2 files synchronized across 1 groups.");
+		Assert.AreEqual(Fresh, File.ReadAllText(first));
+		Assert.AreEqual(Fresh, File.ReadAllText(second));
+		Assert.IsFalse(script.Input.IsKeyAvailable());
+	}
+
+	/// <summary>
+	/// A copy that already matches the version being synced to is left alone and not counted.
+	/// </summary>
+	[TestMethod]
+	public void SyncToNewest_CopyAlreadyMatchingTheNewest_IsNotRewritten()
+	{
+		string[] files = WriteCopies("a.txt", "d1", "d2", "d3");
+		File.WriteAllText(files[2], Fresh);
+		File.SetLastWriteTimeUtc(files[0], Newest);
+		File.SetLastWriteTimeUtc(files[1], Middle);
+		File.SetLastWriteTimeUtc(files[2], Oldest);
+		ScriptedConsole script = Script()
+			.Select(0)
+			.Line("y")
+			.Key(ConsoleKey.Enter);
+
+		SyncOperationsService.OfferSyncOptions(Groups(files));
+
+		StringAssert.Contains(Output, "Sync completed! 1 files synchronized across 1 groups.");
+		Assert.AreEqual(Original, File.ReadAllText(files[2]));
+		Assert.AreEqual(Middle, File.GetLastWriteTimeUtc(files[1]));
+		Assert.IsFalse(script.Input.IsKeyAvailable());
+	}
+
+	/// <summary>
 	/// Choosing to go back leaves every file untouched.
 	/// </summary>
 	[TestMethod]
 	public void OfferSyncOptions_Back_ChangesNothing()
 	{
 		string[] files = WriteCopies("a.txt", "d1", "d2");
+		File.WriteAllText(files[0], Fresh);
 		ScriptedConsole script = Script()
-			.Then(() => File.WriteAllText(files[0], Fresh))
 			.Select(2);
 
 		SyncOperationsService.OfferSyncOptions(Groups(files));
 
-		StringAssert.Contains(Output, "Found 1 groups with multiple identical copies.");
+		StringAssert.Contains(Output, "Found 1 groups with differing versions.");
 		Assert.AreEqual(Fresh, File.ReadAllText(files[0]));
 		Assert.AreEqual(Original, File.ReadAllText(files[1]));
 		Assert.IsFalse(script.Input.IsKeyAvailable());
@@ -71,9 +136,9 @@ public class SyncOperationsServiceTests : ConsoleTestBase
 	public void SyncToNewest_Declined_CancelsWithoutCopying()
 	{
 		string[] files = WriteCopies("a.txt", "d1", "d2");
+		WriteDated(files[1], Fresh, Newest);
 		ScriptedConsole script = Script()
 			.Select(0)
-			.Then(() => WriteDated(files[1], Fresh, Newest))
 			.Line("n");
 
 		SyncOperationsService.OfferSyncOptions(Groups(files));
@@ -92,9 +157,9 @@ public class SyncOperationsServiceTests : ConsoleTestBase
 		string[] files = WriteCopies("a.txt", "d1", "d2", "d3");
 		File.SetLastWriteTimeUtc(files[0], Oldest);
 		File.SetLastWriteTimeUtc(files[2], Middle);
+		WriteDated(files[1], Fresh, Newest);
 		ScriptedConsole script = Script()
 			.Select(0)
-			.Then(() => WriteDated(files[1], Fresh, Newest))
 			.Line("y")
 			.Key(ConsoleKey.Enter);
 
@@ -119,13 +184,10 @@ public class SyncOperationsServiceTests : ConsoleTestBase
 		File.SetLastWriteTimeUtc(files[0], Newest);
 		File.SetLastWriteTimeUtc(files[1], Middle);
 		File.SetLastWriteTimeUtc(files[2], Oldest);
+		WriteDated(files[0], Fresh, Newest);
 		ScriptedConsole script = Script()
 			.Select(0)
-			.Then(() =>
-			{
-				WriteDated(files[0], Fresh, Newest);
-				BlockDirectory("d3");
-			})
+			.Then(() => BlockDirectory("d3"))
 			.Line("y")
 			.Key(ConsoleKey.Enter);
 
@@ -145,9 +207,9 @@ public class SyncOperationsServiceTests : ConsoleTestBase
 	{
 		string[] files = WriteCopies("a.txt", "d1", "d2", "d3");
 		File.SetLastWriteTimeUtc(files[2], Newest);
+		WriteDated(files[1], Fresh, Oldest);
 		ScriptedConsole script = Script()
 			.Select(1)
-			.Then(() => WriteDated(files[1], Fresh, Oldest))
 			.Select(1)
 			.Line("y")
 			.Key(ConsoleKey.Enter);
@@ -173,13 +235,10 @@ public class SyncOperationsServiceTests : ConsoleTestBase
 	{
 		string[] aFiles = WriteCopies("a.txt", "d1", "d2");
 		string[] bFiles = WriteCopies("b.txt", "d1", "d2");
+		File.WriteAllText(aFiles[0], Fresh);
+		File.WriteAllText(bFiles[0], Fresh);
 		ScriptedConsole script = Script()
 			.Select(1)
-			.Then(() =>
-			{
-				File.WriteAllText(aFiles[0], Fresh);
-				File.WriteAllText(bFiles[0], Fresh);
-			})
 			.Select(0)
 			.Line("n")
 			.Select(0)
@@ -202,6 +261,7 @@ public class SyncOperationsServiceTests : ConsoleTestBase
 	public void ChooseReference_AllTargetsFail_ReportsFailureAndSkipsGroup()
 	{
 		string[] files = WriteCopies("a.txt", "d1", "d2");
+		File.WriteAllText(files[0], Fresh);
 		ScriptedConsole script = Script()
 			.Select(1)
 			.Select(0)
@@ -226,6 +286,8 @@ public class SyncOperationsServiceTests : ConsoleTestBase
 	{
 		string[] aFiles = WriteCopies("a.txt", "d1", "d2");
 		string[] bFiles = WriteCopies("b.txt", "d1", "d2");
+		File.WriteAllText(aFiles[1], Fresh);
+		File.WriteAllText(bFiles[1], Fresh);
 		ScriptedConsole script = Script()
 			.Select(1)
 			.Select(0)

@@ -261,12 +261,13 @@ public class ConsoleApplicationServiceTests : ConsoleTestBase
 	}
 
 	/// <summary>
-	/// Choosing to sync with no duplicated group has nothing to do and says so.
+	/// Choosing to sync when every copy is already identical has nothing to do and says so.
 	/// </summary>
 	[TestMethod]
-	public void ProcessFiles_SyncFilesWithoutDuplicates_Warns()
+	public void ProcessFiles_SyncFilesAlreadyIdentical_Warns()
 	{
-		WriteDivergentPair("notes.txt");
+		WriteFile(Path.Join("one", "notes.txt"), "same\n");
+		WriteFile(Path.Join("two", "notes.txt"), "same\n");
 		SelectIndex(FileActionSyncFiles);
 
 		service.ProcessFiles(TempDirectory, "notes.txt");
