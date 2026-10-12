@@ -228,6 +228,29 @@ public class SyncOperationsServiceTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// A copy that already matches the chosen reference is left alone and not counted.
+	/// </summary>
+	[TestMethod]
+	public void ChooseReference_CopyAlreadyMatchingTheReference_IsNotRewritten()
+	{
+		string[] files = WriteCopies("a.txt", "d1", "d2", "d3");
+		File.WriteAllText(files[0], Fresh);
+		WriteDated(files[1], Fresh, Middle);
+		ScriptedConsole script = Script()
+			.Select(1)
+			.Select(0)
+			.Line("y")
+			.Key(ConsoleKey.Enter);
+
+		SyncOperationsService.OfferSyncOptions(Groups(files));
+
+		Assert.AreEqual(Fresh, File.ReadAllText(files[2]));
+		Assert.AreEqual(Middle, File.GetLastWriteTimeUtc(files[1]));
+		StringAssert.Contains(Output, "Sync completed! 1 files synchronized.");
+		Assert.IsFalse(script.Input.IsKeyAvailable());
+	}
+
+	/// <summary>
 	/// Declining a group leaves it untouched and moves on to the next group.
 	/// </summary>
 	[TestMethod]
