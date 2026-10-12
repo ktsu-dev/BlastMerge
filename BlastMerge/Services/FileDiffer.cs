@@ -711,8 +711,8 @@ public static class FileDiffer
 				// selection reads both sides as text and writes the result back, which would
 				// replace every byte that is not valid UTF-8.
 				return string.Equals(filename1, filename2, StringComparison.OrdinalIgnoreCase)
-					&& !BinaryContentDetector.IsBinaryFile(file1, fileSystem)
-					&& !BinaryContentDetector.IsBinaryFile(file2, fileSystem);
+					&& !BinaryContentDetector.IsBinaryFileContent(file1, fileSystem)
+					&& !BinaryContentDetector.IsBinaryFileContent(file2, fileSystem);
 			})
 			.Select(pair =>
 			{
@@ -751,7 +751,8 @@ public static class FileDiffer
 
 		// Refuse before reading anything: a text merge of binary content writes a UTF-8 transcription
 		// of the file back over the original, and the bytes it could not represent are gone by then.
-		if (BinaryContentDetector.IsBinaryFile(file1, fileSystem) || BinaryContentDetector.IsBinaryFile(file2, fileSystem))
+		// The whole file is checked, because an invalid byte past the sample would be lost the same way.
+		if (BinaryContentDetector.IsBinaryFileContent(file1, fileSystem) || BinaryContentDetector.IsBinaryFileContent(file2, fileSystem))
 		{
 			throw BinaryContentException.ForFiles(file1, file2);
 		}

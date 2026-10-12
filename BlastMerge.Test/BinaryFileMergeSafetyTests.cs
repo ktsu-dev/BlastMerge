@@ -33,6 +33,11 @@ public class BinaryFileMergeSafetyTests : MockFileSystemTestBase
 	private static readonly byte[] NulByteVersion1 = [0x00, 0x01, 0x41, 0x0A];
 	private static readonly byte[] NulByteVersion2 = [0x00, 0x01, 0x42, 0x0A];
 
+	// Plain ASCII for longer than the detector's sample, then a Windows-1252 "café" footer. The
+	// sample sees only text; reading the file as UTF-8 turns 0xE9 into U+FFFD.
+	private static readonly byte[] LateInvalidVersion1 = LateInvalid("first");
+	private static readonly byte[] LateInvalidVersion2 = LateInvalid("second");
+
 	[TestMethod]
 	public void CalculateFileSimilarity_WithDivergentBinaryFiles_ReportsThemAsDifferent()
 	{
@@ -268,4 +273,68 @@ public class BinaryFileMergeSafetyTests : MockFileSystemTestBase
 		Assert.AreSequenceEqual([binary], result.SkippedBinaryFiles, "The binary file should be reported as skipped");
 		Assert.AreSequenceEqual(BinaryVersion1, MockFileSystem.File.ReadAllBytes(binary), "The binary file's bytes should be untouched");
 	}
+
+	[TestMethod]
+	public void IsBinaryFileContent_WithInvalidByteAfterTheSample_ReportsBinary()
+	{
+		string file = CreateBinaryFile("dir1/notes.txt", LateInvalidVersion1);
+
+		Assert.IsFalse(BinaryContentDetector.IsBinaryFile(file, MockFileSystem), "The sample ends before the invalid byte");
+		Assert.IsTrue(BinaryContentDetector.IsBinaryFileContent(file, MockFileSystem), "The whole file is not valid UTF-8");
+	}
+
+	[TestMethod]
+	public void MergeFiles_WithInvalidByteAfterTheSample_ThrowsInsteadOfMerging()
+	{
+		string file1 = CreateBinaryFile("dir1/notes.txt", LateInvalidVersion1);
+		string file2 = CreateBinaryFile("dir2/notes.txt", LateInvalidVersion2);
+
+		Assert.ThrowsExactly<BinaryContentException>(() => FileDiffer.MergeFiles(file1, file2, MockFileSystem));
+	}
+
+	[TestMethod]
+	public void PerformMergeWithConflictResolution_WithInvalidByteAfterTheSample_ThrowsInsteadOfMerging()
+	{
+		string file1 = CreateBinaryFile("dir1/notes.txt", LateInvalidVersion1);
+		string file2 = CreateBinaryFile("dir2/notes.txt", LateInvalidVersion2);
+
+		Assert.ThrowsExactly<BinaryContentException>(() => IterativeMergeOrchestrator.PerformMergeWithConflictResolution(
+			file1,
+			file2,
+			null,
+			(block, context, blockNumber) => BlockChoice.UseVersion1,
+			MockFileSystem));
+	}
+
+	[TestMethod]
+	public void StartIterativeMergeProcess_WithInvalidByteAfterTheSample_LeavesEveryByteUntouched()
+	{
+		string file1 = CreateBinaryFile("dir1/notes.txt", LateInvalidVersion1);
+		string file2 = CreateBinaryFile("dir2/notes.txt", LateInvalidVersion2);
+
+		List<FileGroup> fileGroups =
+		[
+			new([file1]) { Hash = FileHasher.ComputeFileHash(file1, MockFileSystem) },
+			new([file2]) { Hash = FileHasher.ComputeFileHash(file2, MockFileSystem) }
+		];
+
+		MergeCompletionResult result = IterativeMergeOrchestrator.StartIterativeMergeProcess(
+			fileGroups,
+			(first, second, existing) => FileDiffer.MergeFiles(first, second, MockFileSystem),
+			_ => { },
+			() => true,
+			MockFileSystem);
+
+		Assert.IsTrue(result.IsSuccessful, "Preserving the files is a successful outcome, not a failure");
+		Assert.AreSequenceEqual(LateInvalidVersion1, MockFileSystem.File.ReadAllBytes(file1), "The first file's bytes should be untouched");
+		Assert.AreSequenceEqual(LateInvalidVersion2, MockFileSystem.File.ReadAllBytes(file2), "The second file's bytes should be untouched");
+	}
+
+	private static byte[] LateInvalid(string middle) =>
+	[
+		.. Enumerable.Repeat((byte)'a', BinaryContentDetector.SampleSize + 1000),
+		.. System.Text.Encoding.ASCII.GetBytes($"\n{middle}\ncaf"),
+		0xE9,
+		0x0A,
+	];
 }
