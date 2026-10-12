@@ -133,7 +133,7 @@ public static class SyncOperationsService
 
 		foreach (string file in group.FilePaths)
 		{
-			if (file != newestFile && !HasSameContent(newestFile, file))
+			if (file != newestFile)
 			{
 				syncedFiles += TrySyncFile(newestFile, file, ctx);
 			}
@@ -148,11 +148,16 @@ public static class SyncOperationsService
 	/// <param name="sourceFile">The source file to copy from.</param>
 	/// <param name="targetFile">The target file to sync.</param>
 	/// <param name="ctx">The status context for updates.</param>
-	/// <returns>1 if successful, 0 if failed.</returns>
+	/// <returns>1 if the file was synced, 0 if it already matched or failed.</returns>
 	private static int TrySyncFile(string sourceFile, string targetFile, StatusContext ctx)
 	{
 		try
 		{
+			if (HasSameContent(sourceFile, targetFile))
+			{
+				return 0;
+			}
+
 			ctx.Status($"Syncing [yellow]{Path.GetFileName(targetFile)}[/]...");
 			FileDiffer.SyncFile(sourceFile, targetFile, null);
 			return 1;
@@ -269,10 +274,15 @@ public static class SyncOperationsService
 
 		foreach (string file in group.FilePaths)
 		{
-			if (file != referenceFile && !HasSameContent(referenceFile, file))
+			if (file != referenceFile)
 			{
 				try
 				{
+					if (HasSameContent(referenceFile, file))
+					{
+						continue;
+					}
+
 					FileDiffer.SyncFile(referenceFile, file, null);
 					syncedFiles++;
 					UIHelper.ShowSuccess($"✓ Synced {Path.GetFileName(file)}");
@@ -298,27 +308,14 @@ public static class SyncOperationsService
 
 	/// <summary>
 	/// Whether the target already holds the source's content, so copying would only rewrite its
-	/// timestamp. A target that can't be read is treated as different, so the sync reports it.
+	/// timestamp. A missing target differs, so the sync restores it. Callers check inside their
+	/// own error handling, so a file that can't be read is reported like one that can't be written.
 	/// </summary>
 	/// <param name="sourceFile">The file being synced from.</param>
 	/// <param name="targetFile">The file being synced to.</param>
-	/// <returns>True when both files exist and have the same content hash.</returns>
-	private static bool HasSameContent(string sourceFile, string targetFile)
-	{
-		try
-		{
-			return File.Exists(sourceFile) && File.Exists(targetFile) &&
-				FileHasher.ComputeFileHash(sourceFile) == FileHasher.ComputeFileHash(targetFile);
-		}
-		catch (IOException)
-		{
-			return false;
-		}
-		catch (UnauthorizedAccessException)
-		{
-			return false;
-		}
-	}
+	/// <returns>True when the target exists and has the source's content hash.</returns>
+	private static bool HasSameContent(string sourceFile, string targetFile) =>
+		File.Exists(targetFile) && FileHasher.ComputeFileHash(sourceFile) == FileHasher.ComputeFileHash(targetFile);
 
 	/// <summary>
 	/// Shows the completion message after synchronization.
