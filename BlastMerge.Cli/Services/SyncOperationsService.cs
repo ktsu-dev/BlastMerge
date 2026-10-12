@@ -22,12 +22,8 @@ public static class SyncOperationsService
 	{
 		Ensure.NotNull(fileGroups);
 
-		// Convert to FileGroup objects for easier handling
 		List<string> allFiles = [.. fileGroups.SelectMany(g => g.Value)];
-		IReadOnlyCollection<FileGroup> groups = FileDiffer.GroupFilesByHash(allFiles);
-
-		// Filter to groups with multiple files
-		List<FileGroup> groupsWithMultipleFiles = [.. groups.Where(g => g.FilePaths.Count > 1)];
+		List<FileGroup> groupsWithMultipleFiles = FindGroupsToSync(allFiles);
 
 		if (groupsWithMultipleFiles.Count == 0)
 		{
@@ -35,7 +31,7 @@ public static class SyncOperationsService
 			return;
 		}
 
-		AnsiConsole.MarkupLineInterpolated($"[cyan]Found {groupsWithMultipleFiles.Count} groups with multiple identical copies.[/]");
+		AnsiConsole.MarkupLineInterpolated($"[cyan]Found {groupsWithMultipleFiles.Count} groups with differing versions.[/]");
 		AnsiConsole.WriteLine();
 
 		Dictionary<string, SyncChoice> syncChoices = new()
@@ -69,6 +65,19 @@ public static class SyncOperationsService
 			}
 		}
 	}
+
+	/// <summary>
+	/// Groups files by name and keeps the groups whose copies are not all identical, since those
+	/// are the only ones a sync would change. Grouping by content instead would only ever offer
+	/// groups that are identical already.
+	/// </summary>
+	/// <param name="filePaths">The files to group.</param>
+	/// <returns>One group per file name that has more than one distinct version.</returns>
+	internal static List<FileGroup> FindGroupsToSync(IReadOnlyCollection<string> filePaths) =>
+		[.. filePaths
+			.GroupBy(Path.GetFileName)
+			.Where(g => g.Select(path => FileHasher.ComputeFileHash(path)).Distinct().Skip(1).Any())
+			.Select(g => new FileGroup(g))];
 
 	/// <summary>
 	/// Syncs all files to the newest version in each group.
@@ -139,11 +148,16 @@ public static class SyncOperationsService
 	/// <param name="sourceFile">The source file to copy from.</param>
 	/// <param name="targetFile">The target file to sync.</param>
 	/// <param name="ctx">The status context for updates.</param>
-	/// <returns>1 if successful, 0 if failed.</returns>
+	/// <returns>1 if the file was synced, 0 if it already matched or failed.</returns>
 	private static int TrySyncFile(string sourceFile, string targetFile, StatusContext ctx)
 	{
 		try
 		{
+			if (HasSameContent(sourceFile, targetFile))
+			{
+				return 0;
+			}
+
 			ctx.Status($"Syncing [yellow]{Path.GetFileName(targetFile)}[/]...");
 			FileDiffer.SyncFile(sourceFile, targetFile, null);
 			return 1;
@@ -264,6 +278,11 @@ public static class SyncOperationsService
 			{
 				try
 				{
+					if (HasSameContent(referenceFile, file))
+					{
+						continue;
+					}
+
 					FileDiffer.SyncFile(referenceFile, file, null);
 					syncedFiles++;
 					UIHelper.ShowSuccess($"✓ Synced {Path.GetFileName(file)}");
@@ -286,6 +305,17 @@ public static class SyncOperationsService
 
 		return syncedFiles;
 	}
+
+	/// <summary>
+	/// Whether the target already holds the source's content, so copying would only rewrite its
+	/// timestamp. A missing target differs, so the sync restores it. Callers check inside their
+	/// own error handling, so a file that can't be read is reported like one that can't be written.
+	/// </summary>
+	/// <param name="sourceFile">The file being synced from.</param>
+	/// <param name="targetFile">The file being synced to.</param>
+	/// <returns>True when the target exists and has the source's content hash.</returns>
+	private static bool HasSameContent(string sourceFile, string targetFile) =>
+		File.Exists(targetFile) && FileHasher.ComputeFileHash(sourceFile) == FileHasher.ComputeFileHash(targetFile);
 
 	/// <summary>
 	/// Shows the completion message after synchronization.
