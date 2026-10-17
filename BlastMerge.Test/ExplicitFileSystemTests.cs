@@ -25,7 +25,7 @@ public class ExplicitFileSystemTests
 	{
 		FileSystemProvider.ResetToDefault();
 		mockFileSystem = new MockFileSystem();
-		testRoot = Path.Combine(Path.GetTempPath(), $"blastmerge-explicit-fs-{Guid.NewGuid():N}");
+		testRoot = Path.Join(Path.GetTempPath(), $"blastmerge-explicit-fs-{Guid.NewGuid():N}");
 	}
 
 	[TestCleanup]
@@ -35,8 +35,8 @@ public class ExplicitFileSystemTests
 	public void ProcessBatchWithDiscretePhases_WithExplicitFileSystem_MergesThroughIt()
 	{
 		// Arrange
-		string file1 = Path.Combine(testRoot, "one", "b.cfg");
-		string file2 = Path.Combine(testRoot, "two", "b.cfg");
+		string file1 = Path.Join(testRoot, "one", "b.cfg");
+		string file2 = Path.Join(testRoot, "two", "b.cfg");
 		mockFileSystem.AddFile(file1, new("first\n"));
 		mockFileSystem.AddFile(file2, new("second\n"));
 
@@ -68,12 +68,12 @@ public class ExplicitFileSystemTests
 	public void FindDifferences_WithExplicitFileSystem_ClassifiesFilesThroughIt()
 	{
 		// Arrange
-		string dir1 = Path.Combine(testRoot, "left");
-		string dir2 = Path.Combine(testRoot, "right");
-		mockFileSystem.AddFile(Path.Combine(dir1, "same.txt"), new("same\n"));
-		mockFileSystem.AddFile(Path.Combine(dir2, "same.txt"), new("same\n"));
-		mockFileSystem.AddFile(Path.Combine(dir1, "changed.txt"), new("left\n"));
-		mockFileSystem.AddFile(Path.Combine(dir2, "changed.txt"), new("right\n"));
+		string dir1 = Path.Join(testRoot, "left");
+		string dir2 = Path.Join(testRoot, "right");
+		mockFileSystem.AddFile(Path.Join(dir1, "same.txt"), new("same\n"));
+		mockFileSystem.AddFile(Path.Join(dir2, "same.txt"), new("same\n"));
+		mockFileSystem.AddFile(Path.Join(dir1, "changed.txt"), new("left\n"));
+		mockFileSystem.AddFile(Path.Join(dir2, "changed.txt"), new("right\n"));
 
 		// Act
 		DirectoryComparisonResult result = FileDiffer.FindDifferences(dir1, dir2, "*.txt", false, mockFileSystem);
