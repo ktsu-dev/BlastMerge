@@ -164,13 +164,22 @@ public static class BlockMerger
 				break;
 
 			case BlockChoice.Skip:
+			case BlockChoice.Remove:
 				// Skip both - don't add any lines from this block
 				break;
 
-			default:
-				// For compatibility with other block types, default to UseVersion2
+			case BlockChoice.Include:
+				// An addition's lines exist only in version 2
 				ApplyUseVersion2(lines2, diffBlock, mergedLines);
 				break;
+
+			case BlockChoice.Keep:
+				// A deletion's lines exist only in version 1
+				ApplyUseVersion1(lines1, diffBlock, mergedLines);
+				break;
+
+			default:
+				throw new ArgumentOutOfRangeException(nameof(choice), choice, "Unknown block choice");
 		}
 	}
 

@@ -445,4 +445,50 @@ public class BlockMergerTests
 		// Assert
 		CollectionAssert.AreEqual(expected, result.MergedLines.ToArray());
 	}
+
+	[TestMethod]
+	[DataRow(BlockChoice.Keep, new[] { "one", "two", "three" })]
+	[DataRow(BlockChoice.Remove, new[] { "one", "three" })]
+	public void PerformManualBlockSelection_OnDeleteBlock_KeepKeepsLinesAndRemoveDropsThem(BlockChoice choice, string[] expected)
+	{
+		// Arrange
+		string[] lines1 = ["one", "two", "three"];
+		string[] lines2 = ["one", "three"];
+
+		// Act
+		MergeResult result = BlockMerger.PerformManualBlockSelection(lines1, lines2,
+			(block, context, num) => choice);
+
+		// Assert
+		CollectionAssert.AreEqual(expected, result.MergedLines.ToArray());
+	}
+
+	[TestMethod]
+	[DataRow(BlockChoice.Include, new[] { "one", "two", "three" })]
+	[DataRow(BlockChoice.Skip, new[] { "one", "three" })]
+	public void PerformManualBlockSelection_OnInsertBlock_IncludeAddsLinesAndSkipLeavesThemOut(BlockChoice choice, string[] expected)
+	{
+		// Arrange
+		string[] lines1 = ["one", "three"];
+		string[] lines2 = ["one", "two", "three"];
+
+		// Act
+		MergeResult result = BlockMerger.PerformManualBlockSelection(lines1, lines2,
+			(block, context, num) => choice);
+
+		// Assert
+		CollectionAssert.AreEqual(expected, result.MergedLines.ToArray());
+	}
+
+	[TestMethod]
+	public void PerformManualBlockSelection_WithUnknownChoice_ThrowsArgumentOutOfRangeException()
+	{
+		// Arrange
+		string[] lines1 = ["one", "two", "three"];
+		string[] lines2 = ["one", "three"];
+
+		// Act & Assert
+		Assert.ThrowsExactly<ArgumentOutOfRangeException>(() =>
+			BlockMerger.PerformManualBlockSelection(lines1, lines2, (block, context, num) => (BlockChoice)999));
+	}
 }
