@@ -188,7 +188,7 @@ public static class FileDiffer
 			try
 			{
 				// Use DiffPlex for better file comparison
-				if (DiffPlexDiffer.AreFilesIdentical(file1Path, file2Path))
+				if (DiffPlexDiffer.AreFilesIdentical(file1Path, file2Path, fileSystem))
 				{
 					sameFiles.Add(relativePath);
 				}
