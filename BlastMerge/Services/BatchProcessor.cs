@@ -239,7 +239,7 @@ public static partial class BatchProcessor
 
 			// Phase 4: Resolving - Process resolution queue with user interaction
 			progressCallback?.Invoke(ProgressMessages.Phase4ResolvingConflicts);
-			ExecuteResolvingPhase(resolutionQueue, mergeCallback, statusCallback, continuationCallback, progressCallback, result);
+			ExecuteResolvingPhase(resolutionQueue, mergeCallback, statusCallback, continuationCallback, progressCallback, result, fileSystem);
 
 			progressCallback?.Invoke("✅ Resolving complete");
 
@@ -405,7 +405,8 @@ public static partial class BatchProcessor
 		Action<MergeSessionStatus> statusCallback,
 		Func<bool> continuationCallback,
 		Action<string>? progressCallback,
-		BatchResult result)
+		BatchResult result,
+		IFileSystem fileSystem)
 	{
 		int processedItems = 0;
 		int totalItems = resolutionQueue.Count;
@@ -419,7 +420,8 @@ public static partial class BatchProcessor
 				resolutionItem,
 				mergeCallback,
 				statusCallback,
-				continuationCallback);
+				continuationCallback,
+				fileSystem);
 
 			result.PatternResults.Add(patternResult);
 
@@ -453,7 +455,8 @@ public static partial class BatchProcessor
 		ResolutionItem resolutionItem,
 		Func<string, string, string?, MergeResult?> mergeCallback,
 		Action<MergeSessionStatus> statusCallback,
-		Func<bool> continuationCallback)
+		Func<bool> continuationCallback,
+		IFileSystem fileSystem)
 	{
 		PatternResult result = new()
 		{
@@ -484,7 +487,8 @@ public static partial class BatchProcessor
 					resolutionItem.FileGroups,
 					mergeCallback,
 					statusCallback,
-					continuationCallback);
+					continuationCallback,
+					fileSystem);
 
 				result.MergeResult = mergeResult;
 				result.Success = mergeResult.IsSuccessful;

@@ -30,13 +30,14 @@ public static class DiffPlexDiffer
 	/// </summary>
 	/// <param name="file1">First file path</param>
 	/// <param name="file2">Second file path</param>
+	/// <param name="fileSystem">File system abstraction (optional, defaults to <see cref="FileSystemProvider.Current"/>)</param>
 	/// <returns>True if files are identical, false otherwise</returns>
-	public static bool AreFilesIdentical(string file1, string file2)
+	public static bool AreFilesIdentical(string file1, string file2, IFileSystem? fileSystem = null)
 	{
 		Ensure.NotNull(file1);
 		Ensure.NotNull(file2);
 
-		IFileSystem fileSystem = FileSystemProvider.Current;
+		fileSystem ??= FileSystemProvider.Current;
 
 		if (!fileSystem.File.Exists(file1) || !fileSystem.File.Exists(file2))
 		{
