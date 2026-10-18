@@ -100,7 +100,24 @@ internal static class PathExclusionMatcher
 			return [$"**/{pattern}", $"**/{pattern}/**"];
 		}
 
-		// Anything else is already a path-shaped pattern, anchored to the whole path.
-		return [pattern];
+		// An absolute pattern ("/work/src/*.tmp", "c:/work/*") is anchored to the whole path.
+		if (IsAbsolute(pattern))
+		{
+			return [pattern];
+		}
+
+		// A relative pattern with a separator ("bin/*", ".git/*", "src/generated/*", "*/obj") is anchored
+		// to a component boundary at any depth. Matched as-is it was anchored to the start of the rooted
+		// path it is tested against, so it could never match and silently excluded nothing.
+		return [$"**/{pattern}", $"**/{pattern}/**"];
 	}
+
+	/// <summary>
+	/// Whether a normalized pattern names a rooted path rather than a path relative to any directory.
+	/// </summary>
+	/// <param name="pattern">A pattern using <c>/</c> as its separator.</param>
+	/// <returns><see langword="true"/> for a pattern starting with <c>/</c> or a drive root.</returns>
+	private static bool IsAbsolute(string pattern) =>
+		pattern.StartsWith('/')
+		|| (pattern.Length >= 3 && char.IsAsciiLetter(pattern[0]) && pattern[1] == ':' && pattern[2] == '/');
 }
