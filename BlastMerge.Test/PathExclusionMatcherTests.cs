@@ -55,6 +55,37 @@ public class PathExclusionMatcherTests
 		Assert.IsTrue(PathExclusionMatcher.Matches("/work/src/file.txt", "*"));
 	}
 
+	// A relative pattern containing a separator used to be anchored to the start of the rooted path,
+	// so the ".git/*" the batch prompt and README suggest excluded nothing.
+	[TestMethod]
+	[DataRow("/r/.git/config", ".git/*")]
+	[DataRow("/r/.git/refs/heads/main", ".git/*")]
+	[DataRow("/r/bin/x.dll", "bin/*")]
+	[DataRow("/r/src/generated/a.cs", "src/generated/*")]
+	[DataRow("/r/src/obj", "*/obj")]
+	[DataRow("/r/src/obj/x.dll", "*/obj")]
+	public void Matches_RelativePatternWithSeparator_MatchesAtAnyDepth(string path, string pattern)
+	{
+		Assert.IsTrue(PathExclusionMatcher.Matches(path, pattern));
+	}
+
+	[TestMethod]
+	public void Matches_RelativePatternWithSeparator_MatchesWholeComponents()
+	{
+		Assert.IsFalse(PathExclusionMatcher.Matches("/r/mybin/x.dll", "bin/*"),
+			"A component merely ending in 'bin' is not a 'bin' component.");
+		Assert.IsFalse(PathExclusionMatcher.Matches("/r/config", ".git/*"));
+		Assert.IsFalse(PathExclusionMatcher.Matches("/r/generated/a.cs", "src/generated/*"));
+	}
+
+	[TestMethod]
+	public void Matches_AbsolutePattern_StaysAnchored()
+	{
+		Assert.IsFalse(PathExclusionMatcher.Matches("/other/work/src/a.tmp", "/work/src/*.tmp"),
+			"An absolute pattern must not match the same tail under a different root.");
+		Assert.IsTrue(PathExclusionMatcher.Matches("c:/work/src/a.tmp", "C:/work/src/*.tmp"));
+	}
+
 	[TestMethod]
 	public void Matches_DirectoryPattern_MatchesAtAnyDepth()
 	{
