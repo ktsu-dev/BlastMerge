@@ -274,15 +274,9 @@ public class ConsoleApplicationService : ApplicationService
 		// Show the improved table summary first
 		ShowFileGroupSummaryTable(fileGroups, directory, totalFiles);
 
-		// Check if there are any groups with multiple files that can be merged
-		int groupsWithMultipleFiles = fileGroups.Count(g => g.Value.Count > 1);
-		if (groupsWithMultipleFiles == 0)
-		{
-			// Table already showed this information, so just return
-			return;
-		}
-
-		// Prepare file groups for merging using the Core library
+		// Prepare file groups for merging using the Core library. A merge needs at least two distinct
+		// versions, however many copies each has, and this returns null when there are fewer
+		// (ktsu-dev/BlastMerge#61).
 		IReadOnlyCollection<FileGroup>? coreFileGroups = IterativeMergeOrchestrator.PrepareFileGroupsForMerging(directory, fileName);
 
 		if (coreFileGroups == null)

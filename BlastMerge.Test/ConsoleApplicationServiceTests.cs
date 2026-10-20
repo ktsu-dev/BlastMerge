@@ -110,7 +110,7 @@ public class ConsoleApplicationServiceTests : ConsoleTestBase
 
 	/// <summary>
 	/// Writes two identical copies of one version of a file and one copy of a version whose middle line
-	/// differs. Iterative merge only proceeds when some content group holds more than one file.
+	/// differs, so a merge has to bring every copy of both versions into line.
 	/// </summary>
 	/// <param name="fileName">The file name to use in each folder.</param>
 	/// <param name="common">The content of the two identical copies.</param>
@@ -363,19 +363,39 @@ public class ConsoleApplicationServiceTests : ConsoleTestBase
 		Assert.ThrowsExactly<DirectoryNotFoundException>(() => service.RunIterativeMerge(Path.Join(TempDirectory, "missing"), "*.txt"));
 
 	/// <summary>
-	/// Two differing versions with no duplicated copy are summarised but not merged: iterative merge
-	/// only starts when some content group holds more than one file.
+	/// Two differing versions with no duplicated copy are merged: the merge depends on there being two
+	/// distinct versions, not on either of them having a duplicate (ktsu-dev/BlastMerge#61).
 	/// </summary>
 	[TestMethod]
-	public void RunIterativeMerge_TwoUniqueVersions_LeavesThemAlone()
+	public void RunIterativeMerge_TwoUniqueVersions_AreMerged()
 	{
 		(string first, string second) = WriteDivergentPair("notes.txt");
+		SelectIndex(0);
 
 		service.RunIterativeMerge(TempDirectory, "notes.txt");
 
 		StringAssert.Contains(Output, "Found 2 files in 2 groups:");
-		StringAssert.Contains(File.ReadAllText(first), "first version");
-		StringAssert.Contains(File.ReadAllText(second), "second version");
+		StringAssert.Contains(Output, "Content differs. What to do?");
+		string merged = AssertAllEqual([first, second]);
+		Assert.IsTrue(merged.Contains("first version", StringComparison.Ordinal) ^ merged.Contains("second version", StringComparison.Ordinal), merged);
+	}
+
+	/// <summary>
+	/// Identical copies of a single version have nothing to merge, so no merge starts.
+	/// </summary>
+	[TestMethod]
+	public void RunIterativeMerge_IdenticalCopiesOfOneVersion_MergesNothing()
+	{
+		string first = WriteFile(Path.Join("one", "notes.txt"), "alpha\nomega\n");
+		string second = WriteFile(Path.Join("two", "notes.txt"), "alpha\nomega\n");
+
+		service.RunIterativeMerge(TempDirectory, "notes.txt");
+
+		StringAssert.Contains(Output, "Found 2 files in 1 groups:");
+		Assert.IsFalse(Output.Contains("Content differs", StringComparison.Ordinal), Output);
+		StringAssert.Contains(Output, "insufficient unique versions to merge");
+		Assert.AreEqual("alpha\nomega\n", File.ReadAllText(first));
+		Assert.AreEqual("alpha\nomega\n", File.ReadAllText(second));
 	}
 
 	/// <summary>
