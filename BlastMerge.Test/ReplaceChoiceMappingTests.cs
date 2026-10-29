@@ -46,12 +46,12 @@ public class ReplaceChoiceMappingTests
 	[TestMethod]
 	public void LabelsFromRealPathsMapTheRightOptionToTheRightVersion()
 	{
-		string root = Path.Combine(Path.GetTempPath(), "repo");
+		string root = Path.Join(Path.GetTempPath(), "repo");
 		string[][] pairs =
 		[
-			[Path.Combine(root, "Dockerfile"), Path.Combine(root, "Dockerfiles", "Dockerfile")],
-			[Path.Combine(root, "LICENSE"), Path.Combine(root, "LICENSES", "LICENSE")],
-			[Path.Combine(root, "Makefile"), Path.Combine(root, "Makefile.d", "Makefile")],
+			[Path.Join(root, "Dockerfile"), Path.Join(root, "Dockerfiles", "Dockerfile")],
+			[Path.Join(root, "LICENSE"), Path.Join(root, "LICENSES", "LICENSE")],
+			[Path.Join(root, "Makefile"), Path.Join(root, "Makefile.d", "Makefile")],
 		];
 
 		foreach (string[] pair in pairs)
