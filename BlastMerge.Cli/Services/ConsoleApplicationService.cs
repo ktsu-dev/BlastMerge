@@ -590,7 +590,8 @@ public class ConsoleApplicationService : ApplicationService
 		{
 			// Remove the old entry and add the updated one with batch name
 			dynamicMenuChoices.Remove(MainMenuDisplay.RunRecentBatch);
-			dynamicMenuChoices[$"{MainMenuDisplay.RunRecentBatch} ({recentBatch})"] = MenuChoice.RunRecentBatch;
+			// Choices are read as markup, so a name like "Web [v2]" must be escaped or the menu cannot be drawn (#111)
+			dynamicMenuChoices[$"{MainMenuDisplay.RunRecentBatch} ({Markup.Escape(recentBatch)})"] = MenuChoice.RunRecentBatch;
 		}
 
 		string selection = AnsiConsole.Prompt(
@@ -759,11 +760,15 @@ public class ConsoleApplicationService : ApplicationService
 	/// <param name="directory">The directory being processed.</param>
 	private static void ShowRunningBatchMessage(BatchConfiguration selectedBatch, string batchName, string directory)
 	{
-		string message = selectedBatch.SearchPaths.Count > 0
-			? $"[cyan]Running recent batch '{batchName}' using configured search paths[/]"
-			: $"[cyan]Running recent batch '{batchName}' in '{directory}'[/]";
+		if (selectedBatch.SearchPaths.Count > 0)
+		{
+			AnsiConsole.MarkupLineInterpolated($"[cyan]Running recent batch '{batchName}' using configured search paths[/]");
+		}
+		else
+		{
+			AnsiConsole.MarkupLineInterpolated($"[cyan]Running recent batch '{batchName}' in '{directory}'[/]");
+		}
 
-		AnsiConsole.MarkupLine(message);
 		AnsiConsole.WriteLine();
 	}
 
