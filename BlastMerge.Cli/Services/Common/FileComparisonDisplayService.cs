@@ -205,11 +205,9 @@ public static class FileComparisonDisplayService
 
 		ExecuteFileOperation(() =>
 		{
-			// Use core DiffPlex API to get DiffResult with DiffBlocks
-			string content1 = File.ReadAllText(file1);
-			string content2 = File.ReadAllText(file2);
-
-			DiffResult diffResult = DiffPlex.Differ.Instance.CreateLineDiffs(content1, content2, ignoreWhitespace: false, ignoreCase: false);
+			// Read through the same binary guard as every other diff view, so binary files are compared
+			// by hash rather than decoded into lines of replacement characters and control bytes.
+			DiffResult diffResult = DiffPlexDiffer.CreateLineDiffs(file1, file2);
 
 			if (!diffResult.DiffBlocks.Any())
 			{
