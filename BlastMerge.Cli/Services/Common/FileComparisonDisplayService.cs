@@ -458,7 +458,7 @@ public static class FileComparisonDisplayService
 	/// </summary>
 	/// <param name="coloredDiff">The colored diff lines to render.</param>
 	/// <returns>Formatted diff string with markup.</returns>
-	private static string RenderColoredDiff(IEnumerable<ColoredDiffLine> coloredDiff)
+	internal static string RenderColoredDiff(IEnumerable<ColoredDiffLine> coloredDiff)
 	{
 		StringBuilder sb = new();
 		List<ColoredDiffLine> lines = [.. coloredDiff];
@@ -470,7 +470,7 @@ public static class FileComparisonDisplayService
 
 			if (ShouldApplyCharacterLevelDiff(line, lines, i))
 			{
-				string formattedDiff = CharacterLevelDiffer.CreateInlineCharacterDiff(line.Content, lines[i + 1].Content);
+				string formattedDiff = CharacterLevelDiffer.CreateInlineCharacterDiff(WithoutMarker(line), WithoutMarker(lines[i + 1]));
 				sb.AppendLine(formattedDiff);
 				i += 2; // Skip both lines since we processed them together
 			}
@@ -496,8 +496,16 @@ public static class FileComparisonDisplayService
 		return line.Color == DiffColor.Deletion &&
 			index + 1 < lines.Count &&
 			lines[index + 1].Color == DiffColor.Addition &&
-			CharacterLevelDiffer.AreLinesSimilar(line.Content, lines[index + 1].Content);
+			CharacterLevelDiffer.AreLinesSimilar(WithoutMarker(line), WithoutMarker(lines[index + 1]));
 	}
+
+	/// <summary>
+	/// Gets a deleted or added line's text without the one-character marker the colored diff puts in front of it,
+	/// since the character-level diff writes its own marker and would otherwise compare and highlight ours.
+	/// </summary>
+	/// <param name="line">A deleted or added diff line.</param>
+	/// <returns>The line's text as it appears in the file.</returns>
+	private static string WithoutMarker(ColoredDiffLine line) => line.Content.Length > 0 ? line.Content[1..] : line.Content;
 
 	/// <summary>
 	/// Formats a single diff line with appropriate markup.

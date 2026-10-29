@@ -238,6 +238,45 @@ public class FileComparisonDisplayServiceTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// A similar deleted and added pair prints one marker per line, not the colored diff's marker
+	/// followed by the character-level diff's own.
+	/// </summary>
+	[TestMethod]
+	public void ShowGitStyleDiff_SimilarChangedLine_PrintsOneMarkerPerLine()
+	{
+		string left = WriteFile("a.cs", "int x = 1;\n");
+		string right = WriteFile("b.cs", "int x = 2;\n");
+
+		FileComparisonDisplayService.ShowGitStyleDiff(left, right);
+
+		StringAssert.Contains(Output, "- int x = 1;");
+		StringAssert.Contains(Output, "+ int x = 2;");
+		Assert.DoesNotContain("- -int", Output);
+		Assert.DoesNotContain("+ +int", Output);
+	}
+
+	/// <summary>
+	/// The character-level diff of a similar pair highlights only the characters that changed in the
+	/// file, not the colored diff's marker in front of them.
+	/// </summary>
+	[TestMethod]
+	public void RenderColoredDiff_SimilarChangedLine_HighlightsOnlyTheChangedCharacter()
+	{
+		ColoredDiffLine[] lines =
+		[
+			new("-int x = 1;", DiffColor.Deletion),
+			new("+int x = 2;", DiffColor.Addition),
+		];
+
+		string markup = FileComparisonDisplayService.RenderColoredDiff(lines);
+
+		StringAssert.Contains(markup, "[red]1[/]");
+		StringAssert.Contains(markup, "[green]2[/]");
+		Assert.DoesNotContain("[red]-[/]", markup);
+		Assert.DoesNotContain("[green]+[/]", markup);
+	}
+
+	/// <summary>
 	/// A side-by-side diff of identical files reports them identical without a table.
 	/// </summary>
 	[TestMethod]
