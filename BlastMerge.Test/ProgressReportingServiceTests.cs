@@ -193,6 +193,25 @@ public class ProgressReportingServiceTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// A session that stopped before any operation is reported as stopped, not as having found every
+	/// file already identical.
+	/// </summary>
+	[TestMethod]
+	public void ShowDetailedMergeSummary_FailedWithoutOperations_DoesNotReportIdentical()
+	{
+		MergeCompletionResult result = new(false, null, 0, "access denied: x.txt")
+		{
+			InitialFileGroups = 2,
+			TotalFilesMerged = 3,
+		};
+
+		ProgressReportingService.ShowDetailedMergeSummary(result);
+
+		StringAssert.Contains(Output, "Merge process was access denied: x.txt after 0 operations.");
+		Assert.DoesNotContain("already identical", Output);
+	}
+
+	/// <summary>
 	/// A summary with no operations says every file was already identical.
 	/// </summary>
 	[TestMethod]

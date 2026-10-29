@@ -111,11 +111,8 @@ public static class IterativeMergeOrchestrator
 				};
 				operations.Add(operation);
 
-				// Update all files in both groups with the merged content
-				foreach (string filePath in mergedGroup.FilePaths)
-				{
-					fileSystem.File.WriteAllText(filePath, mergedContent, mergeResult.ContentEncoding);
-				}
+				// Update all files in both groups with the merged content, or none of them if one can't be written
+				MergedContentWriter.WriteToAll(fileSystem, mergedGroup.FilePaths, mergedContent, mergeResult.ContentEncoding);
 
 				// Remove the original groups and add the merged group
 				remainingGroups.Remove(group1);
@@ -126,7 +123,8 @@ public static class IterativeMergeOrchestrator
 			{
 				return new MergeCompletionResult(false, mergedContent, LineEndingDetector.SplitLines(mergedContent).Length, $"error: {ex.Message}")
 				{
-					TotalMergeOperations = mergeCount - 1,
+					// The failed operation is in the Operations table, so it counts as one that was attempted.
+					TotalMergeOperations = operations.Count,
 					InitialFileGroups = initialFileGroups,
 					TotalFilesMerged = totalFilesMerged,
 					Operations = operations.AsReadOnly()
@@ -136,7 +134,7 @@ public static class IterativeMergeOrchestrator
 			{
 				return new MergeCompletionResult(false, mergedContent, LineEndingDetector.SplitLines(mergedContent).Length, $"access denied: {ex.Message}")
 				{
-					TotalMergeOperations = mergeCount - 1,
+					TotalMergeOperations = operations.Count,
 					InitialFileGroups = initialFileGroups,
 					TotalFilesMerged = totalFilesMerged,
 					Operations = operations.AsReadOnly()

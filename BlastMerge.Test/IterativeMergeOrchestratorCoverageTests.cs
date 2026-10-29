@@ -40,7 +40,7 @@ public class IterativeMergeOrchestratorCoverageTests : MockFileSystemTestBase
 		Assert.StartsWith("error: ", result.OriginalFileName);
 		Assert.IsNotNull(result.FinalMergedContent);
 		Assert.Contains("merged", result.FinalMergedContent);
-		Assert.AreEqual(0, result.TotalMergeOperations);
+		Assert.AreEqual(1, result.TotalMergeOperations);
 		Assert.AreEqual(2, result.InitialFileGroups);
 		Assert.HasCount(1, result.Operations);
 	}
@@ -69,7 +69,36 @@ public class IterativeMergeOrchestratorCoverageTests : MockFileSystemTestBase
 
 		Assert.IsFalse(result.IsSuccessful);
 		Assert.StartsWith("access denied: ", result.OriginalFileName);
-		Assert.AreEqual(0, result.TotalMergeOperations);
+		Assert.AreEqual(1, result.TotalMergeOperations);
+	}
+
+	/// <summary>
+	/// When one copy can't be written, the copies already written are put back, so the merge changes
+	/// either every copy or none, and the failed operation is still counted.
+	/// </summary>
+	[TestMethod]
+	public void StartIterativeMergeProcess_OneCopyReadOnly_RestoresCopiesAlreadyWritten()
+	{
+		string fileA = CreateFile(Path.Join("a", "x.txt"), "1\n2\n");
+		string fileB = CreateFile(Path.Join("b", "x.txt"), "1\n2\n");
+		string fileC = CreateFile(Path.Join("c", "x.txt"), "1\n3\n");
+		MockFileSystem.File.SetAttributes(fileB, FileAttributes.ReadOnly);
+		List<FileGroup> groups = [new FileGroup([fileA, fileB]) { Hash = "h1" }, new FileGroup([fileC]) { Hash = "h2" }];
+
+		MergeCompletionResult result = IterativeMergeOrchestrator.StartIterativeMergeProcess(
+			groups,
+			(_, _, _) => new MergeResult(["1", "2", "3"], []),
+			_ => { },
+			() => true,
+			MockFileSystem);
+
+		Assert.IsFalse(result.IsSuccessful);
+		Assert.StartsWith("access denied: ", result.OriginalFileName);
+		Assert.AreEqual(1, result.TotalMergeOperations);
+		Assert.HasCount(1, result.Operations);
+		Assert.AreEqual("1\n2\n", MockFileSystem.File.ReadAllText(fileA));
+		Assert.AreEqual("1\n2\n", MockFileSystem.File.ReadAllText(fileB));
+		Assert.AreEqual("1\n3\n", MockFileSystem.File.ReadAllText(fileC));
 	}
 
 	/// <summary>
