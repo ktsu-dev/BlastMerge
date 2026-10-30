@@ -293,6 +293,25 @@ public class FileComparisonDisplayServiceTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// A side-by-side diff of two differing binary files shows their content hashes, as the other
+	/// diff views do, instead of decoding the bytes as lines of text.
+	/// </summary>
+	[TestMethod]
+	public void ShowSideBySideDiff_BinaryFiles_ShowsHashesInsteadOfDecodedContent()
+	{
+		string left = WriteFile("a.bin", "PNG\0\u0001\nleftbytes\u0007\n");
+		string right = WriteFile("b.bin", "PNG\0\u0002\nrightbytes\u0007\n");
+
+		FileComparisonDisplayService.ShowSideBySideDiff(left, right);
+
+		StringAssert.Contains(Output, "Side-by-Side Diff");
+		// Changed lines show spaces as the whitespace visualizer's middle dot.
+		StringAssert.Contains(Output.Replace('\u00B7', ' '), "Binary content (");
+		Assert.DoesNotContain("leftbytes", Output);
+		Assert.DoesNotContain("rightbytes", Output);
+	}
+
+	/// <summary>
 	/// A side-by-side diff of a missing file reports the error.
 	/// </summary>
 	[TestMethod]
@@ -306,7 +325,8 @@ public class FileComparisonDisplayServiceTests : ConsoleTestBase
 	}
 
 	/// <summary>
-	/// Reading a directory as a file is reported as an error rather than thrown.
+	/// A directory given in place of a file is reported as an error rather than thrown. It is not
+	/// a file, so it is reported as not found, as the git-style and summary views report it.
 	/// </summary>
 	[TestMethod]
 	public void ShowSideBySideDiff_DirectoryInsteadOfFile_ReportsError()
@@ -317,9 +337,7 @@ public class FileComparisonDisplayServiceTests : ConsoleTestBase
 
 		FileComparisonDisplayService.ShowSideBySideDiff(left, directory);
 
-		Assert.IsTrue(
-			Output.Contains("IO error:", StringComparison.Ordinal) || Output.Contains("Access denied:", StringComparison.Ordinal),
-			$"Expected an IO or access error, got: {Output}");
+		StringAssert.Contains(Output, "File not found:");
 	}
 
 	/// <summary>
