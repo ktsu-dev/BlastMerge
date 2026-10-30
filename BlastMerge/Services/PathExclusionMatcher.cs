@@ -57,7 +57,11 @@ internal static class PathExclusionMatcher
 			return false;
 		}
 
-		string normalizedPattern = pattern.Replace('\\', '/');
+		string normalizedPattern = StripLeadingCurrentDirectory(pattern.Replace('\\', '/'));
+		if (normalizedPattern.Length == 0)
+		{
+			return false;
+		}
 
 		// A pattern with no wildcard has never been a glob here: it excludes any path containing it.
 		if (!normalizedPattern.Contains('*') && !normalizedPattern.Contains('?'))
@@ -78,6 +82,14 @@ internal static class PathExclusionMatcher
 	/// <returns>One or more globs; the path is excluded if any of them matches.</returns>
 	private static IEnumerable<string> ToGlobs(string pattern)
 	{
+		// A trailing separator ("*/node_modules/", "build*/") names a directory, gitignore style, so
+		// it excludes what is inside it. Kept as-is, the empty last component could never match a
+		// file, and the pattern silently excluded nothing (ktsu-dev/BlastMerge#116).
+		if (pattern.Length > 1 && pattern.EndsWith('/'))
+		{
+			pattern = $"{pattern.TrimEnd('/')}/*";
+		}
+
 		// "*/bin/*" has always meant "has a bin directory component at any depth", which a real
 		// glob spells "**/bin/**" -- a single "*" would pin bin to the second component.
 		if (pattern.StartsWith("*/", StringComparison.Ordinal)
@@ -110,6 +122,23 @@ internal static class PathExclusionMatcher
 		// to a component boundary at any depth. Matched as-is it was anchored to the start of the rooted
 		// path it is tested against, so it could never match and silently excluded nothing.
 		return [$"**/{pattern}", $"**/{pattern}/**"];
+	}
+
+	/// <summary>
+	/// Removes leading <c>./</c> segments, shell style, from a pattern. The path a pattern is tested
+	/// against is fully resolved, so it never contains a <c>/./</c> component, and <c>./bin/*</c>
+	/// kept as-is excluded nothing (ktsu-dev/BlastMerge#116).
+	/// </summary>
+	/// <param name="pattern">A pattern using <c>/</c> as its separator.</param>
+	/// <returns>The pattern without its leading <c>./</c> segments.</returns>
+	private static string StripLeadingCurrentDirectory(string pattern)
+	{
+		while (pattern.StartsWith("./", StringComparison.Ordinal))
+		{
+			pattern = pattern[2..].TrimStart('/');
+		}
+
+		return pattern;
 	}
 
 	/// <summary>

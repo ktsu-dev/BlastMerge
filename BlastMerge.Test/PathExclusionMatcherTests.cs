@@ -69,6 +69,36 @@ public class PathExclusionMatcherTests
 		Assert.IsTrue(PathExclusionMatcher.Matches(path, pattern));
 	}
 
+	// Shell-style "./bin/*" and gitignore-style "*/node_modules/" or "bin/" excluded nothing: the
+	// tested path never contains "/./", and a trailing separator left an empty last component that
+	// no file could match (ktsu-dev/BlastMerge#116).
+	[TestMethod]
+	[DataRow("/w/repo/bin/x.dll", "./bin/*")]
+	[DataRow("/w/repo/bin/x.dll", "././bin/*")]
+	[DataRow("/w/repo/bin/x.dll", "bin/")]
+	[DataRow("/w/repo/bin/x.dll", "./bin/")]
+	[DataRow("/w/repo/bin/x.dll", "*/bin/")]
+	[DataRow("/w/repo/node_modules/a/b.js", "*/node_modules/")]
+	[DataRow("/w/repo/node_modules/a/b.js", "./node_modules/*")]
+	[DataRow("/w/repo/build-out/x.dll", "build*/")]
+	[DataRow("/w/repo/bin/x.dll", ".\\bin\\*")]
+	public void Matches_DotSlashOrTrailingSlashPattern_MatchesTheDirectory(string path, string pattern)
+	{
+		Assert.IsTrue(PathExclusionMatcher.Matches(path, pattern));
+	}
+
+	[TestMethod]
+	public void Matches_TrailingSlashPattern_MatchesWholeComponents()
+	{
+		Assert.IsFalse(PathExclusionMatcher.Matches("/w/repo/binaries/x.dll", "*/bin/"),
+			"A component merely starting with 'bin' is not a 'bin' component.");
+		Assert.IsFalse(PathExclusionMatcher.Matches("/w/repo/mybin/x.dll", "./bin/*"),
+			"A component merely ending in 'bin' is not a 'bin' component.");
+		Assert.IsFalse(PathExclusionMatcher.Matches("/w/repo/src/x.cs", "*/node_modules/"));
+		Assert.IsFalse(PathExclusionMatcher.Matches("/w/repo/src/x.cs", "./"),
+			"A pattern that is only './' names nothing, so it must not exclude every path.");
+	}
+
 	[TestMethod]
 	public void Matches_RelativePatternWithSeparator_MatchesWholeComponents()
 	{
