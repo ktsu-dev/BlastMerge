@@ -1116,18 +1116,45 @@ public class ConsoleApplicationService : ApplicationService
 		(string leftLabel, string rightLabel) = FileDisplayService.MakeDistinguishedPaths(leftFile, rightFile);
 		string choice = UserInteractionService.ShowSelectionPrompt(
 			"[cyan]Content differs. What to do?[/]",
-			[
-				$"  Use {leftLabel}",
-				$"  Use {rightLabel}",
-				ActionDisplay.UseBoth,
-				"❌ Skip Both"
-			]);
+			GetReplaceChoiceOptions(leftLabel, rightLabel));
 
+		return MapReplaceChoice(choice, leftLabel, rightLabel);
+	}
+
+	/// <summary>
+	/// Gets the options offered for a replace block, in the order they are shown.
+	/// </summary>
+	/// <param name="leftLabel">The distinguished label of the left file</param>
+	/// <param name="rightLabel">The distinguished label of the right file</param>
+	/// <returns>The use-left, use-right, use-both and skip-both options</returns>
+	internal static string[] GetReplaceChoiceOptions(string leftLabel, string rightLabel) =>
+	[
+		$"  Use {leftLabel}",
+		$"  Use {rightLabel}",
+		ActionDisplay.UseBoth,
+		"❌ Skip Both"
+	];
+
+	/// <summary>
+	/// Maps the option chosen for a replace block back to a <see cref="BlockChoice"/>.
+	/// </summary>
+	/// <remarks>
+	/// Matches whole options rather than substrings: "❌ Skip Both" contains "Both" (#108), and the
+	/// option for a right label such as "Dockerfiles/Dockerfile" contains the one for a left label
+	/// "Dockerfile" (#113).
+	/// </remarks>
+	/// <param name="choice">The option the user chose</param>
+	/// <param name="leftLabel">The distinguished label of the left file</param>
+	/// <param name="rightLabel">The distinguished label of the right file</param>
+	/// <returns>The block choice the option stands for</returns>
+	internal static BlockChoice MapReplaceChoice(string choice, string leftLabel, string rightLabel)
+	{
+		string[] options = GetReplaceChoiceOptions(leftLabel, rightLabel);
 		return choice switch
 		{
-			var s when s.Contains($"Use {leftLabel}") => BlockChoice.UseVersion1,
-			var s when s.Contains($"Use {rightLabel}") => BlockChoice.UseVersion2,
-			var s when s.Contains("Both") => BlockChoice.UseBoth,
+			_ when choice == options[0] => BlockChoice.UseVersion1,
+			_ when choice == options[1] => BlockChoice.UseVersion2,
+			_ when choice == options[2] => BlockChoice.UseBoth,
 			_ => BlockChoice.Skip
 		};
 	}
