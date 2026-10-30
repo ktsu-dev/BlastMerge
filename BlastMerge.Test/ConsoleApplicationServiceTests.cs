@@ -548,6 +548,51 @@ public class ConsoleApplicationServiceTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// A recent batch whose name reads as markup is shown in the main menu and runs (#111).
+	/// </summary>
+	[TestMethod]
+	public void StartInteractiveMode_RecentBatchNamedLikeMarkup_IsShownAndRuns()
+	{
+		string repos = Path.Join(TempDirectory, "repos");
+		WriteFile(Path.Join("repos", "a", "README.md"), "same");
+		WriteFile(Path.Join("repos", "b", "README.md"), "same");
+		SaveBatch("Web [v2]", string.Empty, [repos], "README.md");
+		BlastMergeAppData.Get().RecentBatch = new RecentBatchInfo { BatchName = "Web [v2]" };
+		SelectIndex(MainMenuRunRecentBatch);
+		PressAnyKey();
+		SelectIndex(MainMenuExit);
+
+		service.StartInteractiveMode();
+
+		StringAssert.Contains(Output, "Run Recent Batch (Web [v2])");
+		StringAssert.Contains(Output, "Running recent batch 'Web [v2]' using configured search paths");
+		StringAssert.Contains(Output, "Batch operation completed.");
+		Assert.IsFalse(Output.Contains("Operation error", StringComparison.Ordinal), Output);
+	}
+
+	/// <summary>
+	/// A recent batch run in a directory whose name reads as markup reports that directory (#111).
+	/// </summary>
+	[TestMethod]
+	public void StartInteractiveMode_RecentBatchInADirectoryNamedLikeMarkup_ReportsIt()
+	{
+		string archive = Path.Join(TempDirectory, "[archive]");
+		WriteFile(Path.Join("[archive]", "x", "README.md"), "same");
+		SaveBatch("Docs", string.Empty, null, "README.md");
+		BlastMergeAppData.Get().RecentBatch = new RecentBatchInfo { BatchName = "Docs" };
+		SelectIndex(MainMenuRunRecentBatch);
+		Input.PushTextWithEnter(archive);
+		PressAnyKey();
+		SelectIndex(MainMenuExit);
+
+		service.StartInteractiveMode();
+
+		StringAssert.Contains(Output, "[archive]'");
+		StringAssert.Contains(Output, "Batch operation completed.");
+		Assert.IsFalse(Output.Contains("Operation error", StringComparison.Ordinal), Output);
+	}
+
+	/// <summary>
 	/// Declining to give a directory for the recent batch cancels it.
 	/// </summary>
 	[TestMethod]
