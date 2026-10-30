@@ -190,7 +190,7 @@ blastmerge . -b "Repository Sync Batch"
 4. **Progressive Merging**: Merges most similar pairs first to minimize conflicts
 5. **Conflict Resolution**: Interactive TUI for each conflict block with multiple resolution options
 6. **Cross-Repository Update**: Writes merged result to all original locations
-7. **Verification**: Confirms all locations now contain identical, unified content
+7. **Rollback**: If any location can't be written, the locations already written are restored, so every copy takes the merge or none does
 
 ### Performance Features
 

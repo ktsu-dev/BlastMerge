@@ -122,7 +122,8 @@ public static class ProgressReportingService
 
 		// Final summary message
 		AnsiConsole.WriteLine();
-		if (result.TotalMergeOperations > 0)
+		// A session that stopped is never reported as having had nothing to merge.
+		if (result.TotalMergeOperations > 0 || !result.IsSuccessful)
 		{
 			if (result.IsSuccessful)
 			{
