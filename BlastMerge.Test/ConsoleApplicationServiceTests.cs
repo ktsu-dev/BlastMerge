@@ -289,6 +289,41 @@ public class ConsoleApplicationServiceTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// With batches whose names differ only by case, running one runs that batch, not whichever
+	/// sorts first (ktsu-dev/BlastMerge#97).
+	/// </summary>
+	[TestMethod]
+	[DataRow("Web", "upper-case batch", "lower-case batch")]
+	[DataRow("web", "lower-case batch", "upper-case batch")]
+	public void ProcessBatch_NamesDifferingOnlyByCase_RunsTheExactMatch(string requested, string expectedDescription, string otherDescription)
+	{
+		SaveBatch("Web", "upper-case batch", null, "upper.txt");
+		SaveBatch("web", "lower-case batch", null, "lower.txt");
+
+		service.ProcessBatch(TempDirectory, requested);
+
+		StringAssert.Contains(Output, $"Found batch configuration: {requested}");
+		StringAssert.Contains(Output, expectedDescription);
+		Assert.IsFalse(Output.Contains(otherDescription, StringComparison.Ordinal), Output);
+	}
+
+	/// <summary>
+	/// A name in a different case from two stored batches can't be resolved to either, so neither runs.
+	/// </summary>
+	[TestMethod]
+	public void ProcessBatch_CaseInsensitiveMatchOfSeveralBatches_ReportsAmbiguity()
+	{
+		SaveBatch("Web", "upper-case batch", null, "upper.txt");
+		SaveBatch("web", "lower-case batch", null, "lower.txt");
+
+		service.ProcessBatch(TempDirectory, "WEB");
+
+		StringAssert.Contains(Output, "Batch configuration 'WEB' is ambiguous");
+		Assert.IsFalse(Output.Contains("Found batch configuration", StringComparison.Ordinal), Output);
+		Assert.IsNull(BlastMergeAppData.Get().RecentBatch);
+	}
+
+	/// <summary>
 	/// Processing a batch in a directory that does not exist is refused.
 	/// </summary>
 	[TestMethod]
