@@ -144,10 +144,52 @@ public class PathExclusionMatcherTests
 	}
 
 	[TestMethod]
-	public void Matches_PatternWithoutWildcards_IsAContainsCheck()
+	public void Matches_PatternWithoutWildcards_MatchesAWholeComponent()
 	{
 		Assert.IsTrue(PathExclusionMatcher.Matches("/work/src/generated/file.txt", "generated"));
 		Assert.IsFalse(PathExclusionMatcher.Matches("/work/src/file.txt", "generated"));
+	}
+
+	[TestMethod]
+	public void Matches_PatternWithoutWildcards_DoesNotMatchPartOfAName()
+	{
+		// ktsu-dev/BlastMerge#79: a bare "bin" or "obj" used to exclude any path containing those letters.
+		Assert.IsTrue(PathExclusionMatcher.Matches("/r/bin/x.dll", "bin"));
+		Assert.IsTrue(PathExclusionMatcher.Matches("/r/src/bin", "bin"), "A file named exactly bin is excluded.");
+		Assert.IsFalse(PathExclusionMatcher.Matches("/r/src/Combine.cs", "bin"));
+		Assert.IsFalse(PathExclusionMatcher.Matches("/r/cabinet/x.txt", "bin"));
+		Assert.IsFalse(PathExclusionMatcher.Matches("/r/src/ObjectPool.cs", "obj"));
+		Assert.IsFalse(PathExclusionMatcher.Matches("/r/src/Contest.cs", "test"));
+		Assert.IsFalse(PathExclusionMatcher.Matches("/r/digit.txt", "git"));
+		Assert.IsTrue(PathExclusionMatcher.Matches("/r/.git/config", ".git"));
+	}
+
+	[TestMethod]
+	public void Matches_PatternWithoutWildcards_WithSeparator_MatchesARunOfComponents()
+	{
+		Assert.IsTrue(PathExclusionMatcher.Matches("/r/src/generated/a.cs", "src/generated"));
+		Assert.IsTrue(PathExclusionMatcher.Matches("/r/src/generated/a.cs", "src/generated/"));
+		Assert.IsTrue(PathExclusionMatcher.Matches("/r/src/generated/a.cs", @"src\generated"));
+		Assert.IsFalse(PathExclusionMatcher.Matches("/r/src/generatedcode/a.cs", "src/generated"));
+		Assert.IsFalse(PathExclusionMatcher.Matches("/r/mysrc/generated/a.cs", "src/generated"));
+		Assert.IsFalse(PathExclusionMatcher.Matches("/r/generated/src/a.cs", "src/generated"));
+	}
+
+	[TestMethod]
+	public void Matches_AbsolutePatternWithoutWildcards_IsAnchoredToTheRoot()
+	{
+		Assert.IsTrue(PathExclusionMatcher.Matches("/work/src/a.cs", "/work/src"));
+		Assert.IsTrue(PathExclusionMatcher.Matches("/work/src", "/work/src"));
+		Assert.IsFalse(PathExclusionMatcher.Matches("/other/work/src/a.cs", "/work/src"));
+		Assert.IsFalse(PathExclusionMatcher.Matches("/work/srcs/a.cs", "/work/src"));
+		Assert.IsTrue(PathExclusionMatcher.Matches("c:/work/src/a.cs", "C:/Work"));
+	}
+
+	[TestMethod]
+	public void Matches_PatternWithoutWildcards_TreatsBracketsLiterally()
+	{
+		Assert.IsTrue(PathExclusionMatcher.Matches("/r/pages/[id]/page.tsx", "[id]"));
+		Assert.IsFalse(PathExclusionMatcher.Matches("/r/pages/i/page.tsx", "[id]"));
 	}
 
 	[TestMethod]
