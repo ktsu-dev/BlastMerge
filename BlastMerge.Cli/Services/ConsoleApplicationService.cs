@@ -164,11 +164,12 @@ public class ConsoleApplicationService : ApplicationService
 			return;
 		}
 
-		// Record this batch as recently used
+		// Record this batch as recently used, by its stored name rather than as typed, so the recent
+		// entry cannot later resolve to a different batch (ktsu-dev/BlastMerge#134)
 		BlastMergeAppData appData = BlastMergeAppData.Get();
 		appData.RecentBatch = new RecentBatchInfo
 		{
-			BatchName = batchName,
+			BatchName = batch.Name,
 			LastUsed = DateTime.UtcNow
 		};
 		appData.Save();
@@ -690,7 +691,9 @@ public class ConsoleApplicationService : ApplicationService
 			return;
 		}
 
-		BatchConfiguration? selectedBatch = GetBatchConfiguration(recentBatch);
+		// The recent batch is recorded by its exact name, so resolve it exactly. The case-insensitive
+		// fallback would run a sibling such as `web` after `Web` was deleted (ktsu-dev/BlastMerge#134).
+		BatchConfiguration? selectedBatch = AppDataBatchManager.LoadBatch(recentBatch);
 		if (selectedBatch == null)
 		{
 			ShowBatchNotFoundMessage(recentBatch);
