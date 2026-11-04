@@ -2,6 +2,9 @@
 
 Changes since v1.11.4:
 
+- Run the batch whose name matches exactly, not the first in any case [patch] (#132) (matt-edmondson)
+- Exit 0 with BlastMerge's own text for --help and --version [patch] (#131) (matt-edmondson)
+- Match a wildcard-free exclusion against whole path components [patch] (#130) (matt-edmondson)
 - Restore already-written copies when a merge write fails [patch] (Claude)
 - Show binary files by hash in the side-by-side diff [patch] (Claude)
 - Print one marker per line in the git-style character diff [patch] (Claude)
