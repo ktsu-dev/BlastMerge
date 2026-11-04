@@ -108,6 +108,25 @@ public class CommandLineHandlerTests
 		Assert.IsEmpty(_applicationService.Calls);
 	}
 
+	/// <summary>
+	/// The long and short forms of help and version must behave the same, so an install check
+	/// such as <c>blastmerge --version || exit 1</c> passes (ktsu-dev/BlastMerge#69).
+	/// </summary>
+	[TestMethod]
+	[DataRow("--help", "-h")]
+	[DataRow("--version", "-v")]
+	public void ProcessCommandLineArguments_LongAndShortFlags_ExitZeroWithTheSameOutput(string longFlag, string shortFlag)
+	{
+		(int longExitCode, string longOutput) = Run(longFlag);
+		(int shortExitCode, string shortOutput) = Run(shortFlag);
+
+		Assert.AreEqual(0, longExitCode, longOutput);
+		Assert.AreEqual(0, shortExitCode, shortOutput);
+		Assert.IsFalse(string.IsNullOrWhiteSpace(longOutput));
+		Assert.AreEqual(shortOutput, longOutput);
+		Assert.IsEmpty(_applicationService.Calls);
+	}
+
 	[TestMethod]
 	public void ProcessCommandLineArguments_WithListBatchesFlag_ListsBatches()
 	{

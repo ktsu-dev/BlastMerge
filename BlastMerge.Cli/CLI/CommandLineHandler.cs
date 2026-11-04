@@ -26,7 +26,15 @@ public class CommandLineHandler(IApplicationService applicationService) : IComma
 
 		try
 		{
-			using Parser parser = new(with => with.HelpWriter = Console.Error);
+			// CommandLineParser's built-in --help/--version would answer the long forms itself, with
+			// its own text and through the error path (exit 1), while -h/-v reach the declared options.
+			// Turning them off sends both forms to ShowHelp/ShowVersion (ktsu-dev/BlastMerge#69).
+			using Parser parser = new(with =>
+			{
+				with.HelpWriter = Console.Error;
+				with.AutoHelp = false;
+				with.AutoVersion = false;
+			});
 			return parser
 				.ParseArguments<CommandLineOptions>(args)
 				.MapResult(
@@ -126,7 +134,6 @@ public class CommandLineHandler(IApplicationService applicationService) : IComma
 	private static int HandleParsingErrors(IEnumerable<Error> errors)
 	{
 		Ensure.NotNull(errors);
-		// Help and version errors are handled by CommandLineParser automatically
 		return 1;
 	}
 
