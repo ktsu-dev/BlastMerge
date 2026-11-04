@@ -800,6 +800,70 @@ public class BatchOperationsMenuHandlerTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// A batch whose filePatterns is null is rejected by name, not a crash, and the rest still import.
+	/// </summary>
+	[TestMethod]
+	public void Import_NullFilePatterns_RejectsThatBatch()
+	{
+		string path = WriteFile("null-patterns.json", """
+			[
+				{ "name": "Broken", "filePatterns": null, "searchPaths": null, "pathExclusionPatterns": null },
+				{ "name": "Incoming", "filePatterns": ["*.md"], "searchPaths": [null, "src"] }
+			]
+			""");
+
+		Manage(Import, () =>
+		{
+			Answer(path, "y");
+			PressAnyKey();
+		});
+
+		StringAssert.Contains(Output, "Broken - 0 patterns");
+		StringAssert.Contains(Output, "Skipping invalid batch: Broken");
+		Assert.IsNull(AppDataBatchManager.LoadBatch("Broken"));
+		Assert.AreSequenceEqual(["src"], AppDataBatchManager.LoadBatch("Incoming")!.SearchPaths);
+		StringAssert.Contains(Output, "Imported: 1");
+		StringAssert.Contains(Output, "Errors: 1");
+	}
+
+	/// <summary>
+	/// A null entry in the imported array is dropped instead of crashing the import.
+	/// </summary>
+	[TestMethod]
+	public void Import_NullEntry_IsDropped()
+	{
+		string path = WriteFile("null-entry.json", """[null, { "name": "Incoming", "filePatterns": ["*.md", null] }, { "name": "Kept", "filePatterns": ["*.md"] }]""");
+
+		Manage(Import, () =>
+		{
+			Answer(path, "y");
+			PressAnyKey();
+		});
+
+		StringAssert.Contains(Output, "Found 2 batch configurations to import:");
+		StringAssert.Contains(Output, "Skipping invalid batch: Incoming");
+		Assert.IsNull(AppDataBatchManager.LoadBatch("Incoming"));
+		Assert.IsNotNull(AppDataBatchManager.LoadBatch("Kept"));
+	}
+
+	/// <summary>
+	/// A file holding only null entries has nothing to import.
+	/// </summary>
+	[TestMethod]
+	public void Import_OnlyNullEntries_ReportsNothingToImport()
+	{
+		string path = WriteFile("nulls.json", "[null, null]");
+
+		Manage(Import, () =>
+		{
+			Answer(path);
+			PressAnyKey();
+		});
+
+		StringAssert.Contains(Output, "No valid batch configurations found in the file.");
+	}
+
+	/// <summary>
 	/// A batch exported and then imported over an empty store comes back with the same patterns.
 	/// </summary>
 	[TestMethod]
