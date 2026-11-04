@@ -111,6 +111,11 @@ public static class AppDataBatchManager
 
 			if (removed)
 			{
+				if (string.Equals(AppData.RecentBatch?.BatchName, name, StringComparison.Ordinal))
+				{
+					AppData.RecentBatch = null;
+				}
+
 				if (AppData.Settings.AutoSaveEnabled)
 				{
 					AppData.Save();
