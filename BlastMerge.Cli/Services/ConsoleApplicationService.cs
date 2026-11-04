@@ -181,20 +181,41 @@ public class ConsoleApplicationService : ApplicationService
 	/// <summary>
 	/// Gets the batch configuration by name.
 	/// </summary>
+	/// <remarks>
+	/// Batch names are stored case-sensitively, so <c>Web</c> and <c>web</c> can both exist. An exact
+	/// match is therefore preferred; a name typed in a different case is accepted only when it matches a
+	/// single batch. Taking the first case-insensitive match instead ran <c>web</c> when <c>Web</c> was
+	/// asked for (ktsu-dev/BlastMerge#97).
+	/// </remarks>
 	/// <param name="batchName">The name of the batch configuration.</param>
-	/// <returns>The batch configuration or null if not found.</returns>
+	/// <returns>The batch configuration or null if not found or ambiguous.</returns>
 	private static BatchConfiguration? GetBatchConfiguration(string batchName)
 	{
-		IReadOnlyCollection<BatchConfiguration> allBatches = AppDataBatchManager.GetAllBatches();
-		BatchConfiguration? batch = allBatches.FirstOrDefault(b => b.Name.Equals(batchName, StringComparison.OrdinalIgnoreCase));
-
-		if (batch == null)
+		BatchConfiguration? exactMatch = AppDataBatchManager.LoadBatch(batchName);
+		if (exactMatch != null)
 		{
-			UIHelper.ShowError($"Batch configuration '{batchName}' not found.");
-			UIHelper.ShowInfo("Use the 'List Batches' option to see available configurations.");
+			return exactMatch;
 		}
 
-		return batch;
+		List<BatchConfiguration> caseInsensitiveMatches = [.. AppDataBatchManager.GetAllBatches()
+			.Where(b => b.Name.Equals(batchName, StringComparison.OrdinalIgnoreCase))];
+
+		if (caseInsensitiveMatches.Count == 1)
+		{
+			return caseInsensitiveMatches[0];
+		}
+
+		if (caseInsensitiveMatches.Count > 1)
+		{
+			string candidates = string.Join(", ", caseInsensitiveMatches.Select(b => $"'{b.Name}'"));
+			UIHelper.ShowError($"Batch configuration '{batchName}' is ambiguous: it matches {candidates}.");
+			UIHelper.ShowInfo("Use the batch name with its exact capitalisation.");
+			return null;
+		}
+
+		UIHelper.ShowError($"Batch configuration '{batchName}' not found.");
+		UIHelper.ShowInfo("Use the 'List Batches' option to see available configurations.");
+		return null;
 	}
 
 	/// <summary>
