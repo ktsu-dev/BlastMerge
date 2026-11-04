@@ -228,6 +228,23 @@ public class FileFinderTests : MockFileSystemTestBase
 	}
 
 	[TestMethod]
+	public void FindFiles_WithBareDirectoryNameExclusions_KeepsFilesWhoseNamesContainThem()
+	{
+		// ktsu-dev/BlastMerge#79: "bin" and "obj" used to exclude Combine.cs and ObjectPool.cs.
+		CreateFile(Path.Join("src", "Combine.cs"), "combine");
+		CreateFile(Path.Join("src", "ObjectPool.cs"), "pool");
+		CreateFile(Path.Join("src", "Plain.cs"), "plain");
+		CreateFile(Path.Join("bin", "Gen.cs"), "gen");
+		CreateFile(Path.Join("obj", "Gen2.cs"), "gen2");
+
+		IReadOnlyCollection<string> files = _fileFinderAdapter.FindFiles([], TestDirectory, "*.cs", ["bin", "obj"]);
+
+		CollectionAssert.AreEquivalent(
+			new[] { "Combine.cs", "ObjectPool.cs", "Plain.cs" },
+			files.Select(Path.GetFileName).ToArray());
+	}
+
+	[TestMethod]
 	public void FindFiles_WithWildcardExclusion_ExcludesMatchingPaths()
 	{
 		// Arrange

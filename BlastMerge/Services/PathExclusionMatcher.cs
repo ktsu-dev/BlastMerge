@@ -63,10 +63,13 @@ internal static class PathExclusionMatcher
 			return false;
 		}
 
-		// A pattern with no wildcard has never been a glob here: it excludes any path containing it.
+		// A pattern with no wildcard names whole path components ("bin", "src/generated"), not a
+		// substring: as a substring, "bin" also excluded Combine.cs and "obj" ObjectPool.cs
+		// (ktsu-dev/BlastMerge#79). It is matched literally rather than as a glob, so a name such as
+		// "[id]" keeps meaning those characters.
 		if (!normalizedPattern.Contains('*') && !normalizedPattern.Contains('?'))
 		{
-			return normalizedPath.Contains(normalizedPattern, StringComparison.OrdinalIgnoreCase);
+			return MatchesComponents(normalizedPath, normalizedPattern);
 		}
 
 		string loweredPath = normalizedPath.ToLowerInvariant();
@@ -122,6 +125,55 @@ internal static class PathExclusionMatcher
 		// to a component boundary at any depth. Matched as-is it was anchored to the start of the rooted
 		// path it is tested against, so it could never match and silently excluded nothing.
 		return [$"**/{pattern}", $"**/{pattern}/**"];
+	}
+
+	/// <summary>
+	/// Determines whether a path contains a wildcard-free pattern as a run of whole components.
+	/// </summary>
+	/// <remarks>
+	/// A relative pattern matches at any depth, so <c>bin</c> excludes <c>/r/bin/x.dll</c> and a file
+	/// named exactly <c>bin</c>, but not <c>/r/src/Combine.cs</c> or <c>/r/cabinet/x</c>. An absolute
+	/// pattern is anchored to the start of the path and excludes that path and everything below it.
+	/// </remarks>
+	/// <param name="normalizedPath">The path to test, rooted and using <c>/</c> as its separator.</param>
+	/// <param name="pattern">A non-empty pattern without wildcards, using <c>/</c> as its separator.</param>
+	/// <returns><see langword="true"/> if the pattern's components appear in order in the path.</returns>
+	private static bool MatchesComponents(string normalizedPath, string pattern)
+	{
+		string[] pathComponents = normalizedPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+		string[] patternComponents = pattern.Split('/', StringSplitOptions.RemoveEmptyEntries);
+		if (patternComponents.Length == 0)
+		{
+			// "/" names the root, which every rooted path is under.
+			return pattern.StartsWith('/');
+		}
+
+		// An absolute pattern may only start at the first component; a relative one at any.
+		int lastStart = pathComponents.Length - patternComponents.Length;
+		if (IsAbsolute(pattern))
+		{
+			lastStart = Math.Min(lastStart, 0);
+		}
+
+		for (int start = 0; start <= lastStart; start++)
+		{
+			bool matched = true;
+			for (int i = 0; i < patternComponents.Length; i++)
+			{
+				if (!string.Equals(pathComponents[start + i], patternComponents[i], StringComparison.OrdinalIgnoreCase))
+				{
+					matched = false;
+					break;
+				}
+			}
+
+			if (matched)
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/// <summary>
