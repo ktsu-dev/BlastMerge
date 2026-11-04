@@ -132,25 +132,25 @@ public static class ComparisonOperationsService
 		table.AddRow(
 			"[green]Identical Files[/]",
 			$"[cyan]{result!.SameFiles.Count}[/]",
-			string.Join(", ", result.SameFiles.Take(3).Select(Path.GetFileName))
+			Markup.Escape(string.Join(", ", result.SameFiles.Take(3).Select(Path.GetFileName)))
 		);
 
 		table.AddRow(
 			"[yellow]Modified Files[/]",
 			$"[cyan]{result.ModifiedFiles.Count}[/]",
-			string.Join(", ", result.ModifiedFiles.Take(3).Select(Path.GetFileName))
+			Markup.Escape(string.Join(", ", result.ModifiedFiles.Take(3).Select(Path.GetFileName)))
 		);
 
 		table.AddRow(
 			"[red]Only in First Directory[/]",
 			$"[cyan]{result.OnlyInDir1.Count}[/]",
-			string.Join(", ", result.OnlyInDir1.Take(3).Select(Path.GetFileName))
+			Markup.Escape(string.Join(", ", result.OnlyInDir1.Take(3).Select(Path.GetFileName)))
 		);
 
 		table.AddRow(
 			"[red]Only in Second Directory[/]",
 			$"[cyan]{result.OnlyInDir2.Count}[/]",
-			string.Join(", ", result.OnlyInDir2.Take(3).Select(Path.GetFileName))
+			Markup.Escape(string.Join(", ", result.OnlyInDir2.Take(3).Select(Path.GetFileName)))
 		);
 
 		AnsiConsole.Write(table);
