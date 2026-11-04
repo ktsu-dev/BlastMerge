@@ -412,6 +412,40 @@ public class FileComparisonDisplayServiceTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// Labels for bracketed route files such as <c>[id].tsx</c> are printed literally in the diff block
+	/// table's headers instead of being parsed as Spectre markup.
+	/// </summary>
+	[TestMethod]
+	public void ShowDiffBlock_BracketedLabels_AreRenderedLiterally()
+	{
+		string[] lines1 = ["first", "old", "last"];
+		string[] lines2 = ["first", "new", "last"];
+		DiffBlock block = new(1, 1, 1, 1);
+		BlockContext context = BlockContext.Create(["first"], ["last"], ["first"], ["last"]);
+
+		FileComparisonDisplayService.ShowDiffBlock(lines1, lines2, block, context, "r1/.../[id].tsx", "r2/.../[id].tsx");
+
+		StringAssert.Contains(Output, "r1/.../[id].tsx");
+		StringAssert.Contains(Output, "r2/.../[id].tsx");
+	}
+
+	/// <summary>
+	/// The side-by-side diff of two bracketed route files prints their paths literally in the headers.
+	/// </summary>
+	[TestMethod]
+	public void ShowSideBySideDiff_BracketedPaths_AreRenderedLiterally()
+	{
+		string left = WriteFile(Path.Join("r1", "app", "[id].tsx"), "one\nold\nthree\n");
+		string right = WriteFile(Path.Join("r2", "app", "[id].tsx"), "one\nnew\nthree\n");
+
+		FileComparisonDisplayService.ShowSideBySideDiff(left, right);
+
+		StringAssert.Contains(Output, "[id].tsx");
+		StringAssert.Contains(Output, "old");
+		StringAssert.Contains(Output, "new");
+	}
+
+	/// <summary>
 	/// Rendering the diff block table numbers rows by the left file, falling back to the right file
 	/// for rows with no left line, and marks deleted and inserted lines.
 	/// </summary>

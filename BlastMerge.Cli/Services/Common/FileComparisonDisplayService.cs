@@ -238,9 +238,9 @@ public static class FileComparisonDisplayService
 
 		return new Table()
 			.AddColumn(new TableColumn("[dim]#[/]").Width(4))           // Line numbers for file1
-			.AddColumn(new TableColumn($"[bold cyan]{label1}[/]"))       // File1 content
+			.AddColumn(new TableColumn($"[bold cyan]{Markup.Escape(label1)}[/]"))       // File1 content
 			.AddColumn(new TableColumn("[dim]#[/]").Width(4))           // Line numbers for file2
-			.AddColumn(new TableColumn($"[bold cyan]{label2}[/]"))       // File2 content
+			.AddColumn(new TableColumn($"[bold cyan]{Markup.Escape(label2)}[/]"))       // File2 content
 			.Border(TableBorder.Rounded)
 			.Expand();
 	}
@@ -558,8 +558,8 @@ public static class FileComparisonDisplayService
 
 		Table table = new Table()
 			.AddColumn(new TableColumn("[bold]Line[/]").Width(6))
-			.AddColumn(new TableColumn($"[bold]{leftLabel}[/]").Width(50))
-			.AddColumn(new TableColumn($"[bold]{rightLabel}[/]").Width(50));
+			.AddColumn(new TableColumn($"[bold]{Markup.Escape(leftLabel)}[/]").Width(50))
+			.AddColumn(new TableColumn($"[bold]{Markup.Escape(rightLabel)}[/]").Width(50));
 
 		// Add context before
 		AddContextLines(table, context.ContextBefore1, context.ContextBefore2,
