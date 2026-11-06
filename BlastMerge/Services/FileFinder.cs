@@ -92,7 +92,7 @@ public static class FileFinder
 			}
 
 			// Search in subdirectories
-			foreach (string directory in fileSystem.Directory.GetDirectories(rootDirectory).Where(dir => !IsGitSubmodule(dir, fileSystem)))
+			foreach (string directory in fileSystem.Directory.GetDirectories(rootDirectory).Where(dir => !IsVersionControlMetadata(dir) && !IsGitSubmodule(dir, fileSystem)))
 			{
 				try
 				{
@@ -278,7 +278,26 @@ public static class FileFinder
 	/// Determines if a directory should be skipped
 	/// </summary>
 	private static bool ShouldSkipDirectory(string directory, IReadOnlyCollection<string> pathExclusionPatterns, IFileSystem fileSystem) =>
-		IsGitSubmodule(directory, fileSystem) || ShouldExcludePath(directory, pathExclusionPatterns);
+		IsVersionControlMetadata(directory) || IsGitSubmodule(directory, fileSystem) || ShouldExcludePath(directory, pathExclusionPatterns);
+
+	/// <summary>
+	/// Names of the directories version control keeps its own metadata in. Their files (a
+	/// repository's <c>config</c>, <c>HEAD</c>, <c>description</c>, hook samples) are never content
+	/// to sync between repositories, so the search never enters them.
+	/// </summary>
+	private static readonly string[] VersionControlMetadataDirectoryNames = [".git", ".hg", ".svn", ".bzr"];
+
+	/// <summary>
+	/// Determines if a directory is version control metadata, such as a repository's <c>.git</c>
+	/// directory. A <c>.git</c> file marks a submodule or worktree and is not affected.
+	/// </summary>
+	/// <param name="directoryPath">The directory path to check</param>
+	/// <returns>True if the directory holds version control metadata, false otherwise</returns>
+	private static bool IsVersionControlMetadata(string directoryPath)
+	{
+		string name = Path.GetFileName(directoryPath.TrimEnd('/', '\\'));
+		return VersionControlMetadataDirectoryNames.Contains(name, StringComparer.OrdinalIgnoreCase);
+	}
 
 	/// <summary>
 	/// Determines if a path should be excluded based on exclusion patterns

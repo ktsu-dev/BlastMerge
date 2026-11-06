@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions;
+using System.Linq;
 using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -86,5 +87,43 @@ public class FileFinderCoverageTests : MockFileSystemTestBase
 		IReadOnlyCollection<string> files = FileFinder.FindFiles(root, "file.txt", fileSystem.Object);
 
 		Assert.AreSequenceEqual([found], files);
+	}
+
+	/// <summary>
+	/// A repository's own <c>config</c> under <c>.git</c> is never found as a copy of a project's
+	/// <c>config</c>, so it can't be offered for merging into another repository.
+	/// </summary>
+	[TestMethod]
+	public void FindFiles_SkipsGitDirectories()
+	{
+		string root = CreateDirectory("dev");
+		string configA = CreateFile(Path.Join("dev", "a", "config"), "x");
+		string configB = CreateFile(Path.Join("dev", "b", "config"), "x");
+		CreateFile(Path.Join("dev", "a", ".git", "config"), "[remote \"origin\"]\n\turl = https://example.com/a.git");
+		CreateFile(Path.Join("dev", "b", ".git", "config"), "[remote \"origin\"]\n\turl = https://example.com/b.git");
+		CreateFile(Path.Join("dev", "b", ".git", "modules", "sub", "config"), "y");
+
+		IReadOnlyCollection<string> files = FileFinder.FindFiles(root, "config", MockFileSystem);
+
+		CollectionAssert.AreEquivalent(new[] { configA, configB }, files.ToArray());
+	}
+
+	/// <summary>
+	/// The exclusion-aware search skips <c>.git</c> and other version control metadata directories
+	/// even when no exclusion pattern names them.
+	/// </summary>
+	[TestMethod]
+	public void FindFiles_WithExclusions_SkipsVersionControlDirectories()
+	{
+		string root = CreateDirectory("repos");
+		string kept = CreateFile(Path.Join("repos", "a", "HEAD"), "x");
+		CreateFile(Path.Join("repos", "a", ".git", "HEAD"), "ref: refs/heads/main");
+		CreateFile(Path.Join("repos", "b", ".hg", "HEAD"), "y");
+		CreateFile(Path.Join("repos", "c", ".svn", "HEAD"), "y");
+		IReadOnlyCollection<string> noExclusions = [];
+
+		IReadOnlyCollection<string> files = FileFinder.FindFiles(root, "HEAD", noExclusions, progressCallback: null);
+
+		Assert.AreSequenceEqual([kept], files);
 	}
 }
