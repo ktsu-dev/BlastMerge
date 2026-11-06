@@ -3,6 +3,7 @@
 namespace ktsu.BlastMerge.Test;
 
 using System;
+using System.Linq;
 using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -333,9 +334,8 @@ public class CharacterLevelDifferTests
 
 		foreach (string side in new[] { leftSide, rightSide })
 		{
-			foreach (string span in side.Split("[/]"))
+			foreach (string content in side.Split("[/]").Select(span => span[(span.IndexOf(']') + 1)..]))
 			{
-				string content = span[(span.IndexOf(']') + 1)..];
 				Assert.IsTrue(content.Length == 0 || !char.IsLowSurrogate(content[0]), $"A span starts with a lone low surrogate in '{side}'");
 				Assert.IsTrue(content.Length == 0 || !char.IsHighSurrogate(content[^1]), $"A span ends with a lone high surrogate in '{side}'");
 			}
