@@ -3,8 +3,9 @@
 namespace ktsu.BlastMerge.Services;
 
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
-using DiffPlex;
 using DiffPlex.Model;
 using Spectre.Console;
 
@@ -13,8 +14,6 @@ using Spectre.Console;
 /// </summary>
 public static class CharacterLevelDiffer
 {
-	private static readonly Differ Differ = new();
-
 	/// <summary>
 	/// Creates a character-level diff visualization of two strings with background highlighting
 	/// </summary>
@@ -26,8 +25,12 @@ public static class CharacterLevelDiffer
 		Ensure.NotNull(oldText);
 		Ensure.NotNull(newText);
 
-		// Use DiffPlex character-level diffing
-		DiffResult charDiff = Differ.CreateCharacterDiffs(oldText, newText, ignoreWhitespace: false);
+		// Diff whole text elements rather than UTF-16 code units. Emoji in one block share a high
+		// surrogate, so a code-unit diff marks only the low surrogate as changed and the pair is
+		// split across two markup spans, each half then rendering as U+FFFD.
+		string[] oldElements = SplitTextElements(oldText);
+		string[] newElements = SplitTextElements(newText);
+		DiffResult elementDiff = DiffPlexHelper.CreateLineDiffsFromLines(oldElements, newElements);
 
 		StringBuilder oldHighlighted = new();
 		StringBuilder newHighlighted = new();
@@ -35,83 +38,53 @@ public static class CharacterLevelDiffer
 		int oldIndex = 0;
 		int newIndex = 0;
 
-		foreach (DiffBlock block in charDiff.DiffBlocks)
+		foreach (DiffBlock block in elementDiff.DiffBlocks)
 		{
-			// Add unchanged characters before this block
-			oldIndex = AddUnchangedCharactersBefore(oldText, oldHighlighted, oldIndex, block.DeleteStartA);
-			newIndex = AddUnchangedCharactersBefore(newText, newHighlighted, newIndex, block.InsertStartB);
+			// Add unchanged elements before this block
+			oldIndex = AppendElements(oldElements, oldHighlighted, oldIndex, block.DeleteStartA - oldIndex, "dim white");
+			newIndex = AppendElements(newElements, newHighlighted, newIndex, block.InsertStartB - newIndex, "dim white");
 
-			// Handle deleted and inserted characters
-			oldIndex = AddDeletedCharacters(oldText, oldHighlighted, oldIndex, block.DeleteCountA);
-			newIndex = AddInsertedCharacters(newText, newHighlighted, newIndex, block.InsertCountB);
+			// Handle deleted and inserted elements
+			oldIndex = AppendElements(oldElements, oldHighlighted, oldIndex, block.DeleteCountA, "red");
+			newIndex = AppendElements(newElements, newHighlighted, newIndex, block.InsertCountB, "green");
 		}
 
-		// Add any remaining unchanged characters
-		AddRemainingUnchangedCharacters(oldText, oldHighlighted, oldIndex);
-		AddRemainingUnchangedCharacters(newText, newHighlighted, newIndex);
+		// Add any remaining unchanged elements
+		AppendElements(oldElements, oldHighlighted, oldIndex, oldElements.Length - oldIndex, "dim white");
+		AppendElements(newElements, newHighlighted, newIndex, newElements.Length - newIndex, "dim white");
 
 		return (oldHighlighted.ToString(), newHighlighted.ToString());
 	}
 
 	/// <summary>
-	/// Adds unchanged characters before a diff block
+	/// Splits text into text elements (grapheme clusters), so a surrogate pair, or a base
+	/// character with its combining marks, is never divided between two markup spans
 	/// </summary>
-	private static int AddUnchangedCharactersBefore(string text, StringBuilder highlighted, int currentIndex, int endIndex)
+	private static string[] SplitTextElements(string text)
 	{
+		List<string> elements = [];
+		TextElementEnumerator enumerator = StringInfo.GetTextElementEnumerator(text);
+		while (enumerator.MoveNext())
+		{
+			elements.Add(enumerator.GetTextElement());
+		}
+
+		return [.. elements];
+	}
+
+	/// <summary>
+	/// Appends up to <paramref name="count"/> text elements, each wrapped in the given style
+	/// </summary>
+	private static int AppendElements(string[] elements, StringBuilder highlighted, int currentIndex, int count, string style)
+	{
+		int endIndex = Math.Min(elements.Length, currentIndex + Math.Max(0, count));
 		while (currentIndex < endIndex)
 		{
-			string charText = EscapeForMarkup(text[currentIndex].ToString());
-			highlighted.Append($"[dim white]{charText}[/]");
+			highlighted.Append($"[{style}]{EscapeForMarkup(elements[currentIndex])}[/]");
 			currentIndex++;
 		}
-		return currentIndex;
-	}
 
-	/// <summary>
-	/// Adds deleted characters with red highlighting
-	/// </summary>
-	private static int AddDeletedCharacters(string text, StringBuilder highlighted, int currentIndex, int count)
-	{
-		for (int i = 0; i < count; i++)
-		{
-			if (currentIndex < text.Length)
-			{
-				string charText = EscapeForMarkup(text[currentIndex].ToString());
-				highlighted.Append($"[red]{charText}[/]");
-				currentIndex++;
-			}
-		}
 		return currentIndex;
-	}
-
-	/// <summary>
-	/// Adds inserted characters with green highlighting
-	/// </summary>
-	private static int AddInsertedCharacters(string text, StringBuilder highlighted, int currentIndex, int count)
-	{
-		for (int i = 0; i < count; i++)
-		{
-			if (currentIndex < text.Length)
-			{
-				string charText = EscapeForMarkup(text[currentIndex].ToString());
-				highlighted.Append($"[green]{charText}[/]");
-				currentIndex++;
-			}
-		}
-		return currentIndex;
-	}
-
-	/// <summary>
-	/// Adds remaining unchanged characters at the end
-	/// </summary>
-	private static void AddRemainingUnchangedCharacters(string text, StringBuilder highlighted, int startIndex)
-	{
-		while (startIndex < text.Length)
-		{
-			string charText = EscapeForMarkup(text[startIndex].ToString());
-			highlighted.Append($"[dim white]{charText}[/]");
-			startIndex++;
-		}
 	}
 
 	/// <summary>

@@ -3,6 +3,7 @@
 namespace ktsu.BlastMerge.Test;
 
 using System;
+using System.Linq;
 using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -314,5 +315,33 @@ public class CharacterLevelDifferTests
 		// Assert
 		Assert.IsTrue(highlightedOld.Contains("[dim white]"), "Highlighted old text should contain dim white markup for unchanged characters");
 		Assert.IsTrue(highlightedNew.Contains("[green]"), "Highlighted new text should contain green markup for the added space");
+	}
+
+	[TestMethod]
+	public void CreateCharacterLevelDiff_WithChangedEmoji_KeepsEachSurrogatePairInOneSpan()
+	{
+		// Both emoji share the high surrogate D83D, so only the low surrogate differs by code unit
+		(string highlightedOld, string highlightedNew) = CharacterLevelDiffer.CreateCharacterLevelDiff("a\U0001F600", "a\U0001F601");
+
+		Assert.AreEqual("[dim white]a[/][red]\U0001F600[/]", highlightedOld);
+		Assert.AreEqual("[dim white]a[/][green]\U0001F601[/]", highlightedNew);
+	}
+
+	[TestMethod]
+	public void CreateSideBySideCharacterDiff_WithChangedEmoji_HasNoLoneSurrogateInAnySpan()
+	{
+		(string leftSide, string rightSide) = CharacterLevelDiffer.CreateSideBySideCharacterDiff("Status: \U0001F600", "Status: \U0001F601");
+
+		foreach (string side in new[] { leftSide, rightSide })
+		{
+			foreach (string content in side.Split("[/]").Select(span => span[(span.IndexOf(']') + 1)..]))
+			{
+				Assert.IsTrue(content.Length == 0 || !char.IsLowSurrogate(content[0]), $"A span starts with a lone low surrogate in '{side}'");
+				Assert.IsTrue(content.Length == 0 || !char.IsHighSurrogate(content[^1]), $"A span ends with a lone high surrogate in '{side}'");
+			}
+		}
+
+		Assert.IsTrue(leftSide.Contains("[red]\U0001F600[/]", StringComparison.Ordinal), leftSide);
+		Assert.IsTrue(rightSide.Contains("[green]\U0001F601[/]", StringComparison.Ordinal), rightSide);
 	}
 }
