@@ -81,6 +81,39 @@ public class ComparisonOperationsServiceTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// The detail for a modified file lists its changed lines, not only how many there are.
+	/// </summary>
+	[TestMethod]
+	public void CompareDirectories_DetailRequested_ListsChangedLines()
+	{
+		Input.PushTextWithEnter("y");
+
+		ComparisonOperationsService.CompareDirectories(left, right, "*.txt", recursive: false);
+
+		StringAssert.Contains(Output, "two → TWO");
+		StringAssert.Contains(Output, "+ Line 4: four");
+	}
+
+	/// <summary>
+	/// When more files are modified than are shown in detail, the comparison says so.
+	/// </summary>
+	[TestMethod]
+	public void CompareDirectories_DetailRequestedForManyFiles_SaysHowManyWereShown()
+	{
+		for (int i = 0; i < 6; i++)
+		{
+			WriteFile(Path.Join("left", $"extra{i}.txt"), "a\n");
+			WriteFile(Path.Join("right", $"extra{i}.txt"), "b\n");
+		}
+
+		Input.PushTextWithEnter("y");
+
+		ComparisonOperationsService.CompareDirectories(left, right, "*.txt", recursive: false);
+
+		StringAssert.Contains(Output, "Showed the first 5 of 7 modified files.");
+	}
+
+	/// <summary>
 	/// Declining detail shows only the summary table.
 	/// </summary>
 	[TestMethod]

@@ -164,7 +164,31 @@ public static class FileComparisonDisplayService
 			};
 
 			AnsiConsole.Write(panel);
+
+			foreach (LineDifference difference in differences)
+			{
+				AnsiConsole.MarkupLine(FormatChangeSummaryLine(difference));
+			}
 		});
+	}
+
+	/// <summary>
+	/// Formats one difference for the change summary: a modified line as <c>old → new</c>, an
+	/// added line with <c>+</c> and a deleted line with <c>-</c>, each with its line number.
+	/// </summary>
+	/// <param name="difference">The difference to format.</param>
+	/// <returns>The difference as markup, its content escaped and its whitespace made visible.</returns>
+	private static string FormatChangeSummaryLine(LineDifference difference)
+	{
+		string oldContent = WhitespaceVisualizer.ProcessLineForMarkupDisplay(difference.Content1);
+		string newContent = WhitespaceVisualizer.ProcessLineForMarkupDisplay(difference.Content2);
+
+		return difference.Type switch
+		{
+			LineDifferenceType.Added => $"[green]+ Line {difference.LineNumber2}:[/] {newContent}",
+			LineDifferenceType.Deleted => $"[red]- Line {difference.LineNumber1}:[/] {oldContent}",
+			_ => $"[yellow]~ Line {difference.LineNumber1}:[/] {oldContent} [yellow]→[/] {newContent}",
+		};
 	}
 
 	/// <summary>
