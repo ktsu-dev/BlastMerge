@@ -170,6 +170,35 @@ public class FileComparisonDisplayServiceTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// The change summary lists each difference's lines, not only how many there are.
+	/// </summary>
+	[TestMethod]
+	public void ShowChangeSummary_DifferentFiles_ListsChangedLines()
+	{
+		string left = WriteFile("a.txt", "one\ntwo\nthree\n");
+		string right = WriteFile("b.txt", "one\nTWO-CHANGED\nthree\nfour-added\n");
+
+		FileComparisonDisplayService.ShowChangeSummary(left, right);
+
+		StringAssert.Contains(Output, "~ Line 2: two → TWO-CHANGED");
+		StringAssert.Contains(Output, "+ Line 4: four-added");
+	}
+
+	/// <summary>
+	/// A line holding markup characters is listed as written rather than read as markup.
+	/// </summary>
+	[TestMethod]
+	public void ShowChangeSummary_DeletedLineWithBrackets_ListsItEscaped()
+	{
+		string left = WriteFile("a.txt", "keep\n[red]gone[/]\n");
+		string right = WriteFile("b.txt", "keep\n");
+
+		FileComparisonDisplayService.ShowChangeSummary(left, right);
+
+		StringAssert.Contains(Output, "- Line 2: [red]gone[/]");
+	}
+
+	/// <summary>
 	/// The change summary of identical files says so instead of drawing a panel.
 	/// </summary>
 	[TestMethod]
