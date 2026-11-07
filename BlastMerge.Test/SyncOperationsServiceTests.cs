@@ -87,6 +87,29 @@ public class SyncOperationsServiceTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// Syncing a bracketed route file such as <c>[id].tsx</c> shows its name in the sync status as text
+	/// and copies it, instead of failing on the name as Spectre markup.
+	/// </summary>
+	[TestMethod]
+	public void SyncToNewest_BracketedFileName_MakesEveryCopyIdentical()
+	{
+		string first = WriteFile(Path.Join("repo1", "[id].tsx"), "one");
+		string second = WriteFile(Path.Join("repo2", "[id].tsx"), Fresh);
+		File.SetLastWriteTimeUtc(first, Oldest);
+		File.SetLastWriteTimeUtc(second, Newest);
+		ScriptedConsole script = Script()
+			.Select(0)
+			.Line("y")
+			.Key(ConsoleKey.Enter);
+
+		SyncOperationsService.OfferSyncOptions(Groups(first, second));
+
+		StringAssert.Contains(Output, "Sync completed! 1 files synchronized across 1 groups.");
+		Assert.AreEqual(Fresh, File.ReadAllText(first));
+		Assert.IsFalse(script.Input.IsKeyAvailable());
+	}
+
+	/// <summary>
 	/// A copy that already matches the version being synced to is left alone and not counted.
 	/// </summary>
 	[TestMethod]

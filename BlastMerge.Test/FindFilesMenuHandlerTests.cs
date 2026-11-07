@@ -55,6 +55,24 @@ public class FindFilesMenuHandlerTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// A bracketed route file such as <c>[id].tsx</c> is reported in the search status as text, so the
+	/// search completes and lists it.
+	/// </summary>
+	[TestMethod]
+	public void Handle_BracketedFileName_IsListed()
+	{
+		WriteFile(Path.Join("app", "[id].tsx"), "12345");
+		Input.PushTextWithEnter(TempDirectory);
+		Input.PushTextWithEnter("*.tsx");
+		PressAnyKey();
+
+		handler.Enter();
+
+		StringAssert.Contains(Output, "Found 1 files.");
+		StringAssert.Contains(Output, "5 bytes");
+	}
+
+	/// <summary>
 	/// A pattern that matches nothing says so, and still waits and returns.
 	/// </summary>
 	[TestMethod]

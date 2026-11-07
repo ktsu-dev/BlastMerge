@@ -158,7 +158,7 @@ public static class SyncOperationsService
 				return 0;
 			}
 
-			ctx.Status($"Syncing [yellow]{Path.GetFileName(targetFile)}[/]...");
+			ctx.Status($"Syncing [yellow]{Markup.Escape(Path.GetFileName(targetFile))}[/]...");
 			FileDiffer.SyncFile(sourceFile, targetFile, null);
 			return 1;
 		}

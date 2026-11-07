@@ -48,7 +48,7 @@ public class FindFilesMenuHandler(ApplicationService applicationService) : BaseM
 			{
 				IReadOnlyCollection<string> filePaths = FileFinder.FindFiles(directory, fileName, progressCallback: path =>
 				{
-					ctx.Status($"Finding files... Found: {Path.GetFileName(path)}");
+					ctx.Status($"Finding files... Found: {Markup.Escape(Path.GetFileName(path))}");
 					ctx.Refresh();
 				});
 
