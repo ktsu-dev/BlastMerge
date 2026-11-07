@@ -309,6 +309,28 @@ public class BatchOperationsMenuHandlerTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// A batch with a bracketed name can be picked to run, and a bracketed name elsewhere in the list
+	/// doesn't stop the other batches being offered.
+	/// </summary>
+	[TestMethod]
+	public void Run_BracketedBatchName_IsOfferedAndRuns()
+	{
+		WriteFile(Path.Join("a", "README.md"), "same");
+		SaveBatch("Docs", "*.txt");
+		SaveBatch("Web [v2]", "README.md");
+		SelectIndex(RunBatch);
+		SelectIndex(1);
+		Answer(TempDirectory);
+		PressAnyKey();
+
+		handler.Handle();
+
+		StringAssert.Contains(Output, "Processing batch configuration 'Web [v2]' in");
+		StringAssert.Contains(Output, "Batch operation completed.");
+		Assert.AreEqual("Web [v2]", BlastMergeAppData.Get().RecentBatch?.BatchName);
+	}
+
+	/// <summary>
 	/// Giving no directory cancels the run.
 	/// </summary>
 	[TestMethod]
@@ -582,6 +604,24 @@ public class BatchOperationsMenuHandlerTests : ConsoleTestBase
 
 		Assert.IsNull(AppDataBatchManager.LoadBatch("Docs"));
 		StringAssert.Contains(Output, "Batch configuration 'Docs' deleted successfully!");
+	}
+
+	/// <summary>
+	/// A batch with a bracketed name can be selected for management and deleted.
+	/// </summary>
+	[TestMethod]
+	public void Delete_BracketedBatchName_RemovesTheBatch()
+	{
+		SaveBatch("Web [v2]", "README.md");
+
+		Manage(Delete, () =>
+		{
+			SelectIndex(0);
+			Answer("y");
+			PressAnyKey();
+		});
+
+		Assert.IsNull(AppDataBatchManager.LoadBatch("Web [v2]"));
 	}
 
 	/// <summary>

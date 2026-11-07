@@ -220,6 +220,7 @@ public static class SyncOperationsService
 		string referenceFile = AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
 				.Title("[cyan]Choose the reference file to sync others to:[/]")
+				.UseConverter(Markup.Escape)
 				.AddChoices(group.FilePaths));
 
 		bool confirmGroup = AnsiConsole.Confirm($"[yellow]Sync all other files in this group to match {Markup.Escape(Path.GetFileName(referenceFile))}?[/]");

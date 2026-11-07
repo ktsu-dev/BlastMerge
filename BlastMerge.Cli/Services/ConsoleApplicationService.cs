@@ -1098,7 +1098,7 @@ public class ConsoleApplicationService : ApplicationService
 	{
 		(_, string rightLabel) = FileDisplayService.MakeDistinguishedPaths(leftFile, rightFile);
 		string choice = UserInteractionService.ShowSelectionPrompt(
-			$"[cyan]Content only in {rightLabel}. What to do?[/]",
+			$"[cyan]Content only in {Markup.Escape(rightLabel)}. What to do?[/]",
 			[
 				"✅ Include",
 				"❌ Skip"
@@ -1117,7 +1117,7 @@ public class ConsoleApplicationService : ApplicationService
 	{
 		(string leftLabel, _) = FileDisplayService.MakeDistinguishedPaths(leftFile, rightFile);
 		string choice = UserInteractionService.ShowSelectionPrompt(
-			$"[cyan]Content only in {leftLabel}. What to do?[/]",
+			$"[cyan]Content only in {Markup.Escape(leftLabel)}. What to do?[/]",
 			[
 				"✅ Keep",
 				"❌ Remove"

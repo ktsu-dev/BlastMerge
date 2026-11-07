@@ -228,6 +228,28 @@ public class SyncOperationsServiceTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// A bracketed route file such as <c>[id].tsx</c> can be chosen as the reference: its paths are
+	/// offered as plain text rather than parsed as Spectre markup.
+	/// </summary>
+	[TestMethod]
+	public void ChooseReference_BracketedFileName_CopiesTheChosenFileOverTheOthers()
+	{
+		string[] files = WriteCopies("[id].tsx", "d1", "d2");
+		WriteDated(files[1], Fresh, Oldest);
+		ScriptedConsole script = Script()
+			.Select(1)
+			.Select(1)
+			.Line("y")
+			.Key(ConsoleKey.Enter);
+
+		SyncOperationsService.OfferSyncOptions(Groups(files));
+
+		Assert.AreEqual(Fresh, File.ReadAllText(files[0]));
+		StringAssert.Contains(Output, "Sync completed! 1 files synchronized.");
+		Assert.IsFalse(script.Input.IsKeyAvailable());
+	}
+
+	/// <summary>
 	/// A copy that already matches the chosen reference is left alone and not counted.
 	/// </summary>
 	[TestMethod]

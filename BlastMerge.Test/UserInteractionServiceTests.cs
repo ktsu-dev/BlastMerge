@@ -134,6 +134,22 @@ public class UserInteractionServiceTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// Choices holding Spectre markup brackets, such as route files and bracketed batch names, are
+	/// shown as written and returned unchanged, instead of being parsed as markup.
+	/// </summary>
+	[TestMethod]
+	public void ShowSelectionPrompt_BracketedChoices_ShownLiterallyAndReturnedRaw()
+	{
+		SelectIndex(1);
+
+		string result = UserInteractionService.ShowSelectionPrompt("Pick one", ["/repo1/app/[id].tsx", "Web [v2]"]);
+
+		Assert.AreEqual("Web [v2]", result);
+		StringAssert.Contains(Output, "/repo1/app/[id].tsx");
+		StringAssert.Contains(Output, "Web [v2]");
+	}
+
+	/// <summary>
 	/// A null title or choice list is rejected.
 	/// </summary>
 	[TestMethod]
