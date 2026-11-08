@@ -249,10 +249,90 @@ public class FileComparisonDisplayServiceTests : ConsoleTestBase
 
 		FileComparisonDisplayService.ShowGitStyleDiff(left, right);
 
-		StringAssert.Contains(Output, "- int x = 1;");
-		StringAssert.Contains(Output, "+ int x = 2;");
+		StringAssert.Contains(Output, "-int x = 1;");
+		StringAssert.Contains(Output, "+int x = 2;");
 		Assert.DoesNotContain("- -int", Output);
 		Assert.DoesNotContain("+ +int", Output);
+		Assert.DoesNotContain("- int", Output, "A paired line uses the same marker spacing as an unpaired one.");
+	}
+
+	/// <summary>
+	/// ktsu-dev/BlastMerge#150: in a block of two changed lines, each deleted line is paired with the
+	/// added line at the same position, not the last deletion with the first addition.
+	/// </summary>
+	[TestMethod]
+	public void RenderColoredDiff_TwoChangedLines_PairsEachLineWithItsCounterpart()
+	{
+		ColoredDiffLine[] lines =
+		[
+			new("-int a = 1;", DiffColor.Deletion),
+			new("-int b = 2;", DiffColor.Deletion),
+			new("+int a = 3;", DiffColor.Addition),
+			new("+int b = 4;", DiffColor.Addition),
+		];
+
+		string markup = FileComparisonDisplayService.RenderColoredDiff(lines);
+
+		StringAssert.Contains(markup, "[red]1[/]");
+		StringAssert.Contains(markup, "[red]2[/]");
+		StringAssert.Contains(markup, "[green]3[/]");
+		StringAssert.Contains(markup, "[green]4[/]");
+		Assert.DoesNotContain("[red]b[/]", markup, "int b = 2; must not be diffed against int a = 3;.");
+		Assert.DoesNotContain("[green]a[/]", markup, "int a = 3; must not be diffed against int b = 2;.");
+
+		string[] rendered = markup.Split(Environment.NewLine);
+		Assert.AreEqual(5, rendered.Length, "Four lines and the final line break, with no blank line between them.");
+		Assert.AreEqual("", rendered[^1]);
+		StringAssert.StartsWith(rendered[0], "[red]-");
+		StringAssert.StartsWith(rendered[1], "[red]-");
+		StringAssert.StartsWith(rendered[2], "[green]+");
+		StringAssert.StartsWith(rendered[3], "[green]+");
+	}
+
+	/// <summary>
+	/// A block with more deletions than additions pairs what it can and prints the leftover whole.
+	/// </summary>
+	[TestMethod]
+	public void RenderColoredDiff_UnevenBlock_PrintsLeftoverLinesWhole()
+	{
+		ColoredDiffLine[] lines =
+		[
+			new("-int a = 1;", DiffColor.Deletion),
+			new("-int b = 2;", DiffColor.Deletion),
+			new("+int a = 3;", DiffColor.Addition),
+			new(" tail", DiffColor.Default),
+		];
+
+		string markup = FileComparisonDisplayService.RenderColoredDiff(lines);
+
+		StringAssert.Contains(markup, "[red]1[/]");
+		StringAssert.Contains(markup, "[green]3[/]");
+		string[] rendered = markup.Split(Environment.NewLine);
+		Assert.AreEqual(5, rendered.Length);
+		StringAssert.StartsWith(rendered[1], "[red]-");
+		Assert.DoesNotContain("[dim white]", rendered[1], "The unpaired deletion is printed whole, not character-diffed.");
+		Assert.AreEqual(" tail", rendered[3]);
+	}
+
+	/// <summary>
+	/// The Git-style diff of the issue's two-line change shows no blank line between the changed lines.
+	/// </summary>
+	[TestMethod]
+	public void ShowGitStyleDiff_TwoChangedLines_PrintsNoBlankLineInTheBlock()
+	{
+		string left = WriteFile("a.cs", "int a = 1;\nint b = 2;\n");
+		string right = WriteFile("b.cs", "int a = 3;\nint b = 4;\n");
+
+		FileComparisonDisplayService.ShowGitStyleDiff(left, right);
+
+		// The diff is drawn inside a panel, so each line is framed by its border.
+		string[] outputLines = [.. Output.Split('\n').Select(l => l.TrimEnd('\r').Trim('│', ' '))];
+		int first = Array.FindIndex(outputLines, l => l.TrimEnd() == "-int a = 1;");
+		Assert.IsGreaterThanOrEqualTo(0, first, Output);
+		CollectionAssert.AreEqual(
+			new[] { "-int a = 1;", "-int b = 2;", "+int a = 3;", "+int b = 4;" },
+			outputLines[first..(first + 4)].Select(l => l.TrimEnd()).ToArray(),
+			Output);
 	}
 
 	/// <summary>

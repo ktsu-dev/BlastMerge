@@ -454,6 +454,11 @@ public static class FileComparisonDisplayService
 	/// <summary>
 	/// Renders colored diff lines as a formatted string with character-level highlighting.
 	/// </summary>
+	/// <remarks>
+	/// A changed block arrives as a run of deletions followed by a run of additions. The k-th deleted
+	/// line is paired with the k-th added line and, when the two are similar, shown as a
+	/// character-level diff; every other line in the block is shown whole (ktsu-dev/BlastMerge#150).
+	/// </remarks>
 	/// <param name="coloredDiff">The colored diff lines to render.</param>
 	/// <returns>Formatted diff string with markup.</returns>
 	internal static string RenderColoredDiff(IEnumerable<ColoredDiffLine> coloredDiff)
@@ -464,37 +469,72 @@ public static class FileComparisonDisplayService
 		int i = 0;
 		while (i < lines.Count)
 		{
-			ColoredDiffLine line = lines[i];
-
-			if (ShouldApplyCharacterLevelDiff(line, lines, i))
+			int deletionCount = CountRun(lines, i, DiffColor.Deletion);
+			int additionCount = deletionCount == 0 ? 0 : CountRun(lines, i + deletionCount, DiffColor.Addition);
+			if (additionCount == 0)
 			{
-				string formattedDiff = CharacterLevelDiffer.CreateInlineCharacterDiff(WithoutMarker(line), WithoutMarker(lines[i + 1]));
-				sb.AppendLine(formattedDiff);
-				i += 2; // Skip both lines since we processed them together
-			}
-			else
-			{
-				string formattedLine = FormatSingleDiffLine(line);
-				sb.AppendLine(formattedLine);
+				sb.AppendLine(FormatSingleDiffLine(lines[i]));
 				i++;
+				continue;
 			}
+
+			AppendChangedBlock(sb, lines.GetRange(i, deletionCount), lines.GetRange(i + deletionCount, additionCount));
+			i += deletionCount + additionCount;
 		}
 		return sb.ToString();
 	}
 
 	/// <summary>
-	/// Determines if character-level diffing should be applied to consecutive lines.
+	/// Counts the consecutive lines of one color starting at an index.
 	/// </summary>
-	/// <param name="line">Current line.</param>
 	/// <param name="lines">All lines.</param>
-	/// <param name="index">Current index.</param>
-	/// <returns>True if character-level diffing should be applied.</returns>
-	private static bool ShouldApplyCharacterLevelDiff(ColoredDiffLine line, List<ColoredDiffLine> lines, int index)
+	/// <param name="start">The index to start counting at.</param>
+	/// <param name="color">The color of the run.</param>
+	/// <returns>The number of consecutive lines of that color.</returns>
+	private static int CountRun(List<ColoredDiffLine> lines, int start, DiffColor color)
 	{
-		return line.Color == DiffColor.Deletion &&
-			index + 1 < lines.Count &&
-			lines[index + 1].Color == DiffColor.Addition &&
-			CharacterLevelDiffer.AreLinesSimilar(WithoutMarker(line), WithoutMarker(lines[index + 1]));
+		int end = start;
+		while (end < lines.Count && lines[end].Color == color)
+		{
+			end++;
+		}
+
+		return end - start;
+	}
+
+	/// <summary>
+	/// Renders a changed block, pairing each deleted line with the added line at the same position.
+	/// </summary>
+	/// <remarks>
+	/// A similar pair is written as the deleted line then the added line, each highlighted where it
+	/// differs. The block's deletions all still come before its additions, so a dissimilar pair or
+	/// an unpaired leftover keeps its place.
+	/// </remarks>
+	/// <param name="sb">The builder to write to.</param>
+	/// <param name="deletions">The block's deleted lines, in order.</param>
+	/// <param name="additions">The block's added lines, in order.</param>
+	private static void AppendChangedBlock(StringBuilder sb, List<ColoredDiffLine> deletions, List<ColoredDiffLine> additions)
+	{
+		string[] renderedDeletions = [.. deletions.Select(FormatSingleDiffLine)];
+		string[] renderedAdditions = [.. additions.Select(FormatSingleDiffLine)];
+
+		int pairs = Math.Min(deletions.Count, additions.Count);
+		for (int k = 0; k < pairs; k++)
+		{
+			string oldText = WithoutMarker(deletions[k]);
+			string newText = WithoutMarker(additions[k]);
+			if (CharacterLevelDiffer.AreLinesSimilar(oldText, newText))
+			{
+				(string highlightedOld, string highlightedNew) = CharacterLevelDiffer.CreateCharacterLevelDiff(oldText, newText);
+				renderedDeletions[k] = $"[red]-{highlightedOld}[/]";
+				renderedAdditions[k] = $"[green]+{highlightedNew}[/]";
+			}
+		}
+
+		foreach (string line in renderedDeletions.Concat(renderedAdditions))
+		{
+			sb.AppendLine(line);
+		}
 	}
 
 	/// <summary>
