@@ -245,6 +245,28 @@ public class FileFinderTests : MockFileSystemTestBase
 	}
 
 	[TestMethod]
+	[DataRow("app/[id]", "app/[id]")]
+	[DataRow("app/[id]/*", "app/[id]")]
+	[DataRow("[Bb]in/*", "Bin")]
+	[DataRow("[Bb]in/", "Bin")]
+	public void FindFiles_WithBracketedExclusion_ExcludesOnlyTheFolderItNames(string exclusion, string excludedFolder)
+	{
+		// ktsu-dev/BlastMerge#149: adding "/*" changed what the brackets meant.
+		string[] folders = [Path.Join("app", "[id]"), Path.Join("app", "d"), Path.Join("app", "home"), "Bin"];
+		foreach (string folder in folders)
+		{
+			CreateFile(Path.Join(folder, "page.tsx"), folder);
+		}
+
+		IReadOnlyCollection<string> files = FileFinder.FindFiles([TestDirectory], TestDirectory, "page.tsx", [exclusion], MockFileSystem, null);
+
+		string[] expected = [.. folders
+			.Where(folder => folder != excludedFolder.Replace('/', Path.DirectorySeparatorChar))
+			.Select(folder => Path.GetFullPath(Path.Join(TestDirectory, folder, "page.tsx")))];
+		CollectionAssert.AreEquivalent(expected, files.Select(Path.GetFullPath).ToArray(), $"'{exclusion}' should exclude only {excludedFolder}/.");
+	}
+
+	[TestMethod]
 	public void FindFiles_WithWildcardExclusion_ExcludesMatchingPaths()
 	{
 		// Arrange

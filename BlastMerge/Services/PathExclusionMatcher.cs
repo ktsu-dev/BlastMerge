@@ -67,14 +67,14 @@ internal static class PathExclusionMatcher
 		// substring: as a substring, "bin" also excluded Combine.cs and "obj" ObjectPool.cs
 		// (ktsu-dev/BlastMerge#79). It is matched literally rather than as a glob, so a name such as
 		// "[id]" keeps meaning those characters.
-		if (!normalizedPattern.Contains('*') && !normalizedPattern.Contains('?'))
+		if (!HasWildcard(normalizedPattern))
 		{
 			return MatchesComponents(normalizedPath, normalizedPattern);
 		}
 
 		string loweredPath = normalizedPath.ToLowerInvariant();
 
-		return ToGlobs(normalizedPattern.ToLowerInvariant())
+		return ToGlobs(EscapeLiteralBrackets(normalizedPattern.ToLowerInvariant()))
 			.Any(glob => TextFilter.IsMatch(loweredPath, glob, TextFilterType.Glob, TextFilterMatchOptions.ByWholeString));
 	}
 
@@ -126,6 +126,59 @@ internal static class PathExclusionMatcher
 		// path it is tested against, so it could never match and silently excluded nothing.
 		return [$"**/{pattern}", $"**/{pattern}/**"];
 	}
+
+	/// <summary>
+	/// Determines whether a pattern needs glob matching: it has a <c>*</c>, a <c>?</c>, or a
+	/// character class.
+	/// </summary>
+	/// <remarks>
+	/// Brackets mean the same thing whichever way a pattern is matched (ktsu-dev/BlastMerge#149).
+	/// A component that is wholly one bracketed name, such as <c>[id]</c> or <c>[...slug]</c>, names
+	/// a folder literally, as web frameworks' route folders do, so <c>app/[id]</c> and
+	/// <c>app/[id]/*</c> both exclude <c>app/[id]/</c> and not <c>app/d/</c>. Brackets inside a
+	/// component, such as the <c>[Bb]in/</c> of a Visual Studio <c>.gitignore</c>, are a character
+	/// class, with or without another wildcard. A <c>[</c> with no closing <c>]</c> is literal.
+	/// </remarks>
+	/// <param name="pattern">A pattern using <c>/</c> as its separator.</param>
+	/// <returns><see langword="true"/> if the pattern must be matched as a glob.</returns>
+	private static bool HasWildcard(string pattern) =>
+		pattern.Contains('*')
+		|| pattern.Contains('?')
+		|| pattern.Split('/').Any(HasCharacterClass);
+
+	/// <summary>
+	/// Whether a single pattern component contains a character class rather than literal brackets.
+	/// </summary>
+	/// <param name="component">One component of a pattern.</param>
+	/// <returns><see langword="true"/> if the component has a <c>[</c> closed by a later <c>]</c> and is not wholly bracketed.</returns>
+	private static bool HasCharacterClass(string component)
+	{
+		if (IsWhollyBracketed(component))
+		{
+			return false;
+		}
+
+		int open = component.IndexOf('[', StringComparison.Ordinal);
+		return open >= 0 && component.IndexOf(']', open + 1) > open + 1;
+	}
+
+	/// <summary>
+	/// Whether a pattern component is a single bracketed name such as <c>[id]</c>.
+	/// </summary>
+	/// <param name="component">One component of a pattern.</param>
+	/// <returns><see langword="true"/> if the component starts with <c>[</c> and ends with <c>]</c>.</returns>
+	private static bool IsWhollyBracketed(string component) =>
+		component.Length > 2 && component.StartsWith('[') && component.EndsWith(']');
+
+	/// <summary>
+	/// Escapes, for the glob parser, every <c>[</c> in a component whose brackets are literal, so
+	/// <c>app/[id]/*</c> matches the folder <c>[id]</c> rather than <c>i</c> or <c>d</c>.
+	/// </summary>
+	/// <param name="pattern">A pattern using <c>/</c> as its separator.</param>
+	/// <returns>The pattern with literal brackets escaped as <c>[[]</c>.</returns>
+	private static string EscapeLiteralBrackets(string pattern) =>
+		string.Join('/', pattern.Split('/').Select(component =>
+			HasCharacterClass(component) ? component : component.Replace("[", "[[]", StringComparison.Ordinal)));
 
 	/// <summary>
 	/// Determines whether a path contains a wildcard-free pattern as a run of whole components.
