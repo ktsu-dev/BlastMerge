@@ -260,10 +260,18 @@ public class FileFinderTests : MockFileSystemTestBase
 
 		IReadOnlyCollection<string> files = FileFinder.FindFiles([TestDirectory], TestDirectory, "page.tsx", [exclusion], MockFileSystem, null);
 
+		// Compared as relative folders, ignoring case, because a case-insensitive file system may
+		// report a folder in a different case or form from the one it was created with.
 		string[] expected = [.. folders
-			.Where(folder => folder != excludedFolder.Replace('/', Path.DirectorySeparatorChar))
-			.Select(folder => Path.GetFullPath(Path.Join(TestDirectory, folder, "page.tsx")))];
-		CollectionAssert.AreEquivalent(expected, files.Select(Path.GetFullPath).ToArray(), $"'{exclusion}' should exclude only {excludedFolder}/.");
+			.Select(folder => folder.Replace(Path.DirectorySeparatorChar, '/'))
+			.Where(folder => !string.Equals(folder, excludedFolder, StringComparison.OrdinalIgnoreCase))
+			.Order(StringComparer.OrdinalIgnoreCase)];
+		string[] found = [.. files
+			.Select(file => Path.GetRelativePath(TestDirectory, Path.GetDirectoryName(file)!).Replace(Path.DirectorySeparatorChar, '/'))
+			.Order(StringComparer.OrdinalIgnoreCase)];
+		Assert.IsTrue(
+			expected.SequenceEqual(found, StringComparer.OrdinalIgnoreCase),
+			$"'{exclusion}' should exclude only {excludedFolder}/. Found: {string.Join(", ", files)}");
 	}
 
 	[TestMethod]
