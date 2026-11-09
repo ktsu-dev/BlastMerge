@@ -310,7 +310,7 @@ public class IterativeMergeOrchestratorTests : MockFileSystemTestBase
 		Assert.AreEqual(2, merges, "Each same-named pair should be merged once");
 		Assert.IsTrue(result.IsSuccessful);
 		Assert.AreEqual(2, result.TotalMergeOperations, "The merges already written must be counted");
-		Assert.AreEqual(2, result.Operations.Count);
+		Assert.HasCount(2, result.Operations);
 		Assert.IsFalse(result.OriginalFileName.Contains("no merging needed", StringComparison.Ordinal), $"Merges were done, but the message says otherwise: {result.OriginalFileName}");
 		Assert.IsTrue(result.OriginalFileName.Contains("Completed 2 merges", StringComparison.Ordinal), result.OriginalFileName);
 	}

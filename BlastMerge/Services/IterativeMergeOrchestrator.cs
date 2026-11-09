@@ -57,11 +57,8 @@ public static class IterativeMergeOrchestrator
 				// This is the intended safe behavior, not an error. Merges already done before reaching this
 				// point were written to disk and are in the Operations table, so they are counted and reported.
 				int mergesDone = mergeCount - 1;
-				string message = mergesDone == 0
-					? "All files preserved safely - no merging needed.\nNo two remaining versions may be merged as text: they have different names, or their content is binary, so they remain separate as intended."
-					: $"Completed {mergesDone} merge{(mergesDone == 1 ? string.Empty : "s")}; the remaining versions are preserved separately.\nNo two remaining versions may be merged as text: they have different names, or their content is binary, so they remain separate as intended.";
 
-				return new MergeCompletionResult(true, null, 0, message)
+				return new MergeCompletionResult(true, null, 0, NoMergeablePairMessage(mergesDone))
 				{
 					TotalMergeOperations = mergesDone,
 					InitialFileGroups = initialFileGroups,
@@ -269,5 +266,23 @@ public static class IterativeMergeOrchestrator
 				? Utf8BomDetector.HasUtf8Bom(file1, file2, fileSystem)
 				: Utf8BomDetector.HasUtf8Bom(file2, fileSystem),
 		};
+	}
+
+	/// <summary>
+	/// Describes a run that stopped because no remaining pair of versions may be merged as text.
+	/// </summary>
+	/// <param name="mergesDone">The number of merges already written before the run stopped.</param>
+	/// <returns>The completion message.</returns>
+	private static string NoMergeablePairMessage(int mergesDone)
+	{
+		const string Reason = "No two remaining versions may be merged as text: they have different names, or their content is binary, so they remain separate as intended.";
+
+		if (mergesDone == 0)
+		{
+			return $"All files preserved safely - no merging needed.\n{Reason}";
+		}
+
+		string plural = mergesDone == 1 ? string.Empty : "s";
+		return $"Completed {mergesDone} merge{plural}; the remaining versions are preserved separately.\n{Reason}";
 	}
 }
