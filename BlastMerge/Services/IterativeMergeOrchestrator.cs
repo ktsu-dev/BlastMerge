@@ -54,10 +54,16 @@ public static class IterativeMergeOrchestrator
 			{
 				// No mergeable pair found - this happens when the remaining files have different names,
 				// or when their content is binary, and our safety checks prevent merging either way.
-				// This is the intended safe behavior, not an error
-				return new MergeCompletionResult(true, null, 0, "All files preserved safely - no merging needed.\nNo two remaining versions may be merged as text: they have different names, or their content is binary, so they remain separate as intended.")
+				// This is the intended safe behavior, not an error. Merges already done before reaching this
+				// point were written to disk and are in the Operations table, so they are counted and reported.
+				int mergesDone = mergeCount - 1;
+				string message = mergesDone == 0
+					? "All files preserved safely - no merging needed.\nNo two remaining versions may be merged as text: they have different names, or their content is binary, so they remain separate as intended."
+					: $"Completed {mergesDone} merge{(mergesDone == 1 ? string.Empty : "s")}; the remaining versions are preserved separately.\nNo two remaining versions may be merged as text: they have different names, or their content is binary, so they remain separate as intended.";
+
+				return new MergeCompletionResult(true, null, 0, message)
 				{
-					TotalMergeOperations = 0,
+					TotalMergeOperations = mergesDone,
 					InitialFileGroups = initialFileGroups,
 					TotalFilesMerged = totalFilesMerged,
 					Operations = operations.AsReadOnly()
