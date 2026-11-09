@@ -279,10 +279,10 @@ public class IterativeMergeOrchestratorTests : MockFileSystemTestBase
 	{
 		// Two differing a.txt versions and two differing b.txt versions: each pair merges, and then the two
 		// merged groups are left, with different names, so no further pair can be merged.
-		string a1 = CreateFile(Path.Combine("repo1", "a.txt"), "alpha\nshared line\none");
-		string a2 = CreateFile(Path.Combine("repo2", "a.txt"), "alpha\nshared line\ntwo");
-		string b1 = CreateFile(Path.Combine("repo1", "b.txt"), "beta\nshared line\none");
-		string b2 = CreateFile(Path.Combine("repo2", "b.txt"), "beta\nshared line\ntwo");
+		string a1 = CreateFile("repo1/a.txt", "alpha\nshared line\none");
+		string a2 = CreateFile("repo2/a.txt", "alpha\nshared line\ntwo");
+		string b1 = CreateFile("repo1/b.txt", "beta\nshared line\none");
+		string b2 = CreateFile("repo2/b.txt", "beta\nshared line\ntwo");
 
 		List<FileGroup> fileGroups =
 		[
