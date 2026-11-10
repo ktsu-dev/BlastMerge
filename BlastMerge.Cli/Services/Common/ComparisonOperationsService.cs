@@ -14,6 +14,11 @@ using Spectre.Console;
 public static class ComparisonOperationsService
 {
 	/// <summary>
+	/// The most modified files a directory comparison shows the differences of.
+	/// </summary>
+	private const int MaxDetailedFiles = 5;
+
+	/// <summary>
 	/// Shows a menu title with consistent formatting.
 	/// </summary>
 	/// <param name="title">The menu title.</param>
@@ -159,7 +164,7 @@ public static class ComparisonOperationsService
 		if (result.ModifiedFiles.Count > 0 &&
 			AnsiConsole.Confirm("[cyan]Show detailed differences for modified files?[/]", false))
 		{
-			foreach (string? file in result.ModifiedFiles.Take(5)) // Limit to first 5
+			foreach (string? file in result.ModifiedFiles.Take(MaxDetailedFiles))
 			{
 				string file1 = Path.Combine(dir1, file);
 				string file2 = Path.Combine(dir2, file);
@@ -173,6 +178,12 @@ public static class ComparisonOperationsService
 
 				// Use centralized file comparison service
 				FileComparisonDisplayService.ShowChangeSummary(file1, file2);
+			}
+
+			if (result.ModifiedFiles.Count > MaxDetailedFiles)
+			{
+				AnsiConsole.WriteLine();
+				AnsiConsole.MarkupLine($"[dim]Showed the first {MaxDetailedFiles} of {result.ModifiedFiles.Count} modified files.[/]");
 			}
 		}
 	}
