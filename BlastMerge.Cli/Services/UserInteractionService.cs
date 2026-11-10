@@ -68,6 +68,7 @@ public static class UserInteractionService
 					.Title(title)
 					.PageSize(Math.Max(3, Math.Min(10, choices.Length))) // Ensure minimum page size of 3
 					.MoreChoicesText("[grey](Move up and down to reveal more options)[/]")
+					.UseConverter(Markup.Escape)
 					.AddChoices(choices));
 			AnsiConsole.WriteLine(); // Add spacing after prompt
 			return result;

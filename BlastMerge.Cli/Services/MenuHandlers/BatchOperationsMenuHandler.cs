@@ -474,6 +474,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		string batchName = AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
 				.Title("Select batch configuration:")
+				.UseConverter(Markup.Escape)
 				.AddChoices(allBatches.Select(b => b.Name)));
 
 		// Load the selected batch to check if it has search paths configured
@@ -1210,6 +1211,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			new SelectionPrompt<string>()
 				.Title("[cyan]Select batch configuration:[/]")
 				.PageSize(10)
+				.UseConverter(Markup.Escape)
 				.AddChoices(allBatches.Select(b => b.Name)));
 
 		return allBatches.FirstOrDefault(b => b.Name == batchName);
