@@ -275,6 +275,47 @@ public class IterativeMergeOrchestratorTests : MockFileSystemTestBase
 	}
 
 	[TestMethod]
+	public void StartIterativeMergeProcess_WhenUnmergeableGroupsRemainAfterMerges_ReportsTheMergesDone()
+	{
+		// Two differing a.txt versions and two differing b.txt versions: each pair merges, and then the two
+		// merged groups are left, with different names, so no further pair can be merged.
+		string a1 = CreateFile("repo1/a.txt", "alpha\nshared line\none");
+		string a2 = CreateFile("repo2/a.txt", "alpha\nshared line\ntwo");
+		string b1 = CreateFile("repo1/b.txt", "beta\nshared line\none");
+		string b2 = CreateFile("repo2/b.txt", "beta\nshared line\ntwo");
+
+		List<FileGroup> fileGroups =
+		[
+			new([a1]) { Hash = "a1" },
+			new([a2]) { Hash = "a2" },
+			new([b1]) { Hash = "b1" },
+			new([b2]) { Hash = "b2" },
+		];
+
+		int merges = 0;
+
+		MergeResult? MergeCallback(string f1, string f2, string? existing)
+		{
+			merges++;
+			return new MergeResult([$"merged {Path.GetFileName(f1)}"], []);
+		}
+
+		void StatusCallback(MergeSessionStatus status)
+		{ }
+		bool ContinuationCallback() => true;
+
+		MergeCompletionResult result = IterativeMergeOrchestrator.StartIterativeMergeProcess(
+			fileGroups, MergeCallback, StatusCallback, ContinuationCallback);
+
+		Assert.AreEqual(2, merges, "Each same-named pair should be merged once");
+		Assert.IsTrue(result.IsSuccessful);
+		Assert.AreEqual(2, result.TotalMergeOperations, "The merges already written must be counted");
+		Assert.HasCount(2, result.Operations);
+		Assert.IsFalse(result.OriginalFileName.Contains("no merging needed", StringComparison.Ordinal), $"Merges were done, but the message says otherwise: {result.OriginalFileName}");
+		Assert.IsTrue(result.OriginalFileName.Contains("Completed 2 merges", StringComparison.Ordinal), result.OriginalFileName);
+	}
+
+	[TestMethod]
 	public void StartIterativeMergeProcess_WithMultipleFiles_UpdatesAllFiles()
 	{
 		// Arrange - Multiple files with same content in each group
