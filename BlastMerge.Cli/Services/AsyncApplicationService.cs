@@ -45,7 +45,7 @@ public static class AsyncApplicationService
 				// Step 1: Find files
 				ctx.Status($"[yellow]Finding files...[/]");
 				filePaths = FileFinder.FindFiles(directory, fileName, progressCallback: path =>
-					ctx.Status($"[yellow]Finding files... Found: {Path.GetFileName(path)}[/]"));
+					ctx.Status($"[yellow]Finding files... Found: {Markup.Escape(Path.GetFileName(path))}[/]"));
 
 				if (filePaths.Count == 0)
 				{
@@ -311,7 +311,7 @@ public static class AsyncApplicationService
 			{
 				foreach (string pattern in batch.FilePatterns)
 				{
-					ctx.Status($"[yellow]Processing pattern: {pattern}...[/]");
+					ctx.Status($"[yellow]Processing pattern: {Markup.Escape(pattern)}...[/]");
 
 					IReadOnlyDictionary<string, IReadOnlyCollection<string>> fileGroups =
 						await ProcessFilesAsync(directory, pattern, maxDegreeOfParallelism, cancellationToken).ConfigureAwait(false);

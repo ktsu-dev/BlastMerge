@@ -214,6 +214,23 @@ public class ConsoleApplicationServiceTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// A bracketed route file such as <c>[id].tsx</c> is reported in the discovery status as text, so
+	/// discovery completes instead of failing on the file name as Spectre markup.
+	/// </summary>
+	[TestMethod]
+	public void ProcessFiles_BracketedFileName_ShowsGroupSummary()
+	{
+		WriteFile(Path.Join("a", "[id].tsx"), "same");
+		WriteFile(Path.Join("b", "[id].tsx"), "same");
+		SelectIndex(FileActionReturnToMainMenu);
+
+		service.ProcessFiles(TempDirectory, "*.tsx");
+
+		StringAssert.Contains(Output, "Found 2 files in 1 groups:");
+		StringAssert.Contains(Output, "[id].tsx");
+	}
+
+	/// <summary>
 	/// A group whose file names run past fifty characters is truncated in the summary table.
 	/// </summary>
 	[TestMethod]

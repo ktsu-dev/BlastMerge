@@ -868,7 +868,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			return;
 		}
 
-		string newName = AppDataHistoryInput.AskWithHistory($"[cyan]Enter new name for duplicate[/] (original: {sourceBatch.Name})");
+		string newName = AppDataHistoryInput.AskWithHistory($"[cyan]Enter new name for duplicate[/] (original: {Markup.Escape(sourceBatch.Name)})");
 		if (string.IsNullOrWhiteSpace(newName))
 		{
 			ShowWarning(OperationCancelledMessage);
@@ -972,7 +972,7 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		}
 
 		string defaultFileName = $"BlastMerge_Batches_{DateTime.Now:yyyyMMdd_HHmmss}.json";
-		string exportPath = AppDataHistoryInput.AskWithHistory($"[cyan]Enter export file path[/] (default: {defaultFileName})");
+		string exportPath = AppDataHistoryInput.AskWithHistory($"[cyan]Enter export file path[/] (default: {Markup.Escape(defaultFileName)})");
 		if (string.IsNullOrWhiteSpace(exportPath))
 		{
 			exportPath = defaultFileName;

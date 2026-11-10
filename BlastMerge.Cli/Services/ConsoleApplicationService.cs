@@ -84,7 +84,7 @@ public class ConsoleApplicationService : ApplicationService
 			{
 				IReadOnlyCollection<string> foundFiles = FileFinder.FindFiles(directory, fileName, fileSystem: null, progressCallback: path =>
 				{
-					ctx.Status($"Discovering files... Found: {Path.GetFileName(path)}");
+					ctx.Status($"Discovering files... Found: {Markup.Escape(Path.GetFileName(path))}");
 					ctx.Refresh();
 				});
 				filePaths.AddRange(foundFiles);
