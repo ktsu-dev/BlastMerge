@@ -37,7 +37,7 @@ internal static class MergedContentWriter
 		Ensure.NotNull(content);
 		Ensure.NotNull(encoding);
 
-		List<(string Path, byte[] Original)> originals = [.. filePaths.Distinct().Select(path => (path, fileSystem.File.ReadAllBytes(path)))];
+		List<(string Path, byte[] Original)> originals = [.. PathIdentity.DistinctFiles(filePaths, fileSystem).Select(path => (path, fileSystem.File.ReadAllBytes(path)))];
 
 		int attempted = 0;
 		try

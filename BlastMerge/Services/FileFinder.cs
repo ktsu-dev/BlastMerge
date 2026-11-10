@@ -164,11 +164,13 @@ public static class FileFinder
 		// Use search paths if provided, otherwise use the root directory
 		IEnumerable<string> directoriesToSearch = searchPaths.Count > 0 ? searchPaths : [rootDirectory];
 
-		result.AddRange(directoriesToSearch
-			.Where(fileSystem.Directory.Exists)
-			.SelectMany(searchPath => FindFilesWithExclusions(searchPath, fileName, pathExclusionPatterns, fileSystem, progressCallback))
-			// Overlapping search paths find the same file more than once
-			.Distinct());
+		// Overlapping search paths find the same file more than once, and under a different spelling when the
+		// paths are written differently, so files are told apart by their full path
+		result.AddRange(PathIdentity.DistinctFiles(
+			directoriesToSearch
+				.Where(fileSystem.Directory.Exists)
+				.SelectMany(searchPath => FindFilesWithExclusions(searchPath, fileName, pathExclusionPatterns, fileSystem, progressCallback)),
+			fileSystem));
 
 		return result.AsReadOnly();
 	}
