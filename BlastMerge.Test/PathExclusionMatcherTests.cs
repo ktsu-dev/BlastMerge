@@ -192,6 +192,40 @@ public class PathExclusionMatcherTests
 		Assert.IsFalse(PathExclusionMatcher.Matches("/r/pages/i/page.tsx", "[id]"));
 	}
 
+	// ktsu-dev/BlastMerge#149: brackets meant a literal name without a wildcard and a character
+	// class with one, so "app/[id]/*" excluded app/d/ and "[Bb]in/" excluded nothing.
+	[TestMethod]
+	[DataRow("/r/app/[id]/page.tsx", "app/[id]")]
+	[DataRow("/r/app/[id]/page.tsx", "app/[id]/*")]
+	[DataRow("/r/app/[id]/page.tsx", "app/[id]/")]
+	[DataRow("/r/app/[...slug]/page.tsx", "app/[...slug]/*")]
+	[DataRow("/r/Bin/page.tsx", "[Bb]in/")]
+	[DataRow("/r/Bin/page.tsx", "[Bb]in/*")]
+	[DataRow("/r/bin/page.tsx", "[Bb]in")]
+	[DataRow("/r/obj/x.dll", "[Oo]bj/")]
+	[DataRow("/r/src/a.c", "*.[ch]")]
+	public void Matches_Brackets_MeanTheSameWithOrWithoutAWildcard_Excluded(string path, string pattern) =>
+		Assert.IsTrue(PathExclusionMatcher.Matches(path, pattern), $"'{pattern}' should exclude '{path}'.");
+
+	[TestMethod]
+	[DataRow("/r/app/d/page.tsx", "app/[id]")]
+	[DataRow("/r/app/d/page.tsx", "app/[id]/*")]
+	[DataRow("/r/app/i/page.tsx", "app/[id]/*")]
+	[DataRow("/r/app/d/page.tsx", "app/[id]/")]
+	[DataRow("/r/app/home/page.tsx", "app/[id]/*")]
+	[DataRow("/r/app/[id]/page.tsx", "[Bb]in/")]
+	[DataRow("/r/cabin/page.tsx", "[Bb]in/")]
+	[DataRow("/r/src/a.cs", "*.[ch]")]
+	public void Matches_Brackets_MeanTheSameWithOrWithoutAWildcard_Kept(string path, string pattern) =>
+		Assert.IsFalse(PathExclusionMatcher.Matches(path, pattern), $"'{pattern}' should not exclude '{path}'.");
+
+	[TestMethod]
+	public void Matches_UnclosedBracket_IsLiteral()
+	{
+		Assert.IsTrue(PathExclusionMatcher.Matches("/r/a[b/x.txt", "a[b/*"));
+		Assert.IsFalse(PathExclusionMatcher.Matches("/r/ab/x.txt", "a[b/*"));
+	}
+
 	[TestMethod]
 	public void Matches_IsCaseInsensitive()
 	{

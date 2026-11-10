@@ -245,6 +245,36 @@ public class FileFinderTests : MockFileSystemTestBase
 	}
 
 	[TestMethod]
+	[DataRow("app/[id]", "app/[id]")]
+	[DataRow("app/[id]/*", "app/[id]")]
+	[DataRow("[Bb]in/*", "Bin")]
+	[DataRow("[Bb]in/", "Bin")]
+	public void FindFiles_WithBracketedExclusion_ExcludesOnlyTheFolderItNames(string exclusion, string excludedFolder)
+	{
+		// ktsu-dev/BlastMerge#149: adding "/*" changed what the brackets meant.
+		string[] folders = [Path.Join("app", "[id]"), Path.Join("app", "d"), Path.Join("app", "home"), "Bin"];
+		foreach (string folder in folders)
+		{
+			CreateFile(Path.Join(folder, "page.tsx"), folder);
+		}
+
+		IReadOnlyCollection<string> files = FileFinder.FindFiles([TestDirectory], TestDirectory, "page.tsx", [exclusion], MockFileSystem, null);
+
+		// Compared as relative folders, ignoring case, because a case-insensitive file system may
+		// report a folder in a different case or form from the one it was created with.
+		string[] expected = [.. folders
+			.Select(folder => folder.Replace(Path.DirectorySeparatorChar, '/'))
+			.Where(folder => !string.Equals(folder, excludedFolder, StringComparison.OrdinalIgnoreCase))
+			.Order(StringComparer.OrdinalIgnoreCase)];
+		string[] found = [.. files
+			.Select(file => Path.GetRelativePath(TestDirectory, Path.GetDirectoryName(file)!).Replace(Path.DirectorySeparatorChar, '/'))
+			.Order(StringComparer.OrdinalIgnoreCase)];
+		Assert.IsTrue(
+			expected.SequenceEqual(found, StringComparer.OrdinalIgnoreCase),
+			$"'{exclusion}' should exclude only {excludedFolder}/. Found: {string.Join(", ", files)}");
+	}
+
+	[TestMethod]
 	public void FindFiles_WithWildcardExclusion_ExcludesMatchingPaths()
 	{
 		// Arrange
