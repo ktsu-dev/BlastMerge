@@ -170,7 +170,7 @@ public static class ComparisonOperationsService
 				string file2 = Path.Combine(dir2, file);
 
 				AnsiConsole.WriteLine();
-				Rule rule = new($"[bold]Differences: {file}[/]")
+				Rule rule = new($"[bold]Differences: {Markup.Escape(file)}[/]")
 				{
 					Style = Style.Parse("blue")
 				};

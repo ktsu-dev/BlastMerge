@@ -377,6 +377,30 @@ public class BatchOperationsMenuHandlerTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// Viewing a batch whose name and description contain markup brackets shows them as text.
+	/// </summary>
+	[TestMethod]
+	public void View_BracketedNameAndDescription_AreShownLiterally()
+	{
+		BatchConfiguration batch = new()
+		{
+			Name = "Web [v2]",
+			Description = "Next.js app/[id] routes",
+			FilePatterns = ["*.tsx"],
+		};
+		Assert.IsTrue(AppDataBatchManager.SaveBatch(batch));
+
+		Manage(View, () =>
+		{
+			SelectIndex(0);
+			PressAnyKey();
+		});
+
+		StringAssert.Contains(Output, "Name: Web [v2]");
+		StringAssert.Contains(Output, "Description: Next.js app/[id] routes");
+	}
+
+	/// <summary>
 	/// Viewing a batch with no search paths or exclusions says so.
 	/// </summary>
 	[TestMethod]

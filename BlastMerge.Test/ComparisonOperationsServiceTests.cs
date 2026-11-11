@@ -76,6 +76,22 @@ public class ComparisonOperationsServiceTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// Asking for detail on a modified file whose name contains markup brackets shows its name as text.
+	/// </summary>
+	[TestMethod]
+	public void CompareDirectories_BracketedModifiedFile_DetailRuleIsRenderedLiterally()
+	{
+		WriteFile(Path.Join("left", "[id].tsx"), "a");
+		WriteFile(Path.Join("right", "[id].tsx"), "b");
+		Input.PushTextWithEnter("y");
+
+		ComparisonOperationsService.CompareDirectories(left, right, "*.tsx", recursive: false);
+
+		StringAssert.Contains(Output, "Differences: [id].tsx");
+		StringAssert.Contains(Output, "Change Summary");
+	}
+
+	/// <summary>
 	/// A recursive comparison includes files in subdirectories.
 	/// </summary>
 	[TestMethod]
