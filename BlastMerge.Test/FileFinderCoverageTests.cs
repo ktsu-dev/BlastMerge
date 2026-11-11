@@ -80,8 +80,14 @@ public class FileFinderCoverageTests : MockFileSystemTestBase
 		Mock<IPath> path = new();
 		path.Setup(p => p.Combine(It.IsAny<string>(), It.IsAny<string>())).Throws(new ArgumentException("bad path"));
 
+		Mock<IDirectoryInfo> childInfo = new();
+		childInfo.Setup(i => i.Attributes).Returns(FileAttributes.Directory);
+		Mock<IDirectoryInfoFactory> directoryInfo = new();
+		directoryInfo.Setup(f => f.New(child)).Returns(childInfo.Object);
+
 		Mock<IFileSystem> fileSystem = new();
 		fileSystem.Setup(f => f.Directory).Returns(directory.Object);
+		fileSystem.Setup(f => f.DirectoryInfo).Returns(directoryInfo.Object);
 		fileSystem.Setup(f => f.Path).Returns(path.Object);
 
 		IReadOnlyCollection<string> files = FileFinder.FindFiles(root, "file.txt", fileSystem.Object);
