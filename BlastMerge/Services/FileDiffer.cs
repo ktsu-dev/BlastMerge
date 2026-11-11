@@ -146,37 +146,6 @@ public static class FileDiffer
 		DiffPlexDiffer.FindDifferences(file1, file2);
 
 	/// <summary>
-	/// Lists the files in a directory that match a pattern. A recursive walk never enters version
-	/// control metadata directories such as <c>.git</c>, so a repository's objects, refs and
-	/// config are not compared as content.
-	/// </summary>
-	/// <param name="directory">The directory to list</param>
-	/// <param name="searchPattern">File search pattern</param>
-	/// <param name="recursive">Whether to search subdirectories recursively</param>
-	/// <param name="fileSystem">File system abstraction</param>
-	/// <returns>The full paths of the matching files</returns>
-	private static IEnumerable<string> EnumerateComparableFiles(string directory, string searchPattern, bool recursive, IFileSystem fileSystem)
-	{
-		Stack<string> pending = new([directory]);
-		while (pending.Count > 0)
-		{
-			string current = pending.Pop();
-			foreach (string file in fileSystem.Directory.GetFiles(current, searchPattern, SearchOption.TopDirectoryOnly))
-			{
-				yield return file;
-			}
-
-			if (recursive)
-			{
-				foreach (string subdirectory in fileSystem.Directory.GetDirectories(current).Where(d => !FileFinder.IsVersionControlMetadata(d)))
-				{
-					pending.Push(subdirectory);
-				}
-			}
-		}
-	}
-
-	/// <summary>
 	/// Compares two directories and finds differences between files
 	/// </summary>
 	/// <param name="dir1">Path to the first directory</param>
@@ -247,6 +216,37 @@ public static class FileDiffer
 			OnlyInDir1 = onlyInDir1.AsReadOnly(),
 			OnlyInDir2 = onlyInDir2.AsReadOnly()
 		};
+	}
+
+	/// <summary>
+	/// Lists the files in a directory that match a pattern. A recursive walk never enters version
+	/// control metadata directories such as <c>.git</c>, so a repository's objects, refs and
+	/// config are not compared as content.
+	/// </summary>
+	/// <param name="directory">The directory to list</param>
+	/// <param name="searchPattern">File search pattern</param>
+	/// <param name="recursive">Whether to search subdirectories recursively</param>
+	/// <param name="fileSystem">File system abstraction</param>
+	/// <returns>The full paths of the matching files</returns>
+	private static IEnumerable<string> EnumerateComparableFiles(string directory, string searchPattern, bool recursive, IFileSystem fileSystem)
+	{
+		Stack<string> pending = new([directory]);
+		while (pending.Count > 0)
+		{
+			string current = pending.Pop();
+			foreach (string file in fileSystem.Directory.GetFiles(current, searchPattern, SearchOption.TopDirectoryOnly))
+			{
+				yield return file;
+			}
+
+			if (recursive)
+			{
+				foreach (string subdirectory in fileSystem.Directory.GetDirectories(current).Where(d => !FileFinder.IsVersionControlMetadata(d)))
+				{
+					pending.Push(subdirectory);
+				}
+			}
+		}
 	}
 
 	/// <summary>
