@@ -96,6 +96,68 @@ public class FileFinderCoverageTests : MockFileSystemTestBase
 	}
 
 	/// <summary>
+	/// Builds a file system with a root holding one child folder that holds one file, whose
+	/// directory info for the child comes from <paramref name="childInfo"/>.
+	/// </summary>
+	private (IFileSystem FileSystem, string Root, string Found) CreateSingleChildFileSystem(Action<Mock<IDirectoryInfoFactory>, string> childInfo)
+	{
+		string root = Path.Join(TestDirectory, "root");
+		string child = Path.Join(root, "child");
+		string found = Path.Join(child, "file.txt");
+
+		Mock<IDirectory> directory = new();
+		directory.Setup(d => d.GetFiles(root, "file.txt", SearchOption.TopDirectoryOnly)).Returns([]);
+		directory.Setup(d => d.GetFiles(child, "file.txt", SearchOption.TopDirectoryOnly)).Returns([found]);
+		directory.Setup(d => d.GetDirectories(root)).Returns([child]);
+		directory.Setup(d => d.GetDirectories(child)).Returns([]);
+		directory.Setup(d => d.Exists(root)).Returns(true);
+
+		Mock<IDirectoryInfoFactory> directoryInfo = new();
+		childInfo(directoryInfo, child);
+
+		Mock<IFileSystem> fileSystem = new();
+		fileSystem.Setup(f => f.Directory).Returns(directory.Object);
+		fileSystem.Setup(f => f.DirectoryInfo).Returns(directoryInfo.Object);
+		fileSystem.Setup(f => f.Path).Returns(new FileSystem().Path);
+		fileSystem.Setup(f => f.File).Returns(new Mock<IFile>().Object);
+
+		return (fileSystem.Object, root, found);
+	}
+
+	/// <summary>
+	/// A folder whose link state can't be read is searched as an ordinary one (#65).
+	/// </summary>
+	[TestMethod]
+	public void FindFiles_LinkCheckFails_SearchesDirectoryAnyway()
+	{
+		(IFileSystem fileSystem, string root, string found) = CreateSingleChildFileSystem(
+			(factory, child) => factory.Setup(f => f.New(child)).Throws(new IOException("unreadable")));
+
+		Assert.AreSequenceEqual([found], FileFinder.FindFiles(root, "file.txt", fileSystem));
+		Assert.AreSequenceEqual([found], FileFinder.FindFiles([], root, "file.txt", [], fileSystem));
+	}
+
+	/// <summary>
+	/// A folder that is a link, or a reparse point such as a Windows junction, is never entered (#65).
+	/// </summary>
+	[TestMethod]
+	[DataRow(true, FileAttributes.Directory)]
+	[DataRow(false, FileAttributes.Directory | FileAttributes.ReparsePoint)]
+	public void FindFiles_LinkedDirectory_IsNotEntered(bool hasLinkTarget, FileAttributes attributes)
+	{
+		(IFileSystem fileSystem, string root, _) = CreateSingleChildFileSystem((factory, child) =>
+		{
+			Mock<IDirectoryInfo> info = new();
+			info.Setup(i => i.LinkTarget).Returns(hasLinkTarget ? ".." : null);
+			info.Setup(i => i.Attributes).Returns(attributes);
+			factory.Setup(f => f.New(child)).Returns(info.Object);
+		});
+
+		Assert.IsEmpty(FileFinder.FindFiles(root, "file.txt", fileSystem));
+		Assert.IsEmpty(FileFinder.FindFiles([], root, "file.txt", [], fileSystem));
+	}
+
+	/// <summary>
 	/// A repository's own <c>config</c> under <c>.git</c> is never found as a copy of a project's
 	/// <c>config</c>, so it can't be offered for merging into another repository.
 	/// </summary>
