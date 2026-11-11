@@ -54,6 +54,28 @@ public class ComparisonOperationsServiceTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// File names with brackets are printed literally in the comparison table's examples.
+	/// </summary>
+	[TestMethod]
+	public void CompareDirectories_BracketedFileNames_AreRenderedLiterally()
+	{
+		WriteFile(Path.Join("left", "[id].tsx"), "same");
+		WriteFile(Path.Join("right", "[id].tsx"), "same");
+		WriteFile(Path.Join("left", "[slug].tsx"), "left");
+		WriteFile(Path.Join("right", "[slug].tsx"), "right");
+		WriteFile(Path.Join("left", "[left].tsx"), "left");
+		WriteFile(Path.Join("right", "[right].tsx"), "right");
+		Input.PushTextWithEnter("n");
+
+		ComparisonOperationsService.CompareDirectories(left, right, "*.tsx", recursive: false);
+
+		StringAssert.Contains(Output, "[id].tsx");
+		StringAssert.Contains(Output, "[slug].tsx");
+		StringAssert.Contains(Output, "[left].tsx");
+		StringAssert.Contains(Output, "[right].tsx");
+	}
+
+	/// <summary>
 	/// A recursive comparison includes files in subdirectories.
 	/// </summary>
 	[TestMethod]
