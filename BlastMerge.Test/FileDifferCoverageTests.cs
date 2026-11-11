@@ -274,18 +274,46 @@ public class FileDifferCoverageTests : MockFileSystemTestBase
 	}
 
 	/// <summary>
-	/// Modifications are not listed by the coloured change summary, only the header is.
+	/// A modified line is listed by the coloured change summary as its old content removed and its new content added.
 	/// </summary>
 	[TestMethod]
-	public void GenerateColoredChangeSummary_ModificationOnly_HasOnlyTheHeader()
+	public void GenerateColoredChangeSummary_ModificationOnly_ListsOldAndNewContent()
 	{
-		string file1 = CreateFile("v1.txt", "a\nb\n");
-		string file2 = CreateFile("v2.txt", "a\nB\n");
+		string file1 = CreateFile("a.txt", "one\ntwo\nthree\n");
+		string file2 = CreateFile("b.txt", "one\nTWO\nthree\n");
 
 		Collection<ColoredDiffLine> lines = FileDiffer.GenerateColoredChangeSummary(file1, file2);
 
-		Assert.HasCount(2, lines);
-		Assert.AreEqual(DiffColor.FileHeader, lines[0].Color);
+		ColoredDiffLine[] expected =
+		[
+			new("Change Summary: a.txt vs b.txt", DiffColor.FileHeader),
+			new("----------------------------------------", DiffColor.Default),
+			new("REMOVED LINES (in version 1 but not in version X):", DiffColor.ChunkHeader),
+			new("- Line 2: two", DiffColor.Deletion),
+			new("", DiffColor.Default),
+			new("ADDED LINES (in version X but not in version 1):", DiffColor.ChunkHeader),
+			new("+ Line 2: TWO", DiffColor.Addition),
+		];
+		Assert.AreSequenceEqual(expected, lines);
+	}
+
+	/// <summary>
+	/// A summary mixing a modification with a deletion and an addition lists every line in file order.
+	/// </summary>
+	[TestMethod]
+	public void GenerateColoredChangeSummary_ModificationAmongOtherChanges_ListsEveryLine()
+	{
+		string file1 = CreateFile("v1.txt", "a\nb\nc\nd\n");
+		string file2 = CreateFile("v2.txt", "a\nB\nd\ne\n");
+
+		Collection<ColoredDiffLine> lines = FileDiffer.GenerateColoredChangeSummary(file1, file2);
+
+		string[] removed = [.. lines.Where(l => l.Color == DiffColor.Deletion).Select(l => l.Content)];
+		string[] added = [.. lines.Where(l => l.Color == DiffColor.Addition).Select(l => l.Content)];
+		CollectionAssert.AreEqual(FileDiffer.FindDifferences(file1, file2).Where(d => d.LineNumber1.HasValue).Select(d => $"- Line {d.LineNumber1}: {d.Content1}").ToArray(), removed);
+		CollectionAssert.AreEqual(FileDiffer.FindDifferences(file1, file2).Where(d => d.LineNumber2.HasValue).Select(d => $"+ Line {d.LineNumber2}: {d.Content2}").ToArray(), added);
+		Assert.Contains("+ Line 2: B", added);
+		Assert.Contains("+ Line 4: e", added);
 	}
 
 	/// <summary>

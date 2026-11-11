@@ -465,7 +465,8 @@ public static class FileDiffer
 		useColor ? ColorCodePair.CreateAnsi(colorCode) : ColorCodePair.None;
 
 	/// <summary>
-	/// Generates a colored change summary showing added and removed lines
+	/// Generates a colored change summary showing added and removed lines. A modified line is
+	/// listed as its old content removed and its new content added.
 	/// </summary>
 	/// <param name="file1">Path to the first file (version 1)</param>
 	/// <param name="file2">Path to the second file (version X)</param>
@@ -489,16 +490,17 @@ public static class FileDiffer
 		List<(int, string)> addedLines = [];
 		List<(int, string)> removedLines = [];
 
+		// A modified line has both line numbers set, so it is listed in both sections:
+		// its old content as removed and its new content as added.
 		foreach (LineDifference diff in differences)
 		{
-			if (diff.LineNumber1.HasValue && !diff.LineNumber2.HasValue)
+			if (diff.LineNumber1.HasValue)
 			{
-				// Deletion
 				removedLines.Add((diff.LineNumber1.Value, diff.Content1 ?? ""));
 			}
-			else if (!diff.LineNumber1.HasValue && diff.LineNumber2.HasValue)
+
+			if (diff.LineNumber2.HasValue)
 			{
-				// Addition
 				addedLines.Add((diff.LineNumber2.Value, diff.Content2 ?? ""));
 			}
 		}
