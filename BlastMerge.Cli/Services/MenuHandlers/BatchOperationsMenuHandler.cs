@@ -2,6 +2,7 @@
 
 namespace ktsu.BlastMerge.Cli.Services.MenuHandlers;
 
+using System.Collections.ObjectModel;
 using System.Text.Json;
 using ktsu.BlastMerge.Cli.Models;
 using ktsu.BlastMerge.Cli.Text;
@@ -1075,7 +1076,52 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 	private static List<BatchConfiguration>? LoadBatchesFromFile(string filePath)
 	{
 		string json = File.ReadAllText(filePath);
-		return JsonSerializer.Deserialize<List<BatchConfiguration>>(json, JsonSerializerOptions);
+		List<BatchConfiguration?>? batches = JsonSerializer.Deserialize<List<BatchConfiguration?>>(json, JsonSerializerOptions);
+		return batches == null ? null : NormalizeImportedBatches(batches);
+	}
+
+	/// <summary>
+	/// Drops <see langword="null"/> entries from an imported list and replaces any <see langword="null"/>
+	/// name, description or collection with an empty one, so a hand-edited file cannot crash the import.
+	/// A batch left without file patterns is then rejected as invalid, by name, like any other.
+	/// </summary>
+	/// <param name="batches">The batches as deserialized.</param>
+	/// <returns>The non-null batches, each with non-null members.</returns>
+	private static List<BatchConfiguration> NormalizeImportedBatches(IEnumerable<BatchConfiguration?> batches)
+	{
+		List<BatchConfiguration> result = [];
+		foreach (BatchConfiguration? batch in batches)
+		{
+			if (batch == null)
+			{
+				continue;
+			}
+
+			batch.Name ??= string.Empty;
+			batch.Description ??= string.Empty;
+			batch.FilePatterns = WithoutNulls(batch.FilePatterns, keepNullEntries: true);
+			batch.SearchPaths = WithoutNulls(batch.SearchPaths, keepNullEntries: false);
+			batch.PathExclusionPatterns = WithoutNulls(batch.PathExclusionPatterns, keepNullEntries: false);
+			result.Add(batch);
+		}
+
+		return result;
+	}
+
+	/// <summary>
+	/// Returns an empty collection for a <see langword="null"/> one. A <see langword="null"/> entry is either
+	/// dropped or kept as an empty string, which <see cref="BatchConfiguration.IsValid"/> rejects.
+	/// </summary>
+	private static Collection<string> WithoutNulls(Collection<string>? values, bool keepNullEntries)
+	{
+		if (values == null)
+		{
+			return [];
+		}
+
+		return keepNullEntries
+			? [.. values.Select(v => v ?? string.Empty)]
+			: [.. values.Where(v => v != null)];
 	}
 
 	/// <summary>
