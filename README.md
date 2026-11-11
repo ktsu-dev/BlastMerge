@@ -150,6 +150,9 @@ blastmerge -v
 blastmerge -h
 ```
 
+`-b` exits 1 when the batch name matches no batch (or, in a different case, more than one), or when a
+pattern fails, so a scheduled job or CI step can detect a failed run. A batch that completes exits 0.
+
 ### Interactive Mode Options
 
 1. **🔀 Iterative Merge** - Cross-repository file synchronization

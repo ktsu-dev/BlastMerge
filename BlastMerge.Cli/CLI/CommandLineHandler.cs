@@ -86,11 +86,11 @@ public class CommandLineHandler(IApplicationService applicationService) : IComma
 				return 0;
 			}
 
-			// Handle batch processing
+			// Handle batch processing. A batch that is not found, or that has a failed pattern, exits 1
+			// so a scheduled or CI run can tell (ktsu-dev/BlastMerge#70).
 			if (!string.IsNullOrEmpty(options.BatchName) && !string.IsNullOrEmpty(options.Directory))
 			{
-				applicationService.ProcessBatch(options.Directory, options.BatchName);
-				return 0;
+				return applicationService.RunBatch(options.Directory, options.BatchName) ? 0 : 1;
 			}
 
 			// Handle direct file processing
