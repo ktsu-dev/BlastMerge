@@ -295,7 +295,7 @@ public static class FileFinder
 	/// </summary>
 	/// <param name="directoryPath">The directory path to check</param>
 	/// <returns>True if the directory holds version control metadata, false otherwise</returns>
-	private static bool IsVersionControlMetadata(string directoryPath)
+	internal static bool IsVersionControlMetadata(string directoryPath)
 	{
 		string name = Path.GetFileName(directoryPath.TrimEnd('/', '\\'));
 		return VersionControlMetadataDirectoryNames.Contains(name, StringComparer.OrdinalIgnoreCase);
