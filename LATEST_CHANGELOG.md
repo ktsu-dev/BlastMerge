@@ -2,6 +2,18 @@
 
 Changes since v1.11.4:
 
+- Skip null entries and null lists when importing batches [patch] (#138) (matt-edmondson)
+- Escape file labels and names in the diff and directory-compare tables [patch] (#139) (matt-edmondson)
+- Run only the recent batch itself, and forget it once deleted [patch] (#140) (matt-edmondson)
+- Keep an emoji whole in the character-level diff [patch] (#142) (matt-edmondson)
+- Skip .git and other version control directories when finding files [patch] (#143) (matt-edmondson)
+- List the changed lines in the change summary [patch] (#144) (matt-edmondson)
+- Find a file once when overlapping search paths spell it differently [patch] (#146) (matt-edmondson)
+- Show bracketed file paths and batch names in selection prompts as text [patch] (#147) (matt-edmondson)
+- Escape file names and batch names in status lines and history prompts [patch] (#148) (matt-edmondson)
+- Read brackets in an exclusion the same way with or without a wildcard [patch] (#151) (matt-edmondson)
+- Pair each changed line with its counterpart in the Git-style diff [patch] (#152) (matt-edmondson)
+- Count the merges already done when only unmergeable versions remain [patch] (#153) (matt-edmondson)
 - Run the batch whose name matches exactly, not the first in any case [patch] (#132) (matt-edmondson)
 - Exit 0 with BlastMerge's own text for --help and --version [patch] (#131) (matt-edmondson)
 - Match a wildcard-free exclusion against whole path components [patch] (#130) (matt-edmondson)
