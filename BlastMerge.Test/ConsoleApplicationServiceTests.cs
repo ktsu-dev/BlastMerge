@@ -341,6 +341,62 @@ public class ConsoleApplicationServiceTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// A batch run by a name typed in a different case is recorded under its stored name, so the recent
+	/// entry cannot later resolve to another batch created with the typed spelling (ktsu-dev/BlastMerge#134).
+	/// </summary>
+	[TestMethod]
+	public void ProcessBatch_NameTypedInADifferentCase_RecordsTheStoredName()
+	{
+		SaveBatch("Web", "upper-case batch", null, "upper.txt");
+
+		service.ProcessBatch(TempDirectory, "WEB");
+
+		Assert.AreEqual("Web", BlastMergeAppData.Get().RecentBatch?.BatchName);
+	}
+
+	/// <summary>
+	/// Deleting the recent batch forgets it, so the main menu stops offering it, while deleting a
+	/// different batch leaves the recent entry alone (ktsu-dev/BlastMerge#134).
+	/// </summary>
+	[TestMethod]
+	public void DeleteBatch_OfTheRecentBatch_ClearsTheRecentEntry()
+	{
+		SaveBatch("Web", "upper-case batch", null, "upper.txt");
+		SaveBatch("web", "lower-case batch", null, "lower.txt");
+		SaveBatch("Docs", string.Empty, null, "README.md");
+		service.ProcessBatch(TempDirectory, "Web");
+
+		Assert.IsTrue(AppDataBatchManager.DeleteBatch("Docs"));
+		Assert.AreEqual("Web", BlastMergeAppData.Get().RecentBatch?.BatchName);
+
+		Assert.IsTrue(AppDataBatchManager.DeleteBatch("Web"));
+		Assert.IsNull(BlastMergeAppData.Get().RecentBatch);
+	}
+
+	/// <summary>
+	/// A recent batch that no longer exists is reported as missing, not resolved to a sibling whose
+	/// name differs only by case (ktsu-dev/BlastMerge#134).
+	/// </summary>
+	[TestMethod]
+	public void StartInteractiveMode_RunRecentBatchWithOnlyACaseSibling_ReportsItMissing()
+	{
+		string repos = Path.Join(TempDirectory, "repos");
+		WriteFile(Path.Join("repos", "a", "LICENSE"), "one");
+		WriteFile(Path.Join("repos", "b", "LICENSE"), "two");
+		SaveBatch("web", "lower-case batch", [repos], "LICENSE");
+		BlastMergeAppData.Get().RecentBatch = new RecentBatchInfo { BatchName = "Web" };
+		SelectIndex(MainMenuRunRecentBatch);
+		PressAnyKey();
+		SelectIndex(MainMenuExit);
+
+		service.StartInteractiveMode();
+
+		StringAssert.Contains(Output, "Batch configuration 'Web' not found.");
+		Assert.IsFalse(Output.Contains("Running recent batch", StringComparison.Ordinal), Output);
+		Assert.IsFalse(Output.Contains("lower-case batch", StringComparison.Ordinal), Output);
+	}
+
+	/// <summary>
 	/// Processing a batch in a directory that does not exist is refused.
 	/// </summary>
 	[TestMethod]
@@ -372,7 +428,7 @@ public class ConsoleApplicationServiceTests : ConsoleTestBase
 		StringAssert.Contains(Output, "Identical");
 		StringAssert.Contains(Output, "Single file");
 		StringAssert.Contains(Output, "app.cfg (*.cfg)");
-		Assert.AreEqual("repo files", BlastMergeAppData.Get().RecentBatch?.BatchName);
+		Assert.AreEqual("Repo Files", BlastMergeAppData.Get().RecentBatch?.BatchName);
 	}
 
 	/// <summary>
