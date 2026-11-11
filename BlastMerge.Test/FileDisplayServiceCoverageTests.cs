@@ -138,7 +138,9 @@ public class FileDisplayServiceCoverageTests : ConsoleTestBase
 	}
 
 	/// <summary>
-	/// Paths that differ only in case have no distinguishing components, so each keeps its own file name.
+	/// Where the file system ignores case, paths that differ only in case have no distinguishing
+	/// components, so each keeps its own file name. Where it doesn't, the folders are different and
+	/// stay in the labels (#66).
 	/// </summary>
 	[TestMethod]
 	public void MakeDistinguishedPaths_DifferOnlyInCase_ReturnsEachFileName()
@@ -148,8 +150,29 @@ public class FileDisplayServiceCoverageTests : ConsoleTestBase
 
 		(string label1, string label2) = FileDisplayService.MakeDistinguishedPaths(upper, lower);
 
-		Assert.AreEqual("File.TXT", label1);
-		Assert.AreEqual("file.txt", label2);
+		bool ignoresCase = FileDisplayService.PathComponentComparison == StringComparison.OrdinalIgnoreCase;
+		Assert.AreEqual(ignoresCase ? "File.TXT" : "Work/File.TXT", label1);
+		Assert.AreEqual(ignoresCase ? "file.txt" : "work/file.txt", label2);
+	}
+
+	/// <summary>
+	/// Where the file system is case-sensitive, files in folders that differ only in case get
+	/// different labels, so the user can tell which is which (#66).
+	/// </summary>
+	[TestMethod]
+	public void MakeDistinguishedPaths_FoldersDifferOnlyInCase_LabelsDifferOnCaseSensitivePlatforms()
+	{
+		if (FileDisplayService.PathComponentComparison != StringComparison.Ordinal)
+		{
+			Assert.Inconclusive("Docs/ and docs/ are the same folder on this platform");
+		}
+
+		(string label1, string label2) = FileDisplayService.MakeDistinguishedPaths(
+			TestPaths.Rooted("repo", "Docs", "guide.md"),
+			TestPaths.Rooted("repo", "docs", "guide.md"));
+
+		Assert.AreEqual("Docs/guide.md", label1);
+		Assert.AreEqual("docs/guide.md", label2);
 	}
 
 	/// <summary>

@@ -128,7 +128,7 @@ public class FileDisplayServiceTests : MockFileSystemTestBase
 	}
 
 	/// <summary>
-	/// Tests that case-insensitive comparison works for path components.
+	/// Tests that path components are compared with the platform's case sensitivity.
 	/// </summary>
 	[TestMethod]
 	public void MakeDistinguishedPaths_CaseInsensitiveComparison_WorksCorrectly()
@@ -140,9 +140,10 @@ public class FileDisplayServiceTests : MockFileSystemTestBase
 		// Act
 		(string result1, string result2) = FileDisplayService.MakeDistinguishedPaths(path1, path2);
 
-		// Assert
-		Assert.AreEqual("File.txt", result1);
-		Assert.AreEqual("file.txt", result2);
+		// Assert: where case matters the folders differ too, and stay in the labels (#66)
+		bool ignoresCase = FileDisplayService.PathComponentComparison == StringComparison.OrdinalIgnoreCase;
+		Assert.AreEqual(ignoresCase ? "File.txt" : "DEV/Project/File.txt", result1);
+		Assert.AreEqual(ignoresCase ? "file.txt" : "dev/project/file.txt", result2);
 	}
 
 	/// <summary>
