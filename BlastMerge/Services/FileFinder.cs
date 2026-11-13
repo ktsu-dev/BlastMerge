@@ -92,7 +92,7 @@ public static class FileFinder
 			}
 
 			// Search in subdirectories
-			foreach (string directory in fileSystem.Directory.GetDirectories(rootDirectory).Where(dir => !IsVersionControlMetadata(dir) && !IsGitSubmodule(dir, fileSystem)))
+			foreach (string directory in fileSystem.Directory.GetDirectories(rootDirectory).Where(dir => !IsVersionControlMetadata(dir) && !IsLinkedDirectory(dir, fileSystem) && !IsGitSubmodule(dir, fileSystem)))
 			{
 				try
 				{
@@ -280,7 +280,34 @@ public static class FileFinder
 	/// Determines if a directory should be skipped
 	/// </summary>
 	private static bool ShouldSkipDirectory(string directory, IReadOnlyCollection<string> pathExclusionPatterns, IFileSystem fileSystem) =>
-		IsVersionControlMetadata(directory) || IsGitSubmodule(directory, fileSystem) || ShouldExcludePath(directory, pathExclusionPatterns);
+		IsVersionControlMetadata(directory) || IsLinkedDirectory(directory, fileSystem) || IsGitSubmodule(directory, fileSystem) || ShouldExcludePath(directory, pathExclusionPatterns);
+
+	/// <summary>
+	/// Determines if a directory is a symbolic link, junction or other reparse point. The search never
+	/// follows one, as <c>git</c> and <c>rg</c> don't: a link back up the tree (a pnpm or yarn
+	/// workspace's <c>node_modules</c>, or a <c>self -&gt; .</c> link) would otherwise list each file
+	/// once per path through the cycle, or recurse until the OS gives up.
+	/// </summary>
+	/// <param name="directoryPath">The directory path to check</param>
+	/// <param name="fileSystem">File system abstraction</param>
+	/// <returns>True if the directory is a link, false otherwise</returns>
+	private static bool IsLinkedDirectory(string directoryPath, IFileSystem fileSystem)
+	{
+		try
+		{
+			IDirectoryInfo directory = fileSystem.DirectoryInfo.New(directoryPath);
+			return directory.LinkTarget is not null || directory.Attributes.HasFlag(FileAttributes.ReparsePoint);
+		}
+		catch (Exception ex) when (ex is UnauthorizedAccessException
+								or DirectoryNotFoundException
+								or IOException
+								or ArgumentException
+								or NotSupportedException)
+		{
+			// A directory whose link state can't be read is searched as before
+			return false;
+		}
+	}
 
 	/// <summary>
 	/// Names of the directories version control keeps its own metadata in. Their files (a
