@@ -17,7 +17,7 @@
     <PackageVersion Include="TestableIO.System.IO.Abstractions" Version="22.2.0" />
     <PackageVersion Include="TestableIO.System.IO.Abstractions.TestingHelpers" Version="22.2.0" />
     <PackageVersion Include="TestableIO.System.IO.Abstractions.Wrappers" Version="22.2.0" />
-    <PackageVersion Include="Polyfill" Version="11.0.2" />
+    <PackageVersion Include="Polyfill" Version="11.4.5" />
     <PackageVersion Include="Testably.Abstractions.FileSystem.Interface" Version="10.3.0" />
   
     <!-- 1.6.11 is the floor ktsu.TextFilter 1.5.48 requires; below it the build fails with NU1605. -->
