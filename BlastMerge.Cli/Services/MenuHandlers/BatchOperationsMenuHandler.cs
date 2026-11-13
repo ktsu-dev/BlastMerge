@@ -543,8 +543,8 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 		ShowMenuTitle($"Batch Details: {batch.Name}");
 
 		Panel panel = new($"""
-			[cyan]Name:[/] {batch.Name}
-			[cyan]Description:[/] {batch.Description ?? "No description"}
+			[cyan]Name:[/] {Markup.Escape(batch.Name)}
+			[cyan]Description:[/] {Markup.Escape(batch.Description ?? "No description")}
 			[cyan]Patterns:[/] {batch.FilePatterns.Count}
 			[cyan]Search Paths:[/] {batch.SearchPaths.Count}
 			[cyan]Exclusion Patterns:[/] {batch.PathExclusionPatterns.Count}
