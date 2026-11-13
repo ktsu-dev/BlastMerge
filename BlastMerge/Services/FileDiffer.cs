@@ -161,15 +161,14 @@ public static class FileDiffer
 		Ensure.NotNull(searchPattern);
 
 		fileSystem ??= new FileSystem();
-		SearchOption searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
 
 		// Get all files from both directories
 		HashSet<string> files1 = fileSystem.Directory.Exists(dir1)
-			? [.. fileSystem.Directory.GetFiles(dir1, searchPattern, searchOption).Select(f => fileSystem.Path.GetRelativePath(dir1, f))]
+			? [.. EnumerateComparableFiles(dir1, searchPattern, recursive, fileSystem).Select(f => fileSystem.Path.GetRelativePath(dir1, f))]
 			: [];
 
 		HashSet<string> files2 = fileSystem.Directory.Exists(dir2)
-			? [.. fileSystem.Directory.GetFiles(dir2, searchPattern, searchOption).Select(f => fileSystem.Path.GetRelativePath(dir2, f))]
+			? [.. EnumerateComparableFiles(dir2, searchPattern, recursive, fileSystem).Select(f => fileSystem.Path.GetRelativePath(dir2, f))]
 			: [];
 
 		List<string> sameFiles = [];
@@ -217,6 +216,37 @@ public static class FileDiffer
 			OnlyInDir1 = onlyInDir1.AsReadOnly(),
 			OnlyInDir2 = onlyInDir2.AsReadOnly()
 		};
+	}
+
+	/// <summary>
+	/// Lists the files in a directory that match a pattern. A recursive walk never enters version
+	/// control metadata directories such as <c>.git</c>, so a repository's objects, refs and
+	/// config are not compared as content.
+	/// </summary>
+	/// <param name="directory">The directory to list</param>
+	/// <param name="searchPattern">File search pattern</param>
+	/// <param name="recursive">Whether to search subdirectories recursively</param>
+	/// <param name="fileSystem">File system abstraction</param>
+	/// <returns>The full paths of the matching files</returns>
+	private static IEnumerable<string> EnumerateComparableFiles(string directory, string searchPattern, bool recursive, IFileSystem fileSystem)
+	{
+		Stack<string> pending = new([directory]);
+		while (pending.Count > 0)
+		{
+			string current = pending.Pop();
+			foreach (string file in fileSystem.Directory.GetFiles(current, searchPattern, SearchOption.TopDirectoryOnly))
+			{
+				yield return file;
+			}
+
+			if (recursive)
+			{
+				foreach (string subdirectory in fileSystem.Directory.GetDirectories(current).Where(d => !FileFinder.IsVersionControlMetadata(d)))
+				{
+					pending.Push(subdirectory);
+				}
+			}
+		}
 	}
 
 	/// <summary>

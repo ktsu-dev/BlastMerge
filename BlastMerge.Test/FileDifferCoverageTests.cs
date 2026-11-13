@@ -84,6 +84,37 @@ public class FileDifferCoverageTests : MockFileSystemTestBase
 	}
 
 	/// <summary>
+	/// A recursive comparison never enters version control metadata directories in either tree,
+	/// at the root or deeper, but still compares the working-tree files around them.
+	/// </summary>
+	[TestMethod]
+	public void FindDifferences_Directories_RecursiveSkipsVersionControlMetadata()
+	{
+		string dir1 = CreateDirectory("l");
+		string dir2 = CreateDirectory("r");
+		CreateFile(Path.Join("l", "README.md"), "same");
+		CreateFile(Path.Join("r", "README.md"), "same");
+		CreateFile(Path.Join("l", ".git", "config"), "left config");
+		CreateFile(Path.Join("r", ".git", "config"), "right config");
+		CreateFile(Path.Join("l", ".git", "HEAD"), "ref: refs/heads/main");
+		CreateFile(Path.Join("r", ".git", "HEAD"), "ref: refs/heads/dev");
+		CreateFile(Path.Join("l", ".git", "objects", "ab", "cdef"), "object");
+		CreateFile(Path.Join("l", "sub", ".hg", "store"), "hg");
+		CreateFile(Path.Join("r", "sub", ".SVN", "entries"), "svn");
+		CreateFile(Path.Join("l", ".bzr", "branch-format"), "bzr");
+		CreateFile(Path.Join("l", "sub", "code.cs"), "left");
+		CreateFile(Path.Join("r", "sub", "code.cs"), "right");
+		CreateFile(Path.Join("l", ".github", "ci.yml"), "ci");
+
+		DirectoryComparisonResult result = FileDiffer.FindDifferences(dir1, dir2, "*", recursive: true, MockFileSystem);
+
+		Assert.AreSequenceEqual(["README.md"], result.SameFiles);
+		Assert.AreSequenceEqual([Path.Join("sub", "code.cs")], result.ModifiedFiles);
+		Assert.AreSequenceEqual([Path.Join(".github", "ci.yml")], result.OnlyInDir1);
+		Assert.IsEmpty(result.OnlyInDir2);
+	}
+
+	/// <summary>
 	/// A missing directory contributes no files rather than failing the comparison.
 	/// </summary>
 	[TestMethod]
