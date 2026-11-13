@@ -306,6 +306,70 @@ public class ConsoleApplicationServiceTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// Running an unknown batch reports failure, so the command line can exit non-zero
+	/// (ktsu-dev/BlastMerge#70).
+	/// </summary>
+	[TestMethod]
+	public void RunBatch_UnknownBatch_ReportsFailure()
+	{
+		Assert.IsFalse(service.RunBatch(TempDirectory, "Nope"));
+
+		StringAssert.Contains(Output, "Batch configuration 'Nope' not found.");
+	}
+
+	/// <summary>
+	/// Running a name that matches several batches in different cases reports failure, as none of them ran.
+	/// </summary>
+	[TestMethod]
+	public void RunBatch_AmbiguousBatch_ReportsFailure()
+	{
+		SaveBatch("Web", "upper-case batch", null, "upper.txt");
+		SaveBatch("web", "lower-case batch", null, "lower.txt");
+
+		Assert.IsFalse(service.RunBatch(TempDirectory, "WEB"));
+	}
+
+	/// <summary>
+	/// A batch whose patterns all succeed reports success.
+	/// </summary>
+	[TestMethod]
+	public void RunBatch_AllPatternsSucceed_ReportsSuccess()
+	{
+		SaveBatch("Docs", string.Empty, null, "README.md");
+		WriteFile(Path.Join("one", "README.md"), "same");
+		WriteFile(Path.Join("two", "README.md"), "same");
+
+		Assert.IsTrue(service.RunBatch(TempDirectory, "Docs"));
+
+		StringAssert.Contains(Output, "Batch processing completed!");
+		Assert.IsFalse(Output.Contains("Batch processing failed", StringComparison.Ordinal), Output);
+	}
+
+	/// <summary>
+	/// A batch with a pattern that fails reports failure, and its headline says so rather than claiming
+	/// the batch completed (ktsu-dev/BlastMerge#70).
+	/// </summary>
+	[TestMethod]
+	public void RunBatch_PatternFails_ReportsFailureInTheHeadline()
+	{
+		SaveBatch("Docs", string.Empty, null, "README.md");
+		WriteFile(Path.Join("one", "README.md"), "readable");
+		string locked = WriteFile(Path.Join("two", "README.md"), "locked");
+
+		// Holding the file open without sharing makes it unreadable to the batch, so its pattern fails.
+		bool succeeded;
+		using (new FileStream(locked, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+		{
+			succeeded = service.RunBatch(TempDirectory, "Docs");
+		}
+
+		Assert.IsFalse(succeeded);
+
+		StringAssert.Contains(Output, "Batch processing failed.");
+		Assert.IsFalse(Output.Contains("Batch processing completed!", StringComparison.Ordinal), Output);
+	}
+
+	/// <summary>
 	/// With batches whose names differ only by case, running one runs that batch, not whichever
 	/// sorts first (ktsu-dev/BlastMerge#97).
 	/// </summary>

@@ -62,6 +62,25 @@ public abstract class ApplicationService(IFileSystem? fileSystem = null) : IAppl
 	public abstract void ProcessBatch(string directory, string batchName);
 
 	/// <summary>
+	/// Processes a batch configuration in a specified directory and reports whether it succeeded.
+	/// </summary>
+	/// <remarks>
+	/// This implementation runs <see cref="ProcessBatch"/> and reports success. Override it in a service
+	/// that can tell when a batch fails.
+	/// </remarks>
+	/// <param name="directory">The directory to process.</param>
+	/// <param name="batchName">The name of the batch configuration.</param>
+	/// <returns>
+	/// <see langword="true"/> if the batch was found and every pattern in it succeeded; otherwise
+	/// <see langword="false"/>.
+	/// </returns>
+	public virtual bool RunBatch(string directory, string batchName)
+	{
+		ProcessBatch(directory, batchName);
+		return true;
+	}
+
+	/// <summary>
 	/// Compares files in a directory and returns file groups.
 	/// </summary>
 	/// <param name="directory">The directory containing files to compare.</param>

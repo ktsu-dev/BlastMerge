@@ -161,14 +161,15 @@ public class ProgramTests : ConsoleTestBase
 	}
 
 	/// <summary>
-	/// Running an unknown batch reports it through the console and still exits successfully.
+	/// Running an unknown batch reports it through the console and exits 1, so a scheduled or CI run
+	/// can detect it (ktsu-dev/BlastMerge#70).
 	/// </summary>
 	[TestMethod]
-	public void Main_WithUnknownBatch_ReportsItAndSucceeds()
+	public void Main_WithUnknownBatch_ReportsItAndFails()
 	{
 		(int exitCode, _, _) = RunMain(TempDirectory, "-b", "Nope");
 
-		Assert.AreEqual(0, exitCode);
+		Assert.AreEqual(1, exitCode);
 		StringAssert.Contains(Output, "Batch configuration 'Nope' not found.");
 	}
 

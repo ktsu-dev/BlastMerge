@@ -152,7 +152,19 @@ public class ConsoleApplicationService : ApplicationService
 	/// </summary>
 	/// <param name="directory">The directory to process.</param>
 	/// <param name="batchName">The name of the batch configuration.</param>
-	public override void ProcessBatch(string directory, string batchName)
+	public override void ProcessBatch(string directory, string batchName) =>
+		_ = RunBatch(directory, batchName);
+
+	/// <summary>
+	/// Processes a batch configuration in a specified directory and reports whether it succeeded.
+	/// </summary>
+	/// <param name="directory">The directory to process.</param>
+	/// <param name="batchName">The name of the batch configuration.</param>
+	/// <returns>
+	/// <see langword="true"/> if the batch was found and every pattern in it succeeded; <see langword="false"/>
+	/// if the name matched no batch, matched several, or a pattern failed (ktsu-dev/BlastMerge#70).
+	/// </returns>
+	public override bool RunBatch(string directory, string batchName)
 	{
 		Ensure.NotNull(directory);
 		Ensure.NotNull(batchName);
@@ -161,7 +173,7 @@ public class ConsoleApplicationService : ApplicationService
 		BatchConfiguration? batch = GetBatchConfiguration(batchName);
 		if (batch == null)
 		{
-			return;
+			return false;
 		}
 
 		// Record this batch as recently used, by its stored name rather than as typed, so the recent
@@ -177,6 +189,7 @@ public class ConsoleApplicationService : ApplicationService
 		ShowBatchHeader(batch, directory);
 		(int totalPatternsProcessed, int totalFilesFound, BatchResult? batchResult) = ProcessAllPatterns(directory, batch);
 		ShowBatchCompletion(totalPatternsProcessed, totalFilesFound, batchResult);
+		return batchResult?.Success ?? false;
 	}
 
 	/// <summary>
@@ -329,7 +342,19 @@ public class ConsoleApplicationService : ApplicationService
 	/// <param name="batchResult">The batch result containing merge details.</param>
 	private static void ShowBatchCompletion(int totalPatternsProcessed, int totalFilesFound, BatchResult? batchResult = null)
 	{
-		AnsiConsole.MarkupLine($"[green]Batch processing completed![/]");
+		if (batchResult?.Success == false)
+		{
+			AnsiConsole.MarkupLine($"[red]Batch processing failed.[/]");
+			if (!string.IsNullOrEmpty(batchResult.Summary))
+			{
+				AnsiConsole.MarkupLineInterpolated($"[red]{batchResult.Summary}[/]");
+			}
+		}
+		else
+		{
+			AnsiConsole.MarkupLine($"[green]Batch processing completed![/]");
+		}
+
 		AnsiConsole.MarkupLineInterpolated($"[dim]Processed {totalPatternsProcessed} patterns, found {totalFilesFound} total files.[/]");
 
 		// Show detailed summary for all patterns processed

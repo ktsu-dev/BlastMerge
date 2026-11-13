@@ -28,9 +28,20 @@ public class CommandLineHandlerTests
 	{
 		public List<string> Calls { get; } = [];
 
+		/// <summary>
+		/// Gets or sets whether <see cref="RunBatch"/> reports the batch as having succeeded.
+		/// </summary>
+		public bool BatchSucceeds { get; set; } = true;
+
 		public void ProcessFiles(string directory, string fileName) => Calls.Add($"ProcessFiles({directory},{fileName})");
 
 		public void ProcessBatch(string directory, string batchName) => Calls.Add($"ProcessBatch({directory},{batchName})");
+
+		public bool RunBatch(string directory, string batchName)
+		{
+			ProcessBatch(directory, batchName);
+			return BatchSucceeds;
+		}
 
 		public IReadOnlyDictionary<string, IReadOnlyCollection<string>> CompareFiles(string directory, string fileName)
 		{
@@ -151,6 +162,21 @@ public class CommandLineHandlerTests
 		(int exitCode, _) = Run("some-directory", "-b", "Config Files");
 
 		Assert.AreEqual(0, exitCode);
+		Assert.AreSequenceEqual(["ProcessBatch(some-directory,Config Files)"], _applicationService.Calls);
+	}
+
+	/// <summary>
+	/// A batch that is not found, or that has a failed pattern, exits 1 so a scheduled or CI run can
+	/// detect it (ktsu-dev/BlastMerge#70).
+	/// </summary>
+	[TestMethod]
+	public void ProcessCommandLineArguments_WithFailedBatch_ExitsOne()
+	{
+		_applicationService.BatchSucceeds = false;
+
+		(int exitCode, _) = Run("some-directory", "-b", "Config Files");
+
+		Assert.AreEqual(1, exitCode);
 		Assert.AreSequenceEqual(["ProcessBatch(some-directory,Config Files)"], _applicationService.Calls);
 	}
 

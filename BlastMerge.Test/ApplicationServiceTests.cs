@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
+using ktsu.BlastMerge.Contracts;
 using ktsu.BlastMerge.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -317,6 +318,56 @@ public class ApplicationServiceTests : MockFileSystemTestBase
 		// Act & Assert
 		Assert.ThrowsExactly<DirectoryNotFoundException>(() =>
 			_applicationService.ProcessBatch("non_existent_dir", "TestBatch"));
+	}
+
+	/// <summary>
+	/// The base RunBatch runs ProcessBatch and reports success, for services with no failure to report.
+	/// </summary>
+	[TestMethod]
+	public void RunBatch_WithoutOverride_RunsProcessBatchAndReportsSuccess() =>
+		Assert.IsTrue(_applicationService.RunBatch(_testDirectory, "TestBatch"));
+
+	/// <summary>
+	/// The base RunBatch goes through ProcessBatch, so ProcessBatch's validation still applies.
+	/// </summary>
+	[TestMethod]
+	public void RunBatch_WithoutOverrideAndInvalidDirectory_ThrowsException() =>
+		Assert.ThrowsExactly<DirectoryNotFoundException>(() =>
+			_applicationService.RunBatch("non_existent_dir", "TestBatch"));
+
+	/// <summary>
+	/// An IApplicationService that implements only the original members, as one written before
+	/// RunBatch existed would.
+	/// </summary>
+	private sealed class PreRunBatchApplicationService : IApplicationService
+	{
+		public List<string> Calls { get; } = [];
+
+		public void ProcessFiles(string directory, string fileName) => Calls.Add(nameof(ProcessFiles));
+
+		public void ProcessBatch(string directory, string batchName) => Calls.Add($"{nameof(ProcessBatch)}({directory},{batchName})");
+
+		public IReadOnlyDictionary<string, IReadOnlyCollection<string>> CompareFiles(string directory, string fileName) =>
+			new Dictionary<string, IReadOnlyCollection<string>>();
+
+		public void RunIterativeMerge(string directory, string fileName) => Calls.Add(nameof(RunIterativeMerge));
+
+		public void ListBatches() => Calls.Add(nameof(ListBatches));
+
+		public void StartInteractiveMode() => Calls.Add(nameof(StartInteractiveMode));
+	}
+
+	/// <summary>
+	/// The interface's default RunBatch runs ProcessBatch and reports success, so an implementation
+	/// written before RunBatch existed keeps working.
+	/// </summary>
+	[TestMethod]
+	public void RunBatch_InterfaceDefault_RunsProcessBatchAndReportsSuccess()
+	{
+		PreRunBatchApplicationService service = new();
+
+		Assert.IsTrue(((IApplicationService)service).RunBatch("some-directory", "Config Files"));
+		Assert.AreSequenceEqual(["ProcessBatch(some-directory,Config Files)"], service.Calls);
 	}
 
 	/// <summary>
