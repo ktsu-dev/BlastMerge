@@ -5,6 +5,7 @@ namespace ktsu.BlastMerge.Test;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using ktsu.BlastMerge.Cli.Models;
 using ktsu.BlastMerge.Cli.Services.Common;
@@ -167,6 +168,38 @@ public class SettingsMenuHandlerTests : ConsoleTestBase
 		StringAssert.Contains(Output, "Runtime Information");
 		StringAssert.Contains(Output, "Managed Memory:");
 		StringAssert.Contains(Output, "Process ID: " + Environment.ProcessId.ToString(CultureInfo.InvariantCulture));
+	}
+
+	/// <summary>
+	/// A working directory with square brackets in its name is shown literally in the configuration
+	/// paths, instead of being parsed as a style tag (#163).
+	/// </summary>
+	[TestMethod]
+	public void ConfigurationPaths_BracketedWorkingDirectory_IsShownLiterally()
+	{
+		Environment.CurrentDirectory = Directory.CreateDirectory(Path.Join(TempDirectory, "[work]")).FullName;
+		SelectIndex(ViewConfigurationPaths);
+		PressAnyKey();
+
+		handler.Handle();
+
+		StringAssert.Contains(Output, Path.DirectorySeparatorChar + "[work]");
+	}
+
+	/// <summary>
+	/// A working directory with square brackets in its name is shown literally in the statistics panel,
+	/// instead of being parsed as a style tag (#163).
+	/// </summary>
+	[TestMethod]
+	public void Statistics_BracketedWorkingDirectory_IsShownLiterally()
+	{
+		Environment.CurrentDirectory = Directory.CreateDirectory(Path.Join(TempDirectory, "[work]")).FullName;
+		SelectIndex(ViewStatistics);
+		PressAnyKey();
+
+		handler.Handle();
+
+		StringAssert.Contains(Output, Path.DirectorySeparatorChar + "[work]");
 	}
 
 	/// <summary>

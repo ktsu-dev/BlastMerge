@@ -67,6 +67,27 @@ public class FileDisplayServiceCoverageTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// A path with square brackets, such as a Next.js route folder, is listed literally instead of being
+	/// parsed as a style tag (#163).
+	/// </summary>
+	[TestMethod]
+	public void ShowDetailedFileList_BracketedPath_IsShownLiterally()
+	{
+		string found = WriteFile(Path.Join("app", "[id]", "page.tsx"), "export default 1;");
+		string missing = Path.Join(TempDirectory, "app", "[slug]", "gone.tsx");
+		Dictionary<string, IReadOnlyCollection<string>> groups = new()
+		{
+			["hash"] = [found, missing],
+		};
+		PressAnyKey();
+
+		FileDisplayService.ShowDetailedFileList(groups);
+
+		StringAssert.Contains(Output, Path.Join("[id]", "page.tsx"));
+		StringAssert.Contains(Output, Path.Join("[slug]", "gone.tsx") + " (FileNotFoundException)");
+	}
+
+	/// <summary>
 	/// With no group holding more than one file there is nothing to compare.
 	/// </summary>
 	[TestMethod]
