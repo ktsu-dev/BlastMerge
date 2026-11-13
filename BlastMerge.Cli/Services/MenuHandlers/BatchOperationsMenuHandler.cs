@@ -980,6 +980,15 @@ public class BatchOperationsMenuHandler(ApplicationService applicationService) :
 			exportPath = defaultFileName;
 		}
 
+		// A typo or a path picked from the prompt's history must not silently replace an unrelated file.
+		if (File.Exists(exportPath)
+			&& !AnsiConsole.Confirm($"[yellow]'{Markup.Escape(exportPath)}' already exists. Overwrite?[/]", false))
+		{
+			ShowWarning("Export cancelled.");
+			WaitForKeyPress();
+			return;
+		}
+
 		try
 		{
 			string json = JsonSerializer.Serialize(allBatches, JsonSerializerOptions);

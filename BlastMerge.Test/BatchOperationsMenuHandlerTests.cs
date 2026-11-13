@@ -722,6 +722,48 @@ public class BatchOperationsMenuHandlerTests : ConsoleTestBase
 	}
 
 	/// <summary>
+	/// Exporting onto an existing file asks first, and declining leaves the file exactly as it was (#164).
+	/// </summary>
+	[TestMethod]
+	public void Export_OntoAnExistingFile_Declined_LeavesItUnchanged()
+	{
+		SaveBatch("Docs", "README.md");
+		string exportPath = WriteFile("notes.txt", "My important notes\nline 2\n");
+		byte[] before = File.ReadAllBytes(exportPath);
+
+		Manage(Export, () =>
+		{
+			Answer(exportPath, "n");
+			PressAnyKey();
+		});
+
+		StringAssert.Contains(Output, "already exists. Overwrite?");
+		StringAssert.Contains(Output, "Export cancelled.");
+		Assert.DoesNotContain("Exported 1 batch configurations", Output);
+		CollectionAssert.AreEqual(before, File.ReadAllBytes(exportPath));
+	}
+
+	/// <summary>
+	/// Exporting onto an existing file replaces it once the overwrite is confirmed.
+	/// </summary>
+	[TestMethod]
+	public void Export_OntoAnExistingFile_Confirmed_ReplacesIt()
+	{
+		SaveBatch("Docs", "README.md");
+		string exportPath = WriteFile("old.json", "stale");
+
+		Manage(Export, () =>
+		{
+			Answer(exportPath, "y");
+			PressAnyKey();
+		});
+
+		StringAssert.Contains(Output, "already exists. Overwrite?");
+		StringAssert.Contains(Output, "Exported 1 batch configurations");
+		StringAssert.Contains(File.ReadAllText(exportPath), "README.md");
+	}
+
+	/// <summary>
 	/// Exporting into a folder that does not exist reports the error rather than throwing.
 	/// </summary>
 	[TestMethod]
