@@ -38,11 +38,11 @@ public static class FileDisplayService
 				try
 				{
 					FileInfo fileInfo = new(filePath);
-					groupNode.AddNode($"[green]{filePath}[/] [dim]({fileInfo.Length:N0} bytes, {fileInfo.LastWriteTime:yyyy-MM-dd HH:mm:ss})[/]");
+					groupNode.AddNode($"[green]{Markup.Escape(filePath)}[/] [dim]({fileInfo.Length:N0} bytes, {fileInfo.LastWriteTime:yyyy-MM-dd HH:mm:ss})[/]");
 				}
 				catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or FileNotFoundException or PathTooLongException or ArgumentException or IOException)
 				{
-					groupNode.AddNode($"[green]{filePath}[/] [dim]({ex.GetType().Name})[/]");
+					groupNode.AddNode($"[green]{Markup.Escape(filePath)}[/] [dim]({ex.GetType().Name})[/]");
 				}
 			}
 

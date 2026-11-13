@@ -80,7 +80,7 @@ public class SettingsMenuHandler(ApplicationService applicationService) : BaseMe
 
 		table.AddRow(
 			"[cyan]Config Directory[/]",
-			$"[dim]{configDir}[/]",
+			$"[dim]{Markup.Escape(configDir)}[/]",
 			Directory.Exists(configDir) ? "[green]Exists[/]" : "[yellow]Not Created[/]");
 
 		table.AddRow(
@@ -90,12 +90,12 @@ public class SettingsMenuHandler(ApplicationService applicationService) : BaseMe
 
 		table.AddRow(
 			"[cyan]Working Directory[/]",
-			$"[dim]{Environment.CurrentDirectory}[/]",
+			$"[dim]{Markup.Escape(Environment.CurrentDirectory)}[/]",
 			"[green]Current[/]");
 
 		table.AddRow(
 			"[cyan]Temp Directory[/]",
-			$"[dim]{Path.GetTempPath()}[/]",
+			$"[dim]{Markup.Escape(Path.GetTempPath())}[/]",
 			"[green]Available[/]");
 
 		AnsiConsole.Write(table);
@@ -176,7 +176,7 @@ public class SettingsMenuHandler(ApplicationService applicationService) : BaseMe
 			""",
 			Environment.OSVersion,
 			Environment.Version,
-			Environment.CurrentDirectory,
+			Markup.Escape(Environment.CurrentDirectory),
 			managedMemoryMB,
 			workingSetMB,
 			totalAvailableMemoryMB,
