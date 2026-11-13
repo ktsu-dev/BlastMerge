@@ -2,6 +2,12 @@
 
 Changes since v1.11.4:
 
+- Escape the batch name and description in batch details, and the file name in the differences rule [patch] (#157) (matt-edmondson)
+- List modified lines in the colored change summary [patch] (#158) (matt-edmondson)
+- Skip .git and other version control directories in directory compare [patch] (#159) (matt-edmondson)
+- Skip directory symlinks and junctions when finding files [patch] (#160) (matt-edmondson)
+- Tell apart files in folders that differ only in case [patch] (#161) (matt-edmondson)
+- Exit 1 when a command-line batch is not found or a pattern fails [patch] (#162) (matt-edmondson)
 - Skip null entries and null lists when importing batches [patch] (#138) (matt-edmondson)
 - Escape file labels and names in the diff and directory-compare tables [patch] (#139) (matt-edmondson)
 - Run only the recent batch itself, and forget it once deleted [patch] (#140) (matt-edmondson)
