@@ -145,6 +145,14 @@ public static class FileDisplayService
 	}
 
 	/// <summary>
+	/// How path components are compared when labelling two paths: ignoring case where the file system
+	/// usually does (Windows and macOS), and exactly elsewhere. On Linux <c>Docs/</c> and <c>docs/</c>
+	/// are different folders, and treating them as common gave both files the same label (#66).
+	/// </summary>
+	internal static StringComparison PathComponentComparison { get; } =
+		OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+	/// <summary>
 	/// Creates distinguished paths for two file paths by finding the minimal unique parts.
 	/// Normalizes paths, removes common leading components, keeps differing components at same depth,
 	/// ellipsizes matching internal components, and always keeps the leaf component.
@@ -238,7 +246,7 @@ public static class FileDisplayService
 
 		for (int i = 0; i < minLength; i++)
 		{
-			if (string.Equals(parts1[i], parts2[i], StringComparison.OrdinalIgnoreCase))
+			if (string.Equals(parts1[i], parts2[i], PathComponentComparison))
 			{
 				commonLeadingCount++;
 			}
@@ -372,7 +380,7 @@ public static class FileDisplayService
 	/// <returns>True if the component should be ellipsized.</returns>
 	private static bool ShouldEllipsizeComponent(string currentComponent, string[] otherComponents, int index) =>
 		index < otherComponents.Length - 1 &&
-		string.Equals(currentComponent, otherComponents[index], StringComparison.OrdinalIgnoreCase);
+		string.Equals(currentComponent, otherComponents[index], PathComponentComparison);
 
 	/// <summary>
 	/// Adds an ellipsis if needed (not already present and not at the beginning).

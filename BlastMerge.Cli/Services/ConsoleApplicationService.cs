@@ -1175,14 +1175,22 @@ public class ConsoleApplicationService : ApplicationService
 	/// </summary>
 	/// <param name="leftLabel">The distinguished label of the left file</param>
 	/// <param name="rightLabel">The distinguished label of the right file</param>
+	/// <remarks>
+	/// When the two labels are the same, the options are told apart by a (left)/(right) suffix:
+	/// otherwise the two use options read alike and both map back to the left version (#66).
+	/// </remarks>
 	/// <returns>The use-left, use-right, use-both and skip-both options</returns>
-	internal static string[] GetReplaceChoiceOptions(string leftLabel, string rightLabel) =>
-	[
-		$"  Use {leftLabel}",
-		$"  Use {rightLabel}",
-		ActionDisplay.UseBoth,
-		"❌ Skip Both"
-	];
+	internal static string[] GetReplaceChoiceOptions(string leftLabel, string rightLabel)
+	{
+		bool labelsCollide = string.Equals(leftLabel, rightLabel, StringComparison.Ordinal);
+		return
+		[
+			labelsCollide ? $"  Use {leftLabel} (left)" : $"  Use {leftLabel}",
+			labelsCollide ? $"  Use {rightLabel} (right)" : $"  Use {rightLabel}",
+			ActionDisplay.UseBoth,
+			"❌ Skip Both"
+		];
+	}
 
 	/// <summary>
 	/// Maps the option chosen for a replace block back to a <see cref="BlockChoice"/>.

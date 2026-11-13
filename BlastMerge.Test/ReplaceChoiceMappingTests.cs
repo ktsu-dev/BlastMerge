@@ -68,4 +68,28 @@ public class ReplaceChoiceMappingTests
 		Assert.AreEqual(BlockChoice.UseVersion1, Choose(0, "Both/notes.md", "Other/notes.md"));
 		Assert.AreEqual(BlockChoice.Skip, Choose(3, "Both/notes.md", "Other/notes.md"));
 	}
+
+	[TestMethod]
+	public void EqualLabelsStillMapEachOptionToItsOwnVersion()
+	{
+		// #66: two use options that read alike both mapped back to the left version.
+		string[] options = ConsoleApplicationService.GetReplaceChoiceOptions("guide.md", "guide.md");
+		Assert.AreNotEqual(options[0], options[1]);
+		Assert.AreEqual(BlockChoice.UseVersion1, Choose(0, "guide.md", "guide.md"));
+		Assert.AreEqual(BlockChoice.UseVersion2, Choose(1, "guide.md", "guide.md"));
+		Assert.AreEqual(BlockChoice.UseBoth, Choose(2, "guide.md", "guide.md"));
+		Assert.AreEqual(BlockChoice.Skip, Choose(3, "guide.md", "guide.md"));
+	}
+
+	[TestMethod]
+	public void PathsDifferingOnlyInCaseMapTheRightOptionToTheRightVersion()
+	{
+		string root = Path.Join(Path.GetTempPath(), "repo");
+		(string leftLabel, string rightLabel) = FileDisplayService.MakeDistinguishedPaths(
+			Path.Join(root, "Docs", "guide.md"),
+			Path.Join(root, "docs", "guide.md"));
+
+		Assert.AreEqual(BlockChoice.UseVersion1, Choose(0, leftLabel, rightLabel), $"{leftLabel} / {rightLabel}");
+		Assert.AreEqual(BlockChoice.UseVersion2, Choose(1, leftLabel, rightLabel), $"{leftLabel} / {rightLabel}");
+	}
 }
